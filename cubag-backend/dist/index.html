@@ -9,6 +9,13 @@
         }
       });
     }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (let name of names) {
+          caches.delete(name);
+        }
+      });
+    }
   </script>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -40,17 +47,61 @@
   <link rel="icon" type="image/jpeg" href="logo.jpeg"/>
 
   <title>CUBAG</title>
-  <link rel="manifest" href="manifest.json">
+  <!-- Preconnect and preload Google Fonts Inter & Outfit to eliminate initial load font flashing -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=block" rel="stylesheet">
+
+  <style>
+    html, body {
+      font-family: 'Inter', 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f8fafc;
+      margin: 0;
+      padding: 0;
+    }
+    @media (prefers-color-scheme: dark) {
+      html, body {
+        background-color: #0f172a;
+      }
+    }
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
-
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <!-- Flutter Web Bootstrap Loader -->
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    function loadFlutterFallback() {
+      console.warn('flutter_bootstrap.js not found or failed, initializing Flutter fallback loader...');
+      var script = document.createElement('script');
+      script.src = 'flutter.js';
+      script.onload = function() {
+        if (window._flutter && window._flutter.loader) {
+          if (typeof window._flutter.loader.load === 'function') {
+            window._flutter.loader.load();
+          } else if (typeof window._flutter.loader.loadEntrypoint === 'function') {
+            window._flutter.loader.loadEntrypoint({
+              onEntrypointLoaded: function(engineInitializer) {
+                engineInitializer.initializeEngine().then(function(appRunner) {
+                  appRunner.runApp();
+                });
+              }
+            });
+          }
+        } else {
+          var mainScript = document.createElement('script');
+          mainScript.src = 'main.dart.js';
+          mainScript.type = 'application/javascript';
+          document.body.appendChild(mainScript);
+        }
+      };
+      script.onerror = function() {
+        var mainScript = document.createElement('script');
+        mainScript.src = 'main.dart.js';
+        mainScript.type = 'application/javascript';
+        document.body.appendChild(mainScript);
+      };
+      document.body.appendChild(script);
+    }
+  </script>
 </body>
 </html>

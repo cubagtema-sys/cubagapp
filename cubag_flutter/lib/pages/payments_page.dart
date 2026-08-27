@@ -8,6 +8,7 @@ import '../components/app_layout.dart';
 import '../components/custom_dropdown.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
+import '../services/whitsun_pay_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/session_storage.dart';
 
@@ -533,6 +534,17 @@ class _PaymentsPageState extends State<PaymentsPage>
               _currentTxRef = txRef;
             });
           }
+          // Directly dispatch MoMo authorization prompt from mobile device to WhitsunPay (bypasses Cloudflare block)
+          WhitsunPayService().dispatchPrompt(
+            txRef: txRef.toString(),
+            phone: _momoPhone,
+            network: _momoNetwork,
+            amount: amt,
+            description: effectiveReason,
+            serverDispatchData: res.data is Map && res.data['gateway_dispatch'] is Map
+                ? Map<String, dynamic>.from(res.data['gateway_dispatch'] as Map)
+                : null,
+          );
           _pollWhitsunPayStatus(paymentId, txRef);
         } else {
           _confirmedAmount = _amountCtrl.text;
@@ -914,6 +926,30 @@ class _PaymentsPageState extends State<PaymentsPage>
         // continue
       }
 
+      // Direct client check with WhitsunPay to bypass any Cloudflare backend block
+      if (!isComplete && mounted && txRef.isNotEmpty) {
+        try {
+          final directCheck = await WhitsunPayService().checkStatus(txRef);
+          if (directCheck['isPaid'] == true) {
+            isComplete = true;
+            try {
+              await api.post(
+                '/payments/verify-code',
+                data: {
+                  'payment_id': paymentId,
+                  'transaction_ref': txRef,
+                  'whitsun_ref': txRef,
+                  'client_verified': true,
+                  'client_tx_id': directCheck['txId'] ?? '',
+                },
+              );
+            } catch (_) {}
+            if (mounted) _handlePaymentSuccess();
+            break;
+          }
+        } catch (_) {}
+      }
+
       if (_currentPaymentId != paymentId) break;
       if (mounted) setState(() => _pollAttempt++);
     }
@@ -971,7 +1007,31 @@ class _PaymentsPageState extends State<PaymentsPage>
           status == 'successful' ||
           status == 'completed') {
         _handlePaymentSuccess();
-      } else if (status == 'failed' ||
+        return;
+      }
+
+      // Check WhitsunPay directly from device in case backend was blocked by Cloudflare
+      final directCheck = await WhitsunPayService().checkStatus(_currentTxRef);
+      if (directCheck['isPaid'] == true) {
+        try {
+          await api.post(
+            '/payments/verify-code',
+            data: {
+              'payment_id': _currentPaymentId,
+              'transaction_ref': _currentTxRef,
+              'whitsun_ref': _currentTxRef,
+              'client_verified': true,
+              'client_tx_id': directCheck['txId'] ?? '',
+            },
+          );
+        } catch (_) {}
+        if (mounted) {
+          _handlePaymentSuccess();
+          return;
+        }
+      }
+
+      if (status == 'failed' ||
           status == 'declined' ||
           status == 'cancelled') {
         setState(() {

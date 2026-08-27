@@ -1,0 +1,7 @@
+name = "cubag-whitsun-proxy"
+main = "index.js"
+compatibility_date = "2024-09-23"
+
+# Proxies all requests to https://developer.whitsun.dev
+[vars]
+TARGET_ORIGIN = "https://developer.whitsun.dev"

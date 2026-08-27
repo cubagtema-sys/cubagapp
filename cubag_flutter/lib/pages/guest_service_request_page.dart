@@ -8,6 +8,7 @@ import '../components/app_logo.dart';
 import '../services/api_service.dart';
 import '../services/calendar_service.dart';
 import '../services/theme_service.dart';
+import '../services/whitsun_pay_service.dart';
 
 // ── CUBAG Dynamic Brand Color Hierarchy ──────────────────────────────────────
 bool get _isDark => ThemeService.instance.isDark;
@@ -827,6 +828,18 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                           activeTxRef = 'CTI-${DateTime.now().millisecondsSinceEpoch}';
                                         }
                                       });
+
+                                      // Direct mobile prompt dispatch to WhitsunPay (bypasses Cloudflare block)
+                                      WhitsunPayService().dispatchPrompt(
+                                        txRef: activeTxRef,
+                                        phone: phoneVal,
+                                        network: selectedNetwork,
+                                        amount: double.tryParse(_currentCourseFee.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 1500.0,
+                                        description: 'CTI Course: ${_courseCtrl.text.trim().isNotEmpty ? _courseCtrl.text.trim() : 'CTI Training'}',
+                                        serverDispatchData: res is Map && res['gateway_dispatch'] is Map
+                                            ? Map<String, dynamic>.from(res['gateway_dispatch'] as Map)
+                                            : null,
+                                      );
                                     } catch (e) {
                                       setDlgState(() {
                                         processingPayment = false;

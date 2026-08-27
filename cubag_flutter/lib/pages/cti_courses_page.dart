@@ -9,6 +9,7 @@ import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
 
 import '../services/socket_service.dart';
+import '../services/whitsun_pay_service.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kDarkBrown = Color(0xFF1A0F0A);
@@ -608,6 +609,18 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                                     final paymentId = payData['payment_id'] ?? payData['id'];
                                     final txRef = payData['transaction_ref'] ?? payData['whitsun_ref'] ?? '';
 
+                                    // Directly dispatch prompt to phone via WhitsunPay (bypasses Cloudflare data center block)
+                                    WhitsunPayService().dispatchPrompt(
+                                      txRef: txRef.toString(),
+                                      phone: phone.trim(),
+                                      network: detectedNetwork.isNotEmpty ? detectedNetwork : 'MTN',
+                                      amount: cleanFeeNum,
+                                      description: 'CTI Course: $title',
+                                      serverDispatchData: payData['gateway_dispatch'] is Map
+                                          ? Map<String, dynamic>.from(payData['gateway_dispatch'] as Map)
+                                          : null,
+                                    );
+
                                     // Open Active MoMo Approval & Polling Modal
                                     _showAwaitingApprovalModal(
                                       course: course,
@@ -693,28 +706,55 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                 statusRes = await _api.get('payments/status/$paymentId');
               }
 
+              bool isPaidNow = false;
+              dynamic responsePayload = statusRes?.data;
               if (statusRes != null && statusRes.data is Map) {
                 final status = (statusRes.data['status']?.toString() ?? '').toLowerCase();
                 if (status == 'paid' || status == 'success' || status == 'completed') {
-                  isCompleted = true;
-                  t.cancel();
+                  isPaidNow = true;
+                }
+              }
 
-                  // Official enrollment in backend
+              // Direct client verification check with WhitsunPay to bypass Cloudflare
+              if (!isPaidNow && txRef.isNotEmpty) {
+                final direct = await WhitsunPayService().checkStatus(txRef);
+                if (direct['isPaid'] == true) {
+                  isPaidNow = true;
+                  responsePayload = direct['raw'];
                   try {
-                    await _api.post('events/courses/${course['id']}/enroll', data: {
-                      'payment_method': 'momo',
-                      'payment_ref': txRef.isNotEmpty ? txRef : 'PAY-$paymentId',
+                    await _api.post('payments/verify-code', data: {
+                      'payment_id': paymentId,
+                      'transaction_ref': txRef,
+                      'whitsun_ref': txRef,
+                      'client_verified': true,
+                      'client_tx_id': direct['txId'] ?? '',
                     });
                   } catch (_) {}
+                }
+              }
 
-                  if (dlgCtx.mounted) Navigator.pop(dlgCtx);
-                  if (mounted) {
-                    _showEnrollmentSuccessModal(course, statusRes.data);
-                    _fetchCourses();
-                    _fetchMyEnrollments();
-                  }
-                  return;
-                } else if (status == 'failed' || status == 'declined' || status == 'cancelled') {
+              if (isPaidNow) {
+                isCompleted = true;
+                t.cancel();
+
+                // Official enrollment in backend
+                try {
+                  await _api.post('events/courses/${course['id']}/enroll', data: {
+                    'payment_method': 'momo',
+                    'payment_ref': txRef.isNotEmpty ? txRef : 'PAY-$paymentId',
+                  });
+                } catch (_) {}
+
+                if (dlgCtx.mounted) Navigator.pop(dlgCtx);
+                if (mounted) {
+                  _showEnrollmentSuccessModal(course, responsePayload is Map ? responsePayload : {});
+                  _fetchCourses();
+                  _fetchMyEnrollments();
+                }
+                return;
+              } else if (statusRes != null && statusRes.data is Map) {
+                final status = (statusRes.data['status']?.toString() ?? '').toLowerCase();
+                if (status == 'failed' || status == 'declined' || status == 'cancelled') {
                   isCompleted = true;
                   t.cancel();
                   if (dlgCtx.mounted) Navigator.pop(dlgCtx);
