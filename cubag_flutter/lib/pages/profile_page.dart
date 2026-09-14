@@ -15,10 +15,7 @@ part 'profile/profile_widgets.dart';
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10b981);
 const _kRed = Color(0xFFef4444);
-const _kPurple = Color(0xFF8b5cf6);
-const _kBlue = Color(0xFF3b82f6);
 const _kAmber = Color(0xFFf59e0b);
-const _kIndigo = Color(0xFF6366f1);
 
 class StandingTier {
   final String label;
@@ -37,28 +34,28 @@ class StandingTier {
     if (stars >= 4.5) {
       return StandingTier(
         label: 'Elite Standing',
-        color: const Color(0xFFD4AF37), // Classic Gold
+        color: const Color(0xFFD4AF37),
         icon: Icons.workspace_premium_rounded,
         badgeText: 'ELITE MEMBER',
       );
     } else if (stars >= 3.5) {
       return StandingTier(
         label: 'Good Standing',
-        color: const Color(0xFF10B981), // Emerald Green
+        color: const Color(0xFF10B981),
         icon: Icons.verified_user_rounded,
         badgeText: 'ACTIVE MEMBER',
       );
     } else if (stars >= 2.0) {
       return StandingTier(
         label: 'Warning / Probationary',
-        color: const Color(0xFFF59E0B), // Amber
+        color: const Color(0xFFF59E0B),
         icon: Icons.warning_amber_rounded,
         badgeText: 'PROBATIONARY',
       );
     } else {
       return StandingTier(
         label: 'Suspended / Delinquent',
-        color: const Color(0xFFEF4444), // Red
+        color: const Color(0xFFEF4444),
         icon: Icons.block_rounded,
         badgeText: 'SUSPENDED',
       );
@@ -284,7 +281,6 @@ class _ProfilePageState extends State<ProfilePage> {
     final expiry = (rawExpiry == null || rawExpiry == 'None' || rawExpiry == 'null' || rawExpiry.isEmpty) ? null : rawExpiry;
     final daysLeft = expiry != null ? DateTime.tryParse(expiry)?.difference(DateTime.now()).inDays : null;
     final statusStr = (_user['status']?.toString() ?? 'active').trim().toLowerCase();
-    final isExpired = daysLeft != null && daysLeft < 0;
     final isApprovedOrActive = statusStr == 'active' || statusStr == 'approved';
     final bool isPkgPaid = _user['package_fee_paid'] == true;
     final bool isPackagePending = !isPkgPaid &&
@@ -299,31 +295,10 @@ class _ProfilePageState extends State<ProfilePage> {
     final rawMemberType = (_user['member_type'] ?? _user['memberType'] ?? '').toString().toLowerCase();
     final isLicentiate = rawMemberType.contains('licentiate') || rawMemberType.contains('individual');
     final isAssociate = rawMemberType.contains('associate') || rawMemberType.contains('affiliate');
-    final isCorporate = !isLicentiate && !isAssociate;
 
-    final scaleStr = (_user['company_scale'] ?? _user['member_scale'] ?? 'sme').toString().toLowerCase();
     final scaleLabel = isLicentiate
         ? 'Licentiate Member'
-        : (isAssociate
-            ? 'Associate Member'
-            : (scaleStr.contains('large') || scaleStr.contains('corp') ? 'Large Corporate' : 'SME Brokerage'));
-    final scaleIcon = isLicentiate
-        ? Icons.badge_rounded
-        : (isAssociate ? Icons.group_rounded : Icons.business_rounded);
-    final scaleColor = isLicentiate ? _kOrange : (isAssociate ? _kGreen : _kIndigo);
-
-    final feeCat = (_user['fee_category'] ?? '').toString().toLowerCase();
-    final feeCatLabel = isLicentiate
-        ? 'Customs House Agent'
-        : (isAssociate
-            ? 'Allied Logistics Partner'
-            : (feeCat == 'consolidation'
-                ? 'Consolidation'
-                : (feeCat == 'cf_consolidation' ? 'Consolidation, C&F' : 'Clearing & Forwarding')));
-    final feeCatIcon = isLicentiate
-        ? Icons.person_pin_rounded
-        : (isAssociate ? Icons.handshake_rounded : Icons.local_shipping_rounded);
-    final feeCatColor = isLicentiate ? _kPurple : (isAssociate ? _kIndigo : _kPurple);
+        : (isAssociate ? 'Associate Member' : 'Corporate Entity');
 
     final portRaw = (_user['port_of_operation'] ?? _user['port'] ?? 'Tema Port').toString();
     final portStr = _formatPortAbbreviation(portRaw);
@@ -337,284 +312,135 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── 1. EXECUTIVE HERO PROFILE BANNER ───────────────────────────
+            // ── 1. SIMPLE HERO BANNER ─────────────────────────────────────
             Container(
               width: double.infinity,
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: cardBg,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: border),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha(isDark ? 30 : 10),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
+                    color: Colors.black.withAlpha(isDark ? 30 : 8),
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
               child: Column(
                 children: [
-                  // Branded Top Pattern Header
-                  Container(
-                    height: 120,
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(19)),
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF1E293B),
-                          _kOrange.withAlpha(200),
-                          const Color(0xFF0F172A),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
+                  // Avatar with upload
+                  GestureDetector(
+                    onTap: _uploadingPhoto ? null : _uploadAvatar,
                     child: Stack(
+                      alignment: Alignment.bottomRight,
                       children: [
-                        Positioned(
-                          right: 20,
-                          top: 20,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withAlpha(120),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white24),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(tier.icon, size: 14, color: tier.color),
-                                const SizedBox(width: 6),
-                                Text(
-                                  tier.badgeText,
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        Container(
+                          width: 84,
+                          height: 84,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: _kOrange, width: 2.5),
                           ),
+                          child: ClipOval(
+                            child: _user['profile_photo'] != null && _user['profile_photo'].toString().isNotEmpty
+                                ? CachedNetworkImage(
+                                    imageUrl: ApiService.resolveImageUrl(_user['profile_photo'].toString()),
+                                    width: 84,
+                                    height: 84,
+                                    fit: BoxFit.cover,
+                                    errorWidget: (ctx, url, err) => _buildAvatarFallback(),
+                                  )
+                                : _buildAvatarFallback(),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: _kOrange,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: cardBg, width: 2),
+                          ),
+                          child: _uploadingPhoto
+                              ? const SizedBox(width: 10, height: 10, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Icon(Icons.camera_alt_rounded, size: 12, color: Colors.white),
                         ),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _user['name']?.toString() ?? 'Broker Member',
+                    style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: textPrimary),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _user['company']?.toString() ?? scaleLabel,
+                    style: GoogleFonts.inter(fontSize: 14.5, color: textMuted, fontWeight: FontWeight.w500),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 14),
 
-                  // Avatar & User Info
-                  Transform.translate(
-                    offset: const Offset(0, -45),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        children: [
-                          // Profile Photo with Camera Upload
-                          GestureDetector(
-                            onTap: _uploadingPhoto ? null : _uploadAvatar,
-                            child: Stack(
-                              alignment: Alignment.bottomRight,
-                              children: [
-                                Container(
-                                  width: 90,
-                                  height: 90,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: cardBg, width: 4),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: _kOrange.withAlpha(60),
-                                        blurRadius: 16,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: ClipOval(
-                                    child: _user['profile_photo'] != null && _user['profile_photo'].toString().isNotEmpty
-                                        ? CachedNetworkImage(
-                                            imageUrl: ApiService.resolveImageUrl(_user['profile_photo'].toString()),
-                                            width: 90,
-                                            height: 90,
-                                            fit: BoxFit.cover,
-                                            placeholder: (ctx, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2, color: _kOrange)),
-                                            errorWidget: (ctx, url, err) => _buildAvatarFallback(),
-                                          )
-                                        : _buildAvatarFallback(),
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: _kOrange,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: cardBg, width: 2),
-                                  ),
-                                  child: _uploadingPhoto
-                                      ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                      : const Icon(Icons.camera_alt_rounded, size: 13, color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-
-                          // Name & Title
-                          Text(
-                            _user['name']?.toString() ?? 'Broker Member',
-                            style: GoogleFonts.outfit(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              color: textPrimary,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            _user['company']?.toString() ?? 'Customs Brokerage Entity',
-                            style: GoogleFonts.inter(
-                              fontSize: 15.5,
-                              fontWeight: FontWeight.w600,
-                              color: textMuted,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Tag Chips (Scale, Operating Scope, Verified Status)
-                          Wrap(
-                            alignment: WrapAlignment.center,
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              _buildPill(scaleLabel, scaleIcon, scaleColor, isDark),
-                              if (isCorporate)
-                                _buildPill(feeCatLabel, feeCatIcon, feeCatColor, isDark),
-                              _buildPill(
-                                isGoodStanding
-                                    ? 'Active in Good Standing'
-                                    : (isPackagePending ? 'Waiting For Payment' : 'Status Pending'),
-                                isGoodStanding
-                                    ? Icons.verified_rounded
-                                    : (isPackagePending ? Icons.payment_rounded : Icons.pending_rounded),
-                                isGoodStanding ? _kGreen : _kAmber,
-                                isDark,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Quick Action Buttons
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _kOrange,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  elevation: 2,
-                                ),
-                                onPressed: () => _openDigitalIdDialog(tier, expiry, daysLeft, isGoodStanding, isPackagePending),
-                                icon: const Icon(Icons.badge_rounded, size: 18),
-                                label: Text('View Digital ID', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15)),
-                              ),
-                              const SizedBox(width: 10),
-                              OutlinedButton.icon(
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: textPrimary,
-                                  side: BorderSide(color: border, width: 1.2),
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                ),
-                                onPressed: () => context.go('/compliance'),
-                                icon: const Icon(Icons.verified_user_outlined, size: 17, color: _kGreen),
-                                label: Text('Compliance Centre', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15)),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                  // Status badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: (isGoodStanding ? _kGreen : _kAmber).withAlpha(20),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: (isGoodStanding ? _kGreen : _kAmber).withAlpha(60)),
                     ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(isGoodStanding ? Icons.verified_rounded : Icons.pending_rounded, size: 14, color: isGoodStanding ? _kGreen : _kAmber),
+                        const SizedBox(width: 6),
+                        Text(
+                          isGoodStanding ? 'Active in Good Standing' : 'Status Pending',
+                          style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: isGoodStanding ? _kGreen : _kAmber),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Actions
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _kOrange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          elevation: 0,
+                        ),
+                        onPressed: () => _openDigitalIdDialog(tier, expiry, daysLeft, isGoodStanding, isPackagePending),
+                        icon: const Icon(Icons.badge_rounded, size: 16),
+                        label: Text('Digital ID', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
+                      ),
+                      const SizedBox(width: 10),
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: textPrimary,
+                          side: BorderSide(color: border),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () => context.go('/compliance'),
+                        icon: const Icon(Icons.verified_user_outlined, size: 16, color: _kGreen),
+                        label: Text('Compliance', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
 
-            // ── 2. METRIC STATS STRIP ─────────────────────────────────────
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide = constraints.maxWidth > 750;
-                final expireBoxText = (!isGoodStanding || isPackagePending)
-                    ? 'Not Active'
-                    : (expiry != null ? _formatDate(expiry) : 'Active & Valid');
-                final expireBoxSub = isPackagePending
-                    ? 'Settle Package'
-                    : (daysLeft != null ? (daysLeft < 0 ? 'Expired' : '$daysLeft days left') : (isGoodStanding ? 'Valid' : 'Not Active'));
-                final expireBoxColor = isPackagePending ? _kOrange : (daysLeft != null && daysLeft <= 30 ? _kRed : _kGreen);
-
-                return isWide
-                    ? Row(
-                        children: [
-                          Expanded(child: _buildMetricBox('Compliance Score', '$complianceScore/100', 'Calculated standing rate', Icons.speed_rounded, _kGreen, cardBg, border, textPrimary, textMuted)),
-                          const SizedBox(width: 12),
-                          Expanded(child: _buildMetricBox('Membership Rating', '${starRating.toStringAsFixed(1)} ★', tier.label, Icons.star_rounded, const Color(0xFFD4AF37), cardBg, border, textPrimary, textMuted)),
-                          const SizedBox(width: 12),
-                          Expanded(child: _buildMetricBox('Operating Port', portStr, 'Chapter', null, _kIndigo, cardBg, border, textPrimary, textMuted)),
-                          const SizedBox(width: 12),
-                          Expanded(child: _buildMetricBox('Member Expire', expireBoxText, expireBoxSub, Icons.event_available_rounded, expireBoxColor, cardBg, border, textPrimary, textMuted)),
-                        ],
-                      )
-                    : Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(child: _buildMetricBox('Compliance Score', '$complianceScore/100', 'Standing rate', Icons.speed_rounded, _kGreen, cardBg, border, textPrimary, textMuted)),
-                              const SizedBox(width: 10),
-                              Expanded(child: _buildMetricBox('Rating', '${starRating.toStringAsFixed(1)} ★', tier.label, Icons.star_rounded, const Color(0xFFD4AF37), cardBg, border, textPrimary, textMuted)),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(child: _buildMetricBox('Operating Port', portStr, 'Chapter', null, _kIndigo, cardBg, border, textPrimary, textMuted)),
-                              const SizedBox(width: 10),
-                              Expanded(child: _buildMetricBox('Member Expire', expireBoxText, expireBoxSub, Icons.event_available_rounded, expireBoxColor, cardBg, border, textPrimary, textMuted)),
-                            ],
-                          ),
-                        ],
-                      );
-              },
-            ),
-            const SizedBox(height: 18),
-
-            // ── 3. TWO-COLUMN DETAILS SECTION ─────────────────────────────
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide = constraints.maxWidth > 900;
-                return isWide
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: _buildCorporateCard(cardBg, border, textPrimary, textMuted, scaleLabel, feeCatLabel, portStr, isLicentiate, isAssociate)),
-                          const SizedBox(width: 16),
-                          Expanded(child: _buildComplianceCard(cardBg, border, textPrimary, textMuted, expiry, daysLeft, isGoodStanding, isPackagePending, isExpired, isDark)),
-                        ],
-                      )
-                    : Column(
-                        children: [
-                          _buildCorporateCard(cardBg, border, textPrimary, textMuted, scaleLabel, feeCatLabel, portStr, isLicentiate, isAssociate),
-                          const SizedBox(height: 16),
-                          _buildComplianceCard(cardBg, border, textPrimary, textMuted, expiry, daysLeft, isGoodStanding, isPackagePending, isExpired, isDark),
-                        ],
-                      );
-              },
-            ),
-            const SizedBox(height: 18),
-
-            // ── 4. HISTORICAL TREND & COMPLIANCE MATH ─────────────────────
+            // ── 2. SIMPLE DETAILS CARD ────────────────────────────────────
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -626,48 +452,46 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: tier.color.withAlpha(25),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.show_chart_rounded, color: tier.color, size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Historical Compliance & Standing Trend',
-                              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
-                              softWrap: true,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '30-day recorded compliance trajectory and mathematical breakdown points',
-                              style: GoogleFonts.inter(fontSize: 13.5, color: textMuted),
-                              softWrap: true,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  Text(
+                    'Profile Particulars',
+                    style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.bold, color: textPrimary),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
+                  _itemRow('Membership ID', _membershipId, Icons.badge_outlined, textPrimary, textMuted),
+                  _itemRow('Email Address', _user['email']?.toString() ?? '—', Icons.email_outlined, textPrimary, textMuted),
+                  _itemRow('Phone Number', _user['phone']?.toString() ?? 'Not provided', Icons.phone_outlined, textPrimary, textMuted),
+                  _itemRow('Operating Port', portStr, Icons.anchor_outlined, textPrimary, textMuted),
+                  _itemRow('Compliance Score', '$complianceScore / 100', Icons.speed_rounded, textPrimary, textMuted, isLast: true),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // ── 3. TREND CHART ───────────────────────────────────────────
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '30-Day Compliance Trend',
+                    style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.bold, color: textPrimary),
+                  ),
+                  const SizedBox(height: 12),
                   TrendLineWidget(
                     points: (_user['rating_history'] as List?)
                             ?.map((h) => double.tryParse(h['compliance_score']?.toString() ?? '') ?? 100.0)
                             .toList() ??
                         [complianceScore.toDouble()],
                     color: tier.color,
-                    height: 90,
+                    height: 80,
                   ),
-                  const Divider(height: 28),
-                  _buildMathBreakdownSection(_user, _kOrange, isDark, textPrimary, textMuted),
                 ],
               ),
             ),
@@ -678,331 +502,32 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildAvatarFallback() => CircleAvatar(
-        radius: 45,
+        radius: 42,
         backgroundColor: _kOrange.withAlpha(30),
         child: Text(
           _initials,
-          style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.w900, color: _kOrange),
+          style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.w900, color: _kOrange),
         ),
       );
-
-  Widget _buildPill(String label, IconData icon, Color color, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withAlpha(isDark ? 30 : 18),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withAlpha(60)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: GoogleFonts.outfit(fontSize: 13.5, fontWeight: FontWeight.w700, color: color),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetricBox(
-    String title,
-    String value,
-    String subtitle,
-    IconData? icon,
-    Color color,
-    Color cardBg,
-    Color border,
-    Color textPrimary,
-    Color textMuted,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: border),
-      ),
-      child: Row(
-        children: [
-          if (icon != null) ...[
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withAlpha(22),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 12),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  value,
-                  style: GoogleFonts.outfit(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  title,
-                  style: GoogleFonts.outfit(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    color: textPrimary.withAlpha(200),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: textMuted,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCorporateCard(Color cardBg, Color border, Color textPrimary, Color textMuted, String scale, String feeCat, String port, bool isLicentiate, bool isAssociate) {
-    final title = isLicentiate
-        ? 'Licentiate Member'
-        : (isAssociate ? 'Associate Member' : 'Corporate Identity & Scope');
-    final subtitle = isLicentiate
-        ? 'Licentiate member credentials & registration particulars'
-        : (isAssociate ? 'Associate member credentials & registration particulars' : 'Entity registration particulars & operational scope');
-    final entityLabel = isLicentiate
-        ? 'Licensed Practice / Name'
-        : (isAssociate ? 'Entity / Partner Name' : 'Entity / Company');
-    final entityIcon = isLicentiate ? Icons.person_outline_rounded : (isAssociate ? Icons.groups_rounded : Icons.domain_rounded);
-    final cardThemeColor = isLicentiate ? _kOrange : (isAssociate ? _kGreen : _kIndigo);
-    final cardIcon = isLicentiate ? Icons.badge_rounded : (isAssociate ? Icons.handshake_rounded : Icons.apartment_rounded);
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: cardThemeColor.withAlpha(25),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(cardIcon, color: cardThemeColor, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
-                      softWrap: true,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: GoogleFonts.inter(fontSize: 13.5, color: textMuted),
-                      softWrap: true,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _itemRow(entityLabel, _user['company']?.toString() ?? _user['name']?.toString() ?? 'Customs Licentiate', entityIcon, textPrimary, textMuted),
-          _itemRow('Membership ID', _membershipId, Icons.badge_outlined, textPrimary, textMuted),
-          _itemRow('Primary Contact', _user['name']?.toString() ?? '—', Icons.person_outline_rounded, textPrimary, textMuted),
-          _itemRow('Official Email', _user['email']?.toString() ?? '—', Icons.email_outlined, textPrimary, textMuted),
-          _itemRow('Phone Number', _user['phone']?.toString() ?? 'Not provided', Icons.phone_outlined, textPrimary, textMuted),
-          _itemRow('Operating Chapter', port, null, textPrimary, textMuted, isLast: true),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildComplianceCard(
-    Color cardBg,
-    Color border,
-    Color textPrimary,
-    Color textMuted,
-    String? expiry,
-    int? daysLeft,
-    bool isGoodStanding,
-    bool isPackagePending,
-    bool isExpired,
-    bool isDark,
-  ) {
-    String standingStatus;
-    String memberExpireText;
-    String timelineNotice;
-    Color standingColor;
-
-    if (isPackagePending) {
-      standingStatus = '🟡 Waiting For Membership Payment';
-      memberExpireText = 'Not Active';
-      timelineNotice = 'Not Active • Settle Entrance Package to Activate';
-      standingColor = _kAmber;
-    } else if (isExpired) {
-      standingStatus = '🔴 Renewal Required';
-      memberExpireText = expiry != null ? _formatDate(expiry) : 'Expired';
-      timelineNotice = 'Expired ${daysLeft?.abs()} days ago • Renewal Required';
-      standingColor = _kRed;
-    } else if (daysLeft != null && daysLeft <= 30) {
-      standingStatus = '🟡 Renewal Due Soon';
-      memberExpireText = _formatDate(expiry);
-      timelineNotice = '$daysLeft days remaining until expiration';
-      standingColor = _kAmber;
-    } else if (isGoodStanding) {
-      standingStatus = '🟢 Active in Good Standing';
-      memberExpireText = expiry != null ? _formatDate(expiry) : 'Active & Valid';
-      timelineNotice = daysLeft != null ? '$daysLeft days remaining' : 'Active in Good Standing';
-      standingColor = _kGreen;
-    } else {
-      standingStatus = '🟡 Pending Activation';
-      memberExpireText = 'Not Active';
-      timelineNotice = 'Not Active • Pending Verification & Activation';
-      standingColor = _kAmber;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: standingColor.withAlpha(25),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.gavel_rounded, color: standingColor, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Membership & Standing Status',
-                      style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
-                      softWrap: true,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Statutory compliance validity & annual renewal schedule',
-                      style: GoogleFonts.inter(fontSize: 13.5, color: textMuted),
-                      softWrap: true,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _itemRow('Standing Status', standingStatus, Icons.shield_outlined, standingColor, textMuted),
-          _itemRow('Membership ID', _membershipId, Icons.badge_outlined, textPrimary, textMuted),
-          _itemRow('Member Expire', memberExpireText, Icons.calendar_month_outlined, isGoodStanding ? textPrimary : textMuted, textMuted),
-          _itemRow(
-            'Timeline Notice',
-            timelineNotice,
-            Icons.timelapse_rounded,
-            standingColor,
-            textMuted,
-          ),
-          const SizedBox(height: 12),
-
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _kOrange,
-                    side: const BorderSide(color: _kOrange),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () => context.go('/payment-history'),
-                  icon: const Icon(Icons.receipt_long_rounded, size: 16),
-                  label: Text('Payment Receipts', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isPackagePending ? _kOrange : _kGreen,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    elevation: 0,
-                  ),
-                  onPressed: () => context.go(isPackagePending ? '/payments?fee=New%20Membership%20Dues' : '/compliance'),
-                  icon: Icon(isPackagePending ? Icons.payment_rounded : Icons.verified_user_rounded, size: 16),
-                  label: Text(isPackagePending ? 'Pay Entrance Package' : 'Compliance Hub', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _itemRow(String label, String value, IconData? icon, Color textPrimary, Color textMuted, {bool isLast = false}) {
     return Padding(
       padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (icon != null) ...[
             Icon(icon, size: 16, color: textMuted),
             const SizedBox(width: 10),
           ],
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(label, style: GoogleFonts.inter(fontSize: 12.5, color: textMuted, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 1),
+                Text(label, style: GoogleFonts.inter(fontSize: 14, color: textMuted, fontWeight: FontWeight.w500)),
                 Text(
                   value,
-                  style: GoogleFonts.outfit(fontSize: 15.5, fontWeight: FontWeight.w800, color: textPrimary),
-                  softWrap: true,
+                  style: GoogleFonts.outfit(fontSize: 14.5, fontWeight: FontWeight.bold, color: textPrimary),
                 ),
               ],
             ),
@@ -1012,7 +537,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // ── 5. DIGITAL IDENTITY CARD MODAL DIALOG ──────────────────────────────────
+  // ── 4. DIGITAL IDENTITY CARD MODAL DIALOG ──────────────────────────────────
   Widget _buildDigitalIdCard(
     BuildContext dialogCtx,
     StandingTier tier,
@@ -1275,153 +800,6 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildMathBreakdownSection(Map<String, dynamic> m, Color primary, bool isDark, Color textPrimary, Color textMuted) {
-    final bd = m['breakdown'] as Map<String, dynamic>?;
-    if (bd == null) {
-      return Text('Compliance points math calculated from real-time Secretariat records.', style: GoogleFonts.inter(color: textMuted, fontSize: 14));
-    }
-
-    final paymentScore = bd['payment_score'] ?? 0;
-    final paymentPunctual = bd['payment_punctual_score'] ?? 0;
-    final paymentHistory = bd['payment_history_score'] ?? 0;
-    final overdueCount = bd['overdue_payments_count'] ?? 0;
-    final totalPaid = bd['total_payments_paid'] ?? 0;
-    final onTimePaid = bd['on_time_payments_paid'] ?? 0;
-
-    final taskScore = bd['task_score'] ?? 0;
-    final licenseScore = bd['license_score'] ?? 0;
-    final taskCompletionScore = bd['task_completion_score'] ?? 0;
-    final totalTasks = bd['total_tasks'] ?? 0;
-    final completedTasks = bd['completed_tasks'] ?? 0;
-
-    final engagementScore = bd['engagement_score'] ?? 0;
-    final surveyScore = bd['survey_score'] ?? 0;
-    final totalSurveys = bd['total_surveys'] ?? 0;
-    final respondedSurveys = bd['responded_surveys'] ?? 0;
-    final agmScore = bd['agm_score'] ?? 0;
-    final adminScore = bd['admin_score'] ?? 0;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _breakdownTile(
-          icon: Icons.payments_outlined,
-          color: _kGreen,
-          title: 'Payment Compliance',
-          scoreText: '$paymentScore / 40 pts',
-          details: [
-            '• Punctual payment (no outstanding overdue): $paymentPunctual / 25 pts',
-            '• On-time payment history ratio ($onTimePaid / $totalPaid paid on time): $paymentHistory / 15 pts',
-            if (overdueCount > 0) '• WARNING: $overdueCount overdue payments detected.',
-          ],
-          isDark: isDark,
-          textPrimary: textPrimary,
-          textMuted: textMuted,
-        ),
-        _breakdownTile(
-          icon: Icons.task_alt_outlined,
-          color: _kBlue,
-          title: 'Task & Document Compliance',
-          scoreText: '$taskScore / 30 pts',
-          details: [
-            '• Membership validity status: $licenseScore / 15 pts',
-            '• Required tasks compliance ($completedTasks / $totalTasks completed): $taskCompletionScore / 15 pts',
-          ],
-          isDark: isDark,
-          textPrimary: textPrimary,
-          textMuted: textMuted,
-        ),
-        _breakdownTile(
-          icon: Icons.campaign_outlined,
-          color: _kPurple,
-          title: 'Engagement & Activities',
-          scoreText: '$engagementScore / 20 pts',
-          details: [
-            '• Survey response rate ($respondedSurveys / $totalSurveys completed): $surveyScore / 10 pts',
-            '• Annual General Meeting (AGM) attendance: $agmScore / 10 pts',
-          ],
-          isDark: isDark,
-          textPrimary: textPrimary,
-          textMuted: textMuted,
-        ),
-        _breakdownTile(
-          icon: Icons.rate_review_outlined,
-          color: _kAmber,
-          title: 'Admin Manual Review',
-          scoreText: '$adminScore / 10 pts',
-          details: [
-            '• Direct administrative compliance modifier: $adminScore / 10 pts',
-          ],
-          isDark: isDark,
-          textPrimary: textPrimary,
-          textMuted: textMuted,
-        ),
-      ],
-    );
-  }
-
-  Widget _breakdownTile({
-    required IconData icon,
-    required Color color,
-    required String title,
-    required String scoreText,
-    required List<String> details,
-    required bool isDark,
-    required Color textPrimary,
-    required Color textMuted,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withAlpha(isDark ? 20 : 12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withAlpha(40)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: color, size: 16),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: textPrimary,
-                  ),
-                  softWrap: true,
-                ),
-              ),
-              Text(
-                scoreText,
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.w800,
-                  color: color,
-                  fontSize: 15,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ...details.map(
-            (detail) => Padding(
-              padding: const EdgeInsets.only(top: 2, left: 24),
-              child: Text(
-                detail,
-                style: GoogleFonts.inter(fontSize: 13.5, color: textMuted),
-                softWrap: true,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
