@@ -534,25 +534,45 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
           return DateTime(2099, 12, 31);
         }
 
-        final upcomingEvents = all
-            .where((e) => e['is_meeting'] != true && !parseEventDate(e).isBefore(today))
-            .toList()
-          ..sort((a, b) => parseEventDate(a).compareTo(parseEventDate(b)));
+        final upcomingEvents =
+            all
+                .where(
+                  (e) =>
+                      e['is_meeting'] != true &&
+                      !parseEventDate(e).isBefore(today),
+                )
+                .toList()
+              ..sort((a, b) => parseEventDate(a).compareTo(parseEventDate(b)));
 
-        final pastEvents = all
-            .where((e) => e['is_meeting'] != true && parseEventDate(e).isBefore(today))
-            .toList()
-          ..sort((a, b) => parseEventDate(b).compareTo(parseEventDate(a)));
+        final pastEvents =
+            all
+                .where(
+                  (e) =>
+                      e['is_meeting'] != true &&
+                      parseEventDate(e).isBefore(today),
+                )
+                .toList()
+              ..sort((a, b) => parseEventDate(b).compareTo(parseEventDate(a)));
 
-        final upcomingMeetings = all
-            .where((e) => e['is_meeting'] == true && !parseEventDate(e).isBefore(today))
-            .toList()
-          ..sort((a, b) => parseEventDate(a).compareTo(parseEventDate(b)));
+        final upcomingMeetings =
+            all
+                .where(
+                  (e) =>
+                      e['is_meeting'] == true &&
+                      !parseEventDate(e).isBefore(today),
+                )
+                .toList()
+              ..sort((a, b) => parseEventDate(a).compareTo(parseEventDate(b)));
 
-        final pastMeetings = all
-            .where((e) => e['is_meeting'] == true && parseEventDate(e).isBefore(today))
-            .toList()
-          ..sort((a, b) => parseEventDate(b).compareTo(parseEventDate(a)));
+        final pastMeetings =
+            all
+                .where(
+                  (e) =>
+                      e['is_meeting'] == true &&
+                      parseEventDate(e).isBefore(today),
+                )
+                .toList()
+              ..sort((a, b) => parseEventDate(b).compareTo(parseEventDate(a)));
 
         setState(() {
           _eventsList = [...upcomingEvents, ...pastEvents];
@@ -820,7 +840,9 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                 builder: (context, themeService, _) {
                   final isDark = themeService.isDark;
                   return Tooltip(
-                    message: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+                    message: isDark
+                        ? 'Switch to Light Mode'
+                        : 'Switch to Dark Mode',
                     child: InkWell(
                       borderRadius: BorderRadius.circular(20),
                       onTap: () => themeService.toggleTheme(),
@@ -856,7 +878,10 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                     onPressed: () => context.go('/login'),
                     style: TextButton.styleFrom(
                       foregroundColor: _kText,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                     ),
                     child: Text(
                       'Sign In',
@@ -880,7 +905,10 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                         ),
                         child: Text(
                           'Join CUBAG',
-                          style: _outfit(fontSize: 15.5, fontWeight: FontWeight.bold),
+                          style: _outfit(
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -1066,18 +1094,29 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                       builder: (context, auth, _) {
                         if (auth.isAuthenticated) {
                           final role = auth.userRole;
-                          final isAdmin = role == 'admin' || role == 'sub_admin' || role == 'super_admin';
-                          final status = auth.membershipStatus.toLowerCase().trim();
-                          final isApproved = status == 'active' || status == 'approved';
+                          final isAdmin =
+                              role == 'admin' ||
+                              role == 'sub_admin' ||
+                              role == 'super_admin';
+                          final status = auth.membershipStatus
+                              .toLowerCase()
+                              .trim();
+                          final isApproved =
+                              status == 'active' || status == 'approved';
                           final isPaid = auth.isRegistrationFeePaid;
-                          final isPending = !isAdmin && (!isApproved || !isPaid);
+                          final isPending =
+                              !isAdmin && (!isApproved || !isPaid);
 
                           final targetRoute = isAdmin
                               ? '/admin/dashboard'
-                              : (isPending ? '/application-documents' : '/dashboard');
+                              : (isPending
+                                    ? '/application-documents'
+                                    : '/dashboard');
                           final btnLabel = isAdmin
                               ? 'Go to Admin Portal'
-                              : (isPending ? 'Complete My Application' : 'Go to Member Dashboard');
+                              : (isPending
+                                    ? 'Complete My Application'
+                                    : 'Go to Member Dashboard');
 
                           return Column(
                             mainAxisSize: MainAxisSize.min,
@@ -1091,7 +1130,9 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                                     context.go(targetRoute);
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: isPending ? const Color(0xFFFF5000) : _kBrown,
+                                    backgroundColor: isPending
+                                        ? const Color(0xFFFF5000)
+                                        : _kBrown,
                                     foregroundColor: Colors.white,
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(
@@ -1115,7 +1156,10 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                                   },
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: Colors.redAccent,
-                                    side: const BorderSide(color: Colors.redAccent, width: 1.5),
+                                    side: const BorderSide(
+                                      color: Colors.redAccent,
+                                      width: 1.5,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -1278,20 +1322,20 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
             ),
             children: [
               TextSpan(
-                text: 'Connecting ',
+                text: '🇬🇭 Connecting ',
                 style: TextStyle(color: _kText),
               ),
               TextSpan(
-                text: 'Customs Clearance 🇬🇭\n',
+                text: 'Customs Clearance\n',
                 style: TextStyle(color: _kBrown),
               ),
               TextSpan(
-                text: 'Freight Forwarding & ',
-                style: TextStyle(color: _kText),
+                text: '🌍 Int\'l Trade & ',
+                style: TextStyle(color: _kAccent),
               ),
               TextSpan(
-                text: '🌍 Int\'l Trade',
-                style: TextStyle(color: _kAccent),
+                text: 'Freight Forwarding',
+                style: TextStyle(color: _kText),
               ),
             ],
           ),
@@ -3010,8 +3054,9 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        final courseTitle =
-                            (c['title'] ?? '').toString().trim();
+                        final courseTitle = (c['title'] ?? '')
+                            .toString()
+                            .trim();
                         final uri = courseTitle.isNotEmpty
                             ? '/guest-services/cti_training?course=${Uri.encodeComponent(courseTitle)}'
                             : '/guest-services/cti_training';
@@ -6108,7 +6153,9 @@ class _AllEventsDialogState extends State<_AllEventsDialog> {
             final title = (e['title']?.toString() ?? '').toLowerCase();
             final location = (e['location']?.toString() ?? '').toLowerCase();
             final desc = (e['description']?.toString() ?? '').toLowerCase();
-            return title.contains(q) || location.contains(q) || desc.contains(q);
+            return title.contains(q) ||
+                location.contains(q) ||
+                desc.contains(q);
           }).toList();
 
     final allMeetings = widget.meetingsList.map((m) {
@@ -6139,7 +6186,9 @@ class _AllEventsDialogState extends State<_AllEventsDialog> {
             final title = (m['title']?.toString() ?? '').toLowerCase();
             final location = (m['location']?.toString() ?? '').toLowerCase();
             final desc = (m['description']?.toString() ?? '').toLowerCase();
-            return title.contains(q) || location.contains(q) || desc.contains(q);
+            return title.contains(q) ||
+                location.contains(q) ||
+                desc.contains(q);
           }).toList();
 
     return Dialog(
@@ -6897,8 +6946,8 @@ class _AllCoursesDialogState extends State<_AllCoursesDialog> {
                                                           .trim();
                                                   final uri =
                                                       courseTitle.isNotEmpty
-                                                          ? '/guest-services/cti_training?course=${Uri.encodeComponent(courseTitle)}'
-                                                          : '/guest-services/cti_training';
+                                                      ? '/guest-services/cti_training?course=${Uri.encodeComponent(courseTitle)}'
+                                                      : '/guest-services/cti_training';
                                                   context.go(uri);
                                                 },
                                                 style: ElevatedButton.styleFrom(
