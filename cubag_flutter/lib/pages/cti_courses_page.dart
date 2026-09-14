@@ -806,23 +806,30 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 12),
-          Row(
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
             children: [
               _buildMiniBadge(Icons.calendar_today_rounded, startDate, isDark ? Colors.white : _kBlue, isDark: isDark),
-              const SizedBox(width: 6),
               _buildMiniBadge(Icons.timelapse_rounded, duration, isDark ? Colors.white : _kIndigo, isDark: isDark),
-              const SizedBox(width: 6),
               _buildMiniBadge(Icons.location_on_outlined, mode, isDark ? Colors.white : _kPurple, isDark: isDark),
-              if (daysLeft != null && daysLeft >= 0) ...[
-                const SizedBox(width: 6),
+              if (daysLeft != null && daysLeft >= 0)
                 _buildMiniBadge(Icons.alarm_on_rounded, 'In $daysLeft d', _kGreen),
-              ],
-              const Spacer(),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                fee,
+                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w900, color: _kOrange),
+              ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isEnrolled ? _kGreen : _kOrange,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   elevation: 0,
                 ),
