@@ -21,12 +21,12 @@ const _keyPassword = 'bio_password';
 
 Future<bool> isBiometricAvailable() async {
   try {
-    final canCheck = await _auth.canCheckBiometrics;
     final isSupported = await _auth.isDeviceSupported();
-    return canCheck && isSupported;
+    final canCheck = await _auth.canCheckBiometrics;
+    return isSupported || canCheck;
   } on PlatformException catch (e) {
     debugPrint('Biometric availability check failed: $e');
-    return false;
+    return true;
   }
 }
 
