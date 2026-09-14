@@ -26,10 +26,8 @@ class _DashboardPageState extends State<DashboardPage> {
   // The UI renders immediately from SessionStorage; API calls refresh in background.
   bool _loading = true;
   bool _loadingTasks = true;
-  bool _loadingAnnouncements = true;
   bool _loadingSurveys = false;
   List<dynamic> _tasks = [];
-  List<dynamic> _announcements = [];
   List<dynamic> _surveys = [];
   Map<String, String> _forex = {
     'USD': '15.45',
@@ -134,7 +132,6 @@ class _DashboardPageState extends State<DashboardPage> {
       // Fire all requests in parallel; each updates state independently as it lands
       await Future.wait([
         _fetchTasks(),
-        _fetchAnnouncements(),
         _fetchSurveys(),
         _fetchUserProfile(),
       ]);
@@ -218,20 +215,7 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
-  Future<void> _fetchAnnouncements() async {
-    await ApiService().fetchDataWithCache('/announcements', (
-      data,
-      isCached, {
-      bool hasError = false,
-    }) {
-      if (mounted && data != null) {
-        setState(() {
-          _announcements = ApiService.ensureList(data).take(3).toList();
-          _loadingAnnouncements = false;
-        });
-      }
-    });
-  }
+
 
   Future<void> _fetchSurveys() async {
     setState(() => _loadingSurveys = true);
@@ -819,419 +803,9 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  void _showAnnouncementDetail(Map<String, dynamic> a) {
-    final category = (a['category'] ?? a['type'] ?? 'General').toString();
-    final dateStr = a['created_at'] != null
-        ? a['created_at'].toString().split('T')[0]
-        : '';
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final modalBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final handleCol = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFcbd5e1);
-    final titleCol = isDark ? Colors.white : const Color(0xFF1A0F0A);
-    final bodyCol = isDark ? Colors.white70 : const Color(0xFF281710);
-    final dividerCol = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
-    final mutedCol = isDark ? Colors.white54 : const Color(0xFF64748b);
-    final closeBtnBg = isDark
-        ? const Color(0xFF1A0F0A)
-        : const Color(0xFF1A0F0A);
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return Container(
-          decoration: BoxDecoration(
-            color: modalBg,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: handleCol,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF5000).withAlpha(20),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.campaign_rounded,
-                      color: Color(0xFFFF5000),
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFF5000).withAlpha(25),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                category.toUpperCase(),
-                                style: GoogleFonts.outfit(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w900,
-                                  color: const Color(0xFFFF5000),
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              'Ref: CIRC-${a['id'] ?? '001'}',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: const Color(0xFF94a3b8),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (dateStr.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            dateStr,
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              color: const Color(0xFF94a3b8),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              Text(
-                a['title'] ?? '',
-                style: GoogleFonts.outfit(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: titleCol,
-                ),
-              ),
-              const SizedBox(height: 14),
-              SelectableText(
-                a['body'] ?? a['content'] ?? '',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  color: bodyCol,
-                  height: 1.6,
-                  fontWeight: FontWeight.w400,
-                  letterSpacing: 0.2,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Divider(height: 1, color: dividerCol),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF5000).withAlpha(20),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.verified_user_rounded,
-                      size: 14,
-                      color: Color(0xFFFF5000),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Issued by: ',
-                    style: GoogleFonts.inter(fontSize: 13, color: mutedCol),
-                  ),
-                  Text(
-                    '${a['posted_by'] ?? 'CUBAG National Secretariat'}',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: titleCol,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Spacer(),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: closeBtnBg,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    onPressed: () => Navigator.pop(ctx),
-                    child: Text(
-                      'Close',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
-  Widget _buildAnnouncementsSection(Color primary) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final borderColor = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
-    final textColor = isDark
-        ? const Color(0xFFf8fafc)
-        : const Color(0xFF1A0F0A);
-    final subTextColor = isDark
-        ? const Color(0xFF94a3b8)
-        : const Color(0xFF475569);
-    final dividerColor = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFf1f5f9);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(6),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF5000).withAlpha(20),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.campaign_rounded,
-                    color: Color(0xFFFF5000),
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Latest Announcements',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18,
-                    color: textColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Divider(height: 1, color: dividerColor),
-          if (_loadingAnnouncements)
-            const Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: ShimmerListTile(),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: ShimmerListTile(),
-                ),
-              ],
-            )
-          else if (_announcements.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(30),
-                child: Text(
-                  'No new announcements.',
-                  style: TextStyle(color: subTextColor, fontSize: 15),
-                ),
-              ),
-            )
-          else ...[
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _announcements.length,
-              separatorBuilder: (context, i) =>
-                  Divider(height: 1, color: dividerColor),
-              itemBuilder: (context, i) {
-                final a = _announcements[i];
-                final category = (a['category'] ?? a['type'] ?? 'General')
-                    .toString()
-                    .toUpperCase();
-                final dateStr = a['created_at'] != null
-                    ? a['created_at'].toString().split('T')[0]
-                    : '';
-
-                return Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => _showAnnouncementDetail(a),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 14,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFF5000).withAlpha(20),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.campaign_rounded,
-                              color: Color(0xFFFF5000),
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(
-                                          0xFFFF5000,
-                                        ).withAlpha(25),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        category,
-                                        style: GoogleFonts.outfit(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w900,
-                                          color: const Color(0xFFFF5000),
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                    ),
-                                    if (dateStr.isNotEmpty) ...[
-                                      const Spacer(),
-                                      Text(
-                                        dateStr,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 13,
-                                          color: subTextColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  a['title'] ?? '',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.outfit(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 16,
-                                    color: textColor,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  a['content'] ?? a['body'] ?? '',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14,
-                                    color: subTextColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            color: subTextColor.withAlpha(120),
-                            size: 20,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            Divider(height: 1, color: dividerColor),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Center(
-                child: TextButton.icon(
-                  onPressed: () => context.go('/announcements'),
-                  icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-                  label: const Text('View All Announcements'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: _kOrange,
-                    textStyle: GoogleFonts.outfit(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
 
   Widget _buildForexSection(ThemeData theme, Color primary) {
     final isDark = theme.brightness == Brightness.dark;
@@ -1909,11 +1483,6 @@ class _DashboardPageState extends State<DashboardPage> {
     final role = _user['role'] as String? ?? '';
     final pending = _tasks.where((t) => t['done'] != true).toList();
     final bool isPkgPaid = _user['package_fee_paid'] == true;
-    final bool isGoodStanding = isPkgPaid &&
-        (_user['is_good_standing'] == true ||
-            _user['good_standing'] == true ||
-            _user['status'] == 'active' ||
-            _user['status'] == 'approved');
     final bool isPackagePending = !isPkgPaid &&
         (role != 'admin' && role != 'sub_admin' && role != 'super_admin');
 
@@ -1964,8 +1533,6 @@ class _DashboardPageState extends State<DashboardPage> {
                                       ),
                                       const SizedBox(height: 20),
                                       _buildActiveSurveysSection(primary),
-                                      const SizedBox(height: 20),
-                                      _buildAnnouncementsSection(primary),
                                     ],
                                   ),
                                 ),
@@ -2027,8 +1594,6 @@ class _DashboardPageState extends State<DashboardPage> {
                                 _buildActiveSurveysSection(primary),
                                 const SizedBox(height: 20),
                                 _buildForexSection(theme, primary),
-                                const SizedBox(height: 20),
-                                _buildAnnouncementsSection(primary),
                               ],
                             );
                           }

@@ -285,7 +285,7 @@ class _MessagingPageState extends State<MessagingPage> {
         ? Colors.white.withAlpha(180)
         : status == 'failed'
         ? const Color(0xFFfecaca)
-        : const Color(0xFFa5f3fc);
+        : const Color(0xFFFF5000);
     final iconColor = status == 'failed'
         ? const Color(0xFFf8fafc)
         : Colors.white;
