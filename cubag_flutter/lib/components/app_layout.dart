@@ -338,8 +338,22 @@ class _AppLayoutState extends State<AppLayout> {
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(color: borderThemeColor, width: 1.5),
           ),
-          onSelected: (value) {
-            context.go(targetRoute);
+          onSelected: (value) async {
+            if (value == 'view_all') {
+              context.go(targetRoute);
+            } else if (value.startsWith('notif_')) {
+              final idStr = value.substring(6);
+              final notificationService = Provider.of<NotificationService>(context, listen: false);
+              try {
+                await ApiService().post(
+                  '/notifications/mark-read',
+                  data: {'notification_id': idStr},
+                );
+                notificationService.decrementCount();
+              } catch (_) {}
+              if (!context.mounted) return;
+              context.go(targetRoute);
+            }
           },
           itemBuilder: (context) {
             final recent = notificationService.recentNotifications;
@@ -409,7 +423,7 @@ class _AppLayoutState extends State<AppLayout> {
                 ...recent.map((n) {
                   final isRead = n['read'] == true;
                   return PopupMenuItem<String>(
-                    value: 'view_all',
+                    value: 'notif_${n['id']}',
                     child: Container(
                       width: 280,
                       padding: const EdgeInsets.symmetric(vertical: 8),
