@@ -1,6 +1,5 @@
-// ignore: avoid_web_libraries_in_flutter
+// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter
 import 'dart:html' as html;
-// ignore: avoid_web_libraries_in_flutter
 import 'dart:ui_web' as ui_web;
 import 'package:flutter/material.dart';
 
@@ -12,18 +11,16 @@ Widget buildCorsImage(
   Widget? placeholder,
   Widget? errorWidget,
 }) {
-  // Use a unique view type for each unique URL to avoid factory registration collisions
   final viewType = 'cors-image-${url.hashCode}';
-  
-  ui_web.platformViewRegistry.registerViewFactory(
-    viewType,
-    (int viewId) {
+
+  try {
+    ui_web.platformViewRegistry.registerViewFactory(viewType, (int viewId) {
       final img = html.ImageElement()
         ..src = url
         ..style.border = 'none'
         ..style.width = '100%'
         ..style.height = '100%';
-        
+
       if (fit == BoxFit.cover) {
         img.style.objectFit = 'cover';
       } else if (fit == BoxFit.contain) {
@@ -32,9 +29,11 @@ Widget buildCorsImage(
         img.style.objectFit = 'fill';
       }
       return img;
-    },
-  );
-  
+    });
+  } catch (_) {
+    // Factory already registered — safe to ignore
+  }
+
   return SizedBox(
     width: width,
     height: height,

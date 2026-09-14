@@ -20,7 +20,7 @@ class TelemetryService {
         };
         // Print locally in debug mode
         debugPrint('[TELEMETRY] Logging event: $payload');
-        
+
         // Asynchronously post to backend telemetry endpoint in fire-and-forget style
         await _api.postData('/analytics/telemetry', payload);
       } catch (e) {
@@ -47,9 +47,10 @@ class TelemetryRouteObserver extends NavigatorObserver {
   }
 
   void _logRouteEvent(String eventType, Route<dynamic> route) {
-    final routeName = route.settings.name ?? route.settings.arguments?.toString() ?? route.toString();
-    TelemetryService.instance.logEvent(eventType, {
-      'route_name': routeName,
-    });
+    final routeName =
+        route.settings.name ??
+        route.settings.arguments?.toString() ??
+        route.toString();
+    TelemetryService.instance.logEvent(eventType, {'route_name': routeName});
   }
 }

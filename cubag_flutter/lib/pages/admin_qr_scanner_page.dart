@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:go_router/go_router.dart';
 
-const _kOrange = Color(0xFFf08232);
+const _kOrange = Color(0xFFFF5000);
 
 class AdminQrScannerPage extends StatefulWidget {
   final Function(String memberId) onScan;
@@ -25,7 +25,7 @@ class _AdminQrScannerPageState extends State<AdminQrScannerPage> {
         setState(() {
           _isProcessing = true;
         });
-        
+
         // Expected format: https://winningedgeinvestment.com/#/verify-member/123
         // Or if the backend URL is scanned: https://winningedgeinvestment.com/api/verify-member/123
         String memberId = '';
@@ -35,7 +35,7 @@ class _AdminQrScannerPageState extends State<AdminQrScannerPage> {
           // Fallback if they scan just an ID
           memberId = code;
         }
-        
+
         // Call callback and pop
         widget.onScan(memberId);
         if (mounted) {
@@ -52,15 +52,15 @@ class _AdminQrScannerPageState extends State<AdminQrScannerPage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('Scan QR Code', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Scan QR Code',
+          style: TextStyle(color: Colors.white),
+        ),
       ),
       body: Stack(
         children: [
-          MobileScanner(
-            controller: _controller,
-            onDetect: _onDetect,
-          ),
-          
+          MobileScanner(controller: _controller, onDetect: _onDetect),
+
           // Overlay UI
           Center(
             child: Container(
@@ -72,7 +72,7 @@ class _AdminQrScannerPageState extends State<AdminQrScannerPage> {
               ),
             ),
           ),
-          
+
           Positioned(
             bottom: 50,
             left: 0,
@@ -85,7 +85,7 @@ class _AdminQrScannerPageState extends State<AdminQrScannerPage> {
                 ),
                 const SizedBox(height: 20),
                 if (_isProcessing)
-                  const CircularProgressIndicator(color: _kOrange)
+                  const CircularProgressIndicator(color: _kOrange),
               ],
             ),
           ),

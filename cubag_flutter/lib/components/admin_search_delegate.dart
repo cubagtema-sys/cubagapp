@@ -19,7 +19,7 @@ class AdminSearchDelegate extends SearchDelegate<String> {
         iconTheme: IconThemeData(color: Color(0xFF64748b)),
       ),
       inputDecorationTheme: const InputDecorationTheme(
-        hintStyle: TextStyle(color: Color(0xFF94a3b8), fontSize: 14),
+        hintStyle: TextStyle(color: Color(0xFF94a3b8), fontSize: 16),
         border: InputBorder.none,
       ),
     );
@@ -66,7 +66,7 @@ class AdminSearchDelegate extends SearchDelegate<String> {
             SizedBox(height: 12),
             Text(
               'Type at least 2 characters to search',
-              style: TextStyle(color: Color(0xFF94a3b8), fontSize: 13),
+              style: TextStyle(color: Color(0xFF94a3b8), fontSize: 15),
             ),
           ],
         ),
@@ -164,7 +164,7 @@ class _DebouncedSearchBodyState extends State<_DebouncedSearchBody> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFf08232)),
+        child: CircularProgressIndicator(color: Color(0xFFFF5000)),
       );
     }
 
@@ -177,7 +177,7 @@ class _DebouncedSearchBodyState extends State<_DebouncedSearchBody> {
             const SizedBox(height: 12),
             Text(
               'No results for "${widget.query}"',
-              style: const TextStyle(color: Color(0xFF94a3b8), fontSize: 13),
+              style: const TextStyle(color: Color(0xFF94a3b8), fontSize: 15),
             ),
           ],
         ),
@@ -196,7 +196,10 @@ class _DebouncedSearchBodyState extends State<_DebouncedSearchBody> {
         final label = _labelForType(type);
 
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 4,
+            vertical: 2,
+          ),
           leading: Container(
             width: 36,
             height: 36,
@@ -208,11 +211,11 @@ class _DebouncedSearchBodyState extends State<_DebouncedSearchBody> {
           ),
           title: Text(
             r['name']?.toString() ?? 'Unknown',
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
           ),
           subtitle: Text(
             r['email']?.toString() ?? '',
-            style: const TextStyle(fontSize: 11, color: Color(0xFF64748b)),
+            style: const TextStyle(fontSize: 13, color: Color(0xFF64748b)),
           ),
           trailing: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -222,7 +225,11 @@ class _DebouncedSearchBodyState extends State<_DebouncedSearchBody> {
             ),
             child: Text(
               label.toUpperCase(),
-              style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: color),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
           ),
           onTap: () => widget.onNavigate(r),

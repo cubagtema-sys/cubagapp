@@ -95,9 +95,21 @@ class ShimmerGridCard extends StatelessWidget {
           const Spacer(),
           Row(
             children: [
-              const Expanded(child: ShimmerLoader(width: double.infinity, height: 36, borderRadius: 12)),
+              const Expanded(
+                child: ShimmerLoader(
+                  width: double.infinity,
+                  height: 36,
+                  borderRadius: 12,
+                ),
+              ),
               const SizedBox(width: 6),
-              const Expanded(child: ShimmerLoader(width: double.infinity, height: 36, borderRadius: 12)),
+              const Expanded(
+                child: ShimmerLoader(
+                  width: double.infinity,
+                  height: 36,
+                  borderRadius: 12,
+                ),
+              ),
             ],
           ),
         ],

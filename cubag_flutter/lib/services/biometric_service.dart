@@ -3,7 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // Conditional import: dart2js (web) loads the stub; native loads the real impl.
 import 'biometric_service_native.dart'
-    if (dart.library.html) 'biometric_service_web.dart' as impl;
+    if (dart.library.html) 'biometric_service_web.dart'
+    as impl;
 
 /// Biometric authentication service.
 /// On Web: all methods are no-ops.

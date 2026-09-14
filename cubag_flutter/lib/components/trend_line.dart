@@ -42,11 +42,23 @@ class TrendLinePainter extends CustomPainter {
       ..color = Colors.grey.withValues(alpha: 0.15)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
-    
+
     // Draw lines at 0%, 50%, and 100%
-    canvas.drawLine(Offset(0, getRawY(100)), Offset(size.width, getRawY(100)), gridPaint);
-    canvas.drawLine(Offset(0, getRawY(50)), Offset(size.width, getRawY(50)), gridPaint);
-    canvas.drawLine(Offset(0, getRawY(0)), Offset(size.width, getRawY(0)), gridPaint);
+    canvas.drawLine(
+      Offset(0, getRawY(100)),
+      Offset(size.width, getRawY(100)),
+      gridPaint,
+    );
+    canvas.drawLine(
+      Offset(0, getRawY(50)),
+      Offset(size.width, getRawY(50)),
+      gridPaint,
+    );
+    canvas.drawLine(
+      Offset(0, getRawY(0)),
+      Offset(size.width, getRawY(0)),
+      gridPaint,
+    );
 
     path.moveTo(0, getRawY(data[0]));
     fillPath.moveTo(0, size.height);
@@ -103,7 +115,10 @@ class TrendLineWidget extends StatelessWidget {
       return Container(
         height: height,
         alignment: Alignment.center,
-        child: const Text('No trend data available', style: TextStyle(color: Colors.grey, fontSize: 13)),
+        child: const Text(
+          'No trend data available',
+          style: TextStyle(color: Colors.grey, fontSize: 15),
+        ),
       );
     }
 
@@ -115,16 +130,28 @@ class TrendLineWidget extends StatelessWidget {
         SizedBox(
           height: height,
           width: double.infinity,
-          child: CustomPaint(
-            painter: TrendLinePainter(pts, color),
-          ),
+          child: CustomPaint(painter: TrendLinePainter(pts, color)),
         ),
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('First Rec', style: TextStyle(fontSize: 10, color: Colors.grey.shade500, fontWeight: FontWeight.bold)),
-            Text('Latest Rating', style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.bold)),
+            Text(
+              'First Rec',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade500,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              'Latest Rating',
+              style: TextStyle(
+                fontSize: 12,
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ],

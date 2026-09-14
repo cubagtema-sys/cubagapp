@@ -9,6 +9,8 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import cross_origin
 from config.db import get_db
+from config.cache import cache
+from utils import admin_required
 import requests as http_req
 
 auth_bp = Blueprint('auth', __name__)
@@ -79,33 +81,19 @@ def _send_email(to_email: str, subject: str, body_text: str, body_html: str = No
 
 
 @auth_bp.route('/debug-smtp', methods=['GET'])
+@admin_required
 def debug_smtp():
-    """Debug route updated to test Resend API connectivity."""
-    sender_email = os.getenv('SMTP_USER', 'support@winningedgeinvestment.com')
+    """Admin-only: check email configuration status. Does NOT send a live email."""
+    sender_email = os.getenv('SMTP_USER', '')
     debug_info = {
-        "resend_api_key_configured": bool(resend.api_key),
-        "sender_email": sender_email,
-        "env_keys": list(os.environ.keys())
+        'resend_api_key_configured': bool(os.getenv('RESEND_API_KEY')),
+        'smtp_user_configured': bool(sender_email),
+        'supabase_configured': bool(os.getenv('SUPABASE_URL') and os.getenv('SUPABASE_SERVICE_KEY')),
+        'firebase_configured': bool(os.getenv('FIREBASE_CREDENTIALS_JSON') or os.getenv('FIREBASE_SERVICE_ACCOUNT')),
+        'whitsunpay_configured': bool(os.getenv('WHITSUNPAY_API_KEY') or os.getenv('x-api-key')),
+        'whitsunpay_webhook_secret_set': bool(os.getenv('WHITSUNPAY_WEBHOOK_SECRET')),
+        'whitsunpay_callback_url_set': bool(os.getenv('WHITSUNPAY_CALLBACK_URL') or os.getenv('x-callback-url')),
     }
-    
-    try:
-        if not resend.api_key:
-            raise ValueError("RESEND_API_KEY is missing from environment variables.")
-            
-        params = {
-            "from": f"CUBAG Support <{sender_email}>",
-            "to": ["support@winningedgeinvestment.com"],
-            "subject": "Resend Debug Test Email",
-            "text": "This is a test email sent from Render via Resend HTTP API.",
-        }
-        resend.Emails.send(params)
-        debug_info["status"] = "Success"
-    except Exception as e:
-        import traceback
-        debug_info["status"] = "Failed"
-        debug_info["error"] = str(e)
-        debug_info["traceback"] = traceback.format_exc()
-        
     return jsonify(debug_info)
 
 # ─── Supabase config ──────────────────────────────────────────────────────────
@@ -126,10 +114,10 @@ def send_verification_email(to_email, token):
     )
     body_html = (
         f'<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e2e8f0;border-radius:12px;">'
-        f'<h2 style="color:#f08232;margin-bottom:8px;">CUBAG Email Verification</h2>'
+        f'<h2 style="color:#FF5000;margin-bottom:8px;">CUBAG Email Verification</h2>'
         f'<p style="color:#475569;">Enter the code below in the app to verify your email address:</p>'
         f'<div style="font-size:36px;font-weight:900;letter-spacing:12px;text-align:center;'
-        f'background:#f8fafc;border:2px solid #f08232;border-radius:10px;padding:20px 0;margin:24px 0;color:#0f172a;">'
+        f'background:#f8fafc;border:2px solid #FF5000;border-radius:10px;padding:20px 0;margin:24px 0;color:#0f172a;">'
         f'{token}</div>'
         f'<p style="color:#94a3b8;font-size:12px;">This code expires in 15 minutes. If you did not register on CUBAG, ignore this email.</p>'
         f'</div>'
@@ -164,9 +152,8 @@ def send_otp():
             cursor.execute("""
                 INSERT INTO otp_codes (email, code, type)
                 VALUES (%s, %s, 'email_verification')
-                ON CONFLICT (email) DO UPDATE
+                ON CONFLICT (email, type) DO UPDATE
                   SET code = EXCLUDED.code,
-                      type = 'email_verification',
                       created_at = CURRENT_TIMESTAMP
             """, (email, token))
             conn.commit()
@@ -188,7 +175,7 @@ def send_otp():
 def verify_email():
     data = request.get_json() or {}
     email = (data.get('email') or '').strip().lower()
-    token = (data.get('token') or data.get('otp') or '').strip()
+    token = (data.get('token') or data.get('otp') or data.get('code') or '').strip()
     if not email or not token:
         return jsonify({'message': 'Email and Token/OTP are required'}), 400
 
@@ -232,9 +219,8 @@ def resend_otp():
             cursor.execute("""
                 INSERT INTO otp_codes (email, code, type)
                 VALUES (%s, %s, 'email_verification')
-                ON CONFLICT (email) DO UPDATE
+                ON CONFLICT (email, type) DO UPDATE
                   SET code = EXCLUDED.code,
-                      type = 'email_verification',
                       created_at = CURRENT_TIMESTAMP
             """, (email, token))
             conn.commit()
@@ -254,7 +240,7 @@ def resend_otp():
 def register():
     data = request.get_json()
     # licenseNumber and agencyCode are now OPTIONAL
-    required = ['name', 'email', 'phone', 'company', 'memberType', 'portOfOperation', 'password']
+    required = ['name', 'email', 'phone', 'company', 'location', 'digitalAddress', 'tin', 'memberType', 'portOfOperation', 'password']
     for field in required:
         if not data.get(field):
             return jsonify({'message': f'{field} is required'}), 400
@@ -263,22 +249,66 @@ def register():
     try:
         with conn.cursor() as cursor:
             email = (data.get('email') or '').strip().lower()
-            cursor.execute("SELECT id FROM members WHERE email = %s", (email,))
+            cursor.execute("SELECT id FROM members WHERE LOWER(email) = LOWER(%s)", (email,))
             if cursor.fetchone():
                 return jsonify({'message': 'Email already registered'}), 409
 
-            pw_hash = generate_password_hash(data['password'])
+            # BUG-M02: enforce minimum password length server-side
+            password = data.get('password', '')
+            if len(password) < 8:
+                return jsonify({'message': 'Password must be at least 8 characters'}), 400
+
+            pw_hash = generate_password_hash(password, method='pbkdf2:sha256')
+            is_corp = (data.get('memberType') or '').strip().lower() == 'corporate'
+            member_scale = (data.get('memberScale') or data.get('companyScale') or 'sme') if is_corp else None
+            fee_category = (data.get('feeCategory') or data.get('fee_category') or 'cf_only') if is_corp else None
+            consolidation_scope = ('with_consolidation' if fee_category in ('consolidation', 'cf_consolidation') else 'without_consolidation') if is_corp else None
+            tin = (data.get('tin') or '').strip().upper()[:11]
             cursor.execute("""
                 INSERT INTO members (name, email, phone, company, license_number, agency_code,
-                                     port_of_operation, member_type, password_hash, email_verified, status)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, 'pending')
+                                     location, digital_address, tin,
+                                     port_of_operation, member_type, member_scale, fee_category, consolidation_scope,
+                                     password_hash, email_verified, status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, 'pending')
+                RETURNING id
             """, (
                 data['name'], email, data['phone'], data['company'],
                 data.get('licenseNumber'), data.get('agencyCode'),
-                data.get('portOfOperation'), data['memberType'], pw_hash
+                data.get('location'), data.get('digitalAddress'), tin,
+                data.get('portOfOperation'), data['memberType'], member_scale, fee_category, consolidation_scope, pw_hash
             ))
+            new_id = cursor.fetchone()['id']
             conn.commit()
-            return jsonify({'message': 'Registration successful. You can now log in.'}), 201
+
+            token = create_access_token(
+                identity=str(new_id),
+                additional_claims={'role': 'member'}
+            )
+
+            return jsonify({
+                'message': 'Registration successful. Welcome to CUBAG!',
+                'token': token,
+                'user': {
+                    'id': new_id,
+                    'name': data['name'],
+                    'email': email,
+                    'phone': data['phone'],
+                    'company': data['company'],
+                    'memberType': data['memberType'],
+                    'licenseNumber': 'PENDING',
+                    'portOfOperation': data.get('portOfOperation'),
+                    'status': 'pending',
+                    'role': 'member',
+                    'memberScale': member_scale,
+                    'feeCategory': fee_category,
+                    'permissions': [],
+                    'profile_photo': None,
+                    'compliance_score': 100,
+                    'star_rating': 5.0,
+                    'manual_review_score': 10,
+                    'breakdown': {}
+                }
+            }), 201
     except Exception as e:
         conn.rollback()  # BUG-B04 fix
         logger.error(f'[register] {e}')  # BUG-B03 fix
@@ -289,7 +319,7 @@ def register():
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     identifier = (data.get('email') or data.get('identifier') or data.get('memberId') or '').strip()
     password = data.get('password')
 
@@ -328,7 +358,15 @@ def login():
             # Check password (both exact and stripped of mobile/autofill accidental whitespace)
             raw_pw = str(password or '')
             stripped_pw = raw_pw.strip()
-            if not (check_password_hash(member['password_hash'], raw_pw) or check_password_hash(member['password_hash'], stripped_pw)):
+            
+            def _verify_password(hash_val, candidate):
+                try:
+                    return check_password_hash(hash_val, candidate)
+                except Exception as ex:
+                    logger.warning(f'[auth] Password verification fallback error: {ex}')
+                    return False
+
+            if not (_verify_password(member['password_hash'], raw_pw) or _verify_password(member['password_hash'], stripped_pw)):
                 return jsonify({'message': 'Invalid credentials'}), 401
 
             # ── Block suspended / inactive accounts ───────────────────────────
@@ -347,7 +385,32 @@ def login():
                 return jsonify({'message': 'Please check your email to verify your account before logging in.'}), 403
 
             from utils import calculate_and_update_member_rating
-            rating_data = calculate_and_update_member_rating(member['id'], cursor)
+            comp_score = member.get('compliance_score')
+            if comp_score is None: comp_score = 100
+            s_rating = member.get('star_rating')
+            if s_rating is None: s_rating = 5.0
+            m_score = member.get('manual_review_score')
+            if m_score is None: m_score = 10
+
+            # Trigger asynchronous background rating update so login returns instantly
+            member_id_val = member['id']
+            def _async_rating_update(m_id):
+                c = None
+                try:
+                    c = get_db()
+                    with c.cursor() as cur:
+                        calculate_and_update_member_rating(m_id, cur)
+                except Exception as ex:
+                    logger.debug(f"[auth] Async rating update error: {ex}")
+                finally:
+                    if c:
+                        try:
+                            c.close()
+                        except Exception:
+                            pass
+
+            import threading
+            threading.Thread(target=_async_rating_update, args=(member_id_val,), daemon=True).start()
 
             # Generate JWT with identity and role
             role = member.get('role', 'member')
@@ -360,7 +423,6 @@ def login():
             expiry = str(member['license_expiry_date']) if member.get('license_expiry_date') else None
 
             # Audit log for admin & sub_admin logins
-            role = member.get('role', 'member')
             if role in ('admin', 'sub_admin', 'super_admin'):
                 from utils import log_admin_action
                 
@@ -375,61 +437,310 @@ def login():
                     f'IP: {actual_ip}'
                 )
 
+            sub_perms = []
+            if role == 'sub_admin':
+                cursor.execute(
+                    "SELECT permission_key FROM sub_admin_permissions WHERE sub_admin_id = %s AND granted = true",
+                    (member['id'],)
+                )
+                sub_perms = [r['permission_key'] for r in cursor.fetchall()]
+
+            user_status = member.get('status') or 'pending'
+            is_admin_role = role in ('admin', 'sub_admin', 'super_admin')
+            user_license = None if is_admin_role else member.get('license_number')
+            has_paid_fee = False
+            is_pkg_paid = False
+            is_good_standing = False
+            mem_no = None
+            is_ren_paid = False
+
+            if role == 'member':
+                # Check for any registration/application fee payment
+                cursor.execute("""
+                    SELECT COUNT(*) as cnt FROM payments
+                    WHERE member_id = %s
+                      AND LOWER(status) IN ('completed', 'successful', 'paid', 'success')
+                      AND (
+                          LOWER(description) LIKE '%%registration%%'
+                          OR LOWER(description) LIKE '%%application%%'
+                          OR LOWER(description) LIKE '%%reg form%%'
+                      )
+                """, (member['id'],))
+                reg_row = cursor.fetchone()
+                has_any_reg_payment = (reg_row['cnt'] > 0) if reg_row else False
+
+                # Check specifically for package fee payment
+                cursor.execute("""
+                    SELECT COUNT(*) as cnt FROM payments
+                    WHERE member_id = %s
+                      AND LOWER(status) IN ('completed', 'successful', 'paid', 'success')
+                      AND (
+                          LOWER(description) LIKE '%%new member%%'
+                          OR LOWER(description) LIKE '%%entrance%%'
+                          OR LOWER(description) LIKE '%%package%%'
+                          OR LOWER(description) LIKE '%%clearing & forwarding only%%'
+                          OR LOWER(description) LIKE '%%consolidation only%%'
+                          OR LOWER(description) LIKE '%%licentiate membership%%'
+                          OR LOWER(description) LIKE '%%associate membership%%'
+                      )
+                      AND LOWER(description) NOT LIKE '%%registration%%'
+                      AND LOWER(description) NOT LIKE '%%application%%'
+                      AND LOWER(description) NOT LIKE '%%renewal%%'
+                """, (member['id'],))
+                pkg_row = cursor.fetchone()
+                has_pkg_payment = (pkg_row['cnt'] > 0) if pkg_row else False
+
+                # Check specifically for annual renewal payment
+                cursor.execute("""
+                    SELECT COUNT(*) as cnt FROM payments
+                    WHERE member_id = %s
+                      AND LOWER(status) IN ('completed', 'successful', 'paid', 'success')
+                      AND (
+                          LOWER(description) LIKE '%%renewal%%'
+                          OR LOWER(description) LIKE '%%annual renewal%%'
+                      )
+                """, (member['id'],))
+                ren_row = cursor.fetchone()
+                has_renewal_payment = (ren_row['cnt'] > 0) if ren_row else False
+
+                is_pkg_paid = (member.get('package_fee_paid') is True) or has_pkg_payment
+                has_paid_fee = has_any_reg_payment or (member.get('registration_fee_paid') is True) or (member.get('application_fee_paid') is True)
+                is_good_standing = is_pkg_paid
+                is_ren_paid = has_renewal_payment
+
+                raw_status = str(user_status).lower().strip()
+                is_docs_approved = raw_status in ('active', 'approved')
+
+                if is_docs_approved and has_paid_fee:
+                    user_status = 'active'
+                else:
+                    user_status = raw_status
+
+                if not is_pkg_paid:
+                    mem_no = 'PENDING SETTLEMENT'
+                    user_license = 'PENDING SETTLEMENT'
+                else:
+                    mem_no = member.get('membership_number') or member.get('license_number') or f"CUBAG-{member['id']:04d}"
+                    if 'pending' in str(mem_no).lower():
+                        mem_no = f"CUBAG-{member['id']:04d}"
+                    user_license = mem_no
+            elif is_admin_role:
+                has_paid_fee = True
+                is_pkg_paid = True
+                is_good_standing = True
+                user_status = 'active'
+
             return jsonify({
                 'token': token,
+                'permissions': sub_perms,
                 'user': {
                     'id': member['id'],
                     'name': member['name'],
                     'email': member['email'],
                     'company': member['company'],
                     'memberType': member['member_type'],
-                    'licenseNumber': member['license_number'],
-                    'licenseExpiryDate': expiry,
+                    'member_type': member['member_type'],
+                    'fee_category': member.get('fee_category'),
+                    'member_scale': member.get('member_scale'),
+                    'licenseNumber': user_license,
+                    'license_number': user_license,
+                    'membershipNumber': mem_no,
+                    'membership_number': mem_no,
+                    'licenseExpiryDate': None if is_admin_role else expiry,
+                    'license_expiry_date': None if is_admin_role else expiry,
                     'portOfOperation': member['port_of_operation'],
-                    'status': member['status'],
+                    'status': user_status,
+                    'registration_fee_paid': has_paid_fee,
+                    'application_fee_paid': has_paid_fee,
+                    'package_fee_paid': is_pkg_paid,
+                    'good_standing': is_good_standing,
+                    'is_good_standing': is_good_standing,
+                    'is_renewal_paid': is_ren_paid,
+                    'renewal_paid': is_ren_paid,
                     'role': role,
+                    'permissions': sub_perms,
                     'profile_photo': member.get('profile_photo') or None,
-                    'compliance_score': rating_data['compliance_score'],
-                    'star_rating': rating_data['star_rating'],
-                    'manual_review_score': rating_data['manual_review_score'],
-                    'breakdown': rating_data.get('breakdown', {})
+                    'compliance_score': None if is_admin_role else comp_score,
+                    'star_rating': None if is_admin_role else s_rating,
+                    'manual_review_score': None if is_admin_role else m_score,
+                    'breakdown': {}
                 }
             }), 200
     except Exception as e:
-        return jsonify({'message': str(e)}), 500
+        logger.error(f'[login] {e}')
+        return jsonify({'message': 'An unexpected error occurred. Please try again.'}), 500
+    finally:
+        conn.close()
+
+
+def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type='corporate'):
+    raw_m = str(member_type or 'corporate').lower().strip()
+    is_licentiate = 'licentiate' in raw_m or 'individual' in raw_m
+    is_associate = 'associate' in raw_m or 'affiliate' in raw_m
+
+    fee_map = {}
+    if cursor:
+        try:
+            cursor.execute("SELECT key, amount FROM fee_schedules WHERE is_active = TRUE")
+            for r in cursor.fetchall():
+                if r.get('key') and r.get('amount') is not None:
+                    fee_map[r['key']] = float(r['amount'])
+        except Exception as ex:
+            logger.debug(f'Error fetching fee_schedules: {ex}')
+
+    if is_licentiate:
+        sub_fee = fee_map.get('licentiate_sub_fee', 0.0)
+        vet_fee = fee_map.get('licentiate_vetting_fee', 0.0)
+        dist_fee = fee_map.get('licentiate_district_fee', 0.0)
+        welfare = fee_map.get('licentiate_welfare_dues', 0.0)
+        legal_fee = fee_map.get('licentiate_legal_audit_fee', 0.0)
+        agm_levy = fee_map.get('licentiate_agm_levy', 0.0)
+
+        breakdown = [
+            {'label': 'Subscription Fee – Licentiate', 'amount': f'{sub_fee:.2f}'},
+            {'label': 'Vetting Fee – Licentiate', 'amount': f'{vet_fee:.2f}'},
+            {'label': 'District Dues – Licentiate', 'amount': f'{dist_fee:.2f}'},
+            {'label': 'Welfare Dues – Licentiate', 'amount': f'{welfare:.2f}'},
+            {'label': 'Legal & Audit Fee – Licentiate', 'amount': f'{legal_fee:.2f}'},
+            {'label': 'AGM Levy – Licentiate', 'amount': f'{agm_levy:.2f}'},
+        ]
+        computed_total = sum(float(b['amount']) for b in breakdown)
+        return {
+            'schedule_key': 'renewal_licentiate',
+            'scale': 'licentiate',
+            'scale_label': 'Licentiate Member',
+            'has_consolidation': False,
+            'scope_label': 'Customs House Agent',
+            'renewal_fee_title': 'Licentiate Annual Renewal Dues',
+            'renewal_fee_amount': computed_total,
+            'renewal_fee_breakdown': breakdown
+        }
+    elif is_associate:
+        sub_fee = fee_map.get('associate_sub_fee', 0.0)
+        vet_fee = fee_map.get('associate_vetting_fee', 0.0)
+        dist_fee = fee_map.get('associate_district_fee', 0.0)
+        welfare = fee_map.get('associate_welfare_dues', 0.0)
+        legal_fee = fee_map.get('associate_legal_audit_fee', 0.0)
+        agm_levy = fee_map.get('associate_agm_levy', 0.0)
+
+        breakdown = [
+            {'label': 'Subscription Fee – Associate', 'amount': f'{sub_fee:.2f}'},
+            {'label': 'Vetting Fee – Associate', 'amount': f'{vet_fee:.2f}'},
+            {'label': 'District Dues – Associate', 'amount': f'{dist_fee:.2f}'},
+            {'label': 'Welfare Dues – Associate', 'amount': f'{welfare:.2f}'},
+            {'label': 'Legal & Audit Fee – Associate', 'amount': f'{legal_fee:.2f}'},
+            {'label': 'AGM Levy – Associate', 'amount': f'{agm_levy:.2f}'},
+        ]
+        computed_total = sum(float(b['amount']) for b in breakdown)
+        return {
+            'schedule_key': 'renewal_associate',
+            'scale': 'associate',
+            'scale_label': 'Associate Member',
+            'has_consolidation': False,
+            'scope_label': 'Allied Logistics Partner',
+            'renewal_fee_title': 'Associate Annual Renewal Dues',
+            'renewal_fee_amount': computed_total,
+            'renewal_fee_breakdown': breakdown
+        }
+
+    scale = str(member_scale or 'sme').lower().strip()
+    is_large = scale in ('large_corporate', 'large', 'corporate')
+    cat = str(fee_category or 'cf_only').lower().strip()
+    has_consolidation = cat in ('consolidation', 'cf_consolidation')
+
+    if is_large:
+        sched_key = 'renewal_large_corporate_with_consolidation' if has_consolidation else 'renewal_large_corporate_without_consolidation'
+        scale_title = 'Large Corporate'
+        sub_fee = fee_map.get('renewal_sub_large', 0.0)
+        welfare = fee_map.get('renewal_welfare_large', 0.0)
+        admin_fee = fee_map.get('renewal_admin_large', 0.0)
+        legal_fee = fee_map.get('renewal_legal_large', 0.0)
+        cti_fee = fee_map.get('renewal_cti_large', 0.0)
+    else:
+        sched_key = 'renewal_sme_with_consolidation' if has_consolidation else 'renewal_sme_without_consolidation'
+        scale_title = "SME's"
+        sub_fee = fee_map.get('renewal_sub_sme', 0.0)
+        welfare = fee_map.get('renewal_welfare_sme', 0.0)
+        admin_fee = fee_map.get('renewal_admin_sme', 0.0)
+        legal_fee = fee_map.get('renewal_legal_sme', 0.0)
+        cti_fee = fee_map.get('renewal_cti_sme', 0.0)
+
+    agm_levy = fee_map.get('renewal_agm', 0.0)
+    customs_bond = fee_map.get('renewal_bond', 0.0)
+    consolidation_fee = fee_map.get('renewal_consolidation', fee_map.get('renewal_consolidation_item', 0.0)) if has_consolidation else 0.0
+
+    breakdown = [
+        {'label': f'Subscription Fee ({scale_title})', 'amount': f'{sub_fee:.2f}'},
+        {'label': f'Welfare Dues ({scale_title})', 'amount': f'{welfare:.2f}'},
+    ]
+    if has_consolidation:
+        breakdown.append({'label': 'Consolidation Fee', 'amount': f'{consolidation_fee:.2f}'})
+
+    breakdown.extend([
+        {'label': f'Administrative Fee ({scale_title})', 'amount': f'{admin_fee:.2f}'},
+        {'label': f'Legal & Audit Fee ({scale_title})', 'amount': f'{legal_fee:.2f}'},
+        {'label': 'AGM Levy', 'amount': f'{agm_levy:.2f}'},
+        {'label': 'Customs Bond Fee (SIC)', 'amount': f'{customs_bond:.2f}'},
+        {'label': f'CTI Training ({scale_title})', 'amount': f'{cti_fee:.2f}'},
+    ])
+
+    computed_total = sum(float(b['amount']) for b in breakdown)
+    expected_total = fee_map.get(sched_key, computed_total)
+
+    title = f"{scale_title} ({'Consolidation' if has_consolidation else 'Without Consolidation'})"
+
+    return {
+        'schedule_key': sched_key,
+        'scale': 'large_corporate' if is_large else 'sme',
+        'scale_label': scale_title,
+        'has_consolidation': has_consolidation,
+        'scope_label': 'Consolidation' if has_consolidation else 'Without Consolidation',
+        'renewal_fee_title': title,
+        'renewal_fee_amount': expected_total,
+        'renewal_fee_breakdown': breakdown
+    }
+
+
+@auth_bp.route('/renewal-details', methods=['GET'])
+@jwt_required()
+def get_my_renewal_details():
+    member_id = get_jwt_identity()
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT member_scale, fee_category, member_type FROM members WHERE id = %s", (member_id,))
+            row = cursor.fetchone()
+            if not row:
+                return jsonify({'message': 'Member not found'}), 404
+            details = get_member_renewal_breakdown(row.get('member_scale'), row.get('fee_category'), cursor, row.get('member_type'))
+            return jsonify(details), 200
     finally:
         conn.close()
 
 
 @auth_bp.route('/me', methods=['GET'])
 @jwt_required()
-def me():
+def get_me():
     member_id = get_jwt_identity()
+    cache_key = f'me_{member_id}'
+    cached_res = cache.get(cache_key)
+    if cached_res is not None:
+        return jsonify(cached_res), 200
+    
     conn = get_db()
     try:
         with conn.cursor() as cursor:
             try:
+                cursor.execute("SELECT * FROM members WHERE id = %s", (member_id,))
+            except Exception:
+                conn.rollback()
                 cursor.execute("""
                     SELECT id, name, email, phone, company, license_number, agency_code,
-                           member_type, port_of_operation, status, profile_photo,
+                           member_type, member_scale, fee_category, consolidation_scope,
+                           port_of_operation, status, profile_photo,
                            license_expiry_date, role, compliance_score, star_rating, manual_review_score
                     FROM members WHERE id = %s
                 """, (member_id,))
-            except Exception:
-                conn.rollback()
-                try:
-                    cursor.execute("""
-                        SELECT id, name, email, phone, company, license_number, agency_code,
-                               member_type, port_of_operation, status, profile_photo, role
-                        FROM members WHERE id = %s
-                    """, (member_id,))
-                except Exception:
-                    conn.rollback()
-                    cursor.execute("""
-                        SELECT id, name, email, phone, company, license_number, agency_code,
-                               member_type, port_of_operation, status, role
-                        FROM members WHERE id = %s
-                    """, (member_id,))
             member = cursor.fetchone()
             if not member:
                 return jsonify({'message': 'Member not found'}), 404
@@ -437,14 +748,15 @@ def me():
             from utils import calculate_and_update_member_rating
             rating_data = calculate_and_update_member_rating(member_id, cursor)
 
-            # Fetch rating history
+            # Fetch rating history (capped to last 30 entries for speed)
             cursor.execute("""
                 SELECT compliance_score, star_rating, recorded_at
                 FROM member_rating_history
                 WHERE member_id = %s
-                ORDER BY recorded_at ASC
+                ORDER BY recorded_at DESC LIMIT 30
             """, (member_id,))
             history_rows = cursor.fetchall()
+            history_rows.reverse()
             history = []
             for h in history_rows:
                 history.append({
@@ -460,8 +772,120 @@ def me():
             result['manual_review_score'] = rating_data['manual_review_score']
             result['breakdown'] = rating_data.get('breakdown', {})
             result['rating_history'] = history
+            days_left = None
             if result.get('license_expiry_date'):
+                from datetime import datetime, date
+                exp = result['license_expiry_date']
+                if isinstance(exp, str):
+                    try: exp = datetime.strptime(exp, '%Y-%m-%d').date()
+                    except ValueError as date_err:
+                        logger.debug(f'[/me] Could not parse license_expiry_date: {date_err}')
+                if isinstance(exp, date):
+                    days_left = (exp - date.today()).days
                 result['license_expiry_date'] = str(result['license_expiry_date'])
+            result['license_days_left'] = days_left
+            
+            if result.get('role') == 'member':
+                mem_no = result.get('membership_number') or result.get('license_number') or f"CUBAG-{result['id']:04d}"
+                result['membership_number'] = mem_no
+                result['license_number'] = mem_no
+                result['company_scale'] = result.get('member_scale') or 'sme'
+                result['fee_category'] = result.get('fee_category') or 'cf_only'
+                renewal_info = get_member_renewal_breakdown(result.get('member_scale'), result.get('fee_category'), cursor, result.get('member_type'))
+                result['renewal_details'] = renewal_info
+                result['renewal_fee_amount'] = renewal_info['renewal_fee_amount']
+                result['renewal_fee_title'] = renewal_info['renewal_fee_title']
+                result['renewal_fee_breakdown'] = renewal_info['renewal_fee_breakdown']
+
+                # Check if registration fee and package fee were already paid
+                cursor.execute("""
+                    SELECT COUNT(*) as cnt FROM payments
+                    WHERE member_id = %s
+                      AND LOWER(status) IN ('completed', 'successful', 'paid', 'success')
+                      AND (
+                          LOWER(description) LIKE '%%registration%%'
+                          OR LOWER(description) LIKE '%%new member%%'
+                          OR LOWER(description) LIKE '%%clearing & forwarding%%'
+                          OR LOWER(description) LIKE '%%consolidation%%'
+                          OR LOWER(description) LIKE '%%entrance%%'
+                          OR LOWER(description) LIKE '%%package%%'
+                          OR LOWER(description) LIKE '%%application%%'
+                      )
+                """, (member_id,))
+                p_row = cursor.fetchone()
+                has_any_reg_payment = (p_row['cnt'] > 0) if p_row else False
+
+                # Check specifically for entrance package payment
+                cursor.execute("""
+                    SELECT COUNT(*) as cnt FROM payments
+                    WHERE member_id = %s
+                      AND LOWER(status) IN ('completed', 'successful', 'paid', 'success')
+                      AND (
+                          LOWER(description) LIKE '%%new member%%'
+                          OR LOWER(description) LIKE '%%entrance%%'
+                          OR LOWER(description) LIKE '%%package%%'
+                          OR LOWER(description) LIKE '%%clearing & forwarding only%%'
+                          OR LOWER(description) LIKE '%%consolidation only%%'
+                          OR LOWER(description) LIKE '%%licentiate membership%%'
+                          OR LOWER(description) LIKE '%%associate membership%%'
+                      )
+                      AND LOWER(description) NOT LIKE '%%registration%%'
+                      AND LOWER(description) NOT LIKE '%%application%%'
+                      AND LOWER(description) NOT LIKE '%%renewal%%'
+                """, (member_id,))
+                pkg_row = cursor.fetchone()
+                has_pkg_payment = (pkg_row['cnt'] > 0) if pkg_row else False
+
+                # Check specifically for annual renewal payment
+                cursor.execute("""
+                    SELECT COUNT(*) as cnt FROM payments
+                    WHERE member_id = %s
+                      AND LOWER(status) IN ('completed', 'successful', 'paid', 'success')
+                      AND (
+                          LOWER(description) LIKE '%%renewal%%'
+                          OR LOWER(description) LIKE '%%annual renewal%%'
+                      )
+                """, (member_id,))
+                ren_row = cursor.fetchone()
+                has_renewal_payment = (ren_row['cnt'] > 0) if ren_row else False
+
+                is_pkg_paid = (result.get('package_fee_paid') is True) or has_pkg_payment
+                result['registration_fee_paid'] = has_any_reg_payment or (result.get('registration_fee_paid') is True)
+                result['package_fee_paid'] = is_pkg_paid
+                result['is_renewal_paid'] = has_renewal_payment
+                result['renewal_paid'] = has_renewal_payment
+                result['good_standing'] = is_pkg_paid
+                result['is_good_standing'] = is_pkg_paid
+
+                if not is_pkg_paid:
+                    result['membership_number'] = 'PENDING SETTLEMENT'
+                    result['license_number'] = 'PENDING SETTLEMENT'
+                else:
+                    mem_no = result.get('membership_number') or result.get('license_number') or f"CUBAG-{result['id']:04d}"
+                    if 'pending' in str(mem_no).lower():
+                        mem_no = f"CUBAG-{result['id']:04d}"
+                    result['membership_number'] = mem_no
+                    result['license_number'] = mem_no
+
+            if result.get('role') in ('admin', 'sub_admin', 'super_admin'):
+                result['license_number'] = None
+                result['membership_number'] = None
+                result['agency_code'] = None
+                result['compliance_score'] = None
+                result['star_rating'] = None
+                result['manual_review_score'] = None
+                result['good_standing'] = None
+                result['is_good_standing'] = None
+
+            if result.get('role') == 'sub_admin':
+                cursor.execute(
+                    "SELECT permission_key FROM sub_admin_permissions WHERE sub_admin_id = %s AND granted = true",
+                    (member_id,)
+                )
+                result['permissions'] = [r['permission_key'] for r in cursor.fetchall()]
+
+            # Store in cache — 60 second TTL per member
+            cache.set(cache_key, result, timeout=60)
             return jsonify(result), 200
     finally:
         conn.close()
@@ -557,7 +981,8 @@ def upload_photo():
         return jsonify({'message': 'Photo uploaded', 'photo_url': public_url}), 200
     except Exception as e:
         logger.error(f"[upload-photo] DB update failed: {e}")
-        return jsonify({'message': str(e)}), 500
+        logger.error(f'[change-password] {e}')
+        return jsonify({'message': 'Password change failed. Please try again.'}), 500
     finally:
         conn.close()
 
@@ -591,6 +1016,10 @@ def change_password():
 
     if not current_password or not new_password:
         return jsonify({'message': 'Current and new passwords are required'}), 400
+
+    # BUG-M03: enforce minimum password length server-side
+    if len(new_password) < 8:
+        return jsonify({'message': 'New password must be at least 8 characters'}), 400
 
     conn = get_db()
     try:
@@ -642,6 +1071,39 @@ def update_fcm_token():
         conn.close()
 
 
+@auth_bp.route('/delete-account', methods=['DELETE', 'POST', 'OPTIONS'])
+@cross_origin()
+def delete_account():
+    if request.method == 'OPTIONS':
+        return jsonify({'ok': True}), 200
+
+    try:
+        verify_jwt_in_request()
+        member_id = get_jwt_identity()
+    except Exception:
+        return jsonify({'message': 'Authentication required'}), 401
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                UPDATE members 
+                SET status = 'deleted',
+                    email = CONCAT('deleted_', id, '_', email),
+                    phone = NULL,
+                    fcm_token = NULL,
+                    updated_at = NOW()
+                WHERE id = %s
+            """, (member_id,))
+            conn.commit()
+        return jsonify({'message': 'Account deleted successfully', 'status': 'deleted'}), 200
+    except Exception as e:
+        logger.error(f'[delete-account] {e}')
+        return jsonify({'message': 'Failed to delete account'}), 500
+    finally:
+        conn.close()
+
+
 def send_reset_email(to_email, token):
     client_url = os.getenv('CLIENT_URL', '')
     if not client_url or 'localhost' in client_url or '127.0.0.1' in client_url:
@@ -660,9 +1122,9 @@ def send_reset_email(to_email, token):
     )
     body_html = (
         f'<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e2e8f0;border-radius:12px;">'
-        f'<h2 style="color:#f08232;margin-bottom:8px;">CUBAG Password Reset</h2>'
+        f'<h2 style="color:#FF5000;margin-bottom:8px;">CUBAG Password Reset</h2>'
         f'<p style="color:#475569;">You requested a password reset. Click the button below:</p>'
-        f'<a href="{reset_link}" style="display:block;text-align:center;background:#f08232;color:#fff;'
+        f'<a href="{reset_link}" style="display:block;text-align:center;background:#FF5000;color:#fff;'
         f'font-weight:bold;padding:14px 24px;border-radius:10px;text-decoration:none;margin:24px 0;">'
         f'Reset My Password</a>'
         f'<p style="color:#94a3b8;font-size:12px;">If you did not request this, ignore this email. This link expires shortly.</p>'
@@ -758,28 +1220,10 @@ def reset_password():
             
             return jsonify({'message': 'Password has been reset successfully. You can now log in.'}), 200
     except Exception as e:
-        return jsonify({'message': str(e)}), 500
+        logger.error(f'[reset-password] {e}')
+        return jsonify({'message': 'Password reset failed. Please try again.'}), 500
     finally:
         conn.close()
 
-@auth_bp.route('/fcm-token', methods=['PUT'])
-@jwt_required()
-def set_fcm_token():
-    member_id = get_jwt_identity()
-    data = request.get_json() or {}
-    token = data.get('fcm_token')
-    
-    if not token:
-        return jsonify({'message': 'FCM token is required'}), 400
-        
-    conn = get_db()
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute("UPDATE members SET fcm_token = %s WHERE id = %s", (token, member_id))
-            conn.commit()
-        return jsonify({'message': 'FCM token updated successfully'}), 200
-    except Exception as e:
-        logger.error(f'[update_fcm_token] {e}')
-        return jsonify({'message': 'Failed to update FCM token'}), 500
-    finally:
-        conn.close()
+# SMS OTP routes (send-sms-otp, verify-sms-otp) have been removed.
+# No SMS gateway integration exists. Use email OTP via /send-otp and /verify-email.

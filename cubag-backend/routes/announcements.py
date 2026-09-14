@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from config.db import get_db
 from utils import send_push_to_all, admin_required, sub_admin_required
 from routes.admin import log_admin_action
+from config.cache import cache
 
 announcements_bp = Blueprint('announcements', __name__)
 
@@ -11,6 +12,13 @@ announcements_bp = Blueprint('announcements', __name__)
 @jwt_required()
 def get_announcements():
     user_id = get_jwt_identity()
+    
+    # Per-user 30s cache — announcements are user-specific (is_read flag)
+    cache_key = f'announcements_{user_id}'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return jsonify(cached), 200
+
     conn = get_db()
     try:
         with conn.cursor() as cursor:
@@ -19,9 +27,9 @@ def get_announcements():
                        (ar.member_id IS NOT NULL) AS is_read
                 FROM announcements a
                 LEFT JOIN announcement_reads ar ON a.id = ar.announcement_id AND ar.member_id = %s
-                WHERE a.deleted_at IS NULL AND (a.member_id IS NULL OR a.member_id = %s)
+                WHERE a.deleted_at IS NULL
                 ORDER BY a.created_at DESC
-            """, (user_id, user_id))
+            """, (user_id,))
             data = cursor.fetchall()
 
             # Stringify dates
@@ -29,7 +37,9 @@ def get_announcements():
                 if hasattr(item.get('created_at'), 'isoformat'):
                     item['created_at'] = item['created_at'].isoformat()
 
-        return jsonify({'items': data, 'total': len(data)}), 200
+        result = {'items': data, 'total': len(data)}
+        cache.set(cache_key, result, timeout=30)
+        return jsonify(result), 200
     except Exception as e:
         return jsonify({'message': str(e)}), 500
     finally:
@@ -60,6 +70,8 @@ def mark_read():
                     ON CONFLICT DO NOTHING
                 """, (user_id,))
             conn.commit()
+        # Invalidate this user's announcements cache
+        cache.delete(f'announcements_{user_id}')
         return jsonify({'message': 'Marked as read'}), 200
     except Exception as e:
         return jsonify({'message': str(e)}), 500
@@ -99,6 +111,12 @@ def create_announcement():
             body=body[:100] + ('...' if len(body) > 100 else ''),
             data={'type': 'announcement', 'category': category}
         )
+
+        try:
+            from socket_instance import socketio
+            socketio.emit('announcements_updated', {'category': category})
+        except Exception:
+            pass
 
         # Audit log
         log_admin_action(admin_id, 'Created announcement', 'announcement', None, title, f'Category: {category}')
@@ -157,6 +175,49 @@ def get_all_announcements_admin():
         conn.close()
 
 
+# ─── PUT /<id> — Update an existing announcement ─────────────────────────────
+@announcements_bp.route('/<int:ann_id>', methods=['PUT'])
+@sub_admin_required('announcements')
+def update_announcement(ann_id):
+    admin_id = get_jwt_identity()
+    data = request.get_json() or {}
+    title = (data.get('title') or '').strip()
+    body = (data.get('body') or '').strip()
+    category = data.get('category', 'General')
+
+    if not title or not body:
+        return jsonify({'message': 'Title and body are required'}), 400
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id FROM announcements WHERE id = %s", (ann_id,))
+            ann = cursor.fetchone()
+            if not ann:
+                return jsonify({'message': 'Announcement not found'}), 404
+
+            cursor.execute("""
+                UPDATE announcements 
+                SET title = %s, body = %s, category = %s
+                WHERE id = %s
+            """, (title, body, category, ann_id))
+            conn.commit()
+
+        # Invalidate announcements cache
+        try:
+            from socket_instance import socketio
+            socketio.emit('announcements_updated', {'id': ann_id})
+        except Exception:
+            pass
+        log_admin_action(admin_id, 'Updated announcement', 'announcement', ann_id, title, f'Category: {category}')
+
+        return jsonify({'message': 'Announcement updated successfully'}), 200
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+    finally:
+        conn.close()
+
+
 # ─── DELETE /<id> — Soft-delete: set deleted_at timestamp ─────────────────────
 @announcements_bp.route('/<int:ann_id>', methods=['DELETE'])
 @sub_admin_required('announcements')
@@ -177,6 +238,12 @@ def soft_delete_announcement(ann_id):
                 (ann_id,)
             )
             conn.commit()
+
+        try:
+            from socket_instance import socketio
+            socketio.emit('announcements_updated', {'id': ann_id, 'deleted': True})
+        except Exception:
+            pass
 
         # Audit log
         log_admin_action(admin_id, 'Archived announcement', 'announcement', ann_id, ann.get('title', f'#{ann_id}'))
@@ -205,6 +272,12 @@ def restore_announcement(ann_id):
             )
             conn.commit()
 
+        try:
+            from socket_instance import socketio
+            socketio.emit('announcements_updated', {'id': ann_id, 'restored': True})
+        except Exception:
+            pass
+
         # Audit log
         log_admin_action(admin_id, 'Restored announcement', 'announcement', ann_id, ann.get('title', f'#{ann_id}') if ann else f'#{ann_id}')
 
@@ -213,3 +286,4 @@ def restore_announcement(ann_id):
         return jsonify({'message': str(e)}), 500
     finally:
         conn.close()
+

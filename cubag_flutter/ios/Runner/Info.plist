@@ -43,15 +43,9 @@
 						<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
 						<key>UISceneStoryboardFile</key>
 						<string>Main</string>
-						<key>NSCameraUsageDescription</key>
-						<string>This app requires camera access to scan member QR codes for event verification.</string>
 					</dict>
 				</array>
-				<key>NSCameraUsageDescription</key>
-				<string>This app requires camera access to scan member QR codes for event verification.</string>
 			</dict>
-			<key>NSCameraUsageDescription</key>
-			<string>This app requires camera access to scan member QR codes for event verification.</string>
 		</dict>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
@@ -76,5 +70,13 @@
 		<false/>
 		<key>NSCameraUsageDescription</key>
 		<string>This app requires camera access to scan member QR codes for event verification.</string>
+		<key>NSFaceIDUsageDescription</key>
+		<string>CUBAG uses Face ID / Touch ID for quick and secure biometric login.</string>
+		<key>NSCalendarsUsageDescription</key>
+		<string>CUBAG needs calendar access to add association events and seminars to your calendar.</string>
+		<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+		<string>CUBAG needs calendar access to add association events and seminars to your calendar.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>CUBAG needs photo library access to upload profile photos and application documents.</string>
 	</dict>
 </plist>

@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from config.db import get_db
 from utils import sub_admin_required
+from config.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,13 @@ DEFAULT_DATA = {
         {"id": 2, "title": "Panama Canal Transit Limits",
          "detail": "Water levels stabilizing; daily transit limits remain in effect causing minor delays for East Coast-bound cargo.",
          "severity": "medium"}
-    ]
+    ],
+    "forex": {
+        "USD": "15.45",
+        "EUR": "16.80",
+        "GBP": "19.50",
+        "CNY": "2.15"
+    }
 }
 
 SETTING_KEY = 'intelligence_data'
@@ -46,8 +53,18 @@ def load_data():
                     (SETTING_KEY,)
                 )
                 row = cursor.fetchone()
-            if row:
-                return row['config_value'] # Already stored as JSONB
+            if row and row.get('config_value'):
+                data = row['config_value']
+                if isinstance(data, str):
+                    try:
+                        data = json.loads(data)
+                    except Exception:
+                        data = DEFAULT_DATA.copy()
+                if isinstance(data, dict):
+                    for k, v in DEFAULT_DATA.items():
+                        if k not in data:
+                            data[k] = v
+                    return data
         finally:
             conn.close()
     except Exception as e:
@@ -71,6 +88,7 @@ def save_data(data):
 
 
 @intelligence_bp.route('/', methods=['GET'])
+@cache.cached(timeout=120)  # Cache for 2 minutes
 def get_intelligence():
     return jsonify(load_data()), 200
 
@@ -80,4 +98,5 @@ def get_intelligence():
 def update_intelligence():
     data = request.json
     save_data(data)
+    cache.clear()  # Invalidate intelligence cache on update
     return jsonify({"message": "Intelligence data updated successfully"}), 200

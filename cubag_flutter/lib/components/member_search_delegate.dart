@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/api_service.dart';
+import '../utils/app_logger.dart';
 
 /// Simplified search for regular (non-admin) members.
 /// Searches the public directory, announcements, and schedules.
@@ -18,7 +19,7 @@ class MemberSearchDelegate extends SearchDelegate<String> {
         iconTheme: IconThemeData(color: Color(0xFF64748b)),
       ),
       inputDecorationTheme: const InputDecorationTheme(
-        hintStyle: TextStyle(color: Color(0xFF94a3b8), fontSize: 14),
+        hintStyle: TextStyle(color: Color(0xFF94a3b8), fontSize: 16),
         border: InputBorder.none,
       ),
     );
@@ -57,8 +58,10 @@ class MemberSearchDelegate extends SearchDelegate<String> {
           children: [
             Icon(Icons.search, size: 48, color: Color(0xFFcbd5e1)),
             SizedBox(height: 12),
-            Text('Search the broker directory & announcements',
-                style: TextStyle(color: Color(0xFF94a3b8), fontSize: 13)),
+            Text(
+              'Search the broker directory & announcements',
+              style: TextStyle(color: Color(0xFF94a3b8), fontSize: 15),
+            ),
           ],
         ),
       );
@@ -126,26 +129,33 @@ class _DebouncedMemberSearchState extends State<_DebouncedMemberSearch> {
     final results = <_SearchResult>[];
 
     try {
-      // Search public directory
-      final dirRes = await ApiService().get('/members/public-directory');
-      if (dirRes.statusCode == 200) {
-        final items = ApiService.ensureList(dirRes.data);
+      // Search public directory (Good Standing members only)
+      final items = await ApiService().getPublic(
+        'members/public/members?search=${Uri.encodeComponent(pattern)}',
+      );
+      if (items is List) {
         for (final m in items) {
           final name = (m['name'] ?? '').toString().toLowerCase();
           final type = (m['type'] ?? '').toString().toLowerCase();
           final loc = (m['location'] ?? '').toString().toLowerCase();
-          if (name.contains(pattern) || type.contains(pattern) || loc.contains(pattern)) {
-            results.add(_SearchResult(
-              title: m['name']?.toString() ?? '',
-              subtitle: '${m['type']} • ${m['location']}',
-              type: 'directory',
-              icon: Icons.business_outlined,
-              color: const Color(0xFF3b82f6),
-            ));
+          if (name.contains(pattern) ||
+              type.contains(pattern) ||
+              loc.contains(pattern)) {
+            results.add(
+              _SearchResult(
+                title: m['name']?.toString() ?? '',
+                subtitle: '${m['type']} • ${m['location']}',
+                type: 'directory',
+                icon: Icons.business_outlined,
+                color: const Color(0xFF3b82f6),
+              ),
+            );
           }
         }
       }
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error('member_search_delegate', e, st);
+    }
 
     try {
       // Search announcements
@@ -156,17 +166,21 @@ class _DebouncedMemberSearchState extends State<_DebouncedMemberSearch> {
           final title = (a['title'] ?? '').toString().toLowerCase();
           final body = (a['body'] ?? '').toString().toLowerCase();
           if (title.contains(pattern) || body.contains(pattern)) {
-            results.add(_SearchResult(
-              title: a['title']?.toString() ?? '',
-              subtitle: a['category']?.toString() ?? 'General',
-              type: 'announcement',
-              icon: Icons.campaign_outlined,
-              color: const Color(0xFFf08232),
-            ));
+            results.add(
+              _SearchResult(
+                title: a['title']?.toString() ?? '',
+                subtitle: a['category']?.toString() ?? 'General',
+                type: 'announcement',
+                icon: Icons.campaign_outlined,
+                color: const Color(0xFFFF5000),
+              ),
+            );
           }
         }
       }
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error('member_search_delegate', e, st);
+    }
 
     try {
       // Search schedules
@@ -177,18 +191,25 @@ class _DebouncedMemberSearchState extends State<_DebouncedMemberSearch> {
           final vessel = (s['vessel'] ?? '').toString().toLowerCase();
           final cargo = (s['cargo'] ?? '').toString().toLowerCase();
           final container = (s['container'] ?? '').toString().toLowerCase();
-          if (vessel.contains(pattern) || cargo.contains(pattern) || container.contains(pattern)) {
-            results.add(_SearchResult(
-              title: s['vessel']?.toString() ?? s['container']?.toString() ?? '',
-              subtitle: '${s['cargo'] ?? ''} • ${s['port'] ?? ''}',
-              type: 'schedule',
-              icon: Icons.local_shipping_outlined,
-              color: const Color(0xFF10b981),
-            ));
+          if (vessel.contains(pattern) ||
+              cargo.contains(pattern) ||
+              container.contains(pattern)) {
+            results.add(
+              _SearchResult(
+                title:
+                    s['vessel']?.toString() ?? s['container']?.toString() ?? '',
+                subtitle: '${s['cargo'] ?? ''} • ${s['port'] ?? ''}',
+                type: 'schedule',
+                icon: Icons.local_shipping_outlined,
+                color: const Color(0xFF10b981),
+              ),
+            );
           }
         }
       }
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error('member_search_delegate', e, st);
+    }
 
     if (mounted) {
       setState(() {
@@ -208,7 +229,9 @@ class _DebouncedMemberSearchState extends State<_DebouncedMemberSearch> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFf08232)));
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFFFF5000)),
+      );
     }
 
     if (_results.isEmpty) {
@@ -218,8 +241,10 @@ class _DebouncedMemberSearchState extends State<_DebouncedMemberSearch> {
           children: [
             const Icon(Icons.search_off, size: 48, color: Color(0xFFcbd5e1)),
             const SizedBox(height: 12),
-            Text('No results for "${widget.query}"',
-                style: const TextStyle(color: Color(0xFF94a3b8), fontSize: 13)),
+            Text(
+              'No results for "${widget.query}"',
+              style: const TextStyle(color: Color(0xFF94a3b8), fontSize: 15),
+            ),
           ],
         ),
       );
@@ -232,17 +257,27 @@ class _DebouncedMemberSearchState extends State<_DebouncedMemberSearch> {
       itemBuilder: (context, index) {
         final r = _results[index];
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 4,
+            vertical: 2,
+          ),
           leading: Container(
-            width: 36, height: 36,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: r.color.withAlpha(25),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(r.icon, color: r.color, size: 18),
           ),
-          title: Text(r.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-          subtitle: Text(r.subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF64748b))),
+          title: Text(
+            r.title,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+          ),
+          subtitle: Text(
+            r.subtitle,
+            style: const TextStyle(fontSize: 13, color: Color(0xFF64748b)),
+          ),
           trailing: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
@@ -250,8 +285,16 @@ class _DebouncedMemberSearchState extends State<_DebouncedMemberSearch> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              r.type == 'directory' ? 'BROKER' : r.type == 'announcement' ? 'ALERT' : 'SCHEDULE',
-              style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: r.color),
+              r.type == 'directory'
+                  ? 'BROKER'
+                  : r.type == 'announcement'
+                  ? 'ALERT'
+                  : 'SCHEDULE',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: r.color,
+              ),
             ),
           ),
           onTap: () => widget.onNavigate(r.type),

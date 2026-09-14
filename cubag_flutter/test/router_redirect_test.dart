@@ -6,8 +6,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // Mirror the route helpers from router.dart
 const _publicRoutes = {
-  '/', '/login', '/register', '/forgot-password', '/reset-password',
-  '/verify-email', '/otp-verification', '/public-services',
+  '/',
+  '/splash',
+  '/landing',
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-email',
+  '/otp-verification',
+  '/public-services',
 };
 
 bool _isPublic(String path) =>
@@ -44,15 +52,27 @@ void main() {
   group('Route Guards — Unauthenticated', () {
     setUp(() => SharedPreferences.setMockInitialValues({}));
 
-    test('unauthenticated user accessing /dashboard redirects to /login', () async {
-      final result = await simulateRedirect(location: '/dashboard', isWeb: true);
-      expect(result, equals('/login'));
-    });
+    test(
+      'unauthenticated user accessing /dashboard redirects to /login',
+      () async {
+        final result = await simulateRedirect(
+          location: '/dashboard',
+          isWeb: true,
+        );
+        expect(result, equals('/login'));
+      },
+    );
 
-    test('unauthenticated user accessing /admin/dashboard redirects to /login', () async {
-      final result = await simulateRedirect(location: '/admin/dashboard', isWeb: true);
-      expect(result, equals('/login'));
-    });
+    test(
+      'unauthenticated user accessing /admin/dashboard redirects to /login',
+      () async {
+        final result = await simulateRedirect(
+          location: '/admin/dashboard',
+          isWeb: true,
+        );
+        expect(result, equals('/login'));
+      },
+    );
 
     test('unauthenticated user can access /login without redirect', () async {
       final result = await simulateRedirect(location: '/login', isWeb: true);
@@ -64,32 +84,58 @@ void main() {
       expect(result, isNull);
     });
 
-    test('unauthenticated user can access /register without redirect', () async {
-      final result = await simulateRedirect(location: '/register', isWeb: true);
-      expect(result, isNull);
-    });
+    test(
+      'unauthenticated user can access /register without redirect',
+      () async {
+        final result = await simulateRedirect(
+          location: '/register',
+          isWeb: true,
+        );
+        expect(result, isNull);
+      },
+    );
 
-    test('unauthenticated user can access /public-services without redirect', () async {
-      final result = await simulateRedirect(location: '/public-services', isWeb: true);
-      expect(result, isNull);
-    });
+    test(
+      'unauthenticated user can access /public-services without redirect',
+      () async {
+        final result = await simulateRedirect(
+          location: '/public-services',
+          isWeb: true,
+        );
+        expect(result, isNull);
+      },
+    );
 
-    test('unauthenticated user can access /verify-member/:id without redirect', () async {
-      final result = await simulateRedirect(location: '/verify-member/abc123', isWeb: true);
-      expect(result, isNull);
-    });
+    test(
+      'unauthenticated user can access /verify-member/:id without redirect',
+      () async {
+        final result = await simulateRedirect(
+          location: '/verify-member/abc123',
+          isWeb: true,
+        );
+        expect(result, isNull);
+      },
+    );
 
-    test('unauthenticated user accessing /payments redirects to /login', () async {
-      final result = await simulateRedirect(location: '/payments', isWeb: true);
-      expect(result, equals('/login'));
-    });
+    test(
+      'unauthenticated user accessing /payments redirects to /login',
+      () async {
+        final result = await simulateRedirect(
+          location: '/payments',
+          isWeb: true,
+        );
+        expect(result, equals('/login'));
+      },
+    );
   });
 
   group('Route Guards — Authenticated Member', () {
-    setUp(() => SharedPreferences.setMockInitialValues({
-      'cubag_token': 'member-token',
-      'cubag_role': 'member',
-    }));
+    setUp(
+      () => SharedPreferences.setMockInitialValues({
+        'cubag_token': 'member-token',
+        'cubag_role': 'member',
+      }),
+    );
 
     test('member accessing / redirects to /dashboard', () async {
       final result = await simulateRedirect(location: '/', isWeb: true);
@@ -102,17 +148,26 @@ void main() {
     });
 
     test('member accessing /dashboard gets no redirect', () async {
-      final result = await simulateRedirect(location: '/dashboard', isWeb: true);
+      final result = await simulateRedirect(
+        location: '/dashboard',
+        isWeb: true,
+      );
       expect(result, isNull);
     });
 
     test('member accessing /admin/dashboard redirects to /dashboard', () async {
-      final result = await simulateRedirect(location: '/admin/dashboard', isWeb: true);
+      final result = await simulateRedirect(
+        location: '/admin/dashboard',
+        isWeb: true,
+      );
       expect(result, equals('/dashboard'));
     });
 
     test('member accessing /admin/members redirects to /dashboard', () async {
-      final result = await simulateRedirect(location: '/admin/members', isWeb: true);
+      final result = await simulateRedirect(
+        location: '/admin/members',
+        isWeb: true,
+      );
       expect(result, equals('/dashboard'));
     });
 
@@ -120,41 +175,69 @@ void main() {
       final result = await simulateRedirect(location: '/payments', isWeb: true);
       expect(result, isNull);
     });
+
+    test('member accessing /license-renewal gets no redirect', () async {
+      final result = await simulateRedirect(
+        location: '/license-renewal',
+        isWeb: true,
+      );
+      expect(result, isNull);
+    });
   });
 
   group('Route Guards — Authenticated Admin', () {
-    setUp(() => SharedPreferences.setMockInitialValues({
-      'cubag_token': 'admin-token',
-      'cubag_role': 'admin',
-    }));
+    setUp(
+      () => SharedPreferences.setMockInitialValues({
+        'cubag_token': 'admin-token',
+        'cubag_role': 'admin',
+      }),
+    );
 
     test('admin accessing / on web redirects to /admin/dashboard', () async {
       final result = await simulateRedirect(location: '/', isWeb: true);
       expect(result, equals('/admin/dashboard'));
     });
 
-    test('admin accessing /login on web redirects to /admin/dashboard', () async {
-      final result = await simulateRedirect(location: '/login', isWeb: true);
-      expect(result, equals('/admin/dashboard'));
-    });
+    test(
+      'admin accessing /login on web redirects to /admin/dashboard',
+      () async {
+        final result = await simulateRedirect(location: '/login', isWeb: true);
+        expect(result, equals('/admin/dashboard'));
+      },
+    );
 
-    test('admin accessing / on mobile redirects to /admin-unavailable', () async {
-      final result = await simulateRedirect(location: '/', isWeb: false);
-      expect(result, equals('/admin-unavailable'));
-    });
+    test(
+      'admin accessing / on mobile redirects to /admin-unavailable',
+      () async {
+        final result = await simulateRedirect(location: '/', isWeb: false);
+        expect(result, equals('/admin-unavailable'));
+      },
+    );
 
     test('admin accessing /admin/dashboard on web gets no redirect', () async {
-      final result = await simulateRedirect(location: '/admin/dashboard', isWeb: true);
+      final result = await simulateRedirect(
+        location: '/admin/dashboard',
+        isWeb: true,
+      );
       expect(result, isNull);
     });
 
-    test('admin accessing /admin/dashboard on mobile redirects to /admin-unavailable', () async {
-      final result = await simulateRedirect(location: '/admin/dashboard', isWeb: false);
-      expect(result, equals('/admin-unavailable'));
-    });
+    test(
+      'admin accessing /admin/dashboard on mobile redirects to /admin-unavailable',
+      () async {
+        final result = await simulateRedirect(
+          location: '/admin/dashboard',
+          isWeb: false,
+        );
+        expect(result, equals('/admin-unavailable'));
+      },
+    );
 
     test('admin accessing member /dashboard gets no redirect', () async {
-      final result = await simulateRedirect(location: '/dashboard', isWeb: true);
+      final result = await simulateRedirect(
+        location: '/dashboard',
+        isWeb: true,
+      );
       expect(result, isNull);
     });
   });

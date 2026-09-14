@@ -6,8 +6,9 @@ import '../services/api_service.dart';
 import '../services/cache_service.dart';
 import '../services/notification_service.dart';
 import '../components/shimmer_loader.dart';
+import '../utils/app_logger.dart';
 
-const _kOrange = Color(0xFFf08232);
+const _kOrange = Color(0xFFFF5000);
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -22,11 +23,31 @@ class _NotificationsPageState extends State<NotificationsPage> {
   final TextEditingController _searchCtrl = TextEditingController();
 
   final Map<String, Map<String, dynamic>> _categories = {
-    'payment': {'icon': Icons.payments_outlined, 'color': const Color(0xFF10b981), 'label': 'Payment'},
-    'meeting': {'icon': Icons.event_outlined, 'color': const Color(0xFF3b82f6), 'label': 'Meeting'},
-    'compliance': {'icon': Icons.task_alt_outlined, 'color': const Color(0xFFf59e0b), 'label': 'Compliance'},
-    'system': {'icon': Icons.info_outline, 'color': _kOrange, 'label': 'System'},
-    'announcement': {'icon': Icons.campaign_outlined, 'color': const Color(0xFF8b5cf6), 'label': 'Announcement'},
+    'payment': {
+      'icon': Icons.payments_outlined,
+      'color': const Color(0xFF10b981),
+      'label': 'Payment',
+    },
+    'meeting': {
+      'icon': Icons.event_outlined,
+      'color': const Color(0xFF3b82f6),
+      'label': 'Meeting',
+    },
+    'compliance': {
+      'icon': Icons.task_alt_outlined,
+      'color': const Color(0xFFf59e0b),
+      'label': 'Compliance',
+    },
+    'system': {
+      'icon': Icons.info_outline,
+      'color': _kOrange,
+      'label': 'System',
+    },
+    'announcement': {
+      'icon': Icons.campaign_outlined,
+      'color': const Color(0xFF8b5cf6),
+      'label': 'Announcement',
+    },
   };
 
   @override
@@ -44,60 +65,115 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Future<void> _fetch() async {
     setState(() => _loading = true);
     try {
-      final cachedData = await CacheService().fetchCached('/announcements');
-      if (!mounted) return;
-      final data = ApiService.ensureList(cachedData);
-      final list = data.map((a) => {
-        'id': a['id'],
-        'type': a['category']?.toString().toLowerCase() ?? 'announcement',
-        'title': a['title'] ?? '',
-        'message': a['body'] ?? a['content'] ?? '',
-        'time': a['created_at'] != null ? DateTime.tryParse(a['created_at'].toString())?.toLocal().toString().split(' ').first ?? '' : '',
-        'created_at': a['created_at']?.toString() ?? '',
-        'read': a['is_read'] == true,
-      }).toList();
-      
-      setState(() => _notifications = list);
-      
-      // Sync global unread count
-      final unreadCount = list.where((n) => n['read'] != true).length;
-      if (Provider.of<NotificationService>(context, listen: false).unreadCount != unreadCount) {
-        Provider.of<NotificationService>(context, listen: false).fetchUnreadCount();
+      final res = await ApiService().get('/notifications');
+      dynamic rawItems;
+      if (res.statusCode == 200 && res.data != null) {
+        rawItems = (res.data is Map && res.data.containsKey('items'))
+            ? res.data['items']
+            : res.data;
+      } else {
+        final cachedData = await CacheService().fetchCachedMap(
+          '/notifications',
+        );
+        rawItems = cachedData.containsKey('items')
+            ? cachedData['items']
+            : cachedData;
       }
-    } catch (_) {}
+      final data = ApiService.ensureList(rawItems);
+      final list = data.map((a) {
+        final Map<String, dynamic> item = (a is Map)
+            ? Map<String, dynamic>.from(a)
+            : {};
+        return {
+          'id': item['id'],
+          'type': item['category']?.toString().toLowerCase() ?? 'announcement',
+          'title': item['title']?.toString() ?? '',
+          'message':
+              item['body']?.toString() ?? item['content']?.toString() ?? '',
+          'created_at': item['created_at']?.toString() ?? '',
+          'time': item['created_at'] != null
+              ? _formatDate(item['created_at'].toString())
+              : '',
+          'read':
+              item['read_at'] != null ||
+              item['is_read'] == true ||
+              item['read'] == true,
+        };
+      }).toList();
+
+      if (!mounted) return;
+      setState(() => _notifications = List<Map<String, dynamic>>.from(list));
+
+      final service = Provider.of<NotificationService>(context, listen: false);
+      service.syncFromNotifications(data);
+      await service.fetchUnreadCount(force: true);
+    } catch (e, st) {
+      AppLogger.error('notifications_page', e, st);
+    }
     if (mounted) setState(() => _loading = false);
   }
 
   Future<void> _markAllRead() async {
     try {
-      await ApiService().post('/announcements/mark-read', data: {});
+      await ApiService().post('/notifications/mark-read', data: {});
       if (!mounted) return;
-      setState(() => _notifications = _notifications.map((n) => {...n, 'read': true}).toList());
-      Provider.of<NotificationService>(context, listen: false).clearCount();
-    } catch (_) {}
+      final updated = _notifications.map((n) => {...n, 'read': true}).toList();
+      setState(() => _notifications = updated);
+      final service = Provider.of<NotificationService>(context, listen: false);
+      service.syncFromNotifications(
+        updated.map((n) => {'id': n['id'], 'is_read': true}).toList(),
+      );
+      await service.fetchUnreadCount(force: true);
+    } catch (e, st) {
+      AppLogger.error('notifications_page', e, st);
+    }
   }
 
   Future<void> _markRead(dynamic id) async {
-    final notification = _notifications.firstWhere((n) => n['id'] == id, orElse: () => {});
+    final notification = _notifications.firstWhere(
+      (n) => n['id'] == id,
+      orElse: () => {},
+    );
     if (notification.isNotEmpty && notification['read'] != true) {
       try {
-        await ApiService().post('/announcements/mark-read', data: {'announcement_id': id});
+        await ApiService().post(
+          '/notifications/mark-read',
+          data: {'notification_id': id},
+        );
         if (!mounted) return;
-        setState(() => _notifications = _notifications.map((n) => n['id'] == id ? {...n, 'read': true} : n).toList());
-        Provider.of<NotificationService>(context, listen: false).decrementCount();
-      } catch (_) {}
+        final updated = _notifications
+            .map((n) => n['id'] == id ? {...n, 'read': true} : n)
+            .toList();
+        setState(() => _notifications = updated);
+        final service = Provider.of<NotificationService>(
+          context,
+          listen: false,
+        );
+        service.syncFromNotifications(
+          updated.map((n) => {'id': n['id'], 'is_read': n['read']}).toList(),
+        );
+        await service.fetchUnreadCount(force: true);
+      } catch (e, st) {
+        AppLogger.error('notifications_page', e, st);
+      }
     }
   }
 
   // F-36 fix: delete from server first, then remove locally
   Future<void> _delete(dynamic id) async {
     try {
-      await ApiService().delete('/announcements/$id');
+      await ApiService().delete('/notifications/$id');
     } catch (_) {
       // If server call fails, still remove locally (graceful degradation)
     }
     if (mounted) {
-      setState(() => _notifications = _notifications.where((n) => n['id'] != id).toList());
+      final updated = _notifications.where((n) => n['id'] != id).toList();
+      setState(() => _notifications = updated);
+      final service = Provider.of<NotificationService>(context, listen: false);
+      service.syncFromNotifications(
+        updated.map((n) => {'id': n['id'], 'is_read': n['read']}).toList(),
+      );
+      await service.fetchUnreadCount(force: true);
     }
   }
 
@@ -107,7 +183,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       final date = DateTime.parse(isoString).toLocal();
       final now = DateTime.now();
       final diff = now.difference(date);
-      
+
       if (diff.inMinutes < 60) {
         return '${diff.inMinutes}m ago';
       } else if (diff.inHours < 24) {
@@ -115,8 +191,21 @@ class _NotificationsPageState extends State<NotificationsPage> {
       } else if (diff.inDays < 7) {
         return '${diff.inDays}d ago';
       }
-      
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
       return '${months[date.month - 1]} ${date.day}, ${date.year}';
     } catch (_) {
       return '';
@@ -139,7 +228,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
             width: 1,
           ),
           boxShadow: isSelected
-              ? [BoxShadow(color: _kOrange.withAlpha(30), blurRadius: 8, offset: const Offset(0, 3))]
+              ? [
+                  BoxShadow(
+                    color: _kOrange.withAlpha(30),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
               : null,
         ),
         child: Text(
@@ -147,7 +242,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           style: TextStyle(
             color: isSelected ? Colors.white : const Color(0xFF475569),
             fontWeight: FontWeight.w800,
-            fontSize: 12,
+            fontSize: 14,
           ),
         ),
       ),
@@ -177,7 +272,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
             Text(
               'No Notifications',
               style: GoogleFonts.outfit(
-                fontSize: 16,
+                fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF475569),
               ),
@@ -189,7 +284,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   : 'You are all caught up! No active notifications found.',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 15,
                 color: Color(0xFF94a3b8),
                 height: 1.4,
               ),
@@ -222,166 +317,292 @@ class _NotificationsPageState extends State<NotificationsPage> {
     );
   }
 
-  Widget _buildNotificationCard(Map<String, dynamic> n) {
+  void _showNotificationDetail(Map<String, dynamic> n) {
+    if (n['read'] != true) {
+      _markRead(n['id']);
+    }
     final cat = _categories[n['type']] ?? _categories['system']!;
     final color = cat['color'] as Color;
-    final isRead = n['read'] == true;
-    final dateStr = _formatDate(n['created_at']?.toString() ?? n['time']?.toString());
+    final dateStr = _formatDate(
+      n['created_at']?.toString() ?? n['time']?.toString(),
+    );
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border(
-          left: BorderSide(
-            color: isRead ? const Color(0xFFcbd5e1).withAlpha(120) : color,
-            width: isRead ? 1.5 : 4.5,
-          ),
-          top: BorderSide(color: const Color(0xFFcbd5e1).withAlpha(120), width: 1.5),
-          right: BorderSide(color: const Color(0xFFcbd5e1).withAlpha(120), width: 1.5),
-          bottom: BorderSide(color: const Color(0xFFcbd5e1).withAlpha(120), width: 1.5),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(isRead ? 6 : 12),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => _markRead(n['id']),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: 600,
+              maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+            ),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Category Icon
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: color.withAlpha(25),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    cat['icon'] as IconData,
-                    color: color,
-                    size: 20,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                  child: Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFcbd5e1),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 14),
-                // Text Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Category Badge and Date
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: color.withAlpha(20),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              (cat['label'] as String).toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: color,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0.5,
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: color.withAlpha(25),
+                                borderRadius: BorderRadius.circular(12),
                               ),
+                              child: Icon(
+                                (cat['icon'] as IconData?) ??
+                                    Icons.notifications_rounded,
+                                color: color,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: color.withAlpha(20),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      (cat['label']?.toString() ?? 'SYSTEM')
+                                          .toUpperCase(),
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        color: color,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                  if (dateStr.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      dateStr,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        color: const Color(0xFF94a3b8),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          n['title']?.toString() ?? '',
+                          style: GoogleFonts.outfit(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1A0F0A),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFf8fafc),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFe2e8f0)),
+                          ),
+                          child: SelectableText(
+                            n['message']?.toString() ?? '',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              color: const Color(0xFF4D2D20),
+                              height: 1.55,
                             ),
                           ),
-                          const Spacer(),
-                          if (dateStr.isNotEmpty)
-                            Text(
-                              dateStr,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Color(0xFF94a3b8),
-                                fontWeight: FontWeight.w500,
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            TextButton.icon(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _delete(n['id']);
+                              },
+                              icon: const Icon(
+                                Icons.delete_outline_rounded,
+                                color: Colors.red,
+                                size: 18,
                               ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      // Title
-                      Text(
-                        n['title']?.toString() ?? '',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: isRead ? FontWeight.w700 : FontWeight.w900,
-                          color: const Color(0xFF0f172a),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      // Message
-                      Text(
-                        n['message']?.toString() ?? '',
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13.5,
-                          color: Color(0xFF475569),
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Actions row
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          if (!isRead)
-                            GestureDetector(
-                              onTap: () => _markRead(n['id']),
-                              child: const Text(
-                                'Mark as read',
-                                style: TextStyle(
-                                  color: _kOrange,
-                                  fontSize: 12,
+                              label: Text(
+                                'Delete',
+                                style: GoogleFonts.inter(
+                                  color: Colors.red,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            )
-                          else
-                            Row(
-                              children: [
-                                Icon(Icons.check_circle_outline_rounded, color: Colors.grey.shade400, size: 14),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Read',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade500,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1A0F0A),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                              ],
+                                elevation: 0,
+                              ),
+                              onPressed: () => Navigator.pop(ctx),
+                              child: Text(
+                                'Close',
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.delete_outline_rounded,
-                              size: 18,
-                              color: Colors.grey.shade500,
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNotificationCard(Map<String, dynamic> n) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cat = _categories[n['type']] ?? _categories['system']!;
+    final color = cat['color'] as Color;
+    final isRead = n['read'] == true || n['read_at'] != null;
+    final dateStr = _formatDate(
+      n['created_at']?.toString() ?? n['time']?.toString(),
+    );
+
+    final cardBg = isDark
+        ? (isRead ? const Color(0xFF1A0F0A) : color.withAlpha(25))
+        : (isRead ? Colors.white : color.withAlpha(12));
+    final borderColor = isDark
+        ? (isRead ? const Color(0xFF281710) : color.withAlpha(120))
+        : (isRead ? const Color(0xFFE2E8F0) : color.withAlpha(90));
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: borderColor,
+          width: isRead ? 1.0 : 1.5,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _showNotificationDetail(n),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                // Category Icon Avatar (matching skeleton tile size)
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withAlpha(isDark ? 40 : 20),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(cat['icon'] as IconData, color: color, size: 20),
+                ),
+                const SizedBox(width: 12),
+                // Compact Title & Subtitle Stack
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              n['title']?.toString() ?? '',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.outfit(
+                                fontSize: 14,
+                                fontWeight: isRead
+                                    ? FontWeight.w600
+                                    : FontWeight.w800,
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              ),
                             ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: () => _delete(n['id']),
-                            hoverColor: Colors.red.shade50,
-                            splashRadius: 18,
-                            tooltip: 'Delete Notification',
                           ),
+                          if (dateStr.isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              dateStr,
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        n['message']?.toString() ?? '',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          fontSize: 14.5,
+                          color: isDark ? Colors.white : const Color(0xFF334155),
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: isDark ? Colors.white60 : Colors.grey.shade400,
+                  size: 20,
                 ),
               ],
             ),
@@ -393,13 +614,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final unread = _notifications.where((n) => n['read'] != true).length;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final unread = _notifications.where((n) => n['read'] != true && n['read_at'] == null).length;
     final searchQuery = _searchCtrl.text.toLowerCase().trim();
 
     final filtered = _notifications.where((n) {
       bool filterMatch = true;
       if (_filter == 'unread') {
-        filterMatch = n['read'] != true;
+        filterMatch = n['read'] != true && n['read_at'] == null;
       } else if (_filter != 'all') {
         filterMatch = n['type'] == _filter;
       }
@@ -431,17 +653,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     Text(
                       'Activity Feed',
                       style: GoogleFonts.outfit(
-                        fontSize: 24,
+                        fontSize: 26,
                         fontWeight: FontWeight.w800,
-                        color: const Color(0xFF0f172a),
+                        color: isDark ? Colors.white : const Color(0xFF1A0F0A),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Latest system alerts and personal notifications.',
                       style: GoogleFonts.outfit(
-                        color: const Color(0xFF64748b),
-                        fontSize: 13,
+                        color: isDark ? Colors.white70 : const Color(0xFF64748b),
+                        fontSize: 15,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -457,19 +679,32 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         controller: _searchCtrl,
                         onChanged: (val) => setState(() {}),
                         decoration: InputDecoration(
-                          hintText: 'Search notifications by title or keyword...',
-                          hintStyle: const TextStyle(color: Color(0xFF94a3b8), fontSize: 14),
-                          prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF94a3b8)),
+                          hintText:
+                              'Search notifications by title or keyword...',
+                          hintStyle: const TextStyle(
+                            color: Color(0xFF94a3b8),
+                            fontSize: 16,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.search_rounded,
+                            color: Color(0xFF94a3b8),
+                          ),
                           suffixIcon: _searchCtrl.text.isNotEmpty
                               ? IconButton(
-                                  icon: const Icon(Icons.clear_rounded, color: Color(0xFF94a3b8)),
+                                  icon: const Icon(
+                                    Icons.clear_rounded,
+                                    color: Color(0xFF94a3b8),
+                                  ),
                                   onPressed: () => setState(() {
                                     _searchCtrl.clear();
                                   }),
                                 )
                               : null,
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                         ),
                       ),
                     ),
@@ -503,7 +738,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               : 'LATEST UPDATES (${filtered.length})',
                           style: GoogleFonts.outfit(
                             fontWeight: FontWeight.w800,
-                            fontSize: 12,
+                            fontSize: 14,
                             color: const Color(0xFF64748b),
                             letterSpacing: 0.5,
                           ),
@@ -512,10 +747,19 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           TextButton.icon(
                             onPressed: _markAllRead,
                             icon: const Icon(Icons.done_all_rounded, size: 16),
-                            label: const Text('Mark All Read', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            label: const Text(
+                              'Mark All Read',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             style: TextButton.styleFrom(
                               foregroundColor: _kOrange,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                             ),
                           ),
                       ],
@@ -528,7 +772,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: 5,
-                        separatorBuilder: (ctx, i) => const SizedBox(height: 12),
+                        separatorBuilder: (ctx, i) =>
+                            const SizedBox(height: 12),
                         itemBuilder: (ctx, i) => const ShimmerListTile(),
                       )
                     else if (filtered.isEmpty)
@@ -538,7 +783,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: filtered.length,
-                        separatorBuilder: (ctx, i) => const SizedBox(height: 12),
+                        separatorBuilder: (ctx, i) =>
+                            const SizedBox(height: 12),
                         itemBuilder: (ctx, i) {
                           final n = filtered[i];
                           return _buildNotificationCard(n);

@@ -16,7 +16,7 @@ const _storage = FlutterSecureStorage(
   ),
 );
 
-const _keyEmail    = 'bio_email';
+const _keyEmail = 'bio_email';
 const _keyPassword = 'bio_password';
 
 Future<bool> isBiometricAvailable() async {
@@ -32,9 +32,7 @@ Future<bool> isBiometricAvailable() async {
 
 Future<bool> authenticate({required String reason}) async {
   try {
-    return await _auth.authenticate(
-      localizedReason: reason,
-    );
+    return await _auth.authenticate(localizedReason: reason);
   } on PlatformException catch (e) {
     debugPrint('Biometric authentication failed: $e');
     return false;
@@ -49,7 +47,7 @@ Future<void> saveCredentials(String email, String password) async {
 
 Future<Map<String, String>?> getSavedCredentials() async {
   try {
-    final email    = await _storage.read(key: _keyEmail);
+    final email = await _storage.read(key: _keyEmail);
     final password = await _storage.read(key: _keyPassword);
     if (email != null && password != null) {
       return {'email': email, 'password': password};

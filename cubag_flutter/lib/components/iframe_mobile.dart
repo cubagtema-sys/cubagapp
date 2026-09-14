@@ -22,8 +22,11 @@ class _MobileWebViewMapState extends State<MobileWebViewMap> {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
-      ..loadRequest(Uri.parse(
-          'https://www.marinetraffic.com/en/ais/embed/mmsi:${widget.mmsi}/zoom:8/maptype:1/show_vessels:true'));
+      ..loadRequest(
+        Uri.parse(
+          'https://www.marinetraffic.com/en/ais/embed/mmsi:${widget.mmsi}/zoom:8/maptype:1/show_vessels:true',
+        ),
+      );
   }
 
   @override

@@ -20,7 +20,7 @@ sub_admins_bp = Blueprint('sub_admins', __name__)
 ALL_PERMISSIONS = [
     'members', 'payments', 'tickets', 'announcements',
     'schedules', 'events', 'surveys', 'intelligence', 'audit_log',
-    'fees', 'settings',
+    'fees', 'settings', 'compliance', 'documents', 'messaging', 'notifications',
 ]
 
 
@@ -101,8 +101,8 @@ def create_sub_admin():
             if role not in ('admin', 'super_admin'):
                 return jsonify({'message': 'Full admin access required'}), 403
 
-            # Prevent duplicate email
-            cursor.execute("SELECT id FROM members WHERE email = %s", (email,))
+            # Prevent duplicate email (case-insensitive)
+            cursor.execute("SELECT id FROM members WHERE LOWER(email) = LOWER(%s)", (email,))
             if cursor.fetchone():
                 return jsonify({'message': 'An account with that email already exists'}), 409
 

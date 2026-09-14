@@ -19,7 +19,7 @@ void main() {
     test('storing token makes user authenticated', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
-      
+
       await prefs.setString('cubag_token', 'jwt-abc-123');
       expect(prefs.getString('cubag_token'), equals('jwt-abc-123'));
     });

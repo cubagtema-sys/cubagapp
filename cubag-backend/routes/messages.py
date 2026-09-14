@@ -7,53 +7,57 @@ messages_bp = Blueprint('messages', __name__)
 @messages_bp.route('/conversations', methods=['GET'])
 @jwt_required()
 def get_conversations():
-    user_id = get_jwt_identity()
+    raw_uid = get_jwt_identity()
+    user_id = int(raw_uid) if raw_uid is not None else 0
     conn = get_db()
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
-                SELECT DISTINCT
-                    CASE
-                        WHEN sender_id = %s THEN receiver_id
-                        ELSE sender_id
-                    END AS other_id
-                FROM messages
-                WHERE sender_id = %s OR receiver_id = %s
-            """, (user_id, user_id, user_id))
+                WITH latest AS (
+                    SELECT DISTINCT ON (
+                        CASE WHEN m.sender_id = %s THEN m.receiver_id ELSE m.sender_id END
+                    )
+                        CASE WHEN m.sender_id = %s THEN m.receiver_id ELSE m.sender_id END AS other_id,
+                        m.message AS last_msg,
+                        m.created_at
+                    FROM messages m
+                    WHERE m.sender_id = %s OR m.receiver_id = %s
+                    ORDER BY CASE WHEN m.sender_id = %s THEN m.receiver_id ELSE m.sender_id END, m.created_at DESC
+                ), unread AS (
+                    SELECT sender_id AS other_id, COUNT(*) AS unread
+                    FROM messages
+                    WHERE receiver_id = %s AND read_at IS NULL
+                    GROUP BY sender_id
+                )
+                SELECT u.id AS other_id, u.name, u.company, latest.last_msg, latest.created_at, COALESCE(unread.unread, 0) AS unread
+                FROM latest
+                JOIN members u ON u.id = latest.other_id
+                LEFT JOIN unread ON unread.other_id = latest.other_id
+                ORDER BY latest.created_at DESC
+            """, (user_id, user_id, user_id, user_id, user_id, user_id))
             
-            other_ids = [r['other_id'] for r in cursor.fetchall()]
-            
+            rows = cursor.fetchall()
             conversations = []
-            for other_id in other_ids:
-                cursor.execute("SELECT id, name, company FROM members WHERE id = %s", (other_id,))
-                other_user = cursor.fetchone()
+            for r in rows:
+                name_str = r['name'] or 'Member'
+                initials = ''.join([n[0] for n in name_str.split() if n]).upper()[:2]
+                if not initials:
+                    initials = 'M'
+                time_str = r['created_at'].strftime('%b %d, %I:%M %p') if r['created_at'] else ''
                 
-                if other_user:
-                    cursor.execute("""
-                        SELECT message, created_at, sender_id
-                        FROM messages
-                        WHERE (sender_id = %s AND receiver_id = %s)
-                           OR (sender_id = %s AND receiver_id = %s)
-                        ORDER BY created_at DESC LIMIT 1
-                    """, (user_id, other_id, other_id, user_id))
-                    last_msg = cursor.fetchone()
-                    
-                    initials = ''.join([n[0] for n in (other_user['name'] or 'U').split()]).upper()[:2]
-                    
-                    time_str = last_msg['created_at'].strftime('%b %d, %I:%M %p') if last_msg else ''
-                    
-                    conversations.append({
-                        'id': other_user['id'],
-                        'name': other_user['name'],
-                        'company': other_user['company'] or 'Member',
-                        'initials': initials,
-                        'lastMsg': last_msg['message'] if last_msg else '',
-                        'time': time_str,
-                        'unread': 0
-                    })
+                conversations.append({
+                    'id': r['other_id'],
+                    'name': name_str,
+                    'company': r['company'] or 'CUBAG Member',
+                    'initials': initials,
+                    'lastMsg': r['last_msg'] or '',
+                    'time': time_str,
+                    'unread': int(r['unread'] or 0)
+                })
             
             return jsonify({'items': conversations, 'total': len(conversations)}), 200
     except Exception as e:
+        logger.exception('get_conversations error')
         return jsonify({'message': str(e)}), 500
     finally:
         conn.close()
@@ -61,12 +65,20 @@ def get_conversations():
 @messages_bp.route('/<int:other_id>', methods=['GET'])
 @jwt_required()
 def get_messages(other_id):
-    user_id = get_jwt_identity()
+    raw_uid = get_jwt_identity()
+    user_id = int(raw_uid) if raw_uid is not None else 0
     conn = get_db()
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
-                SELECT id, sender_id, receiver_id, message, created_at
+                UPDATE messages
+                SET read_at = CURRENT_TIMESTAMP
+                WHERE receiver_id = %s AND sender_id = %s AND read_at IS NULL
+            """, (user_id, other_id))
+            conn.commit()
+
+            cursor.execute("""
+                SELECT id, sender_id, receiver_id, message, created_at, read_at
                 FROM messages
                 WHERE (sender_id = %s AND receiver_id = %s)
                    OR (sender_id = %s AND receiver_id = %s)
@@ -78,9 +90,10 @@ def get_messages(other_id):
             for m in msgs:
                 formatted.append({
                     'id': m['id'],
-                    'from': 'me' if str(m['sender_id']) == str(user_id) else 'them',
+                    'from': 'me' if int(m['sender_id']) == user_id else 'them',
                     'text': m['message'],
-                    'time': m['created_at'].strftime('%b %d, %I:%M %p')
+                    'time': m['created_at'].strftime('%b %d, %I:%M %p') if m['created_at'] else '',
+                    'read_at': m['read_at'].strftime('%b %d, %I:%M %p') if m.get('read_at') else None,
                 })
             
             return jsonify({'items': formatted, 'total': len(formatted)}), 200
@@ -92,8 +105,9 @@ def get_messages(other_id):
 @messages_bp.route('/<int:other_id>', methods=['POST'])
 @jwt_required()
 def send_message(other_id):
-    user_id = get_jwt_identity()
-    data = request.get_json()
+    raw_uid = get_jwt_identity()
+    user_id = int(raw_uid) if raw_uid is not None else 0
+    data = request.get_json() or {}
     message_text = data.get('text')
 
     if not message_text:
@@ -122,23 +136,26 @@ def send_message(other_id):
 
             # 3. Send Push Notification
             if receiver_token:
-                from utils import send_push_notification
-                send_push_notification(
-                    fcm_token=receiver_token,
-                    title=f"Message from {sender_name}",
-                    body=message_text[:100] + ("..." if len(message_text) > 100 else ""),
-                    data={
-                        'type': 'message',
-                        'id': str(user_id),
-                        'name': str(sender_name)
-                    }
-                )
+                try:
+                    from utils import send_push_notification
+                    send_push_notification(
+                        fcm_token=receiver_token,
+                        title=f"Message from {sender_name}",
+                        body=message_text[:100] + ("..." if len(message_text) > 100 else ""),
+                        data={
+                            'type': 'message',
+                            'id': str(user_id),
+                            'name': str(sender_name)
+                        }
+                    )
+                except Exception as p_err:
+                    pass
 
             return jsonify({
                 'id': new_msg['id'],
                 'from': 'me',
                 'text': message_text,
-                'time': new_msg['created_at'].strftime('%b %d, %I:%M %p')
+                'time': new_msg['created_at'].strftime('%b %d, %I:%M %p') if new_msg.get('created_at') else ''
             }), 201
     except Exception as e:
         return jsonify({'message': str(e)}), 500

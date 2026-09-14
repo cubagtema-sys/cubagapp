@@ -89,9 +89,14 @@ def create_schedule():
 
         # Audit log
         log_admin_action(admin_id, 'Created schedule', 'schedule', None, data.get('vessel') or data.get('container'), f'Type: {data.get("type")}, Port: {data.get("port")}')
-
+        try:
+            from socket_instance import socketio
+            socketio.emit('schedules_updated', {'type': data.get('type')})
+        except Exception:
+            pass
         return jsonify({'message': 'Schedule added successfully'}), 201
     except Exception as e:
+        conn.rollback()
         return jsonify({'message': str(e)}), 500
     finally:
         conn.close()
@@ -120,9 +125,14 @@ def update_schedule_status(schedule_id):
         # Audit log
         label = sched.get('vessel') or sched.get('container') or f'#{schedule_id}' if sched else f'#{schedule_id}'
         log_admin_action(admin_id, 'Updated schedule status', 'schedule', schedule_id, label, f'Status → {new_status}')
-
+        try:
+            from socket_instance import socketio
+            socketio.emit('schedules_updated', {'id': schedule_id, 'status': new_status})
+        except Exception:
+            pass
         return jsonify({'message': 'Status updated'}), 200
     except Exception as e:
+        conn.rollback()
         return jsonify({'message': str(e)}), 500
     finally:
         conn.close()
@@ -138,15 +148,20 @@ def delete_schedule(schedule_id):
             cursor.execute("SELECT vessel, container FROM schedules WHERE id = %s", (schedule_id,))
             sched = cursor.fetchone()
 
-            cursor.execute("DELETE FROM schedules WHERE id = %s", (schedule_id,))
+            cursor.execute("UPDATE schedules SET deleted_at = CURRENT_TIMESTAMP WHERE id = %s", (schedule_id,))
             conn.commit()
 
         # Audit log
         label = sched.get('vessel') or sched.get('container') or f'#{schedule_id}' if sched else f'#{schedule_id}'
-        log_admin_action(admin_id, 'Deleted schedule', 'schedule', schedule_id, label)
-
-        return jsonify({'message': 'Schedule deleted'}), 200
+        log_admin_action(admin_id, 'Archived schedule', 'schedule', schedule_id, label)
+        try:
+            from socket_instance import socketio
+            socketio.emit('schedules_updated', {'id': schedule_id, 'deleted': True})
+        except Exception:
+            pass
+        return jsonify({'message': 'Schedule archived'}), 200
     except Exception as e:
+        conn.rollback()
         return jsonify({'message': str(e)}), 500
     finally:
         conn.close()

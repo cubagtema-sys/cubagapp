@@ -64,6 +64,7 @@ class AISStreamManager:
             self._send_subscription(self.ws)
 
     def _run_forever(self):
+        retry_delay = 15
         while self.is_running:
             try:
                 logger.info("[AIS] Connecting to aisstream.io...")
@@ -78,8 +79,9 @@ class AISStreamManager:
             except Exception as e:
                 logger.error(f"[AIS] Manager error: {e}")
 
-            logger.info("[AIS] Disconnected. Retrying in 15s...")
-            time.sleep(15)
+            logger.info(f"[AIS] Disconnected. Retrying in {retry_delay}s...")
+            time.sleep(retry_delay)
+            retry_delay = min(retry_delay * 2, 300)
 
     def _on_open(self, ws):
         logger.info("[AIS] WebSocket Connected.")

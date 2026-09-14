@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
+import '../utils/app_logger.dart';
 
 class LiveDataPage extends StatefulWidget {
   const LiveDataPage({super.key});
@@ -14,8 +14,13 @@ class LiveDataPage extends StatefulWidget {
 
 class _LiveDataPageState extends State<LiveDataPage> {
   final _api = ApiService();
-  Map<String, String> _forex = {'USD': '...', 'EUR': '...', 'GBP': '...', 'CNY': '...'};
-  bool _forexLoading = true;
+  Map<String, String> _forex = {
+    'USD': '15.45',
+    'EUR': '16.80',
+    'GBP': '19.50',
+    'CNY': '2.15',
+  };
+  bool _forexLoading = false;
   bool _newsLoading = true;
   List<Map<String, String>> _news = [];
   String _lastUpdated = '';
@@ -38,30 +43,30 @@ class _LiveDataPageState extends State<LiveDataPage> {
   }
 
   Future<void> _loadForex() async {
-    setState(() => _forexLoading = true);
-    try {
-      final res = await http.get(Uri.parse('https://open.er-api.com/v6/latest/GHS'));
-      if (res.statusCode == 200) {
-        final body = res.body;
-        String extractRate(String currency) {
-          final pattern = '"$currency":';
-          final idx = body.indexOf(pattern);
-          if (idx == -1) return '...';
-          final start = idx + pattern.length;
-          final end = body.indexOf(',', start);
-          final rateStr = body.substring(start, end).trim();
-          final rate = double.tryParse(rateStr);
-          return rate != null ? (1 / rate).toStringAsFixed(2) : '...';
-        }
-        setState(() => _forex = {
-          'USD': extractRate('USD'),
-          'EUR': extractRate('EUR'),
-          'GBP': extractRate('GBP'),
-          'CNY': extractRate('CNY'),
+    await _api.fetchDataWithCache('intelligence', (
+      data,
+      isCached, {
+      bool hasError = false,
+    }) {
+      if (!mounted) return;
+      if (data != null &&
+          data is Map &&
+          data['forex'] != null &&
+          data['forex'] is Map) {
+        final forexMap = data['forex'] as Map;
+        setState(() {
+          _forex = {
+            'USD': forexMap['USD']?.toString() ?? '15.45',
+            'EUR': forexMap['EUR']?.toString() ?? '16.80',
+            'GBP': forexMap['GBP']?.toString() ?? '19.50',
+            'CNY': forexMap['CNY']?.toString() ?? '2.15',
+          };
+          _forexLoading = false;
         });
+      } else if (!isCached) {
+        if (mounted) setState(() => _forexLoading = false);
       }
-    } catch (_) {}
-    setState(() => _forexLoading = false);
+    });
   }
 
   Future<void> _loadNews() async {
@@ -93,7 +98,9 @@ class _LiveDataPageState extends State<LiveDataPage> {
           return;
         }
       }
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error('live_data_page', e, st);
+    }
     if (mounted) {
       setState(() {
         _news = [];
@@ -106,7 +113,10 @@ class _LiveDataPageState extends State<LiveDataPage> {
   Widget build(BuildContext context) {
     final primary = Theme.of(context).primaryColor;
     final totalPages = (_news.length / _newsPerPage).ceil().clamp(1, 999);
-    final pageItems = _news.skip((_newsPage - 1) * _newsPerPage).take(_newsPerPage).toList();
+    final pageItems = _news
+        .skip((_newsPage - 1) * _newsPerPage)
+        .take(_newsPerPage)
+        .toList();
 
     return AppLayout(
       title: 'Intelligence Hub',
@@ -128,7 +138,7 @@ class _LiveDataPageState extends State<LiveDataPage> {
                     Text(
                       'LIVE INTELLIGENCE',
                       style: GoogleFonts.outfit(
-                        fontSize: 10,
+                        fontSize: 12,
                         color: const Color(0xFF10b981),
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.5,
@@ -138,7 +148,7 @@ class _LiveDataPageState extends State<LiveDataPage> {
                     Text(
                       'Synced at $_lastUpdated',
                       style: GoogleFonts.outfit(
-                        fontSize: 10.5,
+                        fontSize: 12.5,
                         color: const Color(0xFF94a3b8),
                         fontWeight: FontWeight.w700,
                       ),
@@ -165,7 +175,10 @@ class _LiveDataPageState extends State<LiveDataPage> {
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
-                              side: BorderSide(color: const Color(0xFFcbd5e1).withAlpha(120), width: 1.5),
+                              side: BorderSide(
+                                color: const Color(0xFFcbd5e1).withAlpha(120),
+                                width: 1.5,
+                              ),
                             ),
                             child: Padding(
                               padding: const EdgeInsets.all(20),
@@ -174,14 +187,39 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                 children: [
                                   Row(
                                     children: [
-                                      Icon(Icons.currency_exchange_rounded, color: primary, size: 20),
+                                      Icon(
+                                        Icons.currency_exchange_rounded,
+                                        color: primary,
+                                        size: 20,
+                                      ),
                                       const SizedBox(width: 8),
                                       Text(
-                                        'Live Forex Rates',
+                                        'Official Forex Rates',
                                         style: GoogleFonts.outfit(
                                           fontWeight: FontWeight.w900,
-                                          fontSize: 15,
-                                          color: const Color(0xFF1e293b),
+                                          fontSize: 17,
+                                          color: const Color(0xFF281710),
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: primary.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'CUBAG Admin Rate',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: primary,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -190,23 +228,33 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                   if (_forexLoading)
                                     GridView.count(
                                       shrinkWrap: true,
-                                      physics: const NeverScrollableScrollPhysics(),
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
                                       crossAxisCount: 2,
                                       mainAxisSpacing: 12,
                                       crossAxisSpacing: 12,
                                       childAspectRatio: 2.3,
-                                      children: List.generate(4, (i) => const ShimmerListTile()),
+                                      children: List.generate(
+                                        4,
+                                        (i) => const ShimmerListTile(),
+                                      ),
                                     )
                                   else
                                     GridView.count(
                                       shrinkWrap: true,
-                                      physics: const NeverScrollableScrollPhysics(),
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
                                       crossAxisCount: 2,
                                       mainAxisSpacing: 12,
                                       crossAxisSpacing: 12,
                                       childAspectRatio: 2.3,
                                       children: _forex.entries.map((e) {
-                                        final symbols = {'USD': '\$', 'EUR': '€', 'GBP': '£', 'CNY': '¥'};
+                                        final symbols = {
+                                          'USD': '\$',
+                                          'EUR': '€',
+                                          'GBP': '£',
+                                          'CNY': '¥',
+                                        };
                                         final symbol = symbols[e.key] ?? '';
                                         final colors = {
                                           'USD': const Color(0xFF3b82f6),
@@ -214,15 +262,29 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                           'GBP': const Color(0xFF8b5cf6),
                                           'CNY': const Color(0xFFf59e0b),
                                         };
-                                        final symbolBg = colors[e.key]?.withAlpha(15) ?? const Color(0xFFf1f5f9);
-                                        final symbolColor = colors[e.key] ?? const Color(0xFF64748b);
+                                        final symbolBg =
+                                            colors[e.key]?.withAlpha(15) ??
+                                            const Color(0xFFf1f5f9);
+                                        final symbolColor =
+                                            colors[e.key] ??
+                                            const Color(0xFF64748b);
 
                                         return Container(
-                                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 12,
+                                          ),
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFf8fafc),
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(color: const Color(0xFFcbd5e1).withAlpha(100), width: 1.2),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(
+                                                0xFFcbd5e1,
+                                              ).withAlpha(100),
+                                              width: 1.2,
+                                            ),
                                           ),
                                           child: Row(
                                             children: [
@@ -238,8 +300,9 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                                     symbol,
                                                     style: GoogleFonts.outfit(
                                                       color: symbolColor,
-                                                      fontSize: 16,
-                                                      fontWeight: FontWeight.w900,
+                                                      fontSize: 18,
+                                                      fontWeight:
+                                                          FontWeight.w900,
                                                     ),
                                                   ),
                                                 ),
@@ -247,15 +310,20 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                               const SizedBox(width: 10),
                                               Expanded(
                                                 child: Column(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
                                                       '${e.key} / GHS',
                                                       style: GoogleFonts.outfit(
-                                                        fontSize: 10,
-                                                        color: const Color(0xFF64748b),
-                                                        fontWeight: FontWeight.w800,
+                                                        fontSize: 12,
+                                                        color: const Color(
+                                                          0xFF64748b,
+                                                        ),
+                                                        fontWeight:
+                                                            FontWeight.w800,
                                                       ),
                                                     ),
                                                     const SizedBox(height: 2),
@@ -263,11 +331,17 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                                       fit: BoxFit.scaleDown,
                                                       child: Text(
                                                         e.value,
-                                                        style: GoogleFonts.outfit(
-                                                          fontWeight: FontWeight.w900,
-                                                          fontSize: 15.5,
-                                                          color: const Color(0xFF1e293b),
-                                                        ),
+                                                        style:
+                                                            GoogleFonts.outfit(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w900,
+                                                              fontSize: 17.5,
+                                                              color:
+                                                                  const Color(
+                                                                    0xFF281710,
+                                                                  ),
+                                                            ),
                                                       ),
                                                     ),
                                                   ],
@@ -287,20 +361,27 @@ class _LiveDataPageState extends State<LiveDataPage> {
                           // News Section Header
                           Row(
                             children: [
-                              Icon(Icons.directions_boat_rounded, color: const Color(0xFF3b82f6), size: 22),
+                              Icon(
+                                Icons.directions_boat_rounded,
+                                color: const Color(0xFF3b82f6),
+                                size: 22,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 'Maritime & Customs Intelligence',
                                 style: GoogleFonts.outfit(
-                                  fontSize: 16,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.w900,
-                                  color: const Color(0xFF1e293b),
+                                  color: const Color(0xFF281710),
                                 ),
                               ),
                               const Spacer(),
                               if (!_newsLoading)
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFf1f5f9),
                                     borderRadius: BorderRadius.circular(6),
@@ -308,7 +389,7 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                   child: Text(
                                     '${_news.length} articles',
                                     style: GoogleFonts.outfit(
-                                      fontSize: 10.5,
+                                      fontSize: 12.5,
                                       color: const Color(0xFF64748b),
                                       fontWeight: FontWeight.w800,
                                     ),
@@ -319,7 +400,11 @@ class _LiveDataPageState extends State<LiveDataPage> {
                           const SizedBox(height: 4),
                           Text(
                             'gCaptain · Hellenic Shipping · Splash247 · FreightWaves · CUBAG Updates',
-                            style: GoogleFonts.outfit(fontSize: 11, color: const Color(0xFF94a3b8), fontWeight: FontWeight.w500),
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              color: const Color(0xFF94a3b8),
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                           const SizedBox(height: 16),
 
@@ -329,8 +414,10 @@ class _LiveDataPageState extends State<LiveDataPage> {
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               itemCount: 4,
-                              separatorBuilder: (context, index) => const SizedBox(height: 12),
-                              itemBuilder: (context, index) => const ShimmerListTile(),
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: 12),
+                              itemBuilder: (context, index) =>
+                                  const ShimmerListTile(),
                             )
                           else ...[
                             ...pageItems.map((news) {
@@ -339,8 +426,12 @@ class _LiveDataPageState extends State<LiveDataPage> {
                               if (hexStr != null) {
                                 try {
                                   final cleanHex = hexStr.replaceAll('#', '');
-                                  srcColor = Color(int.parse('FF$cleanHex', radix: 16));
-                                } catch (_) {}
+                                  srcColor = Color(
+                                    int.parse('FF$cleanHex', radix: 16),
+                                  );
+                                } catch (e, st) {
+                                  AppLogger.error('live_data_page', e, st);
+                                }
                               }
                               final displayColor = srcColor ?? primary;
 
@@ -351,10 +442,28 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border(
-                                    left: BorderSide(color: displayColor, width: 4.5),
-                                    top: BorderSide(color: const Color(0xFFcbd5e1).withAlpha(120), width: 1.5),
-                                    right: BorderSide(color: const Color(0xFFcbd5e1).withAlpha(120), width: 1.5),
-                                    bottom: BorderSide(color: const Color(0xFFcbd5e1).withAlpha(120), width: 1.5),
+                                    left: BorderSide(
+                                      color: displayColor,
+                                      width: 4.5,
+                                    ),
+                                    top: BorderSide(
+                                      color: const Color(
+                                        0xFFcbd5e1,
+                                      ).withAlpha(120),
+                                      width: 1.5,
+                                    ),
+                                    right: BorderSide(
+                                      color: const Color(
+                                        0xFFcbd5e1,
+                                      ).withAlpha(120),
+                                      width: 1.5,
+                                    ),
+                                    bottom: BorderSide(
+                                      color: const Color(
+                                        0xFFcbd5e1,
+                                      ).withAlpha(120),
+                                      width: 1.5,
+                                    ),
                                   ),
                                   boxShadow: [
                                     BoxShadow(
@@ -370,15 +479,21 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                     Row(
                                       children: [
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
+                                          ),
                                           decoration: BoxDecoration(
                                             color: displayColor.withAlpha(20),
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                           child: Text(
-                                            (news['source'] ?? '').toUpperCase(),
+                                            (news['source'] ?? '')
+                                                .toUpperCase(),
                                             style: GoogleFonts.outfit(
-                                              fontSize: 9.5,
+                                              fontSize: 11.5,
                                               color: displayColor,
                                               fontWeight: FontWeight.w900,
                                               letterSpacing: 0.3,
@@ -389,7 +504,7 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                         Text(
                                           news['date'] ?? '',
                                           style: GoogleFonts.outfit(
-                                            fontSize: 11,
+                                            fontSize: 13,
                                             color: const Color(0xFF94a3b8),
                                             fontWeight: FontWeight.w600,
                                           ),
@@ -401,8 +516,8 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                       news['title'] ?? '',
                                       style: GoogleFonts.outfit(
                                         fontWeight: FontWeight.w800,
-                                        fontSize: 14.5,
-                                        color: const Color(0xFF1e293b),
+                                        fontSize: 16.5,
+                                        color: const Color(0xFF281710),
                                         height: 1.3,
                                       ),
                                     ),
@@ -410,7 +525,7 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                     Text(
                                       news['description'] ?? '',
                                       style: GoogleFonts.outfit(
-                                        fontSize: 12.5,
+                                        fontSize: 14.5,
                                         color: const Color(0xFF64748b),
                                         height: 1.4,
                                         fontWeight: FontWeight.w500,
@@ -425,44 +540,80 @@ class _LiveDataPageState extends State<LiveDataPage> {
 
                             if (totalPages > 1)
                               Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     IconButton(
-                                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 14),
-                                      onPressed: _newsPage > 1 ? () => setState(() { _newsPage--; }) : null,
+                                      icon: const Icon(
+                                        Icons.arrow_back_ios_new_rounded,
+                                        size: 14,
+                                      ),
+                                      onPressed: _newsPage > 1
+                                          ? () => setState(() {
+                                              _newsPage--;
+                                            })
+                                          : null,
                                       color: const Color(0xFF64748b),
                                       disabledColor: const Color(0xFFcbd5e1),
                                     ),
                                     const SizedBox(width: 8),
-                                    ...List.generate(totalPages, (i) => i + 1).map((n) {
+                                    ...List.generate(
+                                      totalPages,
+                                      (i) => i + 1,
+                                    ).map((n) {
                                       final isSelected = _newsPage == n;
                                       return GestureDetector(
-                                        onTap: () => setState(() => _newsPage = n),
+                                        onTap: () =>
+                                            setState(() => _newsPage = n),
                                         child: AnimatedContainer(
-                                          duration: const Duration(milliseconds: 200),
-                                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                                          duration: const Duration(
+                                            milliseconds: 200,
+                                          ),
+                                          margin: const EdgeInsets.symmetric(
+                                            horizontal: 4,
+                                          ),
                                           width: 32,
                                           height: 32,
                                           alignment: Alignment.center,
                                           decoration: BoxDecoration(
-                                            color: isSelected ? primary : Colors.white,
-                                            borderRadius: BorderRadius.circular(8),
+                                            color: isSelected
+                                                ? primary
+                                                : Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                             border: Border.all(
-                                              color: isSelected ? primary : const Color(0xFFcbd5e1),
+                                              color: isSelected
+                                                  ? primary
+                                                  : const Color(0xFFcbd5e1),
                                               width: 1.5,
                                             ),
                                             boxShadow: isSelected
-                                                ? [BoxShadow(color: primary.withAlpha(40), blurRadius: 6, offset: const Offset(0, 2))]
+                                                ? [
+                                                    BoxShadow(
+                                                      color: primary.withAlpha(
+                                                        40,
+                                                      ),
+                                                      blurRadius: 6,
+                                                      offset: const Offset(
+                                                        0,
+                                                        2,
+                                                      ),
+                                                    ),
+                                                  ]
                                                 : null,
                                           ),
                                           child: Text(
                                             '$n',
                                             style: GoogleFonts.outfit(
-                                              color: isSelected ? Colors.white : const Color(0xFF64748b),
+                                              color: isSelected
+                                                  ? Colors.white
+                                                  : const Color(0xFF64748b),
                                               fontWeight: FontWeight.w800,
-                                              fontSize: 12.5,
+                                              fontSize: 14.5,
                                             ),
                                           ),
                                         ),
@@ -470,8 +621,13 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                     }),
                                     const SizedBox(width: 8),
                                     IconButton(
-                                      icon: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                                      onPressed: _newsPage < totalPages ? () => setState(() => _newsPage++) : null,
+                                      icon: const Icon(
+                                        Icons.arrow_forward_ios_rounded,
+                                        size: 14,
+                                      ),
+                                      onPressed: _newsPage < totalPages
+                                          ? () => setState(() => _newsPage++)
+                                          : null,
                                       color: const Color(0xFF64748b),
                                       disabledColor: const Color(0xFFcbd5e1),
                                     ),
@@ -501,7 +657,8 @@ class _BlinkingDot extends StatefulWidget {
   State<_BlinkingDot> createState() => _BlinkingDotState();
 }
 
-class _BlinkingDotState extends State<_BlinkingDot> with SingleTickerProviderStateMixin {
+class _BlinkingDotState extends State<_BlinkingDot>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -528,10 +685,7 @@ class _BlinkingDotState extends State<_BlinkingDot> with SingleTickerProviderSta
       child: Container(
         width: 6,
         height: 6,
-        decoration: BoxDecoration(
-          color: widget.color,
-          shape: BoxShape.circle,
-        ),
+        decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
       ),
     );
   }

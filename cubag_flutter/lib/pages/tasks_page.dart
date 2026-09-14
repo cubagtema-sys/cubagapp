@@ -4,9 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 import '../components/app_layout.dart';
-import '../components/shimmer_loader.dart';
 import '../services/api_service.dart';
+import '../services/socket_service.dart';
 
 class TasksPage extends StatefulWidget {
   const TasksPage({super.key});
@@ -19,7 +21,15 @@ class _TasksPageState extends State<TasksPage> {
   bool _isLoading = true;
   String? _error;
   List<dynamic> _tasks = [];
-  
+
+  // Compliance Documents State
+  List<dynamic> _docRequirements = [];
+  int _docsTotal = 11;
+  int _docsUploaded = 0;
+  bool _isLoadingDocs = true;
+  String _activeTab = 'documents'; // 'documents' or 'tasks'
+  String? _uploadingDocKey;
+
   // Modal State
   Map<String, dynamic>? _selectedTask;
   final TextEditingController _noteController = TextEditingController();
@@ -30,25 +40,261 @@ class _TasksPageState extends State<TasksPage> {
   @override
   void initState() {
     super.initState();
-    _fetchTasks();
+    _loadInitialData();
+
+    SocketService().on('fees_updated', _onDataUpdatedSocket);
+    SocketService().on('tasks_updated', _onDataUpdatedSocket);
+    SocketService().on('documents_updated', _onDataUpdatedSocket);
+    SocketService().on('member_documents_updated', _onDataUpdatedSocket);
+  }
+
+  void _onDataUpdatedSocket(dynamic _) {
+    if (mounted) _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    await Future.wait([_fetchTasks(), _fetchRequirements()]);
   }
 
   @override
   void dispose() {
+    SocketService().off('fees_updated', _onDataUpdatedSocket);
+    SocketService().off('tasks_updated', _onDataUpdatedSocket);
+    SocketService().off('documents_updated', _onDataUpdatedSocket);
+    SocketService().off('member_documents_updated', _onDataUpdatedSocket);
     _noteController.dispose(); // BUG-F14 fix
     super.dispose();
   }
 
   Future<void> _fetchTasks() async {
-    if (!_isLoading) setState(() { _isLoading = true; _error = null; });
-    await ApiService().fetchDataWithCache('/tasks', (data, isCached, {bool hasError = false}) {
-      if (mounted && data != null) {
+    if (!_isLoading && mounted) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
+
+    await ApiService().fetchDataWithCache('/tasks', (
+      data,
+      isCached, {
+      bool hasError = false,
+    }) {
+      if (!mounted) return;
+      if (data != null) {
         setState(() {
           _tasks = ApiService.ensureList(data);
           _isLoading = false;
         });
       }
     });
+  }
+
+  Future<void> _fetchRequirements() async {
+    if (mounted) setState(() => _isLoadingDocs = true);
+
+    await ApiService().fetchDataWithCache('/documents/requirements', (
+      data,
+      isCached, {
+      bool hasError = false,
+    }) {
+      if (!mounted) return;
+      if (data != null && data is Map) {
+        setState(() {
+          _docRequirements = ApiService.ensureList(data['requirements']);
+          _docsTotal = int.tryParse(data['total']?.toString() ?? '11') ?? 11;
+          _docsUploaded =
+              int.tryParse(data['uploaded']?.toString() ?? '0') ?? 0;
+          _isLoadingDocs = false;
+        });
+      }
+    });
+  }
+
+  Future<void> _onRefreshAll() async {
+    await Future.wait([_fetchTasks(), _fetchRequirements()]);
+  }
+
+  Future<void> _openDocumentFile(String? fileUrl, {String? label}) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+
+    if (fileUrl == null || fileUrl.trim().isEmpty) {
+      if (mounted && messenger != null) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('No file link is available for this document.'),
+          ),
+        );
+      }
+      return;
+    }
+
+    final trimmed = fileUrl.trim();
+    final resolved =
+        trimmed.startsWith('http://') || trimmed.startsWith('https://')
+        ? trimmed
+        : (trimmed.startsWith('/')
+              ? '${ApiService.baseUrl}${trimmed.startsWith('/') ? trimmed.substring(1) : trimmed}'
+              : '${ApiService.baseUrl}$trimmed');
+
+    final uri = Uri.tryParse(resolved);
+    if (uri == null ||
+        !uri.hasScheme ||
+        (uri.scheme != 'http' && uri.scheme != 'https')) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Unable to open ${label ?? 'document'} right now.'),
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      if (kIsWeb) {
+        final opened = await launchUrl(uri);
+        if (!opened && mounted && messenger != null) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                'Unable to open ${label ?? 'document'} in the browser.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        final fallback = await launchUrl(uri, mode: LaunchMode.platformDefault);
+        if (!fallback && mounted && messenger != null) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                'Unable to open ${label ?? 'document'} in the app.',
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted && messenger != null) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Could not open ${label ?? 'document'}: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _uploadDocumentRequirement(Map<String, dynamic> docReq) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+
+    FilePickerResult? result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+      allowMultiple: true,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final docKey = docReq['key']?.toString() ?? '';
+
+    setState(() => _uploadingDocKey = docKey);
+
+    if (mounted && messenger != null) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Uploading ${result.files.length} document(s)...',
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF1A0F0A),
+        ),
+      );
+    }
+
+    try {
+      final List<Future<void>> uploadTasks = [];
+
+      for (final pickedFile in result.files) {
+        uploadTasks.add(() async {
+          late Uint8List bytes;
+          if (pickedFile.bytes != null) {
+            bytes = pickedFile.bytes!;
+          } else {
+            bytes = await pickedFile.xFile.readAsBytes();
+          }
+
+          final formData = FormData.fromMap({
+            'requirement': docReq['key'],
+            'label': docReq['label'],
+            'file': MultipartFile.fromBytes(bytes, filename: pickedFile.name),
+          });
+
+          await ApiService().post('/documents/upload', data: formData);
+        }());
+      }
+
+      await Future.wait(uploadTasks);
+      if (!mounted) return;
+
+      if (mounted && messenger != null) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${docReq['label']} submitted successfully!',
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFF10b981),
+          ),
+        );
+      }
+      _fetchRequirements();
+    } catch (e) {
+      if (mounted && messenger != null) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Error uploading document: $e'),
+            backgroundColor: const Color(0xFFef4444),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingDocKey = null);
+    }
   }
 
   void _openSubmitModal(Map<String, dynamic> task) {
@@ -58,7 +304,7 @@ class _TasksPageState extends State<TasksPage> {
       _selectedFile = null;
       _submitDone = false;
     });
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -88,25 +334,43 @@ class _TasksPageState extends State<TasksPage> {
         'notes': _noteController.text,
         if (_selectedFile != null)
           'file': kIsWeb || _selectedFile!.bytes != null
-              ? MultipartFile.fromBytes(_selectedFile!.bytes!, filename: _selectedFile!.name)
-              : await MultipartFile.fromFile(_selectedFile!.path!, filename: _selectedFile!.name),
+              ? MultipartFile.fromBytes(
+                  _selectedFile!.bytes!,
+                  filename: _selectedFile!.name,
+                )
+              : await MultipartFile.fromFile(
+                  _selectedFile!.path!,
+                  filename: _selectedFile!.name,
+                ),
       });
       final response = await apiService.post('/tasks/submit', data: formData);
       if (!mounted) return;
       // BUG-F13 fix: only mark done on success, show error on failure
       if (response.statusCode == 200 || response.statusCode == 201) {
-        setModalState(() { _submitDone = true; });
-        setState(() { _submitDone = true; });
+        setModalState(() {
+          _submitDone = true;
+        });
+        setState(() {
+          _submitDone = true;
+        });
         _fetchTasks();
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted && Navigator.canPop(context)) Navigator.pop(context);
         });
       } else {
-        final msg = (response.data is Map ? response.data['message'] : null) ?? 'Submission failed';
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+        final msg =
+            (response.data is Map ? response.data['message'] : null) ??
+            'Submission failed';
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) {
         setModalState(() => _isSubmitting = false);
@@ -119,7 +383,9 @@ class _TasksPageState extends State<TasksPage> {
     return StatefulBuilder(
       builder: (context, setModalState) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: Container(
             width: double.infinity,
             constraints: const BoxConstraints(maxWidth: 560),
@@ -152,11 +418,11 @@ class _TasksPageState extends State<TasksPage> {
                       Text(
                         'Evidence Submitted!',
                         style: GoogleFonts.outfit(
-                          fontSize: 22,
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Theme.of(context).brightness == Brightness.dark
                               ? Colors.white
-                              : const Color(0xFF08060d),
+                              : const Color(0xFF1A0F0A),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -165,7 +431,7 @@ class _TasksPageState extends State<TasksPage> {
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
                           color: const Color(0xFF6b6375),
-                          fontSize: 14,
+                          fontSize: 16,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -185,18 +451,20 @@ class _TasksPageState extends State<TasksPage> {
                                 Text(
                                   'Submit Evidence',
                                   style: GoogleFonts.outfit(
-                                    fontSize: 22,
+                                    fontSize: 24,
                                     fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).brightness == Brightness.dark
+                                    color:
+                                        Theme.of(context).brightness ==
+                                            Brightness.dark
                                         ? Colors.white
-                                        : const Color(0xFF08060d),
+                                        : const Color(0xFF1A0F0A),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   _selectedTask?['title'] ?? 'Task Requirement',
                                   style: GoogleFonts.inter(
-                                    fontSize: 14,
+                                    fontSize: 16,
                                     color: const Color(0xFF6b6375),
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -209,11 +477,13 @@ class _TasksPageState extends State<TasksPage> {
                           IconButton(
                             icon: const Icon(Icons.close_rounded, size: 24),
                             style: IconButton.styleFrom(
-                              backgroundColor: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                              backgroundColor: Theme.of(
+                                context,
+                              ).dividerColor.withValues(alpha: 0.3),
                               padding: const EdgeInsets.all(8),
                             ),
                             onPressed: () => Navigator.pop(context),
-                          )
+                          ),
                         ],
                       ),
                       const SizedBox(height: 24),
@@ -221,21 +491,28 @@ class _TasksPageState extends State<TasksPage> {
                         'Completion Notes',
                         style: GoogleFonts.outfit(
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontSize: 16,
                           color: Theme.of(context).brightness == Brightness.dark
                               ? Colors.white
-                              : const Color(0xFF08060d),
+                              : const Color(0xFF1A0F0A),
                         ),
                       ),
                       const SizedBox(height: 8),
                       TextField(
                         controller: _noteController,
                         maxLines: 4,
-                        style: GoogleFonts.inter(fontSize: 14),
+                        style: GoogleFonts.inter(fontSize: 16),
                         decoration: InputDecoration(
-                          hintText: 'Describe what you did to complete this task...',
-                          hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748b)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          hintText:
+                              'Describe what you did to complete this task...',
+                          hintStyle: GoogleFonts.inter(
+                            fontSize: 15,
+                            color: const Color(0xFF64748b),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(
@@ -251,8 +528,9 @@ class _TasksPageState extends State<TasksPage> {
                             ),
                           ),
                           filled: true,
-                          fillColor: Theme.of(context).brightness == Brightness.dark
-                              ? const Color(0xFF1f2028)
+                          fillColor:
+                              Theme.of(context).brightness == Brightness.dark
+                              ? const Color(0xFF1A0F0A)
                               : Colors.grey.shade50,
                         ),
                       ),
@@ -261,10 +539,10 @@ class _TasksPageState extends State<TasksPage> {
                         'Attachments (images, PDF, Word, video)',
                         style: GoogleFonts.outfit(
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontSize: 16,
                           color: Theme.of(context).brightness == Brightness.dark
                               ? Colors.white
-                              : const Color(0xFF08060d),
+                              : const Color(0xFF1A0F0A),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -280,7 +558,10 @@ class _TasksPageState extends State<TasksPage> {
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 28,
+                              horizontal: 16,
+                            ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -288,8 +569,12 @@ class _TasksPageState extends State<TasksPage> {
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
                                     color: _selectedFile != null
-                                        ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
-                                        : Theme.of(context).dividerColor.withValues(alpha: 0.2),
+                                        ? Theme.of(
+                                            context,
+                                          ).primaryColor.withValues(alpha: 0.1)
+                                        : Theme.of(
+                                            context,
+                                          ).dividerColor.withValues(alpha: 0.2),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
@@ -304,7 +589,9 @@ class _TasksPageState extends State<TasksPage> {
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
-                                  _selectedFile != null ? _selectedFile!.name : 'Click to attach files',
+                                  _selectedFile != null
+                                      ? _selectedFile!.name
+                                      : 'Click to attach files',
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.inter(
                                     color: _selectedFile != null
@@ -313,7 +600,7 @@ class _TasksPageState extends State<TasksPage> {
                                     fontWeight: _selectedFile != null
                                         ? FontWeight.w600
                                         : FontWeight.normal,
-                                    fontSize: 14,
+                                    fontSize: 16,
                                   ),
                                 ),
                               ],
@@ -334,9 +621,11 @@ class _TasksPageState extends State<TasksPage> {
                             ),
                             elevation: 0,
                           ),
-                          onPressed: _isSubmitting ? null : () {
-                            _handleSubmit(setModalState);
-                          },
+                          onPressed: _isSubmitting
+                              ? null
+                              : () {
+                                  _handleSubmit(setModalState);
+                                },
                           child: _isSubmitting
                               ? const SizedBox(
                                   width: 20,
@@ -351,7 +640,7 @@ class _TasksPageState extends State<TasksPage> {
                                   style: GoogleFonts.inter(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 15,
+                                    fontSize: 17,
                                   ),
                                 ),
                         ),
@@ -360,19 +649,19 @@ class _TasksPageState extends State<TasksPage> {
                   ),
           ),
         );
-      }
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     int pendingCount = _tasks.where((t) => t['done'] != true).length;
-    int verifiedCount = _tasks.where((t) => t['admin_verified'] == true).length;
 
     return AppLayout(
       title: 'Tasks & Compliance',
+      scrollable: false,
       child: RefreshIndicator(
-        onRefresh: _fetchTasks,
+        onRefresh: _onRefreshAll,
         color: Theme.of(context).primaryColor,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -381,7 +670,10 @@ class _TasksPageState extends State<TasksPage> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 800),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 24.0,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -392,14 +684,21 @@ class _TasksPageState extends State<TasksPage> {
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: Theme.of(context).brightness == Brightness.dark
-                              ? [const Color(0xFF1f2028), const Color(0xFF16171d)]
-                              : [const Color(0xFFf08232), const Color(0xFFe66c19)],
+                          colors:
+                              Theme.of(context).brightness == Brightness.dark
+                              ? [
+                                  const Color(0xFF1A0F0A),
+                                  const Color(0xFF1A0F0A),
+                                ]
+                              : [
+                                  const Color(0xFFFF5000),
+                                  const Color(0xFFe66c19),
+                                ],
                         ),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: Theme.of(context).brightness == Brightness.dark
-                              ? const Color(0xFF2e303a)
+                              ? const Color(0xFF4D2D20)
                               : Colors.white.withValues(alpha: 0.15),
                           width: 1.5,
                         ),
@@ -417,9 +716,13 @@ class _TasksPageState extends State<TasksPage> {
                           Stack(
                             alignment: Alignment.center,
                             children: [
-                              if (!_isLoading && pendingCount > 0)
+                              if (!_isLoading &&
+                                  (pendingCount > 0 ||
+                                      _docsUploaded < _docsTotal))
                                 _PulsingRing(
-                                  color: Theme.of(context).brightness == Brightness.dark
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
                                       ? Theme.of(context).primaryColor
                                       : Colors.white,
                                 ),
@@ -427,18 +730,25 @@ class _TasksPageState extends State<TasksPage> {
                                 width: 52,
                                 height: 52,
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).brightness == Brightness.dark
-                                      ? Theme.of(context).primaryColor.withValues(alpha: 0.15)
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Theme.of(
+                                          context,
+                                        ).primaryColor.withValues(alpha: 0.15)
                                       : Colors.white.withValues(alpha: 0.2),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   _isLoading
                                       ? Icons.sync
-                                      : (pendingCount > 0
-                                          ? Icons.assignment_late_rounded
-                                          : Icons.verified_user_rounded),
-                                  color: Theme.of(context).brightness == Brightness.dark
+                                      : (pendingCount > 0 ||
+                                                _docsUploaded < _docsTotal
+                                            ? Icons.assignment_late_rounded
+                                            : Icons.verified_user_rounded),
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
                                       ? Theme.of(context).primaryColor
                                       : Colors.white,
                                   size: 26,
@@ -455,27 +765,40 @@ class _TasksPageState extends State<TasksPage> {
                                   'Compliance Status',
                                   style: GoogleFonts.outfit(
                                     color: Colors.white,
-                                    fontSize: 20,
+                                    fontSize: 22,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    if (!_isLoading && pendingCount > 0) ...[
-                                      const _BlinkingDot(color: Colors.redAccent, size: 8),
+                                    if (!_isLoading &&
+                                        (pendingCount > 0 ||
+                                            _docsUploaded < _docsTotal)) ...[
+                                      const _BlinkingDot(
+                                        color: Colors.redAccent,
+                                        size: 8,
+                                      ),
                                       const SizedBox(width: 8),
                                     ],
-                                    Text(
-                                      _isLoading
-                                          ? 'Checking records...'
-                                          : '$pendingCount Action Required · $verifiedCount Verified',
-                                      style: GoogleFonts.inter(
-                                        color: Theme.of(context).brightness == Brightness.dark
-                                            ? const Color(0xFF9ca3af)
-                                            : Colors.white.withValues(alpha: 0.95),
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
+                                    Expanded(
+                                      child: Text(
+                                        _isLoading
+                                            ? 'Checking records...'
+                                            : '$_docsUploaded/$_docsTotal Docs Uploaded · $pendingCount Action Items',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.inter(
+                                          color:
+                                              Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? const Color(0xFF9ca3af)
+                                              : Colors.white.withValues(
+                                                  alpha: 0.95,
+                                                ),
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -486,320 +809,158 @@ class _TasksPageState extends State<TasksPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
 
-                    Padding(
-                      padding: const EdgeInsets.only(left: 4.0, bottom: 16.0),
-                      child: Text(
-                        'Compliance Requirements',
-                        style: GoogleFonts.outfit(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                    // Tab Segment Switcher
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF281710)
+                            : const Color(0xFFf1f5f9),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
                           color: Theme.of(context).brightness == Brightness.dark
-                              ? Colors.white
-                              : const Color(0xFF08060d),
+                              ? const Color(0xFF4D2D20)
+                              : const Color(0xFFe2e8f0),
                         ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () =>
+                                  setState(() => _activeTab = 'documents'),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _activeTab == 'documents'
+                                      ? (Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? const Color(0xFF4D2D20)
+                                            : Colors.white)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: _activeTab == 'documents'
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.05,
+                                            ),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                alignment: Alignment.center,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.folder_shared_rounded,
+                                      size: 16,
+                                      color: _activeTab == 'documents'
+                                          ? const Color(0xFFFF5000)
+                                          : Colors.grey.shade500,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          'Registration Docs',
+                                          maxLines: 1,
+                                          style: GoogleFonts.outfit(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                            color: _activeTab == 'documents'
+                                                ? (Theme.of(
+                                                            context,
+                                                          ).brightness ==
+                                                          Brightness.dark
+                                                      ? Colors.white
+                                                      : const Color(0xFF1A0F0A))
+                                                : Colors.grey.shade500,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setState(() => _activeTab = 'tasks'),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _activeTab == 'tasks'
+                                      ? (Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? const Color(0xFF4D2D20)
+                                            : Colors.white)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: _activeTab == 'tasks'
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.05,
+                                            ),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                alignment: Alignment.center,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.task_alt_rounded,
+                                      size: 16,
+                                      color: _activeTab == 'tasks'
+                                          ? const Color(0xFFFF5000)
+                                          : Colors.grey.shade500,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Checklist & Dues',
+                                      style: GoogleFonts.outfit(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: _activeTab == 'tasks'
+                                            ? (Theme.of(context).brightness ==
+                                                      Brightness.dark
+                                                  ? Colors.white
+                                                  : const Color(0xFF1A0F0A))
+                                            : Colors.grey.shade500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    const SizedBox(height: 24),
 
-                    if (_isLoading && _tasks.isEmpty)
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: 4,
-                        separatorBuilder: (ctx, i) => const SizedBox(height: 16),
-                        itemBuilder: (ctx, i) => const ShimmerListTile(),
-                      )
-                    else if (_error != null)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFef4444).withValues(alpha: 0.05),
-                          border: Border.all(color: const Color(0xFFef4444).withValues(alpha: 0.2), width: 1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFef4444).withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.cloud_off_rounded, color: Color(0xFFef4444), size: 32),
-                            ),
-                            const SizedBox(height: 20),
-                            Text(
-                              'Connection Failed',
-                              style: GoogleFonts.outfit(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF08060d),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Please check your internet connection and try again.',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(color: const Color(0xFF6b6375), fontSize: 14),
-                            ),
-                            const SizedBox(height: 24),
-                            SizedBox(
-                              width: 140,
-                              height: 44,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFef4444),
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  elevation: 0,
-                                ),
-                                onPressed: _fetchTasks,
-                                child: Text(
-                                  'Retry',
-                                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
-                                ),
-                              ),
-                            )
-                          ],
-                        ),
-                      )
-                    else if (_tasks.isEmpty)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? const Color(0xFF2e303a)
-                                : const Color(0xFFe5e4e7),
-                            width: 1.0,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.inventory_2_outlined, color: Colors.grey, size: 36),
-                            ),
-                            const SizedBox(height: 20),
-                            Text(
-                              'All caught up!',
-                              style: GoogleFonts.outfit(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF08060d),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'No pending compliance tasks at this time.',
-                              style: GoogleFonts.inter(color: const Color(0xFF6b6375), fontSize: 14),
-                            ),
-                          ],
-                        ),
-                      )
+                    if (_activeTab == 'documents')
+                      _buildDocumentsSection()
                     else
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _tasks.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 16),
-                        itemBuilder: (context, index) {
-                          final task = _tasks[index];
-                          final bool submitted = task['submission_id'] != null;
-                          final bool verified = task['admin_verified'] == true;
-                          final bool urgent = task['urgent'] == true;
-
-                          // Status determination
-                          Color badgeBgColor;
-                          Color badgeTextColor;
-                          String statusText;
-                          IconData statusIcon;
-                          bool isPulsing = false;
-
-                          if (verified) {
-                            badgeBgColor = const Color(0xFF10b981).withValues(alpha: 0.1);
-                            badgeTextColor = const Color(0xFF10b981);
-                            statusText = 'Verified';
-                            statusIcon = Icons.verified_rounded;
-                          } else if (submitted) {
-                            badgeBgColor = const Color(0xFF3b82f6).withValues(alpha: 0.1);
-                            badgeTextColor = const Color(0xFF3b82f6);
-                            statusText = 'Reviewing';
-                            statusIcon = Icons.hourglass_empty_rounded;
-                          } else if (urgent) {
-                            badgeBgColor = const Color(0xFFef4444).withValues(alpha: 0.1);
-                            badgeTextColor = const Color(0xFFef4444);
-                            statusText = 'Urgent';
-                            statusIcon = Icons.warning_amber_rounded;
-                            isPulsing = true;
-                          } else {
-                            badgeBgColor = Theme.of(context).primaryColor.withValues(alpha: 0.1);
-                            badgeTextColor = Theme.of(context).primaryColor;
-                            statusText = 'Pending';
-                            statusIcon = Icons.assignment_outlined;
-                          }
-
-                          return Container(
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Theme.of(context).brightness == Brightness.dark
-                                    ? const Color(0xFF2e303a)
-                                    : const Color(0xFFe5e4e7),
-                                width: 1.0,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.02),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: InkWell(
-                                onTap: !submitted ? () => _openSubmitModal(task) : null,
-                                borderRadius: BorderRadius.circular(16),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    children: [
-                                      // Leading icon representation
-                                      Container(
-                                        width: 44,
-                                        height: 44,
-                                        decoration: BoxDecoration(
-                                          color: badgeBgColor.withValues(alpha: 0.05),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Center(
-                                          child: Icon(
-                                            statusIcon,
-                                            color: badgeTextColor,
-                                            size: 22,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      // Info section
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              task['title'] ?? 'Unknown Task',
-                                              style: GoogleFonts.outfit(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                                color: Theme.of(context).brightness == Brightness.dark
-                                                    ? Colors.white
-                                                    : const Color(0xFF08060d),
-                                              ),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Wrap(
-                                              spacing: 8,
-                                              runSpacing: 4,
-                                              crossAxisAlignment: WrapCrossAlignment.center,
-                                              children: [
-                                                // Status Chip
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(
-                                                      horizontal: 10, vertical: 4),
-                                                  decoration: BoxDecoration(
-                                                    color: badgeBgColor,
-                                                    borderRadius: BorderRadius.circular(20),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      if (isPulsing) ...[
-                                                        const _BlinkingDot(
-                                                            color: Color(0xFFef4444), size: 6),
-                                                        const SizedBox(width: 6),
-                                                      ],
-                                                      Text(
-                                                        statusText,
-                                                        style: GoogleFonts.inter(
-                                                          fontSize: 11,
-                                                          fontWeight: FontWeight.bold,
-                                                          color: badgeTextColor,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                // Due Date tag
-                                                if (!verified && !submitted && task['due_date'] != null)
-                                                  Text(
-                                                    'Due: ${task['due_date']}',
-                                                    style: GoogleFonts.inter(
-                                                      fontSize: 12,
-                                                      color: urgent
-                                                          ? const Color(0xFFef4444)
-                                                          : const Color(0xFF6b6375),
-                                                      fontWeight: urgent
-                                                          ? FontWeight.w600
-                                                          : FontWeight.normal,
-                                                    ),
-                                                  ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // Action element on the right
-                                      if (!submitted) ...[
-                                        const SizedBox(width: 12),
-                                        ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Theme.of(context).primaryColor,
-                                            foregroundColor: Colors.white,
-                                            shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(12)),
-                                            elevation: 0,
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 16, vertical: 12),
-                                          ),
-                                          onPressed: () => _openSubmitModal(task),
-                                          child: Text(
-                                            'Submit',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ] else ...[
-                                        const SizedBox(width: 12),
-                                        const Icon(
-                                          Icons.check_circle_outline_rounded,
-                                          color: Color(0xFF10b981),
-                                          size: 24,
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                      _buildTasksChecklistSection(),
                   ],
                 ),
               ),
@@ -807,6 +968,772 @@ class _TasksPageState extends State<TasksPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTasksChecklistSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4.0, bottom: 16.0),
+          child: Text(
+            'Compliance Requirements',
+            style: GoogleFonts.outfit(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : const Color(0xFF1A0F0A),
+            ),
+          ),
+        ),
+
+        if (_isLoading && _tasks.isEmpty)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          )
+        else if (_error != null)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+            decoration: BoxDecoration(
+              color: const Color(0xFFef4444).withValues(alpha: 0.05),
+              border: Border.all(
+                color: const Color(0xFFef4444).withValues(alpha: 0.2),
+                width: 1,
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFef4444).withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.cloud_off_rounded,
+                    color: Color(0xFFef4444),
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Connection Failed',
+                  style: GoogleFonts.outfit(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : const Color(0xFF1A0F0A),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Please check your internet connection and try again.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFF6b6375),
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: 140,
+                  height: 44,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFef4444),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: _fetchTasks,
+                    child: Text(
+                      'Retry',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else if (_tasks.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF4D2D20)
+                    : const Color(0xFFE8DED6),
+                width: 1.0,
+              ),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.task_alt_rounded,
+                    color: Theme.of(context).primaryColor,
+                    size: 36,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'All Caught Up!',
+                  style: GoogleFonts.outfit(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : const Color(0xFF1A0F0A),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'You have no pending tasks or dues to clear.',
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFF6b6375),
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _tasks.length,
+            separatorBuilder: (ctx, i) => const SizedBox(height: 16),
+            itemBuilder: (context, index) {
+              final task = _tasks[index];
+              final bool done = task['done'] == true;
+              final bool submitted = task['submitted'] == true;
+              final bool verified = task['admin_verified'] == true;
+              final bool urgent = task['urgent'] == true;
+
+              // Status determination
+              Color badgeBgColor;
+              Color badgeTextColor;
+              String statusText;
+              IconData statusIcon;
+
+              if (verified) {
+                badgeBgColor = const Color(0xFF10b981).withValues(alpha: 0.1);
+                badgeTextColor = const Color(0xFF10b981);
+                statusText = 'Verified';
+                statusIcon = Icons.verified_rounded;
+              } else if (submitted) {
+                badgeBgColor = const Color(0xFF3b82f6).withValues(alpha: 0.1);
+                badgeTextColor = const Color(0xFF3b82f6);
+                statusText = 'Reviewing';
+                statusIcon = Icons.hourglass_empty_rounded;
+              } else if (urgent) {
+                badgeBgColor = const Color(0xFFef4444).withValues(alpha: 0.1);
+                badgeTextColor = const Color(0xFFef4444);
+                statusText = 'Urgent';
+                statusIcon = Icons.warning_amber_rounded;
+              } else {
+                badgeBgColor = Theme.of(
+                  context,
+                ).primaryColor.withValues(alpha: 0.1);
+                badgeTextColor = Theme.of(context).primaryColor;
+                statusText = 'Pending';
+                statusIcon = Icons.assignment_outlined;
+              }
+
+              return Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFF4D2D20)
+                        : const Color(0xFFE8DED6),
+                    width: 1.0,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(18.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Top Row: Icon + Title & Status Badge
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: badgeBgColor,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              statusIcon,
+                              color: badgeTextColor,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  task['title'] ?? 'Task',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.white
+                                        : const Color(0xFF1A0F0A),
+                                    decoration: done
+                                        ? TextDecoration.lineThrough
+                                        : null,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: badgeBgColor,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    statusText,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: badgeTextColor,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      if (task['description'] != null &&
+                          task['description'].toString().trim().isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          task['description'],
+                          style: GoogleFonts.inter(
+                            fontSize: 15.5,
+                            color: const Color(0xFF475569),
+                            height: 1.45,
+                          ),
+                        ),
+                      ],
+
+                      if (task['admin_notes'] != null &&
+                          task['admin_notes'].toString().trim().isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0xFFef4444,
+                            ).withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(
+                                0xFFef4444,
+                              ).withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.info_outline,
+                                size: 14,
+                                color: Color(0xFFef4444),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Admin Note: ${task['admin_notes']}',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    color: const Color(0xFFef4444),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      if (task['due_date'] != null) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          'Due: ${task['due_date']}',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: urgent
+                                ? const Color(0xFFef4444)
+                                : const Color(0xFF6b6375),
+                            fontWeight: urgent
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+
+                      // Action Button Section
+                      if (task['action_url'] != null) ...[
+                        const SizedBox(height: 14),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 44,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: urgent
+                                  ? const Color(0xFFef4444)
+                                  : Theme.of(context).primaryColor,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              final actionUrl = task['action_url'].toString();
+                              if (actionUrl == '/tasks') {
+                                setState(() => _activeTab = 'documents');
+                              } else {
+                                context.go(actionUrl);
+                              }
+                            },
+                            child: Text(
+                              task['action_label']?.toString() ?? 'Take Action',
+                              style: GoogleFonts.inter(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ] else if (!submitted) ...[
+                        const SizedBox(height: 14),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 44,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).primaryColor,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
+                            onPressed: () => _openSubmitModal(task),
+                            child: Text(
+                              'Submit Required Documents',
+                              style: GoogleFonts.inter(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDocumentsSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).primaryColor;
+    final cardBg = Theme.of(context).cardColor;
+    final borderColor = isDark
+        ? const Color(0xFF4D2D20)
+        : const Color(0xFFE8DED6);
+    final progress = _docsTotal > 0 ? (_docsUploaded / _docsTotal) : 0.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Progress Summary Card
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Clearance Documents Progress',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: isDark ? Colors.white : const Color(0xFF1A0F0A),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _docsUploaded == _docsTotal
+                          ? const Color(0xFF10b981).withValues(alpha: 0.1)
+                          : const Color(0xFFFF5000).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '$_docsUploaded / $_docsTotal Uploaded',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: _docsUploaded == _docsTotal
+                            ? const Color(0xFF10b981)
+                            : const Color(0xFFFF5000),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 8,
+                  backgroundColor: isDark
+                      ? const Color(0xFF4D2D20)
+                      : const Color(0xFFf1f5f9),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    _docsUploaded == _docsTotal
+                        ? const Color(0xFF10b981)
+                        : const Color(0xFFFF5000),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Upload and maintain your mandatory onboarding clearances. Administrators review and approve these documents to verify your membership.',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        if (_isLoadingDocs && _docRequirements.isEmpty)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _docRequirements.length,
+            separatorBuilder: (ctx, i) => const SizedBox(height: 12),
+            itemBuilder: (ctx, i) {
+              final doc = _docRequirements[i];
+              final String key = doc['key'] ?? '';
+              final String label = doc['label'] ?? key;
+              final bool uploaded = doc['uploaded'] == true;
+              final String status = (doc['status'] ?? 'not_uploaded')
+                  .toString()
+                  .toLowerCase();
+              final String? fileUrl = doc['file_url'];
+              final String? fileName = doc['file_name'];
+              final String? adminNote = doc['admin_note'];
+              final bool isUploadingThis = _uploadingDocKey == key;
+
+              Color statusBg;
+              Color statusColor;
+              String statusLabel;
+              IconData statusIcon;
+
+              if (status == 'approved') {
+                statusBg = const Color(0xFF10b981).withValues(alpha: 0.1);
+                statusColor = const Color(0xFF10b981);
+                statusLabel = 'Approved';
+                statusIcon = Icons.check_circle_rounded;
+              } else if (status == 'pending') {
+                statusBg = const Color(0xFFf59e0b).withValues(alpha: 0.1);
+                statusColor = const Color(0xFFf59e0b);
+                statusLabel = 'Pending Review';
+                statusIcon = Icons.hourglass_top_rounded;
+              } else if (status == 'rejected') {
+                statusBg = const Color(0xFFef4444).withValues(alpha: 0.1);
+                statusColor = const Color(0xFFef4444);
+                statusLabel = 'Needs Update';
+                statusIcon = Icons.error_outline_rounded;
+              } else {
+                statusBg = Colors.grey.withValues(alpha: 0.1);
+                statusColor = Colors.grey.shade600;
+                statusLabel = 'Not Uploaded';
+                statusIcon = Icons.upload_file_rounded;
+              }
+
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: status == 'rejected'
+                        ? const Color(0xFFef4444).withValues(alpha: 0.4)
+                        : borderColor,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: statusBg,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(statusIcon, color: statusColor, size: 20),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                label,
+                                style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 17,
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF1A0F0A),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: statusBg,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      statusLabel,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: statusColor,
+                                      ),
+                                    ),
+                                  ),
+                                  if (fileName != null) ...[
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        fileName,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 13,
+                                          color: Colors.grey.shade500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (adminNote != null && adminNote.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFFef4444,
+                          ).withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(
+                              0xFFef4444,
+                            ).withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.info_outline_rounded,
+                              size: 14,
+                              color: Color(0xFFef4444),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Admin note: $adminNote',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: const Color(0xFFef4444),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    const Divider(height: 1),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (uploaded &&
+                            fileUrl != null &&
+                            fileUrl.isNotEmpty) ...[
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: primary,
+                              side: BorderSide(
+                                color: primary.withValues(alpha: 0.4),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                            ),
+                            onPressed: () =>
+                                _openDocumentFile(fileUrl, label: label),
+                            icon: const Icon(
+                              Icons.visibility_outlined,
+                              size: 14,
+                            ),
+                            label: Text(
+                              'View File',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: uploaded
+                                ? const Color(0xFF1A0F0A)
+                                : primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            elevation: 0,
+                          ),
+                          onPressed: isUploadingThis
+                              ? null
+                              : () => _uploadDocumentRequirement(doc),
+                          icon: isUploadingThis
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Icon(
+                                  uploaded
+                                      ? Icons.refresh_rounded
+                                      : Icons.upload_file_rounded,
+                                  size: 14,
+                                ),
+                          label: Text(
+                            uploaded ? 'Update File' : 'Upload File',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+      ],
     );
   }
 }
@@ -817,10 +1744,7 @@ class _BlinkingDot extends StatefulWidget {
   final Color color;
   final double size;
 
-  const _BlinkingDot({
-    required this.color,
-    this.size = 8.0,
-  });
+  const _BlinkingDot({required this.color, this.size = 8.0});
 
   @override
   State<_BlinkingDot> createState() => _BlinkingDotState();
@@ -852,10 +1776,7 @@ class _BlinkingDotState extends State<_BlinkingDot>
       child: Container(
         width: widget.size,
         height: widget.size,
-        decoration: BoxDecoration(
-          color: widget.color,
-          shape: BoxShape.circle,
-        ),
+        decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
       ),
     );
   }
@@ -932,10 +1853,12 @@ class DashedBorderPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        Radius.circular(borderRadius),
-      ));
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(0, 0, size.width, size.height),
+          Radius.circular(borderRadius),
+        ),
+      );
 
     final dashPath = Path();
     double distance = 0.0;

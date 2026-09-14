@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'iframe_stub.dart'
     if (dart.library.html) 'iframe_web.dart'
-    if (dart.library.io) 'iframe_mobile.dart' as platform_impl;
+    if (dart.library.io) 'iframe_mobile.dart'
+    as platform_impl;
 
 class IframeWidget extends StatelessWidget {
   final String mmsi;

@@ -17,6 +17,311 @@ def allowed_file(filename):
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
+def _query_license(conn, member_id):
+    """Fetch member license status for priority task synthesis."""
+    tasks = []
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT status, license_expiry_date
+                FROM members WHERE id = %s
+            """, (member_id,))
+            member = cursor.fetchone()
+        if member:
+            from datetime import datetime, date
+            status = (member.get('status') or 'active').lower()
+            raw_expiry = member.get('license_expiry_date')
+            days_left = None
+            expiry_str = None
+            if raw_expiry:
+                if isinstance(raw_expiry, str):
+                    try:
+                        exp_date = datetime.strptime(raw_expiry, '%Y-%m-%d').date()
+                    except Exception:
+                        exp_date = None
+                elif isinstance(raw_expiry, (datetime, date)):
+                    exp_date = raw_expiry if isinstance(raw_expiry, date) else raw_expiry.date()
+                else:
+                    exp_date = None
+                if exp_date:
+                    days_left = (exp_date - date.today()).days
+                    expiry_str = exp_date.isoformat()
+            if status in ('pending', 'pending_payment', 'inactive'):
+                tasks.append({
+                    'id': 'sys_license_activate',
+                    'title': '🔴 License Activation Payment Required',
+                    'description': 'Your membership license payment is pending. Complete payment now to activate full CUBAG member privileges.',
+                    'due_date': 'Immediate',
+                    'priority': 'Urgent',
+                    'category': 'License & Payments',
+                    'done': False,
+                    'action_url': '/compliance',
+                    'action_label': 'Pay Now',
+                    'is_system': True,
+                    'system_type': 'payment'
+                })
+            elif days_left is not None and days_left <= 90:
+                is_expired = days_left < 0
+                tasks.append({
+                    'id': 'sys_license_renewal',
+                    'title': f'🔴 License Expired ({abs(days_left)} days ago)' if is_expired else f'🟡 Annual License Renewal Window Open ({days_left} days left)',
+                    'description': f'Your license expired on {expiry_str}. Complete renewal immediately to maintain active standing.' if is_expired else f'Your annual license expires on {expiry_str}. The renewal window is now open.',
+                    'due_date': expiry_str or 'Immediate',
+                    'priority': 'Urgent' if (is_expired or days_left <= 30) else 'High',
+                    'category': 'License & Payments',
+                    'done': False,
+                    'action_url': '/compliance',
+                    'action_label': 'Renew License Now' if is_expired else 'Submit Renewal',
+                    'is_system': True,
+                    'system_type': 'renewal'
+                })
+    except Exception:
+        pass
+    return tasks
+
+
+def _query_rejections(conn, member_id):
+    """Fetch rejected compliance documents for priority task synthesis."""
+    tasks = []
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT ca.id, ca.type, ca.status as app_status, ca.admin_note as app_note,
+                       cd.requirement, cd.label as doc_label, cd.status as doc_status, cd.admin_note as doc_note
+                FROM compliance_applications ca
+                LEFT JOIN compliance_documents cd ON cd.application_id = ca.id
+                WHERE ca.member_id = %s
+                  AND (ca.status IN ('rejected', 'revision_requested') OR cd.status = 'rejected')
+            """, (member_id,))
+            rejected_rows = cursor.fetchall()
+        seen_apps = set()
+        for row in rejected_rows:
+            app_id = row['id']
+            app_type = row['type']
+            type_label = 'License Renewal' if app_type == 'renewal' else 'Member ID Application'
+            note = row['doc_note'] or row['app_note'] or 'Admin requested revision or re-upload for rejected files.'
+            if app_id not in seen_apps:
+                seen_apps.add(app_id)
+                tasks.append({
+                    'id': f'sys_compliance_reject_{app_id}',
+                    'title': f'🔴 Action Required: {type_label} Document Rejected',
+                    'description': f'Admin Note: {note}',
+                    'due_date': 'Immediate',
+                    'priority': 'Urgent',
+                    'category': 'Compliance Revisions',
+                    'done': False,
+                    'action_url': '/compliance',
+                    'action_label': 'Re-upload Documents',
+                    'is_system': True,
+                    'system_type': 'rejection'
+                })
+    except Exception:
+        pass
+    return tasks
+
+
+def _query_surveys(conn, member_id):
+    """Fetch active elections & surveys for priority task synthesis."""
+    tasks = []
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT s.id, s.title, s.description, s.type, s.deadline, s.expiry
+                FROM surveys s
+                WHERE s.active = TRUE
+                  AND (s.deleted_at IS NULL)
+                  AND (s.expiry IS NULL OR s.expiry >= CURRENT_DATE)
+                  AND (s.deadline IS NULL OR s.deadline >= CURRENT_DATE)
+                  AND s.id NOT IN (
+                      SELECT survey_id FROM survey_responses WHERE member_id = %s
+                  )
+                ORDER BY s.created_at DESC
+            """, (member_id,))
+            active_surveys = cursor.fetchall()
+        for s in active_surveys:
+            survey_id = s['id']
+            s_type = (s.get('type') or 'Survey').upper()
+            due = str(s.get('deadline') or s.get('expiry') or 'Active')
+            tasks.append({
+                'id': f'sys_survey_{survey_id}',
+                'title': f'🗳️ {s_type}: {s["title"]}',
+                'description': s.get('description') or f'Official CUBAG {s_type.lower()} open for member participation.',
+                'due_date': due,
+                'priority': 'High' if s_type == 'ELECTION' else 'Medium',
+                'category': 'Elections & Surveys',
+                'done': False,
+                'action_url': '/surveys',
+                'action_label': 'Cast Vote',
+                'is_system': True,
+                'system_type': 'survey'
+            })
+    except Exception:
+        pass
+    return tasks
+
+
+def _query_onboarding_docs(conn, member_id):
+    """Fetch onboarding document count for priority task synthesis."""
+    tasks = []
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT status, member_type FROM members WHERE id = %s", (member_id,))
+            mem = cursor.fetchone()
+            if not mem:
+                return tasks
+            status = str(mem.get('status') or '').lower()
+            if status in ('active', 'approved'):
+                return tasks  # Fully approved/active member has completed onboarding
+
+            raw_type = str(mem.get('member_type') or 'corporate').lower()
+            if 'licentiate' in raw_type or 'individual' in raw_type:
+                expected_cnt = 7
+            elif 'associate' in raw_type or 'affiliate' in raw_type:
+                expected_cnt = 6
+            else:
+                expected_cnt = 11
+
+            cursor.execute("""
+                SELECT COUNT(*) as uploaded_cnt
+                FROM member_documents
+                WHERE member_id = %s AND status != 'rejected'
+            """, (member_id,))
+            doc_res = cursor.fetchone()
+            uploaded_cnt = doc_res['uploaded_cnt'] if doc_res else 0
+            if uploaded_cnt < expected_cnt:
+                tasks.append({
+                    'id': 'sys_onboarding_docs',
+                    'title': f'📋 Complete {expected_cnt} Mandatory Clearance Documents',
+                    'description': f'You have uploaded {uploaded_cnt} of {expected_cnt} mandatory onboarding clearance documents.',
+                    'due_date': 'Pending Registration',
+                    'priority': 'High',
+                    'category': 'Onboarding Documents',
+                    'done': False,
+                    'action_url': '/tasks',
+                    'action_label': 'Upload Documents',
+                    'is_system': True,
+                    'system_type': 'documents'
+                })
+    except Exception:
+        pass
+    return tasks
+
+
+def _query_package_fee(conn, member_id):
+    """Fetch Membership Entrance Package fee status for task synthesis."""
+    tasks = []
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT status, fee_category, member_scale, member_type, role, good_standing,
+                       COALESCE(package_fee_paid, FALSE) as package_fee_paid,
+                       COALESCE(registration_fee_paid, FALSE) as reg_fee_paid
+                FROM members WHERE id = %s
+            """, (member_id,))
+            mem = cursor.fetchone()
+            if not mem or mem.get('role') in ('admin', 'sub_admin'):
+                return tasks
+            if str(mem.get('status') or '').lower() in ('active', 'approved'):
+                return tasks  # Active / approved member is cleared
+
+            # Check if package fee has already been paid in payments table
+            cursor.execute("""
+                SELECT id FROM payments
+                WHERE member_id = %s
+                  AND LOWER(COALESCE(status, '')) IN ('success', 'paid', 'completed')
+                  AND (
+                    LOWER(COALESCE(description, '')) LIKE '%%package%%'
+                    OR LOWER(COALESCE(description, '')) LIKE '%%entrance%%'
+                    OR LOWER(COALESCE(description, '')) LIKE '%%clearing & forwarding only%%'
+                    OR LOWER(COALESCE(description, '')) LIKE '%%consolidation%%'
+                    OR LOWER(COALESCE(description, '')) LIKE '%%new member%%'
+                  )
+                LIMIT 1
+            """, (member_id,))
+            pkg_paid_row = cursor.fetchone()
+
+            is_pkg_paid = mem.get('package_fee_paid') is True or (pkg_paid_row is not None)
+            if not is_pkg_paid:
+                fee_cat = (mem.get('fee_category') or 'cf_only').lower()
+                member_scale = str(mem.get('member_scale') or 'sme').lower().strip()
+                is_large = member_scale in ('large_corporate', 'large', 'corporate')
+
+                cat_title = 'Clearing & Forwarding Only'
+                if fee_cat == 'consolidation':
+                    cat_title = 'Consolidation'
+                elif fee_cat == 'cf_consolidation':
+                    cat_title = 'Consolidation, Clearing & Forwarding'
+
+                cursor.execute("SELECT key, amount FROM fee_schedules WHERE is_active = TRUE")
+                comp_rows = {r['key']: float(r['amount']) for r in cursor.fetchall()}
+                sub_fee = 300.0 if is_large else comp_rows.get('new_sub_fee', 120.0)
+                vet_fee = comp_rows.get('new_vetting_fee', 750.0)
+                dist_fee = comp_rows.get('new_district_fee', 250.0)
+                cf_fee = comp_rows.get('new_cf_fee', 500.0)
+                con_fee = comp_rows.get('new_consolidation_fee', 600.0)
+
+                if is_large:
+                    computed_amt = comp_rows.get('new_cf_consolidation', 2220.0)
+                elif fee_cat == 'consolidation':
+                    computed_amt = comp_rows.get('new_consolidation', sub_fee + vet_fee + dist_fee + con_fee)
+                elif fee_cat == 'cf_consolidation':
+                    computed_amt = comp_rows.get('new_cf_consolidation', sub_fee + vet_fee + dist_fee + con_fee + cf_fee)
+                else:
+                    computed_amt = comp_rows.get('new_cf_only', sub_fee + vet_fee + dist_fee + cf_fee)
+
+                pkg_amount_str = f"{computed_amt:.2f}"
+
+                tasks.append({
+                    'id': 'sys_membership_package_fee',
+                    'title': f'💳 Settle Membership Entrance Package ({cat_title} - GHS {pkg_amount_str})',
+                    'description': f'Your upfront registration fee is processed. Please settle your Membership Entrance Package fee of GHS {pkg_amount_str} ({cat_title}) to activate full Good Standing privileges.',
+                    'due_date': 'Pending Activation',
+                    'priority': 'Urgent',
+                    'category': 'Membership Activation',
+                    'done': False,
+                    'action_url': '/payments?fee=New%20Membership%20Dues',
+                    'action_label': f'Pay New Membership Dues (GHS {pkg_amount_str})',
+                    'is_system': True,
+                    'system_type': 'package_payment'
+                })
+    except Exception as e:
+        print(f"[Tasks] _query_package_fee error: {e}")
+    return tasks
+
+
+def _synthesize_system_tasks(cursor, member_id):
+    """Run all priority-task queries concurrently for speed."""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from config.db import get_db as _get_db
+
+    def _run(fn):
+        conn2 = _get_db()
+        try:
+            return fn(conn2, member_id)
+        finally:
+            conn2.close()
+
+    results = []
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        futures = [
+            pool.submit(_run, _query_license),
+            pool.submit(_run, _query_rejections),
+            pool.submit(_run, _query_surveys),
+            pool.submit(_run, _query_onboarding_docs),
+            pool.submit(_run, _query_package_fee),
+        ]
+        for fut in as_completed(futures):
+            try:
+                results.extend(fut.result())
+            except Exception:
+                pass
+
+    # Sort: Urgent first, then High, then Medium
+    priority_order = {'Urgent': 0, 'High': 1, 'Medium': 2, 'Low': 3}
+    results.sort(key=lambda t: priority_order.get(t.get('priority', 'Low'), 3))
+    return results
+
+
 # ─── GET /tasks ───────────────────────────────────────────────────────────────
 @tasks_bp.route('/', methods=['GET'])
 @jwt_required()
@@ -25,6 +330,8 @@ def get_tasks():
     conn = get_db()
     try:
         with conn.cursor() as cursor:
+            system_tasks = _synthesize_system_tasks(cursor, member_id)
+
             cursor.execute("""
                 SELECT t.*, 
                        s.id as submission_id,
@@ -47,7 +354,9 @@ def get_tasks():
                 if hasattr(item.get('submitted_at'), 'isoformat'):
                     item['submitted_at'] = item['submitted_at'].isoformat()
 
-        return jsonify({'items': data, 'total': len(data)}), 200
+            all_tasks = system_tasks + list(data)
+
+        return jsonify({'items': all_tasks, 'total': len(all_tasks)}), 200
     finally:
         conn.close()
 
@@ -60,9 +369,14 @@ def tasks_summary():
     conn = get_db()
     try:
         with conn.cursor() as cursor:
+            system_tasks = _synthesize_system_tasks(cursor, member_id)
+            pending_system = len([t for t in system_tasks if not t.get('done')])
+
             cursor.execute("SELECT COUNT(*) as pending FROM tasks WHERE member_id = %s AND done = FALSE", (member_id,))
             result = cursor.fetchone()
-        return jsonify({'pending': result['pending']}), 200
+            total_pending = pending_system + (result['pending'] if result else 0)
+
+        return jsonify({'pending': total_pending}), 200
     finally:
         conn.close()
 

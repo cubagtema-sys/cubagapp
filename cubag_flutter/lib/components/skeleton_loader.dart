@@ -59,9 +59,36 @@ class DashboardSkeleton extends StatelessWidget {
                 SizedBox(width: 12),
                 Expanded(child: SkeletonLoader(height: 80, borderRadius: 12)),
               ],
-            )
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class ShimmerListTile extends StatelessWidget {
+  const ShimmerListTile({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        children: [
+          SkeletonLoader(width: 40, height: 40, borderRadius: 10),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SkeletonLoader(width: 160, height: 14),
+                SizedBox(height: 6),
+                SkeletonLoader(width: 100, height: 10),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

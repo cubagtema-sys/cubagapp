@@ -34,12 +34,44 @@ from flask_jwt_extended import JWTManager, get_jwt_identity, verify_jwt_in_reque
 from dotenv import load_dotenv
 from datetime import timedelta
 import firebase_admin
+
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 from firebase_admin import credentials
 from utils import log_admin_action
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# ── Configure logging ──────────────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+)
 logger = logging.getLogger(__name__)
+
+# ── Sentry Error Reporting ─────────────────────────────────────────────────────
+# Set SENTRY_DSN in your environment to enable error tracking.
+# Get your DSN from https://sentry.io → Project Settings → Client Keys.
+_SENTRY_DSN = os.getenv('SENTRY_DSN', '').strip()
+if _SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.flask import FlaskIntegration
+        from sentry_sdk.integrations.logging import LoggingIntegration
+        sentry_sdk.init(
+            dsn=_SENTRY_DSN,
+            integrations=[
+                FlaskIntegration(),
+                LoggingIntegration(level=logging.WARNING, event_level=logging.ERROR),
+            ],
+            traces_sample_rate=0.2,   # 20% of requests profiled for performance
+            profiles_sample_rate=0.1,
+            environment=os.getenv('FLASK_ENV', 'production'),
+            send_default_pii=False,   # Don't send user PII to Sentry
+        )
+        logger.info("[Sentry] Error reporting initialized ✓")
+    except Exception as _se:
+        logger.warning(f"[Sentry] Failed to initialize: {_se}")
+else:
+    logger.info("[Sentry] SENTRY_DSN not set — error reporting disabled (local mode)")
 
 logger.info("Starting CUBAG Production Backend...")
 logger.info(f"Python {sys.version}")
@@ -58,17 +90,32 @@ from routes.payments import payments_bp
 from routes.events_surveys import events_bp, surveys_bp
 from routes.sub_admins import sub_admins_bp
 
-# Load environment variables
-load_dotenv()
-
 # ── Resolve static file path (Flutter web build or fallback) ─────────────────
-STATIC_DIR = os.path.join(os.path.dirname(__file__), 'static')
-if not os.path.isdir(STATIC_DIR):
-    STATIC_DIR = os.path.join(os.path.dirname(__file__), 'dist')
+FLUTTER_BUILD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'cubag_flutter', 'build', 'web'))
+if os.path.isdir(FLUTTER_BUILD_DIR) and os.path.isfile(os.path.join(FLUTTER_BUILD_DIR, 'main.dart.js')):
+    STATIC_DIR = FLUTTER_BUILD_DIR
+else:
+    STATIC_DIR = os.path.join(os.path.dirname(__file__), 'static')
+    if not os.path.isdir(STATIC_DIR):
+        STATIC_DIR = os.path.join(os.path.dirname(__file__), 'dist')
 
 # Create Flask app
 app = Flask(__name__, static_folder=STATIC_DIR, static_url_path='')
 app.url_map.strict_slashes = False
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+@app.after_request
+def add_no_cache_headers(response):
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+# Auto-run DB migrations & schema setup on startup
+try:
+    init_db()
+except Exception as e:
+    logger.exception("Failed to run init_db on server start: %s", e)
 
 # Initialize Firebase Admin
 try:
@@ -123,16 +170,20 @@ CORS(
     app,
     origins="*",          # Allow ALL origins — mobile APKs send null/no Origin
     supports_credentials=False,   # Must be False when origins="*"
-    allow_headers=["Authorization", "Content-Type", "Accept"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With", "Cache-Control", "cache-control", "Pragma", "Origin", "X-CSRF-Token"],
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 )
+
+
 JWTManager(app)
 cache.init_app(app)
 
+
 def _is_admin_api_path(path):
-    return path.startswith('/api/admin') or (
-        path.startswith('/api/') and '/admin/' in path
-    )
+    return path.startswith('/api/v1/admin') or \
+           path.startswith('/api/admin') or (
+               (path.startswith('/api/v1/') or path.startswith('/api/')) and '/admin/' in path
+           )
 
 @app.before_request
 def require_admin_role_for_admin_api():
@@ -140,28 +191,33 @@ def require_admin_role_for_admin_api():
         return None
 
     # 1. Automatic Admin Activity Logging
-    if request.path.startswith('/api/admin/') and request.method in ('POST', 'PUT', 'DELETE'):
-        try:
-            verify_jwt_in_request()
-            admin_id = get_jwt_identity()
-            if admin_id:
-                action_desc = f"{request.method} {request.path.replace('/api/admin/', '')}"
-                # ── Scrub sensitive fields before logging ─────────────────────
-                import json as _json
-                _SENSITIVE = {'password', 'password_hash', 'current_password',
-                              'new_password', 'token', 'secret', 'api_key', 'key'}
-                try:
-                    _body = _json.loads(request.get_data(as_text=True) or '{}')
-                    if isinstance(_body, dict):
-                        _body = {k: ('***' if k.lower() in _SENSITIVE else v)
-                                 for k, v in _body.items()}
-                    _payload_log = _json.dumps(_body)[:300]
-                except Exception:
-                    _payload_log = '[unreadable body]'
-                log_admin_action(admin_id, 'Admin Action', 'system', None, action_desc,
-                                 f"Payload: {_payload_log}")
-        except Exception as e:
-            logger.exception("Failed to log admin action: %s", e)
+    is_admin_path = request.path.startswith('/api/v1/admin/') or request.path.startswith('/api/admin/')
+    if is_admin_path:
+        is_write = request.method in ('POST', 'PUT', 'DELETE', 'PATCH')
+        is_sensitive_read = request.method == 'GET' and any(k in request.path for k in ('audit-log', 'export', 'members', 'payments', 'credentials', 'sub-admins'))
+        if is_write or is_sensitive_read:
+            try:
+                verify_jwt_in_request()
+                admin_id = get_jwt_identity()
+                if admin_id:
+                    clean_path = request.path.replace('/api/v1/admin/', '').replace('/api/admin/', '')
+                    action_desc = f"{request.method} {clean_path}"
+                    # ── Scrub sensitive fields before logging ─────────────────────
+                    import json as _json
+                    _SENSITIVE = {'password', 'password_hash', 'current_password',
+                                  'new_password', 'token', 'secret', 'api_key', 'key'}
+                    try:
+                        _body = _json.loads(request.get_data(as_text=True) or '{}')
+                        if isinstance(_body, dict):
+                            _body = {k: ('***' if k.lower() in _SENSITIVE else v)
+                                     for k, v in _body.items()}
+                        _payload_log = _json.dumps(_body)[:300]
+                    except Exception:
+                        _payload_log = '[unreadable body]'
+                    log_admin_action(admin_id, 'Admin Action', 'system', None, action_desc,
+                                     f"Payload: {_payload_log}")
+            except Exception as e:
+                logger.exception("Failed to log admin action: %s", e)
 
     # 2. Access Control for Admin Routes
     if not _is_admin_api_path(request.path):
@@ -194,10 +250,10 @@ def enforce_account_status():
         return None
 
     # Only check protected API routes (skip auth, public, static)
-    _OPEN_PREFIXES = ('/api/auth/', '/static/', '/#')
+    _OPEN_PREFIXES = ('/api/v1/auth/', '/api/auth/', '/static/', '/#')
     if any(request.path.startswith(p) for p in _OPEN_PREFIXES):
         return None
-    if not request.path.startswith('/api/'):
+    if not request.path.startswith('/api/v1/') and not request.path.startswith('/api/'):
         return None
 
     try:
@@ -206,21 +262,22 @@ def enforce_account_status():
         if not member_id:
             return None  # unauthenticated request — let route handle it
 
-        conn = get_db()
-        try:
-            with conn.cursor() as cursor:
-                cursor.execute(
-                    "SELECT status FROM members WHERE id = %s",
-                    (member_id,)
-                )
-                row = cursor.fetchone()
-        finally:
-            conn.close()
+        cache_key = f'live_status_{member_id}'
+        status = cache.get(cache_key)
+        if status is None:
+            conn = get_db()
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        "SELECT status FROM members WHERE id = %s",
+                        (member_id,)
+                    )
+                    row = cursor.fetchone()
+                    status = str(row.get('status') or '').lower() if row else ''
+                    cache.set(cache_key, status, timeout=15)
+            finally:
+                conn.close()
 
-        if not row:
-            return None  # member deleted — JWT will naturally fail on next call
-
-        status = str(row.get('status') or '').lower()
         if status == 'suspended':
             return jsonify({
                 'message': 'Your account has been suspended. Please contact the CUBAG Secretariat.'
@@ -248,6 +305,10 @@ def _start_request_timer():
 @app.after_request
 def _log_request_time(response):
     try:
+        if request.path.startswith('/api/'):
+            response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
         start = getattr(g, '_start_time', None)
         if start:
             duration = time.time() - start
@@ -285,15 +346,9 @@ try:
 except Exception as e:
     logger.error(f"[Init] Failed to start background workers: {e}", exc_info=True)
 
-# Register blueprints
-app.register_blueprint(auth_bp,          url_prefix='/api/auth')
-app.register_blueprint(members_bp,       url_prefix='/api/members')
-app.register_blueprint(announcements_bp, url_prefix='/api/announcements')
-app.register_blueprint(tasks_bp,         url_prefix='/api/tasks')
-app.register_blueprint(payments_bp,      url_prefix='/api/payments')
-app.register_blueprint(events_bp,        url_prefix='/api/events')
-app.register_blueprint(surveys_bp,       url_prefix='/api/surveys')
-
+# ── Register blueprints (API compatibility: support both /api/v1 and /api) ───
+from routes.news import news_bp
+from routes.notifications import notifications_bp
 from routes.admin import admin_bp
 from routes.schedules import schedules_bp
 from routes.messages import messages_bp
@@ -301,29 +356,53 @@ from routes.tickets import tickets_bp
 from routes.settings import settings_bp
 from routes.intelligence import intelligence_bp
 from routes.uploads import uploads_bp
-from routes.news import news_bp
 from routes.compliance_settings import compliance_settings_bp
+from routes.documents import documents_bp
+from routes.compliance import compliance_bp
+from routes.complaints import complaints_bp
 
-app.register_blueprint(admin_bp,         url_prefix='/api/admin')
-app.register_blueprint(schedules_bp,     url_prefix='/api/schedules')
-app.register_blueprint(messages_bp,      url_prefix='/api/messages')
-app.register_blueprint(tickets_bp,       url_prefix='/api/tickets')
-app.register_blueprint(settings_bp,      url_prefix='/api/settings')
-app.register_blueprint(intelligence_bp,  url_prefix='/api/intelligence')
-app.register_blueprint(uploads_bp,          url_prefix='/api/uploads')
-app.register_blueprint(news_bp,             url_prefix='/api/news')
-app.register_blueprint(sub_admins_bp,       url_prefix='/api/sub-admins')
-app.register_blueprint(compliance_settings_bp, url_prefix='/api/compliance-settings')
+_BLUEPRINTS = [
+    (auth_bp,          '/auth'),
+    (members_bp,       '/members'),
+    (announcements_bp, '/announcements'),
+    (notifications_bp, '/notifications'),
+    (tasks_bp,         '/tasks'),
+    (payments_bp,      '/payments'),
+    (events_bp,        '/events'),
+    (surveys_bp,       '/surveys'),
+    (admin_bp,         '/admin'),
+    (schedules_bp,     '/schedules'),
+    (messages_bp,      '/messages'),
+    (tickets_bp,       '/tickets'),
+    (settings_bp,      '/settings'),
+    (intelligence_bp,  '/intelligence'),
+    (uploads_bp,       '/uploads'),
+    (news_bp,          '/news'),
+    (sub_admins_bp,    '/sub-admins'),
+    (compliance_settings_bp, '/compliance-settings'),
+    (documents_bp,     '/documents'),
+    (compliance_bp,    '/compliance'),
+    (complaints_bp,    '/complaints'),
+]
+
+for bp, prefix in _BLUEPRINTS:
+    # Register with v1 (standard)
+    app.register_blueprint(bp, url_prefix=f'/api/v1{prefix}')
+    # Register without v1 (for compatibility with existing web builds)
+    app.register_blueprint(bp, url_prefix=f'/api{prefix}', name=f"{bp.name}_compat")
 
 @app.route('/api/ping', methods=['GET'])
+@app.route('/api/v1/ping', methods=['GET'])
 def ping():
     return 'pong', 200
 
 @app.route('/api/health', methods=['GET'])
+@app.route('/api/v1/health', methods=['GET'])
 def health():
     return {'status': 'CUBAG API is running'}, 200
 
 @app.route('/api/vessels', methods=['GET'])
+@app.route('/api/v1/vessels', methods=['GET'])
 def get_vessels():
     try:
         from ais_stream import ais_manager
@@ -337,6 +416,7 @@ def get_vessels():
 
 
 @app.route('/api/vessels/registry', methods=['GET'])
+@app.route('/api/v1/vessels/registry', methods=['GET'])
 def get_vessel_registry():
     """
     Known vessel registry for Gulf of Guinea shipping lanes.
@@ -362,7 +442,32 @@ def get_vessel_registry():
     return jsonify(registry), 200
 
 
-@app.route('/api/analytics/telemetry', methods=['POST'])
+@app.route('/logo.jpeg')
+@app.route('/v1/logo.jpeg')
+@app.route('/api/logo.jpeg')
+@app.route('/api/v1/logo.jpeg')
+def serve_logo():
+    if app.static_folder and os.path.isfile(os.path.join(app.static_folder, 'logo.jpeg')):
+        return send_from_directory(app.static_folder, 'logo.jpeg')
+    static_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'static'))
+    return send_from_directory(static_dir, 'logo.jpeg')
+
+@app.route('/static/uploads/<path:filename>')
+@app.route('/uploads/<path:filename>')
+def serve_uploads(filename):
+    for base in [
+        os.path.join(os.path.dirname(__file__), 'static', 'uploads'),
+        os.path.join(os.path.dirname(__file__), 'uploads'),
+        os.path.join(os.getcwd(), 'static', 'uploads'),
+        os.path.join(os.getcwd(), 'uploads'),
+    ]:
+        target = os.path.join(base, filename)
+        if os.path.isfile(target):
+            return send_from_directory(base, filename)
+    return jsonify({'message': 'File not found'}), 404
+
+@app.route('/api/analytics/telemetry', methods=['POST', 'OPTIONS'])
+@app.route('/api/v1/analytics/telemetry', methods=['POST', 'OPTIONS'])
 def telemetry():
     try:
         # Just ack the telemetry for now to prevent 405 errors
@@ -371,34 +476,76 @@ def telemetry():
         logger.error(f"Error in telemetry: {e}")
         return jsonify({"status": "error"}), 500
 
+@app.route('/flutter_bootstrap.js')
+def serve_flutter_bootstrap():
+    candidates = [
+        app.static_folder,
+        os.path.join(os.path.dirname(__file__), 'static'),
+        os.path.join(os.path.dirname(__file__), 'dist'),
+        FLUTTER_BUILD_DIR,
+    ]
+    for d in candidates:
+        if d and os.path.isfile(os.path.join(d, 'flutter_bootstrap.js')):
+            resp = send_from_directory(d, 'flutter_bootstrap.js', mimetype='application/javascript')
+            resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+            return resp
+
+    # Safe dynamic fallback bootstrap if the file wasn't generated or copied
+    bootstrap_code = """
+(function() {
+  if (typeof _flutter !== 'undefined' && _flutter.loader) {
+    _flutter.loader.loadEntrypoint({
+      onEntrypointLoaded: function(engineInitializer) {
+        engineInitializer.initializeEngine().then(function(appRunner) {
+          appRunner.runApp();
+        });
+      }
+    });
+  } else {
+    var script = document.createElement('script');
+    script.src = 'main.dart.js';
+    script.type = 'application/javascript';
+    document.body.appendChild(script);
+  }
+})();
+"""
+    resp = app.response_class(bootstrap_code, mimetype='application/javascript')
+    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    return resp
+
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_spa(path):
     # Check if the requested path is a real file (like an image or JS)
     if app.static_folder:
         full_path = os.path.join(app.static_folder, path)
+        resp = None
         if path and os.path.isfile(full_path):
-            return send_from_directory(app.static_folder, path)
-
-        # Otherwise, always serve index.html to let Flutter web router handle the URL
-        index_path = os.path.join(app.static_folder, 'index.html')
-        if os.path.isfile(index_path):
-            return send_from_directory(app.static_folder, 'index.html')
+            resp = send_from_directory(app.static_folder, path, conditional=False)
+        else:
+            # Otherwise, always serve index.html to let Flutter web router handle the URL
+            index_path = os.path.join(app.static_folder, 'index.html')
+            if os.path.isfile(index_path):
+                resp = send_from_directory(app.static_folder, 'index.html', conditional=False)
+        
+        if resp:
+            resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+            resp.headers['Pragma'] = 'no-cache'
+            resp.headers['Expires'] = '0'
+            if 'ETag' in resp.headers:
+                del resp.headers['ETag']
+            if 'Last-Modified' in resp.headers:
+                del resp.headers['Last-Modified']
+            return resp
 
     # Fallback if no static files exist
     return jsonify({'status': 'CUBAG API is running', 'message': 'No frontend build found. Use /api/health for API status.'}), 200
 
-# Initialize DB
-try:
-    logger.info("[Init] Initializing database...")
-    init_db()
-    logger.info("[Init] Database initialized successfully.")
-except Exception as e:
-    logger.error(f"DB init failed (non-fatal): {e}", exc_info=True)
 
 logger.info("[Init] CUBAG Backend fully loaded and ready to accept requests.")
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5001))
+    port = int(os.getenv('PORT', 5005))
     logger.info(f"Running on port {port}")
     socketio.run(app, host='0.0.0.0', port=port, debug=False, allow_unsafe_werkzeug=True)

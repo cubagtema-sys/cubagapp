@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'cors_image_stub.dart'
     if (dart.library.html) 'cors_image_web.dart'
-    if (dart.library.io) 'cors_image_mobile.dart' as platform_impl;
+    if (dart.library.io) 'cors_image_mobile.dart'
+    as platform_impl;
 
 class CorsImageWidget extends StatelessWidget {
   final String url;

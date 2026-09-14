@@ -22,7 +22,13 @@ class AppLogo extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: showShadow
-            ? [BoxShadow(color: Colors.black.withAlpha(50), blurRadius: 16, offset: const Offset(0, 6))]
+            ? [
+                BoxShadow(
+                  color: Colors.black.withAlpha(50),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ]
             : null,
       ),
       child: ClipRRect(
@@ -31,7 +37,7 @@ class AppLogo extends StatelessWidget {
           'assets/images/logo.jpeg',
           fit: BoxFit.cover,
           errorBuilder: (ctx, err, stack) => Container(
-            color: const Color(0xFFf08232),
+            color: const Color(0xFFFF5000),
             alignment: Alignment.center,
             child: Text(
               'C',

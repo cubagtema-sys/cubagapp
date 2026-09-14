@@ -3,13 +3,14 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Color;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'api_service.dart';
 import '../core/router.dart';
 
 // ── Local notification channel (Android) ─────────────────────────────────────
 const AndroidNotificationChannel _channel = AndroidNotificationChannel(
-  'cubag_high_importance',        // id
-  'CUBAG Notifications',          // name
+  'cubag_high_importance', // id
+  'CUBAG Notifications', // name
   description: 'CUBAG platform alerts and announcements',
   importance: Importance.high,
   playSound: true,
@@ -47,21 +48,31 @@ class PushNotificationService {
       // Create the Android notification channel
       await _localNotifications
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.createNotificationChannel(_channel);
 
       // ── Request FCM permissions ─────────────────────────────────────────────
       final currentSettings = await _messaging.getNotificationSettings();
-      if (currentSettings.authorizationStatus == AuthorizationStatus.notDetermined) {
-         // Do not request permission yet, let the UI handle the soft prompt!
-         debugPrint('FCM permission not determined yet, skipping native prompt.');
+      if (currentSettings.authorizationStatus ==
+          AuthorizationStatus.notDetermined) {
+        // Do not request permission yet, let the UI handle the soft prompt!
+        debugPrint(
+          'FCM permission not determined yet, skipping native prompt.',
+        );
       } else {
-         final settings = await _messaging.requestPermission(alert: true, badge: true, sound: true);
-         debugPrint('FCM permission: ${settings.authorizationStatus}');
+        final settings = await _messaging.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        debugPrint('FCM permission: ${settings.authorizationStatus}');
       }
 
       // ── Background handler ──────────────────────────────────────────────────
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
 
       // ── Foreground handler — show as local notification ─────────────────────
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -80,7 +91,7 @@ class PushNotificationService {
                 importance: Importance.high,
                 priority: Priority.high,
                 icon: '@mipmap/ic_launcher',
-                color: Color(0xFFf08232), // CUBAG orange
+                color: Color(0xFFFF5000), // CUBAG orange
               ),
             ),
             payload: message.data['type']?.toString(),
@@ -116,38 +127,65 @@ class PushNotificationService {
             .putData('auth/fcm-token', {'fcm_token': newToken})
             .catchError((e) => debugPrint('Failed to refresh FCM token: $e'));
       });
-
     } catch (e) {
       debugPrint('Push notification init failed (non-fatal): $e');
     }
   }
 
-  void _handleDeepLink(Map<String, dynamic> data) {
-    final route = data['route']?.toString();
-    final type  = data['type']?.toString();
+  void _handleDeepLink(Map<String, dynamic> data) async {
+    final route = data['route']?.toString().trim();
+    final type = data['type']?.toString().trim();
 
     if (route != null && route.isNotEmpty) {
-      appRouter.go(route);
-      return;
+      if (route.startsWith('http://') || route.startsWith('https://')) {
+        final uri = Uri.tryParse(route);
+        if (uri != null && await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          return;
+        }
+      } else if (route.startsWith('/')) {
+        try {
+          appRouter.go(route);
+          return;
+        } catch (_) {
+          appRouter.go('/notifications');
+          return;
+        }
+      }
     }
 
     switch (type) {
-      case 'announcement': appRouter.go('/announcements');    break;
-      case 'task':         appRouter.go('/tasks');             break;
-      case 'payment':      appRouter.go('/payments');          break;
-      case 'schedule':     appRouter.go('/vanning-schedules'); break;
-      case 'ticket':       appRouter.go('/engagement');        break;
+      case 'announcement':
+        appRouter.go('/announcements');
+        break;
+      case 'task':
+        appRouter.go('/tasks');
+        break;
+      case 'payment':
+        appRouter.go('/payments');
+        break;
+      case 'schedule':
+        appRouter.go('/cargo-schedules');
+        break;
+      case 'ticket':
+        appRouter.go('/engagement');
+        break;
       case 'message':
         final senderId = data['id']?.toString();
         final name = data['name']?.toString();
-        if (senderId != null) {
-          appRouter.go('/messaging?id=$senderId${name != null ? '&name=${Uri.encodeComponent(name)}' : ''}');
+        if (senderId != null && senderId.isNotEmpty) {
+          appRouter.go(
+            '/messaging?id=$senderId${name != null ? '&name=${Uri.encodeComponent(name)}' : ''}',
+          );
         } else {
           appRouter.go('/messaging');
         }
         break;
-      case 'license':      appRouter.go('/license-renewal');   break;
-      default:             appRouter.go('/notifications');
+      case 'license':
+        appRouter.go('/license-renewal');
+        break;
+      default:
+        appRouter.go('/notifications');
     }
   }
 }

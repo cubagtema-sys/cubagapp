@@ -1,7 +1,7 @@
 import requests
 import logging
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from config.db import get_db
 import xml.etree.ElementTree as ET
 import re
@@ -16,6 +16,62 @@ from config.cache import cache
 logger = logging.getLogger(__name__)
 
 news_bp = Blueprint('news', __name__)
+
+@news_bp.route('/public/bulletins', methods=['GET'])
+def get_public_bulletins():
+    """Public endpoint returning operational port bulletins managed by admin."""
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, port_name, code, status, notice, status_color
+                FROM port_bulletins
+                WHERE deleted_at IS NULL AND is_active = TRUE
+                ORDER BY id ASC
+                LIMIT 10
+            """)
+            bulletins = cursor.fetchall()
+        return jsonify({'items': bulletins, 'total': len(bulletins)}), 200
+    except Exception as e:
+        logger.exception("Error in get_public_bulletins: %s", e)
+        return jsonify({'items': [], 'total': 0}), 200
+    finally:
+        conn.close()
+
+@news_bp.route('/public/feed', methods=['GET'])
+def get_public_feed():
+    """Public endpoint returning real-time industry news (global RSS + admin blog)."""
+    with _cache_lock:
+        articles = list(_news_cache) if _news_cache else _MOCK_ARTICLES
+
+    # Also grab latest admin blog posts if any
+    try:
+        conn = get_db()
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT title, content as summary, 'CUBAG Official' as source, created_at, image_url
+                FROM news_blog
+                WHERE deleted_at IS NULL
+                ORDER BY created_at DESC
+                LIMIT 5
+            """)
+            blogs = cursor.fetchall()
+            for b in blogs:
+                if hasattr(b.get('created_at'), 'strftime'):
+                    b['pubDate'] = b['created_at'].strftime('%d %b %Y')
+                articles.insert(0, {
+                    'title': b.get('title'),
+                    'summary': b.get('summary'),
+                    'source': b.get('source', 'CUBAG Official'),
+                    'pubDate': b.get('pubDate', 'Recent'),
+                    'thumbnail': b.get('image_url', ''),
+                    'sourceColor': '#6B3E26',
+                })
+        conn.close()
+    except Exception as e:
+        logger.debug("Optional blog merge error: %s", e)
+
+    return jsonify({'items': articles[:20], 'total': len(articles[:20])}), 200
 
 @news_bp.route('/blog', methods=['GET'])
 def get_blogs():
@@ -34,11 +90,11 @@ def get_blogs():
 
         conn = get_db()
         with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM news_blog ORDER BY created_at DESC LIMIT %s OFFSET %s", (per_page, offset))
+            cursor.execute("SELECT * FROM news_blog WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT %s OFFSET %s", (per_page, offset))
             posts = cursor.fetchall()
 
             # Optional: return pagination metadata
-            cursor.execute("SELECT COUNT(*) as total FROM news_blog")
+            cursor.execute("SELECT COUNT(*) as total FROM news_blog WHERE deleted_at IS NULL")
             total = cursor.fetchone().get('total', 0)
 
         return jsonify({
@@ -73,8 +129,15 @@ def create_blog():
             ))
             new_id = cursor.fetchone()['id']
         conn.commit()
+        try:
+            from socket_instance import socketio
+            socketio.emit('news_updated', {'id': new_id})
+        except Exception:
+            pass
         return jsonify({'message': 'Blog post created', 'id': new_id}), 201
     except Exception as e:
+        if 'conn' in locals():
+            conn.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         if 'conn' in locals():
@@ -86,17 +149,24 @@ def delete_blog(id):
     try:
         conn = get_db()
         with conn.cursor() as cursor:
-            cursor.execute("DELETE FROM news_blog WHERE id = %s", (id,))
+            cursor.execute("UPDATE news_blog SET deleted_at = CURRENT_TIMESTAMP WHERE id = %s", (id,))
         conn.commit()
-        return jsonify({'message': 'Blog post deleted'}), 200
+        try:
+            from socket_instance import socketio
+            socketio.emit('news_updated', {'id': id, 'deleted': True})
+        except Exception:
+            pass
+        return jsonify({'message': 'Blog post archived'}), 200
     except Exception as e:
+        if 'conn' in locals():
+            conn.rollback()
         return jsonify({'error': str(e)}), 500
     finally:
         if 'conn' in locals():
             conn.close()
 
 FEED_SOURCES = [
-    { 'url': 'https://gcaptain.com/feed/',                  'source': 'gCaptain',            'color': '#f08232' },
+    { 'url': 'https://gcaptain.com/feed/',                  'source': 'gCaptain',            'color': '#FF5000' },
     { 'url': 'https://www.hellenicshippingnews.com/feed/',  'source': 'Hellenic Shipping',   'color': '#1a6b3c' },
     { 'url': 'https://splash247.com/feed/',                 'source': 'Splash247',           'color': '#0066cc' },
     { 'url': 'https://www.ship-technology.com/feed/',       'source': 'Ship Technology',     'color': '#c0392b' },
@@ -121,52 +191,87 @@ def _parse_feed(source_config):
         # Some feeds have leading whitespace
         content = content.strip()
 
-        root = ET.fromstring(content)
-        for item in root.findall('./channel/item')[:10]:
-            title_el     = item.find('title')
-            link_el      = item.find('link')
-            pubdate_el   = item.find('pubDate')
-            desc_el      = item.find('description')
-            content_el   = item.find('{http://purl.org/rss/1.0/modules/content/}encoded')
-            media_el     = item.find('{http://search.yahoo.com/mrss/}thumbnail')
-            media_cont   = item.find('{http://search.yahoo.com/mrss/}content')
+        try:
+            root = ET.fromstring(content)
+            for item in root.findall('./channel/item')[:10]:
+                title_el     = item.find('title')
+                link_el      = item.find('link')
+                pubdate_el   = item.find('pubDate')
+                desc_el      = item.find('description')
+                content_el   = item.find('{http://purl.org/rss/1.0/modules/content/}encoded')
+                media_el     = item.find('{http://search.yahoo.com/mrss/}thumbnail')
+                media_cont   = item.find('{http://search.yahoo.com/mrss/}content')
 
-            t_str    = (title_el.text   or '').strip()  if title_el   is not None else ''
-            l_str    = (link_el.text    or '').strip()  if link_el    is not None else ''
-            d_str    = (pubdate_el.text or '').strip()  if pubdate_el is not None else ''
-            desc_str = (desc_el.text    or '').strip()  if desc_el    is not None else ''
-            c_str    = (content_el.text or desc_str)    if content_el is not None else desc_str
+                t_str    = (title_el.text   or '').strip()  if title_el   is not None else ''
+                l_str    = (link_el.text    or '').strip()  if link_el    is not None else ''
+                d_str    = (pubdate_el.text or '').strip()  if pubdate_el is not None else ''
+                desc_str = (desc_el.text    or '').strip()  if desc_el    is not None else ''
+                c_str    = (content_el.text or desc_str)    if content_el is not None else desc_str
 
-            # Try to find a thumbnail image
-            thumbnail = ''
-            if media_el is not None and media_el.get('url'):
-                thumbnail = media_el.get('url')
-            elif media_cont is not None and media_cont.get('url'):
-                thumbnail = media_cont.get('url')
-            elif c_str:
-                img_match = re.search(r'<img[^>]+src=["\']([^"\'> ]+)', c_str)
-                if img_match:
-                    thumbnail = img_match.group(1)
+                thumbnail = ''
+                if media_el is not None and media_el.get('url'):
+                    thumbnail = media_el.get('url')
+                elif media_cont is not None and media_cont.get('url'):
+                    thumbnail = media_cont.get('url')
+                elif c_str:
+                    img_match = re.search(r'<img[^>]+src=["\']([^"\'> ]+)', c_str)
+                    if img_match:
+                        thumbnail = img_match.group(1)
 
-            clean_desc = re.sub(r'<[^>]+>', '', desc_str).strip()
+                clean_desc = re.sub(r'<[^>]+>', '', desc_str).strip()
 
-            # Parse pubDate for sorting
-            try:
-                from email.utils import parsedate_to_datetime
-                pub_ts = parsedate_to_datetime(d_str).timestamp() if d_str else 0
-            except Exception:
-                pub_ts = 0
+                try:
+                    from email.utils import parsedate_to_datetime
+                    pub_ts = parsedate_to_datetime(d_str).timestamp() if d_str else 0
+                except Exception:
+                    pub_ts = 0
 
-            results.append({
-                'title':       t_str,
-                'link':        l_str,
-                'pubDate':     d_str,
-                'pub_ts':      pub_ts,
-                'description': clean_desc,
-                'thumbnail':   thumbnail,
-                'source':      source_config['source'],
-                'sourceColor': source_config.get('color', '#3b82f6'),
-            })
+                results.append({
+                    'title':       t_str,
+                    'link':        l_str,
+                    'pubDate':     d_str,
+                    'pub_ts':      pub_ts,
+                    'description': clean_desc,
+                    'thumbnail':   thumbnail,
+                    'source':      source_config['source'],
+                    'sourceColor': source_config.get('color', '#3b82f6'),
+                })
+        except Exception as xml_err:
+            logger.warning(f"ET.fromstring failed for [{source_config['source']}]: {xml_err}; falling back to feedparser.")
+            parsed = feedparser.parse(content)
+            for entry in parsed.entries[:10]:
+                t_str = entry.get('title', '').strip()
+                l_str = entry.get('link', '').strip()
+                d_str = entry.get('published', '') or entry.get('updated', '')
+                desc_str = entry.get('summary', '') or entry.get('description', '')
+                clean_desc = re.sub(r'<[^>]+>', '', desc_str).strip()
+
+                thumbnail = ''
+                if 'media_thumbnail' in entry and entry.media_thumbnail:
+                    thumbnail = entry.media_thumbnail[0].get('url', '')
+                elif 'media_content' in entry and entry.media_content:
+                    thumbnail = entry.media_content[0].get('url', '')
+                elif desc_str:
+                    img_match = re.search(r'<img[^>]+src=["\']([^"\'> ]+)', desc_str)
+                    if img_match:
+                        thumbnail = img_match.group(1)
+
+                try:
+                    from email.utils import parsedate_to_datetime
+                    pub_ts = parsedate_to_datetime(d_str).timestamp() if d_str else 0
+                except Exception:
+                    pub_ts = 0
+
+                results.append({
+                    'title':       t_str,
+                    'link':        l_str,
+                    'pubDate':     d_str,
+                    'pub_ts':      pub_ts,
+                    'description': clean_desc,
+                    'thumbnail':   thumbnail,
+                    'source':      source_config['source'],
+                    'sourceColor': source_config.get('color', '#3b82f6'),
+                })
     except Exception as e:
         logger.error(f"Feed error [{source_config['source']}]: {e}")
     return results
@@ -185,7 +290,7 @@ _MOCK_ARTICLES = [
         'description': 'The Secretariat is pleased to announce the successful migration of our enterprise platform to Flutter, providing enhanced performance and mobile support for all members.',
         'thumbnail': '',
         'source': 'CUBAG Official',
-        'sourceColor': '#f08232',
+        'sourceColor': '#FF5000',
     },
     {
         'title': 'West Africa Maritime Traffic Overview',
@@ -284,3 +389,145 @@ def trigger_refresh():
     """Admin endpoint to manually trigger a news refresh."""
     threading.Thread(target=_refresh_cache, daemon=True).start()
     return jsonify({'message': 'Refresh triggered in background'}), 200
+
+
+# ─────────────────────────────────────────────
+#  ADMIN PORT BULLETINS / PORT NEWS CRUD
+# ─────────────────────────────────────────────
+
+@news_bp.route('/admin/bulletins', methods=['GET'])
+@sub_admin_required('announcements')
+def get_admin_bulletins():
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, port_name, code, status, notice, status_color, is_active, created_at
+                FROM port_bulletins
+                WHERE deleted_at IS NULL
+                ORDER BY id ASC
+            """)
+            bulletins = cursor.fetchall()
+            for b in bulletins:
+                if hasattr(b.get('created_at'), 'isoformat'):
+                    b['created_at'] = b['created_at'].isoformat()
+        return jsonify({'items': bulletins, 'total': len(bulletins)}), 200
+    except Exception as e:
+        logger.exception("Error in get_admin_bulletins: %s", e)
+        return jsonify({'message': str(e)}), 500
+    finally:
+        conn.close()
+
+@news_bp.route('/admin/bulletins', methods=['POST'])
+@sub_admin_required('announcements')
+def create_admin_bulletin():
+    admin_id = get_jwt_identity()
+    data = request.get_json() or {}
+    port_name = (data.get('port_name') or '').strip()
+    notice = (data.get('notice') or '').strip()
+    if not port_name:
+        return jsonify({'message': 'Port name is required'}), 400
+    if not notice:
+        return jsonify({'message': 'Port operational notice is required'}), 400
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO port_bulletins (port_name, code, status, notice, status_color, is_active)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id, port_name, code, status, notice, status_color, is_active
+            """, (
+                port_name,
+                data.get('code', 'GHA'),
+                data.get('status', 'Operational'),
+                notice,
+                data.get('status_color', '#2E7D32'),
+                data.get('is_active', True)
+            ))
+            new_bulletin = cursor.fetchone()
+            conn.commit()
+        log_admin_action(admin_id, 'Created Port Bulletin', 'bulletin', new_bulletin['id'], port_name)
+        try:
+            from socket_instance import socketio
+            socketio.emit('bulletins_updated', {'id': new_bulletin['id']})
+        except Exception:
+            pass
+        return jsonify({'message': 'Port bulletin created successfully', 'bulletin': new_bulletin}), 201
+    except Exception as e:
+        conn.rollback()
+        logger.exception("Error creating port bulletin: %s", e)
+        return jsonify({'message': str(e)}), 500
+    finally:
+        conn.close()
+
+@news_bp.route('/admin/bulletins/<int:bulletin_id>', methods=['PUT'])
+@sub_admin_required('announcements')
+def update_admin_bulletin(bulletin_id):
+    admin_id = get_jwt_identity()
+    data = request.get_json() or {}
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                UPDATE port_bulletins
+                SET port_name = COALESCE(NULLIF(%s, ''), port_name),
+                    code = COALESCE(%s, code),
+                    status = COALESCE(%s, status),
+                    notice = COALESCE(%s, notice),
+                    status_color = COALESCE(%s, status_color),
+                    is_active = COALESCE(%s, is_active)
+                WHERE id = %s AND deleted_at IS NULL
+                RETURNING id, port_name, code, status, notice, status_color, is_active
+            """, (
+                data.get('port_name'),
+                data.get('code'),
+                data.get('status'),
+                data.get('notice'),
+                data.get('status_color'),
+                data.get('is_active'),
+                bulletin_id
+            ))
+            updated = cursor.fetchone()
+            if not updated:
+                return jsonify({'message': 'Port bulletin not found'}), 404
+            conn.commit()
+        log_admin_action(admin_id, 'Updated Port Bulletin', 'bulletin', bulletin_id, updated['port_name'])
+        try:
+            from socket_instance import socketio
+            socketio.emit('bulletins_updated', {'id': bulletin_id})
+        except Exception:
+            pass
+        return jsonify({'message': 'Port bulletin updated successfully', 'bulletin': updated}), 200
+    except Exception as e:
+        conn.rollback()
+        logger.exception("Error updating port bulletin: %s", e)
+        return jsonify({'message': str(e)}), 500
+    finally:
+        conn.close()
+
+@news_bp.route('/admin/bulletins/<int:bulletin_id>', methods=['DELETE'])
+@sub_admin_required('announcements')
+def delete_admin_bulletin(bulletin_id):
+    admin_id = get_jwt_identity()
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("UPDATE port_bulletins SET deleted_at = CURRENT_TIMESTAMP WHERE id = %s RETURNING port_name", (bulletin_id,))
+            res = cursor.fetchone()
+            if not res:
+                return jsonify({'message': 'Port bulletin not found'}), 404
+            conn.commit()
+        log_admin_action(admin_id, 'Archived Port Bulletin', 'bulletin', bulletin_id, res['port_name'])
+        try:
+            from socket_instance import socketio
+            socketio.emit('bulletins_updated', {'id': bulletin_id, 'deleted': True})
+        except Exception:
+            pass
+        return jsonify({'message': 'Port bulletin archived successfully'}), 200
+    except Exception as e:
+        conn.rollback()
+        logger.exception("Error deleting port bulletin: %s", e)
+        return jsonify({'message': str(e)}), 500
+    finally:
+        conn.close()

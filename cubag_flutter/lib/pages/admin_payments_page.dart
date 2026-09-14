@@ -2,15 +2,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
-import '../components/custom_dropdown.dart';
+import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../components/fetch_error_view.dart';
-import '../components/shimmer_loader.dart';
+import '../utils/app_logger.dart';
 
-const _kOrange = Color(0xFFf08232);
-const _kGreen  = Color(0xFF10b981);
-const _kAmber  = Color(0xFFf59e0b);
-const _kRed    = Color(0xFFef4444);
+const _kOrange = Color(0xFFFF5000);
+const _kGreen = Color(0xFF10b981);
+const _kAmber = Color(0xFFf59e0b);
+const _kRed = Color(0xFFef4444);
+const _kBlue = Color(0xFF3b82f6);
+const _kCardBg = Color(0xFF281710);
 
 class AdminPaymentsPage extends StatefulWidget {
   const AdminPaymentsPage({super.key});
@@ -31,18 +33,16 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
   bool _actionLoading = false;
 
   Timer? _debounce;
-  final ScrollController _scrollController = ScrollController();
 
   @override
-  void initState() { 
-    super.initState(); 
-    _fetch(); 
+  void initState() {
+    super.initState();
+    _fetch();
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
-    _scrollController.dispose();
     super.dispose();
   }
 
@@ -50,41 +50,68 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     if (!mounted) return;
     if (page != null) {
       _page = page;
-    } else if (refresh) _page = 1;
+    } else if (refresh) {
+      _page = 1;
+    }
 
-    setState(() { 
-      _loading = true; 
-      _hasError = false; 
-      if (refresh || page != null) {
-        _transactions = []; 
-      }
-    });
-    
-    await ApiService().fetchDataWithCache('/payments/admin/all?page=$_page&limit=20&search=$_search&status=$_filterStatus', (data, isCached, {bool hasError = false}) {
-      if (!mounted) return;
-      if (hasError && _transactions.isEmpty) {
-        setState(() { _loading = false; _hasError = true; });
-        return;
-      }
-      if (data == null) { setState(() => _loading = false); return; }
-      final d = data as Map<String, dynamic>;
-      setState(() { 
-        _loading = false;
-        _kpis = d['kpis'] ?? _kpis; 
-        _transactions = ApiService.ensureList(d);
-        if (d.containsKey('total')) {
-          _total = d['total'];
-          _hasMore = (_page * 20) < _total;
-        } else {
-          _hasMore = false;
-        }
+    if (refresh || page != null) {
+      setState(() {
+        _loading = true;
+        _hasError = false;
+        _transactions = [];
       });
-    });
+    } else if (_transactions.isEmpty) {
+      setState(() {
+        _loading = true;
+        _hasError = false;
+      });
+    }
+
+    await ApiService().fetchDataWithCache(
+      '/payments/admin/all?page=$_page&limit=25&search=$_search&status=$_filterStatus',
+      (data, isCached, {bool hasError = false}) {
+        if (!mounted) return;
+
+        if (isCached && _transactions.isNotEmpty && !refresh && page == null) {
+          setState(() => _loading = false);
+          return;
+        }
+
+        if (hasError && _transactions.isEmpty) {
+          setState(() {
+            _loading = false;
+            _hasError = true;
+          });
+          return;
+        }
+        if (data == null) {
+          setState(() => _loading = false);
+          return;
+        }
+
+        final d = data as Map<String, dynamic>;
+        setState(() {
+          _loading = false;
+          _hasError = false;
+          _kpis = d['kpis'] ?? _kpis;
+
+          final incoming = ApiService.ensureList(d);
+          _transactions = incoming;
+
+          if (d.containsKey('total')) {
+            _total = d['total'] ?? 0;
+            _hasMore = (_page * 25) < _total;
+          } else {
+            _hasMore = false;
+          }
+        });
+      },
+    );
   }
 
   void _onSearchChanged(String v) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
+    _debounce = Timer(const Duration(milliseconds: 400), () {
       if (mounted) {
         setState(() => _search = v);
         _fetch(refresh: true);
@@ -92,12 +119,15 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     });
   }
 
-  void _showToast(String msg) {
+  void _showToast(String msg, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg, style: GoogleFonts.outfit(fontWeight: FontWeight.w500)),
-        backgroundColor: _kGreen,
+        content: Text(
+          msg,
+          style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+        ),
+        backgroundColor: isError ? _kRed : _kGreen,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 3),
@@ -107,7 +137,6 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
 
   Future<void> _markPaid(dynamic id) async {
     setState(() => _actionLoading = true);
-    // Optimistic Update
     final index = _transactions.indexWhere((t) => t['tx_id'] == id);
     if (index != -1) {
       setState(() {
@@ -118,22 +147,28 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     try {
       final res = await ApiService().post('/payments/admin/mark-paid/$id');
       if (res.statusCode == 200) {
-        _showToast('Payment confirmed successfully.');
-        _fetch(refresh: true); // fetch again to update KPIs
+        _showToast('Payment confirmed and recorded successfully.');
+        _fetch(refresh: true);
       }
-    } catch (_) {
-      // Revert Optimistic
-      if (index != -1) setState(() => _transactions[index]['status'] = 'pending');
-      _showToast('Network error. Try again.');
+    } catch (e, st) {
+      AppLogger.error('admin_payments_mark_paid', e, st);
+      if (index != -1) {
+        setState(() => _transactions[index]['status'] = 'pending');
+      }
+      _showToast('Network error while approving payment.', isError: true);
     }
     if (mounted) setState(() => _actionLoading = false);
   }
 
   void _showConfirmDialog(dynamic txId, double amount, String memberName) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF1e293b) : Colors.white;
-    final textColor = isDark ? const Color(0xFFf8fafc) : const Color(0xFF0f172a);
-    final subTextColor = isDark ? const Color(0xFF94a3b8) : const Color(0xFF475569);
+    final cardBg = isDark ? _kCardBg : Colors.white;
+    final textColor = isDark
+        ? const Color(0xFFf8fafc)
+        : const Color(0xFF1A0F0A);
+    final subTextColor = isDark
+        ? const Color(0xFF94a3b8)
+        : const Color(0xFF475569);
 
     showDialog(
       context: context,
@@ -142,477 +177,827 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
         backgroundColor: cardBg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         contentPadding: const EdgeInsets.all(24),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(
-            width: 56, height: 56,
-            decoration: BoxDecoration(color: _kGreen.withValues(alpha: 0.15), shape: BoxShape.circle),
-            child: const Icon(Icons.check_circle_rounded, color: _kGreen, size: 28),
-          ),
-          const SizedBox(height: 16),
-          Text('Confirm Payment', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: textColor)),
-          const SizedBox(height: 8),
-          Text(
-            'Mark ₵${amount.toStringAsFixed(2)} from $memberName as RECEIVED?\nThis will update the member\'s balance.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(color: subTextColor, fontSize: 13),
-          ),
-          const SizedBox(height: 24),
-          Row(children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(0, 48),
-                  side: BorderSide(color: subTextColor.withValues(alpha: 0.3)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: Text('Cancel', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: textColor)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: _kGreen.withAlpha(30),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle_rounded,
+                color: _kGreen,
+                size: 28,
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: _actionLoading ? null : () {
-                  Navigator.of(ctx).pop();
-                  _markPaid(txId);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kGreen,
-                  elevation: 0,
-                  minimumSize: const Size(0, 48),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: Text('Confirm', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            Text(
+              'Confirm Payment',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: textColor,
               ),
             ),
-          ]),
-        ]),
+            const SizedBox(height: 8),
+            Text(
+              'Mark GHS ${amount.toStringAsFixed(2)} from $memberName as PAID / RECEIVED?\nThis updates the member standing to good standing.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(color: subTextColor, fontSize: 15),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 46),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _actionLoading
+                        ? null
+                        : () {
+                            Navigator.of(ctx).pop();
+                            _markPaid(txId);
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _kGreen,
+                      elevation: 0,
+                      minimumSize: const Size(0, 46),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Approve',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  void _showDetailSheet(Map<String, dynamic> tx) {
+  void _showDetailModal(Map<String, dynamic> tx) {
     final amount = double.tryParse(tx['amount']?.toString() ?? '0') ?? 0;
     final status = tx['status']?.toString() ?? '';
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF1e293b) : Colors.white;
-    final textColor = isDark ? const Color(0xFFf8fafc) : const Color(0xFF0f172a);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFe2e8f0);
+    final cardBg = isDark ? _kCardBg : Colors.white;
+    final textColor = isDark
+        ? const Color(0xFFf8fafc)
+        : const Color(0xFF1A0F0A);
+    final borderColor = isDark
+        ? const Color(0xFF4D2D20)
+        : const Color(0xFFe2e8f0);
+    final subTextColor = isDark
+        ? const Color(0xFF94a3b8)
+        : const Color(0xFF64748b);
+    final inputBg = isDark
+        ? const Color(0xFF1A0F0A).withAlpha(120)
+        : const Color(0xFFf8fafc);
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 20, offset: const Offset(0, -4))],
-        ),
-        padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx).viewInsets.bottom + 40),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Handle bar
-          Center(child: Container(
-            width: 40, height: 4,
-            decoration: BoxDecoration(color: borderColor, borderRadius: BorderRadius.circular(2)),
-          )),
-          const SizedBox(height: 16),
-
-          // Header
-          Row(children: [
+      builder: (ctx) => AlertDialog(
+        backgroundColor: cardBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
             Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: _kOrange.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
-              child: const Icon(Icons.receipt_long_rounded, color: _kOrange, size: 22),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _kOrange.withAlpha(25),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.receipt_long_rounded,
+                color: _kOrange,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 12),
-            Expanded(child: Text('Transaction Details', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: textColor))),
-            IconButton(icon: Icon(Icons.close_rounded, size: 20, color: textColor), onPressed: () => Navigator.of(ctx).pop()),
-          ]),
-          const SizedBox(height: 12),
-          Divider(color: borderColor),
-          const SizedBox(height: 12),
-
-          // Amount + Status hero
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDark ? [const Color(0xFF1e293b), const Color(0xFF0f172a)] : [_kOrange, const Color(0xFFea580c)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+            Text(
+              'Payment Invoice Details',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: textColor,
               ),
-              border: isDark ? Border.all(color: borderColor) : null,
-              borderRadius: BorderRadius.circular(16),
             ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('AMOUNT', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white70, letterSpacing: 1)),
-              const SizedBox(height: 4),
-              Text('₵${amount.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
-              const SizedBox(height: 8),
-              _StatusBadge(status: status),
-            ]),
+          ],
+        ),
+        content: SizedBox(
+          width: 520,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: _statusColor(status).withAlpha(20),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: _statusColor(status).withAlpha(50),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'AMOUNT CHARGED',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: subTextColor,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'GHS ${amount.toStringAsFixed(2)}',
+                            style: GoogleFonts.outfit(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w900,
+                              color: textColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _statusColor(status),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          status.toUpperCase(),
+                          style: GoogleFonts.outfit(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _detailField(
+                  'Transaction ID',
+                  tx['tx_id']?.toString() ?? '—',
+                  inputBg,
+                  borderColor,
+                  textColor,
+                  subTextColor,
+                ),
+                const SizedBox(height: 10),
+                _detailField(
+                  'Member / Company Name',
+                  tx['member_name']?.toString() ?? '—',
+                  inputBg,
+                  borderColor,
+                  textColor,
+                  subTextColor,
+                ),
+                const SizedBox(height: 10),
+                _detailField(
+                  'Payment Reference / Channel',
+                  tx['payment_ref']?.toString() ??
+                      'Mobile Money / Instant Pay',
+                  inputBg,
+                  borderColor,
+                  textColor,
+                  subTextColor,
+                ),
+                const SizedBox(height: 10),
+                _detailField(
+                  'Description / Fee Type',
+                  tx['description']?.toString() ?? 'Annual Membership Dues',
+                  inputBg,
+                  borderColor,
+                  textColor,
+                  subTextColor,
+                ),
+                const SizedBox(height: 10),
+                _detailField(
+                  'Date Created',
+                  tx['date']?.toString() ?? tx['created_at']?.toString() ?? '—',
+                  inputBg,
+                  borderColor,
+                  textColor,
+                  subTextColor,
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-
-          // Detail rows
-          ...[
-            ['Transaction ID', tx['tx_id']?.toString() ?? '—'],
-            ['Member Name',    tx['member_name']?.toString() ?? '—'],
-            ['Reference',      tx['payment_ref']?.toString() ?? 'N/A'],
-            ['Description',    tx['description']?.toString() ?? '—'],
-            ['Date',           tx['date']?.toString() ?? '—'],
-          ].map((row) => _DetailRow(label: row[0], value: row[1])),
-
-          const SizedBox(height: 24),
-
-          // Close button
-          SizedBox(
-            width: double.infinity, height: 52,
-            child: ElevatedButton(
-              onPressed: () => Navigator.of(ctx).pop(),
+        ),
+        actions: [
+          if (status == 'pending')
+            ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: _kOrange,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                backgroundColor: _kGreen,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
-              child: Text('Close', style: GoogleFonts.outfit(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _showConfirmDialog(
+                  tx['tx_id'],
+                  amount,
+                  tx['member_name']?.toString() ?? '',
+                );
+              },
+              icon: const Icon(Icons.check_circle_outline_rounded, size: 16),
+              label: const Text('Approve Payment'),
+            ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailField(
+    String label,
+    String value,
+    Color inputBg,
+    Color borderCol,
+    Color textCol,
+    Color subTextCol,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: GoogleFonts.outfit(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: subTextCol,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: inputBg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: borderCol),
+          ),
+          child: Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: textCol,
             ),
           ),
-        ]),
-      ),
+        ),
+      ],
     );
   }
 
   Color _statusColor(String status) {
-    switch (status) {
-      case 'paid':    return _kGreen;
-      case 'pending': return _kAmber;
-      default:        return _kRed;
+    switch (status.toLowerCase()) {
+      case 'paid':
+      case 'completed':
+      case 'success':
+        return _kGreen;
+      case 'pending':
+        return _kAmber;
+      case 'failed':
+      case 'overdue':
+        return _kRed;
+      default:
+        return _kBlue;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF1e293b) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFe2e8f0);
-    final textColor = isDark ? const Color(0xFFf8fafc) : const Color(0xFF0f172a);
-    final subTextColor = isDark ? const Color(0xFF94a3b8) : const Color(0xFF475569);
+    final cardBg = isDark ? _kCardBg : Colors.white;
+    final borderColor = isDark
+        ? const Color(0xFF4D2D20)
+        : const Color(0xFFe2e8f0);
+    final headerBg = isDark
+        ? const Color(0xFF1A0F0A).withAlpha(150)
+        : const Color(0xFFf8fafc);
+    final textColor = isDark
+        ? const Color(0xFFf8fafc)
+        : const Color(0xFF1A0F0A);
+    final subTextColor = isDark
+        ? const Color(0xFF94a3b8)
+        : const Color(0xFF64748b);
 
     final revenue = double.tryParse(_kpis['revenue']?.toString() ?? '0') ?? 0;
+    final pendingCount = _kpis['pending']?.toString() ?? '0';
+    final failedCount = _kpis['failed']?.toString() ?? '0';
 
     return AppLayout(
       title: 'Financial Center',
-      scrollable: false,
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Revenue Banner
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDark ? [const Color(0xFF1e293b), const Color(0xFF0f172a)] : [_kOrange, const Color(0xFFea580c)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: isDark ? Border.all(color: borderColor) : null,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05), blurRadius: 10, offset: const Offset(0, 4))
-              ],
-            ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('TOTAL REVENUE', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white70, letterSpacing: 1)),
-              const SizedBox(height: 6),
-              Text('₵${revenue.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
-              const SizedBox(height: 12),
-              Row(children: [
-                _KpiChip(label: 'Pending', value: _kpis['pending']?.toString() ?? '0', color: _kAmber),
-                const SizedBox(width: 10),
-                _KpiChip(label: 'Failed', value: _kpis['failed']?.toString() ?? '0', color: _kRed),
-              ]),
-            ]),
-          ),
-          const SizedBox(height: 20),
-
-          // Search + Filter row
-          Row(children: [
-            Expanded(
-              flex: 3,
-              child: TextField(
-                onChanged: _onSearchChanged,
-                style: GoogleFonts.outfit(fontSize: 13, color: textColor),
-                decoration: InputDecoration(
-                  prefixIcon: Icon(Icons.search_rounded, color: subTextColor, size: 18),
-                  hintText: 'Search by name or description...',
-                  hintStyle: GoogleFonts.outfit(fontSize: 13, color: subTextColor),
-                  filled: true,
-                  fillColor: cardBg,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: borderColor)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: _kOrange, width: 2)),
+      scrollable: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AdminHeader(
+            title: 'Financial Center & Transactions',
+            subtitle:
+                'Review member dues, subscription invoices, bank transfers, and payment approvals.',
+            actions: [
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kAdminOrange,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                onPressed: () => _fetch(refresh: true),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(
+                  'Refresh',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 2,
-              child: CustomDropdown<String>(
-                value: _filterStatus,
-                prefixIcon: Icon(Icons.payments_outlined, size: 16, color: subTextColor),
-                items: const [
-                  DropdownItem(value: 'all',     label: 'All Statuses'),
-                  DropdownItem(value: 'paid',    label: 'Paid'),
-                  DropdownItem(value: 'pending', label: 'Pending'),
-                  DropdownItem(value: 'overdue', label: 'Overdue'),
-                ],
-                onChanged: (v) => setState(() { _filterStatus = v; _fetch(refresh: true); }),
-              ),
-            ),
-          ]),
-          const SizedBox(height: 20),
+            ],
+          ),
+          const SizedBox(height: 18),
 
-          // Transaction Cards
+          // ── Metric Summary Cards ─────────────────────────────────────────────
+          Row(
+            children: [
+              Expanded(
+                child: AdminStatCard(
+                  label: 'Total Collected Revenue',
+                  value: 'GHS ${revenue.toStringAsFixed(2)}',
+                  icon: Icons.account_balance_wallet_outlined,
+                  color: kAdminGreen,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: AdminStatCard(
+                  label: 'Pending Approvals',
+                  value: pendingCount,
+                  icon: Icons.hourglass_top_rounded,
+                  color: kAdminAmber,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: AdminStatCard(
+                  label: 'Failed / Overdue',
+                  value: failedCount,
+                  icon: Icons.cancel_outlined,
+                  color: kAdminRed,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── Filter & Search Toolbar ──────────────────────────────────────────
+          AdminToolbar(
+            searchHint:
+                'Search transactions by member, reference, or description...',
+            onSearchChanged: _onSearchChanged,
+            filters: [
+              _filterChip('All Transactions', 'all'),
+              _filterChip('Paid', 'paid'),
+              _filterChip('Pending', 'pending'),
+              _filterChip('Overdue', 'overdue'),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── Tabular Payments DataTable ───────────────────────────────────────
           if (_loading)
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: 8,
-              separatorBuilder: (ctx, i) => const SizedBox(height: 12),
-              itemBuilder: (ctx, i) => const ShimmerListTile(),
+            const Padding(
+              padding: EdgeInsets.all(40),
+              child: Center(child: CircularProgressIndicator(color: _kOrange)),
             )
           else if (_hasError && _transactions.isEmpty)
             FetchErrorView(onRetry: () => _fetch(refresh: true))
           else if (_transactions.isEmpty)
             Container(
+              width: double.infinity,
               padding: const EdgeInsets.all(48),
-              alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: cardBg,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: borderColor),
               ),
-              child: Column(children: [
-                Icon(Icons.payments_outlined, size: 48, color: subTextColor.withValues(alpha: 0.5)),
-                const SizedBox(height: 12),
-                Text('No payment records found.', style: GoogleFonts.outfit(color: subTextColor, fontWeight: FontWeight.bold)),
-              ]),
+              child: Column(
+                children: [
+                  Icon(Icons.payments_outlined, size: 48, color: subTextColor),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No payment records found.',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Try clearing your search query or selecting a different status filter.',
+                    style: GoogleFonts.inter(fontSize: 15, color: subTextColor),
+                  ),
+                ],
+              ),
             )
           else
-            ..._transactions.map((tx) {
-              final status = tx['status']?.toString() ?? '';
-              final color = _statusColor(status);
-              final amount = double.tryParse(tx['amount']?.toString() ?? '0') ?? 0;
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: borderColor),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.02), blurRadius: 10, offset: const Offset(0, 4))
-                  ],
-                ),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    // Avatar initials
-                    Container(
-                      width: 44, height: 44,
-                      decoration: BoxDecoration(color: _kOrange.withValues(alpha: 0.15), shape: BoxShape.circle),
-                      child: Center(child: Text(
-                        (tx['member_name']?.toString() ?? '?').substring(0, 1).toUpperCase(),
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: _kOrange, fontSize: 18),
-                      )),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(tx['member_name']?.toString() ?? '', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15, color: textColor), overflow: TextOverflow.ellipsis),
-                      const SizedBox(height: 2),
-                      Text('ID: ${tx['tx_id']?.toString() ?? ''}', style: GoogleFonts.outfit(fontSize: 11, color: subTextColor, fontWeight: FontWeight.w500)),
-                    ])),
-                    Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                      Text('₵${amount.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
-                        child: Text(status.toUpperCase(), style: GoogleFonts.outfit(fontSize: 10, color: color, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
-                      ),
-                    ]),
-                  ]),
-                  if ((tx['description']?.toString() ?? '').isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      width: double.infinity,
-                      decoration: BoxDecoration(color: isDark ? const Color(0xFF0f172a).withValues(alpha: 0.4) : const Color(0xFFf8fafc), borderRadius: BorderRadius.circular(8)),
-                      child: Text(tx['description'].toString(), style: GoogleFonts.outfit(fontSize: 12, color: subTextColor)),
-                    ),
-                  ],
-                  const SizedBox(height: 14),
-                  Row(children: [
-                    if (status == 'pending')
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _actionLoading ? null : () => _showConfirmDialog(tx['tx_id'], amount, tx['member_name']?.toString() ?? ''),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _kGreen,
-                            elevation: 0,
-                            minimumSize: const Size(0, 44),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: borderColor),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minWidth: constraints.maxWidth,
+                        ),
+                        child: DataTable(
+                          headingRowColor: WidgetStateProperty.all(headerBg),
+                          headingTextStyle: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                            color: subTextColor,
+                            letterSpacing: 0.5,
                           ),
-                          icon: const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 18),
-                          label: Text('Approve', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+                          dataTextStyle: GoogleFonts.outfit(
+                            fontSize: 15,
+                            color: textColor,
+                          ),
+                          columnSpacing: 24,
+                          horizontalMargin: 24,
+                          dataRowMinHeight: 64,
+                          dataRowMaxHeight: 76,
+                          columns: const [
+                            DataColumn(label: Text('TRANSACTION REF')),
+                            DataColumn(label: Text('MEMBER / COMPANY')),
+                            DataColumn(label: Text('AMOUNT (GHS)')),
+                            DataColumn(label: Text('DESCRIPTION / PURPOSE')),
+                            DataColumn(label: Text('DATE')),
+                            DataColumn(label: Text('STATUS')),
+                            DataColumn(label: Text('ACTIONS')),
+                          ],
+                          rows: _transactions.map((tx) {
+                            final status =
+                                tx['status']?.toString() ?? 'pending';
+                            final color = _statusColor(status);
+                            final amount =
+                                double.tryParse(
+                                  tx['amount']?.toString() ?? '0',
+                                ) ??
+                                0;
+                            final memberName =
+                                tx['member_name']?.toString() ?? 'Member';
+                            final momoTxId = tx['momo_tx_id']?.toString().trim();
+                            final rawRef = tx['payment_ref']?.toString().trim();
+                            final refCode = tx['ref_code']?.toString().trim();
+                            final txId = (momoTxId != null && momoTxId.isNotEmpty && momoTxId != 'null' && momoTxId != 'None')
+                                ? momoTxId
+                                : (refCode != null && refCode.isNotEmpty && refCode != 'null' && refCode != 'None')
+                                    ? refCode
+                                    : (rawRef != null && rawRef.isNotEmpty && rawRef != 'null' && rawRef != 'None')
+                                        ? rawRef
+                                        : 'TXN-${(tx['tx_id'] ?? tx['id'] ?? '1').toString().padLeft(6, '0')}';
+                            final desc =
+                                tx['description']?.toString() ??
+                                'Membership Dues';
+                            final date =
+                                tx['date']?.toString() ??
+                                tx['created_at']?.toString() ??
+                                '—';
+
+                            return DataRow(
+                              cells: [
+                                // 1. Transaction Ref (Sleek Orange Badge)
+                                DataCell(
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _kOrange.withAlpha(isDark ? 30 : 15),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: _kOrange.withAlpha(60),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      txId,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: _kOrange,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                // 2. Member / Company
+                                DataCell(
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 14,
+                                        backgroundColor: _kOrange.withAlpha(35),
+                                        child: Text(
+                                          memberName.isNotEmpty
+                                              ? memberName[0].toUpperCase()
+                                              : 'M',
+                                          style: GoogleFonts.outfit(
+                                            color: _kOrange,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Container(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 180,
+                                        ),
+                                        child: Text(
+                                          memberName,
+                                          style: GoogleFonts.outfit(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                            color: textColor,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                // 3. Amount
+                                DataCell(
+                                  Text(
+                                    'GHS ${amount.toStringAsFixed(2)}',
+                                    style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 16,
+                                      color: textColor,
+                                    ),
+                                  ),
+                                ),
+
+                                // 4. Description
+                                DataCell(
+                                  Container(
+                                    constraints: BoxConstraints(
+                                      minWidth: 160,
+                                      maxWidth: constraints.maxWidth > 900
+                                          ? constraints.maxWidth * 0.25
+                                          : 240,
+                                    ),
+                                    child: Text(
+                                      desc,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        color: subTextColor,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+
+                                // 5. Date
+                                DataCell(
+                                  Text(
+                                    date.split('T').first,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      color: subTextColor,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+
+                                // 6. Status Badge
+                                DataCell(
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 9,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: color.withAlpha(25),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: color.withAlpha(50),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      status.toUpperCase(),
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                        color: color,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                // 7. Action Buttons
+                                DataCell(
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (status == 'pending') ...[
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: _kGreen,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 6,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                          onPressed: _actionLoading
+                                              ? null
+                                              : () => _showConfirmDialog(
+                                                  tx['tx_id'],
+                                                  amount,
+                                                  memberName,
+                                                ),
+                                          child: const Text(
+                                            'Approve',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                      ],
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.receipt_long_rounded,
+                                          size: 18,
+                                          color: _kOrange,
+                                        ),
+                                        tooltip: 'View Invoice Details',
+                                        onPressed: () => _showDetailModal(
+                                          Map<String, dynamic>.from(tx),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
                         ),
                       ),
-                    if (status == 'pending') const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _showDetailSheet(Map<String, dynamic>.from(tx)),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 44),
-                          side: BorderSide(color: borderColor),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        icon: Icon(Icons.open_in_new_rounded, size: 16, color: textColor),
-                        label: Text('View Details', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: textColor)),
-                      ),
-                    ),
-                  ]),
-                ]),
-              );
-            }),
-            
-            // Pagination Controls
-            if (!_loading && (_page > 1 || _hasMore))
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: _page > 1 ? cardBg : Colors.transparent,
-                        border: Border.all(color: _page > 1 ? borderColor : borderColor.withValues(alpha: 0.3)),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: IconButton(
-                        onPressed: _page > 1 ? () => _fetch(page: _page - 1) : null,
-                        icon: const Icon(Icons.chevron_left_rounded, size: 20),
-                        color: _kOrange,
-                        disabledColor: subTextColor.withValues(alpha: 0.4),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: cardBg,
-                        border: Border.all(color: borderColor),
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.01), blurRadius: 4),
-                        ],
-                      ),
-                      child: Text(
-                        'Page $_page', 
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: textColor),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: _hasMore ? cardBg : Colors.transparent,
-                        border: Border.all(color: _hasMore ? borderColor : borderColor.withValues(alpha: 0.3)),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: IconButton(
-                        onPressed: _hasMore ? () => _fetch(page: _page + 1) : null,
-                        icon: const Icon(Icons.chevron_right_rounded, size: 20),
-                        color: _kOrange,
-                        disabledColor: subTextColor.withValues(alpha: 0.4),
-                      ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
-              
-            if (!_loading && _transactions.isNotEmpty) 
-              Center(child: Padding(
-                padding: const EdgeInsets.only(bottom: 32),
-                child: Text(
-                  'Showing ${_transactions.length} payments${_total > 0 ? " of $_total" : ""}', 
-                  style: GoogleFonts.outfit(fontSize: 12, color: subTextColor, fontWeight: FontWeight.w500),
+            ),
+
+          const SizedBox(height: 16),
+
+          // ── Pagination Bar ───────────────────────────────────────────────────
+          if (_total > 0)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Showing ${((_page - 1) * 25) + 1}–${(_page * 25).clamp(0, _total)} of $_total transactions',
+                  style: GoogleFonts.inter(color: subTextColor, fontSize: 15),
                 ),
-              )),
-        ]),
-      )
+                Row(
+                  children: [
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: textColor,
+                        side: BorderSide(color: borderColor),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: _page > 1
+                          ? () => _fetch(page: _page - 1)
+                          : null,
+                      icon: const Icon(Icons.chevron_left_rounded, size: 18),
+                      label: const Text('Previous'),
+                    ),
+                    const SizedBox(width: 10),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: textColor,
+                        side: BorderSide(color: borderColor),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: _hasMore
+                          ? () => _fetch(page: _page + 1)
+                          : null,
+                      icon: const Icon(Icons.chevron_right_rounded, size: 18),
+                      label: const Text('Next'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          const SizedBox(height: 32),
+        ],
+      ),
     );
   }
-}
 
-// ── Status badge ──────────────────────────────────────────────────────────────
-class _StatusBadge extends StatelessWidget {
-  final String status;
-  const _StatusBadge({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
-      child: Text(status.toUpperCase(), style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5)),
-    );
-  }
-}
-
-// ── Detail row ────────────────────────────────────────────────────────────────
-class _DetailRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _DetailRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? const Color(0xFFf8fafc) : const Color(0xFF0f172a);
-    final subTextColor = isDark ? const Color(0xFF94a3b8) : const Color(0xFF475569);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        SizedBox(
-          width: 110,
-          child: Text(label, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: subTextColor)),
+  Widget _filterChip(String label, String value) {
+    final isSelected = _filterStatus == value;
+    return FilterChip(
+      label: Text(
+        label,
+        style: GoogleFonts.outfit(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+          fontSize: 14,
+          color: isSelected ? _kOrange : null,
         ),
-        Expanded(child: Text(value, style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600, color: textColor))),
-      ]),
-    );
-  }
-}
-
-// ── KPI chip on banner ────────────────────────────────────────────────────────
-class _KpiChip extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  const _KpiChip({required this.label, required this.value, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 6),
-        Text('$value $label', style: GoogleFonts.outfit(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-      ]),
+      ),
+      selected: isSelected,
+      selectedColor: _kOrange.withAlpha(30),
+      checkmarkColor: _kOrange,
+      onSelected: (_) {
+        setState(() {
+          _filterStatus = value;
+          _page = 1;
+        });
+        _fetch(refresh: true);
+      },
     );
   }
 }

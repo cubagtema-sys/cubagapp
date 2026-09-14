@@ -5,12 +5,20 @@ import 'package:dio/dio.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:ui' show ImageFilter;
 import '../components/app_layout.dart';
 import '../components/trend_line.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../services/socket_service.dart';
+part 'profile/profile_widgets.dart';
 
+const _kOrange = Color(0xFFFF5000);
+const _kGreen = Color(0xFF10b981);
+const _kRed = Color(0xFFef4444);
+const _kPurple = Color(0xFF8b5cf6);
+const _kBlue = Color(0xFF3b82f6);
+const _kAmber = Color(0xFFf59e0b);
+const _kIndigo = Color(0xFF6366f1);
 
 class StandingTier {
   final String label;
@@ -30,28 +38,28 @@ class StandingTier {
       return StandingTier(
         label: 'Elite Standing',
         color: const Color(0xFFD4AF37), // Classic Gold
-        icon: Icons.workspace_premium,
+        icon: Icons.workspace_premium_rounded,
         badgeText: 'ELITE MEMBER',
       );
     } else if (stars >= 3.5) {
       return StandingTier(
         label: 'Good Standing',
         color: const Color(0xFF10B981), // Emerald Green
-        icon: Icons.verified_user,
+        icon: Icons.verified_user_rounded,
         badgeText: 'ACTIVE MEMBER',
       );
     } else if (stars >= 2.0) {
       return StandingTier(
         label: 'Warning / Probationary',
         color: const Color(0xFFF59E0B), // Amber
-        icon: Icons.warning_amber,
+        icon: Icons.warning_amber_rounded,
         badgeText: 'PROBATIONARY',
       );
     } else {
       return StandingTier(
         label: 'Suspended / Delinquent',
         color: const Color(0xFFEF4444), // Red
-        icon: Icons.block,
+        icon: Icons.block_rounded,
         badgeText: 'SUSPENDED',
       );
     }
@@ -66,39 +74,62 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   Map<String, dynamic> _user = {};
-  bool _showIdCard = false;
   bool _isLoading = true;
   bool _uploadingPhoto = false;
-  String? _localPhotoPath; // optimistic local preview URL
-
 
   @override
   void initState() {
     super.initState();
     _fetchUser();
+    SocketService().on('member_updated', _onLiveUpdate);
+    SocketService().on('member_approved', _onLiveUpdate);
+    SocketService().on('payment_approved', _onLiveUpdate);
+    SocketService().on('fees_updated', _onLiveUpdate);
+  }
+
+  void _onLiveUpdate(dynamic _) {
+    if (mounted) {
+      ApiService.deleteCacheKeysMatching('auth/me');
+      _fetchUser();
+    }
+  }
+
+  @override
+  void dispose() {
+    SocketService().off('member_updated', _onLiveUpdate);
+    SocketService().off('member_approved', _onLiveUpdate);
+    SocketService().off('payment_approved', _onLiveUpdate);
+    SocketService().off('fees_updated', _onLiveUpdate);
+    super.dispose();
   }
 
   Future<void> _fetchUser() async {
-    setState(() => _isLoading = true);
-    try {
-      final res = await ApiService().get('/auth/me');
-      if (res.statusCode == 200) setState(() => _user = res.data ?? {});
-    } catch (_) {}
-    if (mounted) setState(() => _isLoading = false);
+    if (_user.isEmpty) setState(() => _isLoading = true);
+    await ApiService().fetchDataWithCache('/auth/me', (
+      data,
+      isCached, {
+      bool hasError = false,
+    }) {
+      if (mounted && data != null && data is Map) {
+        setState(() {
+          _user = Map<String, dynamic>.from(data);
+          _isLoading = false;
+        });
+      }
+    });
+    if (mounted && _isLoading) setState(() => _isLoading = false);
   }
 
   Future<void> _uploadAvatar() async {
-    // Pick image file
     final result = await FilePicker.pickFiles(
       type: FileType.image,
       allowMultiple: false,
-      withData: true, // needed for Flutter Web
+      withData: true,
     );
     if (result == null || result.files.isEmpty) return;
     final file = result.files.first;
     if (file.bytes == null && file.path == null) return;
 
-    // Optimistic preview
     final String? previousPhoto = _user['profile_photo']?.toString();
     setState(() => _uploadingPhoto = true);
 
@@ -106,14 +137,12 @@ class _ProfilePageState extends State<ProfilePage> {
       final api = ApiService();
       late MultipartFile mpFile;
       if (file.bytes != null) {
-        // Flutter Web — bytes only
-        mpFile = MultipartFile.fromBytes(
-          file.bytes!,
-          filename: file.name,
-        );
-      } else {
-        // Native — path available
+        mpFile = MultipartFile.fromBytes(file.bytes!, filename: file.name);
+      } else if (file.path != null && file.path!.isNotEmpty) {
         mpFile = await MultipartFile.fromFile(file.path!, filename: file.name);
+      } else {
+        final bytes = await file.xFile.readAsBytes();
+        mpFile = MultipartFile.fromBytes(bytes, filename: file.name);
       }
 
       final formData = FormData.fromMap({'photo': mpFile});
@@ -124,16 +153,19 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() {
           _user = {..._user, 'profile_photo': photoUrl};
         });
-        // ── Update the global AuthService so the header avatar refreshes ──
         if (mounted) {
-          await Provider.of<AuthService>(context, listen: false).updatePhoto(photoUrl);
+          await Provider.of<AuthService>(
+            context,
+            listen: false,
+          ).updatePhoto(photoUrl);
         }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Profile photo updated!'),
-              backgroundColor: Color(0xFF10b981),
+            SnackBar(
+              content: Text('Profile photo updated successfully', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              backgroundColor: _kGreen,
               behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
           );
         }
@@ -142,7 +174,12 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() => _user = {..._user, 'profile_photo': previousPhoto});
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('❌ $msg'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+            SnackBar(
+              content: Text(msg, style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              backgroundColor: _kRed,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
           );
         }
       }
@@ -150,7 +187,12 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() => _user = {..._user, 'profile_photo': previousPhoto});
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Upload error: $e'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
+          SnackBar(
+            content: Text('Upload error: $e', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            backgroundColor: _kRed,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
         );
       }
     } finally {
@@ -158,862 +200,1089 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  void _openDigitalIdDialog(StandingTier tier, String? expiry, int? daysLeft, bool isGoodStanding, bool isPackagePending) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        child: _buildDigitalIdCard(ctx, tier, expiry, daysLeft, isGoodStanding, isPackagePending),
+      ),
+    );
+  }
+
   String get _initials {
     final name = _user['name']?.toString().trim() ?? '';
     if (name.isEmpty) return '??';
     final parts = name.split(' ').where((p) => p.isNotEmpty).toList();
     if (parts.isEmpty) return '??';
-
     final initials = parts.map((n) => n[0]).join('').toUpperCase();
     return initials.length > 2 ? initials.substring(0, 2) : initials;
   }
 
-  String get _uniqueMemberId {
-    final agencyCode = _user['agency_code']?.toString() ?? '';
-    if (agencyCode.isNotEmpty && agencyCode != 'null') return agencyCode;
+  String get _membershipId {
+    final isPkgPaid = _user['package_fee_paid'] == true;
+    if (!isPkgPaid) return 'PENDING SETTLEMENT';
+    final memNo = _user['membership_number']?.toString().trim() ?? '';
+    if (memNo.isNotEmpty && memNo != 'null' && memNo != 'None' && !memNo.toLowerCase().contains('pending')) return memNo;
+    final lic = _user['license_number']?.toString().trim() ?? '';
+    if (lic.isNotEmpty && lic != 'null' && lic != 'None' && !lic.toLowerCase().contains('pending')) return lic;
+    final id = _user['id']?.toString() ?? '1';
+    return 'CUBAG-${id.padLeft(4, '0')}';
+  }
 
-    final last = (_user['name']?.toString().split(' ').lastOrNull ?? '').toUpperCase();
-    final id = _user['id']?.toString() ?? '';
-    return id.isNotEmpty ? 'CUBAG-$last-00$id' : '—';
+  String _formatPortAbbreviation(String raw) {
+    final s = raw.trim().toUpperCase();
+    if (s.isEmpty || s == 'NULL' || s == 'NONE') return 'KIA';
+    if (s.contains('KOTOKA') || s.contains('AIRPORT') || s.contains('ACCRA') || s == 'AIA' || s == 'KIA') return 'KIA';
+    if (s.contains('TEMA')) return 'TEMA';
+    if (s.contains('TAKORADI') || s == 'TKD' || s.contains('SEKONDI')) return 'TKD';
+    if (s.contains('AFLAO')) return 'AFLAO';
+    if (s.contains('ELUBO')) return 'ELUBO';
+    if (s.contains('PAGA')) return 'PAGA';
+    if (s.contains('SUNYANI')) return 'SUN';
+    if (s.contains('KUMASI')) return 'KMS';
+    final cleaned = s.replaceAll('PORT', '').replaceAll('BORDER', '').replaceAll('CHAPTER', '').trim();
+    if (cleaned.length > 5) return cleaned.substring(0, 4);
+    return cleaned.isNotEmpty ? cleaned : 'KIA';
   }
 
   String _formatDate(String? str) {
     if (str == null) return '—';
     final d = DateTime.tryParse(str);
     if (d == null) return '—';
-    return '${d.day} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.month - 1]} ${d.year}';
+    return '${d.day} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.month - 1]} ${d.year}';
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC);
+    final cardBg = isDark ? const Color(0xFF1A0F0A) : Colors.white;
+    final border = isDark ? const Color(0xFF281710) : const Color(0xFFE2E8F0);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textMuted = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     if (_isLoading) {
-      return const AppLayout(
+      return AppLayout(
         title: 'My Profile',
         child: Center(
-          child: CircularProgressIndicator(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: _kOrange),
+              const SizedBox(height: 16),
+              Text('Loading profile details...', style: GoogleFonts.outfit(color: textMuted)),
+            ],
+          ),
         ),
       );
     }
 
-    final primary = Theme.of(context).primaryColor;
     final rawExpiry = _user['license_expiry_date']?.toString() ?? _user['licenseExpiryDate']?.toString();
     final expiry = (rawExpiry == null || rawExpiry == 'None' || rawExpiry == 'null' || rawExpiry.isEmpty) ? null : rawExpiry;
     final daysLeft = expiry != null ? DateTime.tryParse(expiry)?.difference(DateTime.now()).inDays : null;
+    final statusStr = (_user['status']?.toString() ?? 'active').trim().toLowerCase();
+    final isExpired = daysLeft != null && daysLeft < 0;
+    final isApprovedOrActive = statusStr == 'active' || statusStr == 'approved';
+    final bool isPkgPaid = _user['package_fee_paid'] == true;
+    final bool isPackagePending = !isPkgPaid &&
+        (_user['role'] != 'admin' && _user['role'] != 'sub_admin');
+    final bool isGoodStanding = isPkgPaid &&
+        (_user['is_good_standing'] == true || _user['good_standing'] == true || isApprovedOrActive);
 
     final complianceScore = int.tryParse(_user['compliance_score']?.toString() ?? '') ?? 100;
     final starRating = double.tryParse(_user['star_rating']?.toString() ?? '') ?? 5.0;
     final tier = StandingTier.getFromStars(starRating);
 
+    final rawMemberType = (_user['member_type'] ?? _user['memberType'] ?? '').toString().toLowerCase();
+    final isLicentiate = rawMemberType.contains('licentiate') || rawMemberType.contains('individual');
+    final isAssociate = rawMemberType.contains('associate') || rawMemberType.contains('affiliate');
+    final isCorporate = !isLicentiate && !isAssociate;
+
+    final scaleStr = (_user['company_scale'] ?? _user['member_scale'] ?? 'sme').toString().toLowerCase();
+    final scaleLabel = isLicentiate
+        ? 'Licentiate Member'
+        : (isAssociate
+            ? 'Associate Member'
+            : (scaleStr.contains('large') || scaleStr.contains('corp') ? 'Large Corporate' : 'SME Brokerage'));
+    final scaleIcon = isLicentiate
+        ? Icons.badge_rounded
+        : (isAssociate ? Icons.group_rounded : Icons.business_rounded);
+    final scaleColor = isLicentiate ? _kOrange : (isAssociate ? _kGreen : _kIndigo);
+
+    final feeCat = (_user['fee_category'] ?? '').toString().toLowerCase();
+    final feeCatLabel = isLicentiate
+        ? 'Customs House Agent'
+        : (isAssociate
+            ? 'Allied Logistics Partner'
+            : (feeCat == 'consolidation'
+                ? 'Consolidation'
+                : (feeCat == 'cf_consolidation' ? 'Consolidation, C&F' : 'Clearing & Forwarding')));
+    final feeCatIcon = isLicentiate
+        ? Icons.person_pin_rounded
+        : (isAssociate ? Icons.handshake_rounded : Icons.local_shipping_rounded);
+    final feeCatColor = isLicentiate ? _kPurple : (isAssociate ? _kIndigo : _kPurple);
+
+    final portRaw = (_user['port_of_operation'] ?? _user['port'] ?? 'Tema Port').toString();
+    final portStr = _formatPortAbbreviation(portRaw);
+
     return AppLayout(
       title: 'My Profile',
-      child: Stack(children: [
-        Column(children: [
-          // Profile Header Card
-          Card(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), clipBehavior: Clip.antiAlias, child: Column(children: [
-            Container(height: 100, decoration: BoxDecoration(gradient: LinearGradient(colors: [primary, primary.withValues(alpha: 0.7)]))),
-            Transform.translate(
-              offset: const Offset(0, -40),
-              child: Column(children: [
-                Stack(children: [
-                  // Avatar — shows photo if available, else initials
-                  GestureDetector(
-                    onTap: _uploadingPhoto ? null : _uploadAvatar,
-                    child: Stack(children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor: Colors.white,
-                        child: _user['profile_photo'] != null && _user['profile_photo'].toString().isNotEmpty
-                          ? ClipOval(
-                              child: CachedNetworkImage(
-                                imageUrl: _user['profile_photo'].toString(),
-                                width: 72, height: 72, fit: BoxFit.cover,
-                                placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2),
-                                errorWidget: (_, _, _) => CircleAvatar(
-                                  radius: 36,
-                                  backgroundColor: primary.withValues(alpha: 0.1),
-                                  child: Text(_initials, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primary)),
-                                ),
-                              ),
-                            )
-                          : CircleAvatar(
-                              radius: 36,
-                              backgroundColor: primary.withValues(alpha: 0.1),
-                              child: Text(_initials, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primary)),
+      scrollable: true,
+      child: Container(
+        color: bg,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── 1. EXECUTIVE HERO PROFILE BANNER ───────────────────────────
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: border),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(isDark ? 30 : 10),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Branded Top Pattern Header
+                  Container(
+                    height: 120,
+                    decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(19)),
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF1E293B),
+                          _kOrange.withAlpha(200),
+                          const Color(0xFF0F172A),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          right: 20,
+                          top: 20,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withAlpha(120),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.white24),
                             ),
-                      ),
-                      Positioned(
-                        bottom: 0, right: 0,
-                        child: Container(
-                          width: 28, height: 28,
-                          decoration: BoxDecoration(color: primary, shape: BoxShape.circle),
-                          child: _uploadingPhoto
-                            ? const Padding(
-                                padding: EdgeInsets.all(6),
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Icon(Icons.photo_camera, color: Colors.white, size: 14),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(tier.icon, size: 14, color: tier.color),
+                                const SizedBox(width: 6),
+                                Text(
+                                  tier.badgeText,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
-                    ]),
+                      ],
+                    ),
                   ),
 
-                ]),
-                const SizedBox(height: 8),
+                  // Avatar & User Info
+                  Transform.translate(
+                    offset: const Offset(0, -45),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        children: [
+                          // Profile Photo with Camera Upload
+                          GestureDetector(
+                            onTap: _uploadingPhoto ? null : _uploadAvatar,
+                            child: Stack(
+                              alignment: Alignment.bottomRight,
+                              children: [
+                                Container(
+                                  width: 90,
+                                  height: 90,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: cardBg, width: 4),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: _kOrange.withAlpha(60),
+                                        blurRadius: 16,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipOval(
+                                    child: _user['profile_photo'] != null && _user['profile_photo'].toString().isNotEmpty
+                                        ? CachedNetworkImage(
+                                            imageUrl: ApiService.resolveImageUrl(_user['profile_photo'].toString()),
+                                            width: 90,
+                                            height: 90,
+                                            fit: BoxFit.cover,
+                                            placeholder: (ctx, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2, color: _kOrange)),
+                                            errorWidget: (ctx, url, err) => _buildAvatarFallback(),
+                                          )
+                                        : _buildAvatarFallback(),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: _kOrange,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: cardBg, width: 2),
+                                  ),
+                                  child: _uploadingPhoto
+                                      ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                      : const Icon(Icons.camera_alt_rounded, size: 13, color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 10),
 
-                Text(_user['name']?.toString() ?? '', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                Text(_user['role']?.toString() ?? '', style: const TextStyle(color: Colors.grey, fontSize: 14)),
-                const SizedBox(height: 8),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 6,
-                  children: [
-                    const Icon(Icons.star, color: Color(0xFFFFD700), size: 18),
-                    Text(
-                      '${starRating.toStringAsFixed(1)} / 5.0 Stars',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                    Text(
-                      '(${tier.label})',
-                      style: TextStyle(color: tier.color, fontWeight: FontWeight.w600, fontSize: 13),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: LinearProgressIndicator(
-                          value: complianceScore / 100.0,
-                          backgroundColor: Colors.grey.shade200,
-                          color: tier.color,
-                          minHeight: 6,
-                        ),
+                          // Name & Title
+                          Text(
+                            _user['name']?.toString() ?? 'Broker Member',
+                            style: GoogleFonts.outfit(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              color: textPrimary,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            _user['company']?.toString() ?? 'Customs Brokerage Entity',
+                            style: GoogleFonts.inter(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w600,
+                              color: textMuted,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Tag Chips (Scale, Operating Scope, Verified Status)
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _buildPill(scaleLabel, scaleIcon, scaleColor, isDark),
+                              if (isCorporate)
+                                _buildPill(feeCatLabel, feeCatIcon, feeCatColor, isDark),
+                              _buildPill(
+                                isGoodStanding
+                                    ? 'Active in Good Standing'
+                                    : (isPackagePending ? 'Waiting For Payment' : 'Status Pending'),
+                                isGoodStanding
+                                    ? Icons.verified_rounded
+                                    : (isPackagePending ? Icons.payment_rounded : Icons.pending_rounded),
+                                isGoodStanding ? _kGreen : _kAmber,
+                                isDark,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Quick Action Buttons
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _kOrange,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  elevation: 2,
+                                ),
+                                onPressed: () => _openDigitalIdDialog(tier, expiry, daysLeft, isGoodStanding, isPackagePending),
+                                icon: const Icon(Icons.badge_rounded, size: 18),
+                                label: Text('View Digital ID', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15)),
+                              ),
+                              const SizedBox(width: 10),
+                              OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: textPrimary,
+                                  side: BorderSide(color: border, width: 1.2),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                onPressed: () => context.go('/compliance'),
+                                icon: const Icon(Icons.verified_user_outlined, size: 17, color: _kGreen),
+                                label: Text('Compliance Centre', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15)),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$complianceScore/100 Compliance Score',
-                        style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w500),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), decoration: BoxDecoration(color: tier.color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)), child: Text(tier.badgeText, style: TextStyle(color: tier.color, fontWeight: FontWeight.bold, fontSize: 12))),
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    onPressed: () => setState(() => _showIdCard = true),
-                    icon: const Icon(Icons.badge, size: 16),
-                    label: const Text('ID Card', style: TextStyle(fontSize: 12)),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
-                ]),
-                const SizedBox(height: 16),
-              ]),
+                ],
+              ),
             ),
-          ])),
-          const SizedBox(height: 16),
+            const SizedBox(height: 18),
 
-          // Professional Details Card
-          Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Column(children: [
-              const Padding(padding: EdgeInsets.all(16), child: Align(alignment: Alignment.centerLeft, child: Text('Professional Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)))),
-              const Divider(height: 1),
-              _detailRow('MEMBER ID', _uniqueMemberId),
-              _detailRow('ORGANIZATION', _user['company']?.toString() ?? 'Independent'),
-              _detailRow('EMAIL ADDRESS', _user['email']?.toString() ?? '—'),
-              _detailRow('PHONE NUMBER', _user['phone']?.toString() ?? 'Not provided'),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: (_user['status'] == 'active' ? primary : Colors.red).withValues(alpha: 0.05)),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('LICENSE', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                  const SizedBox(height: 6),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(
-                        (daysLeft != null && daysLeft < 0) 
-                          ? 'EXPIRED / INACTIVE' 
-                          : _user['license_number']?.toString() ?? (_user['status'] == 'active' ? 'CBG-${DateTime.now().year}-${_user['id']?.toString() ?? 'LIC'}' : 'PAYMENT REQUIRED'), 
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold, 
-                          color: (daysLeft != null && daysLeft < 0) || _user['status'] != 'active' ? Colors.red : null, 
-                          fontSize: 16
-                        )
-                      ),
-                      if (daysLeft != null) Text(daysLeft < 0 ? 'Expired ${_formatDate(expiry)}' : daysLeft <= 30 ? 'Expires in $daysLeft days — ${_formatDate(expiry)}' : 'Valid until ${_formatDate(expiry)}', style: TextStyle(fontSize: 12, color: daysLeft < 0 ? Colors.red : daysLeft <= 30 ? Colors.orange : Colors.grey)),
-                    ])),
-                    // Show Renew only if license is expired or expiring within 60 days
-                    if (_user['status'] != 'active')
-                      OutlinedButton(
-                        onPressed: () => context.go('/payments'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('Pay to Activate', style: TextStyle(fontSize: 12)),
+            // ── 2. METRIC STATS STRIP ─────────────────────────────────────
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 750;
+                final expireBoxText = (!isGoodStanding || isPackagePending)
+                    ? 'Not Active'
+                    : (expiry != null ? _formatDate(expiry) : 'Active & Valid');
+                final expireBoxSub = isPackagePending
+                    ? 'Settle Package'
+                    : (daysLeft != null ? (daysLeft < 0 ? 'Expired' : '$daysLeft days left') : (isGoodStanding ? 'Valid' : 'Not Active'));
+                final expireBoxColor = isPackagePending ? _kOrange : (daysLeft != null && daysLeft <= 30 ? _kRed : _kGreen);
+
+                return isWide
+                    ? Row(
+                        children: [
+                          Expanded(child: _buildMetricBox('Compliance Score', '$complianceScore/100', 'Calculated standing rate', Icons.speed_rounded, _kGreen, cardBg, border, textPrimary, textMuted)),
+                          const SizedBox(width: 12),
+                          Expanded(child: _buildMetricBox('Membership Rating', '${starRating.toStringAsFixed(1)} ★', tier.label, Icons.star_rounded, const Color(0xFFD4AF37), cardBg, border, textPrimary, textMuted)),
+                          const SizedBox(width: 12),
+                          Expanded(child: _buildMetricBox('Operating Port', portStr, 'Chapter', null, _kIndigo, cardBg, border, textPrimary, textMuted)),
+                          const SizedBox(width: 12),
+                          Expanded(child: _buildMetricBox('Member Expire', expireBoxText, expireBoxSub, Icons.event_available_rounded, expireBoxColor, cardBg, border, textPrimary, textMuted)),
+                        ],
                       )
-                    else if (daysLeft != null && daysLeft <= 60)
-                      OutlinedButton(
-                        onPressed: () => context.go('/payments'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          foregroundColor: daysLeft < 0 ? Colors.red : Colors.orange,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: Text(daysLeft < 0 ? 'Renew Now' : 'Renew Soon', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      ),
-                  ]),
-                ]),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: OutlinedButton.icon(
-                  onPressed: () => context.go('/payment-history'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(52),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  icon: const Icon(Icons.history, size: 18),
-                  label: const Text('View License History'),
-                ),
-              ),
-            ]),
-          ),
-          const SizedBox(height: 16),
+                    : Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(child: _buildMetricBox('Compliance Score', '$complianceScore/100', 'Standing rate', Icons.speed_rounded, _kGreen, cardBg, border, textPrimary, textMuted)),
+                              const SizedBox(width: 10),
+                              Expanded(child: _buildMetricBox('Rating', '${starRating.toStringAsFixed(1)} ★', tier.label, Icons.star_rounded, const Color(0xFFD4AF37), cardBg, border, textPrimary, textMuted)),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(child: _buildMetricBox('Operating Port', portStr, 'Chapter', null, _kIndigo, cardBg, border, textPrimary, textMuted)),
+                              const SizedBox(width: 10),
+                              Expanded(child: _buildMetricBox('Member Expire', expireBoxText, expireBoxSub, Icons.event_available_rounded, expireBoxColor, cardBg, border, textPrimary, textMuted)),
+                            ],
+                          ),
+                        ],
+                      );
+              },
+            ),
+            const SizedBox(height: 18),
 
-          Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+            // ── 3. TWO-COLUMN DETAILS SECTION ─────────────────────────────
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 900;
+                return isWide
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: _buildCorporateCard(cardBg, border, textPrimary, textMuted, scaleLabel, feeCatLabel, portStr, isLicentiate, isAssociate)),
+                          const SizedBox(width: 16),
+                          Expanded(child: _buildComplianceCard(cardBg, border, textPrimary, textMuted, expiry, daysLeft, isGoodStanding, isPackagePending, isExpired, isDark)),
+                        ],
+                      )
+                    : Column(
+                        children: [
+                          _buildCorporateCard(cardBg, border, textPrimary, textMuted, scaleLabel, feeCatLabel, portStr, isLicentiate, isAssociate),
+                          const SizedBox(height: 16),
+                          _buildComplianceCard(cardBg, border, textPrimary, textMuted, expiry, daysLeft, isGoodStanding, isPackagePending, isExpired, isDark),
+                        ],
+                      );
+              },
+            ),
+            const SizedBox(height: 18),
+
+            // ── 4. HISTORICAL TREND & COMPLIANCE MATH ─────────────────────
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: border),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('HISTORICAL COMPLIANCE TREND', style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: tier.color.withAlpha(25),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.show_chart_rounded, color: tier.color, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Historical Compliance & Standing Trend',
+                              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
+                              softWrap: true,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '30-day recorded compliance trajectory and mathematical breakdown points',
+                              style: GoogleFonts.inter(fontSize: 13.5, color: textMuted),
+                              softWrap: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   TrendLineWidget(
                     points: (_user['rating_history'] as List?)
                             ?.map((h) => double.tryParse(h['compliance_score']?.toString() ?? '') ?? 100.0)
                             .toList() ??
                         [complianceScore.toDouble()],
                     color: tier.color,
-                    height: 100,
+                    height: 90,
                   ),
+                  const Divider(height: 28),
+                  _buildMathBreakdownSection(_user, _kOrange, isDark, textPrimary, textMuted),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
 
-          Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: _buildMathBreakdownSection(_user, primary),
+  Widget _buildAvatarFallback() => CircleAvatar(
+        radius: 45,
+        backgroundColor: _kOrange.withAlpha(30),
+        child: Text(
+          _initials,
+          style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.w900, color: _kOrange),
+        ),
+      );
+
+  Widget _buildPill(String label, IconData icon, Color color, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withAlpha(isDark ? 30 : 18),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withAlpha(60)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: GoogleFonts.outfit(fontSize: 13.5, fontWeight: FontWeight.w700, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricBox(
+    String title,
+    String value,
+    String subtitle,
+    IconData? icon,
+    Color color,
+    Color cardBg,
+    Color border,
+    Color textPrimary,
+    Color textMuted,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withAlpha(22),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  title,
+                  style: GoogleFonts.outfit(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: textPrimary.withAlpha(200),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: textMuted,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
-        ]),
+        ],
+      ),
+    );
+  }
 
-        // Digital ID Card Overlay
-        if (_showIdCard)
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-              child: Container(
-                color: const Color(0xFF020617).withValues(alpha: 0.85),
-                child: Align(
-                  alignment: const Alignment(0, -0.3),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 400),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(28),
-                          border: Border.all(
-                            color: const Color(0xFFf08232).withValues(alpha: 0.3),
-                            width: 1.5,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: tier.color.withValues(alpha: 0.35),
-                              blurRadius: 40,
-                              spreadRadius: 2,
+  Widget _buildCorporateCard(Color cardBg, Color border, Color textPrimary, Color textMuted, String scale, String feeCat, String port, bool isLicentiate, bool isAssociate) {
+    final title = isLicentiate
+        ? 'Licentiate Member'
+        : (isAssociate ? 'Associate Member' : 'Corporate Identity & Scope');
+    final subtitle = isLicentiate
+        ? 'Licentiate member credentials & registration particulars'
+        : (isAssociate ? 'Associate member credentials & registration particulars' : 'Entity registration particulars & operational scope');
+    final entityLabel = isLicentiate
+        ? 'Licensed Practice / Name'
+        : (isAssociate ? 'Entity / Partner Name' : 'Entity / Company');
+    final entityIcon = isLicentiate ? Icons.person_outline_rounded : (isAssociate ? Icons.groups_rounded : Icons.domain_rounded);
+    final cardThemeColor = isLicentiate ? _kOrange : (isAssociate ? _kGreen : _kIndigo);
+    final cardIcon = isLicentiate ? Icons.badge_rounded : (isAssociate ? Icons.handshake_rounded : Icons.apartment_rounded);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: cardThemeColor.withAlpha(25),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(cardIcon, color: cardThemeColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
+                      softWrap: true,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.inter(fontSize: 13.5, color: textMuted),
+                      softWrap: true,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _itemRow(entityLabel, _user['company']?.toString() ?? _user['name']?.toString() ?? 'Customs Licentiate', entityIcon, textPrimary, textMuted),
+          _itemRow('Membership ID', _membershipId, Icons.badge_outlined, textPrimary, textMuted),
+          _itemRow('Primary Contact', _user['name']?.toString() ?? '—', Icons.person_outline_rounded, textPrimary, textMuted),
+          _itemRow('Official Email', _user['email']?.toString() ?? '—', Icons.email_outlined, textPrimary, textMuted),
+          _itemRow('Phone Number', _user['phone']?.toString() ?? 'Not provided', Icons.phone_outlined, textPrimary, textMuted),
+          _itemRow('Operating Chapter', port, null, textPrimary, textMuted, isLast: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComplianceCard(
+    Color cardBg,
+    Color border,
+    Color textPrimary,
+    Color textMuted,
+    String? expiry,
+    int? daysLeft,
+    bool isGoodStanding,
+    bool isPackagePending,
+    bool isExpired,
+    bool isDark,
+  ) {
+    String standingStatus;
+    String memberExpireText;
+    String timelineNotice;
+    Color standingColor;
+
+    if (isPackagePending) {
+      standingStatus = '🟡 Waiting For Membership Payment';
+      memberExpireText = 'Not Active';
+      timelineNotice = 'Not Active • Settle Entrance Package to Activate';
+      standingColor = _kAmber;
+    } else if (isExpired) {
+      standingStatus = '🔴 Renewal Required';
+      memberExpireText = expiry != null ? _formatDate(expiry) : 'Expired';
+      timelineNotice = 'Expired ${daysLeft?.abs()} days ago • Renewal Required';
+      standingColor = _kRed;
+    } else if (daysLeft != null && daysLeft <= 30) {
+      standingStatus = '🟡 Renewal Due Soon';
+      memberExpireText = _formatDate(expiry);
+      timelineNotice = '$daysLeft days remaining until expiration';
+      standingColor = _kAmber;
+    } else if (isGoodStanding) {
+      standingStatus = '🟢 Active in Good Standing';
+      memberExpireText = expiry != null ? _formatDate(expiry) : 'Active & Valid';
+      timelineNotice = daysLeft != null ? '$daysLeft days remaining' : 'Active in Good Standing';
+      standingColor = _kGreen;
+    } else {
+      standingStatus = '🟡 Pending Activation';
+      memberExpireText = 'Not Active';
+      timelineNotice = 'Not Active • Pending Verification & Activation';
+      standingColor = _kAmber;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: standingColor.withAlpha(25),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.gavel_rounded, color: standingColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Membership & Standing Status',
+                      style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
+                      softWrap: true,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Statutory compliance validity & annual renewal schedule',
+                      style: GoogleFonts.inter(fontSize: 13.5, color: textMuted),
+                      softWrap: true,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _itemRow('Standing Status', standingStatus, Icons.shield_outlined, standingColor, textMuted),
+          _itemRow('Membership ID', _membershipId, Icons.badge_outlined, textPrimary, textMuted),
+          _itemRow('Member Expire', memberExpireText, Icons.calendar_month_outlined, isGoodStanding ? textPrimary : textMuted, textMuted),
+          _itemRow(
+            'Timeline Notice',
+            timelineNotice,
+            Icons.timelapse_rounded,
+            standingColor,
+            textMuted,
+          ),
+          const SizedBox(height: 12),
+
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _kOrange,
+                    side: const BorderSide(color: _kOrange),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: () => context.go('/payment-history'),
+                  icon: const Icon(Icons.receipt_long_rounded, size: 16),
+                  label: Text('Payment Receipts', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isPackagePending ? _kOrange : _kGreen,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    elevation: 0,
+                  ),
+                  onPressed: () => context.go(isPackagePending ? '/payments?fee=New%20Membership%20Dues' : '/compliance'),
+                  icon: Icon(isPackagePending ? Icons.payment_rounded : Icons.verified_user_rounded, size: 16),
+                  label: Text(isPackagePending ? 'Pay Entrance Package' : 'Compliance Hub', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _itemRow(String label, String value, IconData? icon, Color textPrimary, Color textMuted, {bool isLast = false}) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 16, color: textMuted),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: GoogleFonts.inter(fontSize: 12.5, color: textMuted, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 1),
+                Text(
+                  value,
+                  style: GoogleFonts.outfit(fontSize: 15.5, fontWeight: FontWeight.w800, color: textPrimary),
+                  softWrap: true,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── 5. DIGITAL IDENTITY CARD MODAL DIALOG ──────────────────────────────────
+  Widget _buildDigitalIdCard(
+    BuildContext dialogCtx,
+    StandingTier tier,
+    String? expiry,
+    int? daysLeft,
+    bool isGoodStanding,
+    bool isPackagePending,
+  ) {
+    final badgeText = isPackagePending
+        ? 'NOT ACTIVE'
+        : (isGoodStanding ? 'ACTIVE IN GOOD STANDING' : 'NOT ACTIVE');
+    final badgeColor = isPackagePending
+        ? const Color(0xFFF59E0B)
+        : (isGoodStanding ? tier.color : const Color(0xFFEF4444));
+
+    final expireText = (!isGoodStanding || isPackagePending)
+        ? 'Not Active'
+        : (expiry != null ? _formatDate(expiry) : 'Active & Valid');
+    final expireColor = (!isGoodStanding || isPackagePending)
+        ? const Color(0xFFEF4444)
+        : const Color(0xFF0F172A);
+
+    final standingText = isPackagePending
+        ? 'Waiting For Payment'
+        : (isGoodStanding ? 'Active in Good Standing' : 'Inactive');
+    final standingColor = isPackagePending
+        ? const Color(0xFFF59E0B)
+        : (isGoodStanding ? tier.color : const Color(0xFFEF4444));
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 380),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: _kOrange.withAlpha(90), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(70),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: CustomPaint(painter: _IdGridPainter(color: const Color(0xFFFF5000))),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: _kOrange.withAlpha(25),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: _kOrange.withAlpha(80)),
+                              ),
+                              child: const Center(child: Icon(Icons.shield_rounded, color: _kOrange, size: 18)),
                             ),
-                            BoxShadow(
-                              color: const Color(0xFFf08232).withValues(alpha: 0.15),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
+                            const SizedBox(width: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'CUBAG',
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 20,
+                                    color: const Color(0xFF0F172A),
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                                Text(
+                                  'DIGITAL IDENTITY CARD',
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 10.5,
+                                    color: _kOrange,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(28),
-                          child: Stack(
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: badgeColor.withAlpha(25),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: badgeColor.withAlpha(80)),
+                          ),
+                          child: Text(
+                            badgeText,
+                            style: GoogleFonts.outfit(
+                              color: badgeColor,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Avatar
+                    Center(
+                      child: Container(
+                        width: 96,
+                        height: 96,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: badgeColor, width: 2.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: badgeColor.withAlpha(60),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: _user['profile_photo'] != null && _user['profile_photo'].toString().isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: ApiService.resolveImageUrl(_user['profile_photo'].toString()),
+                                  width: 96,
+                                  height: 96,
+                                  fit: BoxFit.cover,
+                                  errorWidget: (ctx, url, err) => _buildAvatarFallback(),
+                                )
+                              : _buildAvatarFallback(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Member Name & Company
+                    Text(
+                      _user['name']?.toString() ?? '',
+                      style: GoogleFonts.outfit(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF0F172A),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _user['company']?.toString() ?? 'Customs Brokerage Entity',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF64748B),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Clean Credentials Box (Official Membership ID ONLY)
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
                             children: [
-                              // Security Grid Watermark
-                              Positioned.fill(
-                                child: Opacity(
-                                  opacity: 0.04,
-                                  child: CustomPaint(
-                                    painter: _IdGridPainter(color: const Color(0xFF0F172A)),
-                                  ),
-                                ),
-                              ),
-                              // Glowing Orbs
-                              Positioned(
-                                top: -80,
-                                right: -80,
-                                child: Container(
-                                  width: 200,
-                                  height: 200,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: RadialGradient(
-                                      colors: [
-                                        const Color(0xFFf08232).withValues(alpha: 0.15),
-                                        Colors.transparent,
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                bottom: -100,
-                                left: -60,
-                                child: Container(
-                                  width: 220,
-                                  height: 220,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: RadialGradient(
-                                      colors: [
-                                        tier.color.withValues(alpha: 0.15),
-                                        Colors.transparent,
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              // Content Column
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                              Expanded(
                                 child: Column(
-                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // Header
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            // Tiny Logo Indicator
-                                            Container(
-                                              width: 32,
-                                              height: 32,
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFf08232).withValues(alpha: 0.1),
-                                                borderRadius: BorderRadius.circular(8),
-                                                border: Border.all(
-                                                  color: const Color(0xFFf08232).withValues(alpha: 0.3),
-                                                  width: 1.5,
-                                                ),
-                                              ),
-                                              child: const Center(
-                                                child: Icon(
-                                                  Icons.shield,
-                                                  color: Color(0xFFf08232),
-                                                  size: 16,
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  'CUBAG',
-                                                  style: GoogleFonts.outfit(
-                                                    fontWeight: FontWeight.w800,
-                                                    fontSize: 18,
-                                                    color: const Color(0xFF0F172A),
-                                                    letterSpacing: 1,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  'DIGITAL IDENTITY',
-                                                  style: GoogleFonts.inter(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 9,
-                                                    color: const Color(0xFFf08232),
-                                                    letterSpacing: 0.8,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                        // Status Chip / Shield Icon
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                          decoration: BoxDecoration(
-                                            color: tier.color.withValues(alpha: 0.1),
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: tier.color.withValues(alpha: 0.2),
-                                              width: 1,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                tier.icon,
-                                                color: tier.color,
-                                                size: 12,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                tier.badgeText,
-                                                style: GoogleFonts.outfit(
-                                                  color: tier.color,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 10,
-                                                  letterSpacing: 0.5,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 24),
-                                    
-                                    // User Avatar & Frame
-                                    Stack(
-                                      alignment: Alignment.bottomRight,
-                                      children: [
-                                        Container(
-                                          width: 110,
-                                          height: 110,
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(24),
-                                            border: Border.all(
-                                              color: tier.color,
-                                              width: 3,
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: tier.color.withValues(alpha: 0.25),
-                                                blurRadius: 15,
-                                                offset: const Offset(0, 5),
-                                              ),
-                                            ],
-                                          ),
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(20),
-                                            child: _user['profile_photo'] != null &&
-                                                    _user['profile_photo'].toString().isNotEmpty
-                                                ? CachedNetworkImage(
-                                                    imageUrl: _user['profile_photo'].toString(),
-                                                    width: 110,
-                                                    height: 110,
-                                                    fit: BoxFit.cover,
-                                                    placeholder: (context, url) => const Center(
-                                                      child: CircularProgressIndicator(
-                                                        strokeWidth: 2,
-                                                        color: Color(0xFFf08232),
-                                                      ),
-                                                    ),
-                                                    errorWidget: (_, _, _) => CircleAvatar(
-                                                      radius: 55,
-                                                      backgroundColor: const Color(0xFFF1F5F9),
-                                                      child: Text(
-                                                        _initials,
-                                                        style: GoogleFonts.outfit(
-                                                          fontSize: 32,
-                                                          fontWeight: FontWeight.bold,
-                                                          color: const Color(0xFF64748B),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  )
-                                                : CircleAvatar(
-                                                    radius: 55,
-                                                    backgroundColor: const Color(0xFFF1F5F9),
-                                                    child: Text(
-                                                      _initials,
-                                                      style: GoogleFonts.outfit(
-                                                        fontSize: 32,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: const Color(0xFF64748B),
-                                                      ),
-                                                    ),
-                                                  ),
-                                          ),
-                                        ),
-                                        // Verification Check Badge
-                                        Container(
-                                          width: 28,
-                                          height: 28,
-                                          decoration: const BoxDecoration(
-                                            color: Colors.white,
-                                            shape: BoxShape.circle,
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black12,
-                                                blurRadius: 4,
-                                              ),
-                                            ],
-                                          ),
-                                          child: Center(
-                                            child: Icon(
-                                              Icons.verified,
-                                              color: _user['status'] == 'active'
-                                                  ? const Color(0xFF10B981)
-                                                  : Colors.grey,
-                                              size: 20,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    
-                                    // User Name & Title
-                                    Text(
-                                      _user['name']?.toString() ?? '',
-                                      textAlign: TextAlign.center,
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF0F172A),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      _user['role']?.toString().toUpperCase() ?? 'BROKER MEMBER',
-                                      textAlign: TextAlign.center,
-                                      style: GoogleFonts.inter(
-                                        color: const Color(0xFF64748B),
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 1.2,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    
-                                    // Credentials Grid Container
-                                    Container(
-                                      padding: const EdgeInsets.all(16),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF8FAFC),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: const Color(0xFFE2E8F0),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          // Row 1: Member ID & License No.
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      'MEMBER ID',
-                                                      style: GoogleFonts.inter(
-                                                        fontSize: 9,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: const Color(0xFF94A3B8),
-                                                        letterSpacing: 0.5,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 3),
-                                                    Text(
-                                                      _uniqueMemberId,
-                                                      style: GoogleFonts.outfit(
-                                                        fontWeight: FontWeight.bold,
-                                                        fontSize: 13,
-                                                        color: const Color(0xFF0F172A),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              Container(
-                                                height: 24,
-                                                width: 1,
-                                                color: const Color(0xFFE2E8F0),
-                                              ),
-                                              const SizedBox(width: 16),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      'LICENSE NO.',
-                                                      style: GoogleFonts.inter(
-                                                        fontSize: 9,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: const Color(0xFF94A3B8),
-                                                        letterSpacing: 0.5,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 3),
-                                                    Text(
-                                                      _user['license_number']?.toString() ??
-                                                          (_user['status'] == 'active'
-                                                              ? 'CBG-${DateTime.now().year}-${_user['id']?.toString() ?? 'LIC'}'
-                                                              : 'PENDING'),
-                                                      style: GoogleFonts.outfit(
-                                                        fontWeight: FontWeight.bold,
-                                                        fontSize: 13,
-                                                        color: const Color(0xFF0F172A),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const Padding(
-                                            padding: EdgeInsets.symmetric(vertical: 10),
-                                            child: Divider(height: 1, color: Color(0xFFE2E8F0)),
-                                          ),
-                                          // Row 2: Expires & Compliance
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      'LICENSE EXPIRES',
-                                                      style: GoogleFonts.inter(
-                                                        fontSize: 9,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: const Color(0xFF94A3B8),
-                                                        letterSpacing: 0.5,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 3),
-                                                    Text(
-                                                      expiry != null ? _formatDate(expiry) : 'Not Set',
-                                                      style: GoogleFonts.outfit(
-                                                        fontWeight: FontWeight.bold,
-                                                        fontSize: 13,
-                                                        color: daysLeft == null
-                                                            ? const Color(0xFF64748B)
-                                                            : daysLeft < 0
-                                                                ? const Color(0xFFEF4444)
-                                                                : daysLeft <= 30
-                                                                    ? const Color(0xFFF59E0B)
-                                                                    : const Color(0xFF0F172A),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              Container(
-                                                height: 24,
-                                                width: 1,
-                                                color: const Color(0xFFE2E8F0),
-                                              ),
-                                              const SizedBox(width: 16),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      'COMPLIANCE RATING',
-                                                      style: GoogleFonts.inter(
-                                                        fontSize: 9,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: const Color(0xFF94A3B8),
-                                                        letterSpacing: 0.5,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 3),
-                                                    Row(
-                                                      children: [
-                                                        const Icon(
-                                                          Icons.star,
-                                                          color: Color(0xFFFFD700),
-                                                          size: 14,
-                                                        ),
-                                                        const SizedBox(width: 2),
-                                                        Text(
-                                                          '${starRating.toStringAsFixed(1)} ($complianceScore%)',
-                                                          style: GoogleFonts.outfit(
-                                                            fontWeight: FontWeight.bold,
-                                                            fontSize: 13,
-                                                            color: const Color(0xFF0F172A),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 24),
-                                    
-                                    // QR Code Section
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: const Color(0xFFf08232).withValues(alpha: 0.2),
-                                          width: 1.5,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: const Color(0xFFf08232).withValues(alpha: 0.05),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          CachedNetworkImage(
-                                            imageUrl:
-                                                'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${Uri.encodeComponent('https://winningedgeinvestment.com/#/verify-member/${_user['id']}')}',
-                                            width: 110,
-                                            height: 110,
-                                            errorWidget: (context, error, stackTrace) => Container(
-                                              width: 110,
-                                              height: 110,
-                                              color: const Color(0xFFF8FAFC),
-                                              child: const Icon(
-                                                Icons.qr_code_2,
-                                                size: 40,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                          ),
-                                          // Futuristic horizontal scan line visual effect
-                                          Positioned(
-                                            top: 55,
-                                            left: 0,
-                                            right: 0,
-                                            child: Container(
-                                              height: 2,
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFf08232),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: const Color(0xFFf08232).withValues(alpha: 0.5),
-                                                    blurRadius: 4,
-                                                    spreadRadius: 1,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'SCAN AT CHECKPOINTS',
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w800,
-                                        color: const Color(0xFFf08232),
-                                        letterSpacing: 1,
-                                      ),
-                                    ),
+                                    Text('MEMBERSHIP ID', style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.bold, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
                                     const SizedBox(height: 2),
-                                    Text(
-                                      'Secure digital credential verification',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 10,
-                                        color: const Color(0xFF94A3B8),
-                                      ),
-                                    ),
+                                    Text(_membershipId, style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 15, color: const Color(0xFF0F172A))),
                                   ],
                                 ),
                               ),
-                              // Close Button positioned absolutely inside the stack
-                              Positioned(
-                                top: 12,
-                                right: 12,
-                                child: GestureDetector(
-                                  onTap: () => setState(() => _showIdCard = false),
-                                  child: Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF1F5F9),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: const Color(0xFFE2E8F0),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.close,
-                                      color: Color(0xFF64748B),
-                                      size: 16,
-                                    ),
-                                  ),
+                              Container(height: 26, width: 1, color: const Color(0xFFE2E8F0)),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('CHAPTER / PORT', style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.bold, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
+                                    const SizedBox(height: 2),
+                                    Text(_formatPortAbbreviation((_user['port_of_operation'] ?? _user['port'] ?? 'Tema').toString()), style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 15, color: const Color(0xFF0F172A))),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                        ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+                          ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('MEMBER EXPIRE', style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.bold, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
+                                    const SizedBox(height: 2),
+                                    Text(expireText, style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 14.5, color: expireColor)),
+                                  ],
+                                ),
+                              ),
+                              Container(height: 26, width: 1, color: const Color(0xFFE2E8F0)),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('STANDING', style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.bold, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
+                                    const SizedBox(height: 2),
+                                    Text(standingText, style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 14.5, color: standingColor)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 18),
+
+                    // Close Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0F172A),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () => Navigator.of(dialogCtx).pop(),
+                        child: Text('Close Card', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15)),
+                      ),
+                    ),
+                  ],
                 ),
-            ),
+              ),
+            ],
           ),
         ),
-      ]),
+      ),
     );
   }
 
-  Widget _detailRow(String label, String value) {
-    return Column(children: [
-      Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), child: Row(children: [
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 1)),
-          const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-        ])),
-      ])),
-      const Divider(height: 1),
-    ]);
-  }
-
-  Widget _buildMathBreakdownSection(Map<String, dynamic> m, Color primary) {
+  Widget _buildMathBreakdownSection(Map<String, dynamic> m, Color primary, bool isDark, Color textPrimary, Color textMuted) {
     final bd = m['breakdown'] as Map<String, dynamic>?;
     if (bd == null) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 12),
-        child: Center(child: Text('Loading compliance breakdown details...', style: TextStyle(color: Colors.grey, fontSize: 12))),
-      );
+      return Text('Compliance points math calculated from real-time Secretariat records.', style: GoogleFonts.inter(color: textMuted, fontSize: 14));
     }
 
     final paymentScore = bd['payment_score'] ?? 0;
@@ -1034,60 +1303,62 @@ class _ProfilePageState extends State<ProfilePage> {
     final totalSurveys = bd['total_surveys'] ?? 0;
     final respondedSurveys = bd['responded_surveys'] ?? 0;
     final agmScore = bd['agm_score'] ?? 0;
-
     final adminScore = bd['admin_score'] ?? 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'COMPLIANCE BREAKDOWN MATH',
-          style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 1),
-        ),
-        const SizedBox(height: 12),
-        
         _breakdownTile(
           icon: Icons.payments_outlined,
-          color: const Color(0xFF10B981),
+          color: _kGreen,
           title: 'Payment Compliance',
           scoreText: '$paymentScore / 40 pts',
           details: [
             '• Punctual payment (no outstanding overdue): $paymentPunctual / 25 pts',
             '• On-time payment history ratio ($onTimePaid / $totalPaid paid on time): $paymentHistory / 15 pts',
-            if (overdueCount > 0) '• WARNING: $overdueCount overdue payments detected.'
+            if (overdueCount > 0) '• WARNING: $overdueCount overdue payments detected.',
           ],
+          isDark: isDark,
+          textPrimary: textPrimary,
+          textMuted: textMuted,
         ),
-        
         _breakdownTile(
           icon: Icons.task_alt_outlined,
-          color: const Color(0xFF3B82F6),
+          color: _kBlue,
           title: 'Task & Document Compliance',
           scoreText: '$taskScore / 30 pts',
           details: [
-            '• License renewal status: $licenseScore / 15 pts',
+            '• Membership validity status: $licenseScore / 15 pts',
             '• Required tasks compliance ($completedTasks / $totalTasks completed): $taskCompletionScore / 15 pts',
           ],
+          isDark: isDark,
+          textPrimary: textPrimary,
+          textMuted: textMuted,
         ),
-
         _breakdownTile(
           icon: Icons.campaign_outlined,
-          color: const Color(0xFF8B5CF6),
+          color: _kPurple,
           title: 'Engagement & Activities',
           scoreText: '$engagementScore / 20 pts',
           details: [
             '• Survey response rate ($respondedSurveys / $totalSurveys completed): $surveyScore / 10 pts',
             '• Annual General Meeting (AGM) attendance: $agmScore / 10 pts',
           ],
+          isDark: isDark,
+          textPrimary: textPrimary,
+          textMuted: textMuted,
         ),
-
         _breakdownTile(
           icon: Icons.rate_review_outlined,
-          color: const Color(0xFFF59E0B),
+          color: _kAmber,
           title: 'Admin Manual Review',
           scoreText: '$adminScore / 10 pts',
           details: [
             '• Direct administrative compliance modifier: $adminScore / 10 pts',
           ],
+          isDark: isDark,
+          textPrimary: textPrimary,
+          textMuted: textMuted,
         ),
       ],
     );
@@ -1099,14 +1370,17 @@ class _ProfilePageState extends State<ProfilePage> {
     required String title,
     required String scoreText,
     required List<String> details,
+    required bool isDark,
+    required Color textPrimary,
+    required Color textMuted,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.withValues(alpha: 0.04),
+        color: color.withAlpha(isDark ? 20 : 12),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+        border: Border.all(color: color.withAlpha(40)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1118,52 +1392,37 @@ class _ProfilePageState extends State<ProfilePage> {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: textPrimary,
+                  ),
+                  softWrap: true,
                 ),
               ),
               Text(
                 scoreText,
-                style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 12),
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                  fontSize: 15,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          ...details.map((detail) => Padding(
-            padding: const EdgeInsets.only(top: 2, left: 24),
-            child: Text(
-              detail,
-              style: const TextStyle(fontSize: 11, color: Colors.grey),
+          ...details.map(
+            (detail) => Padding(
+              padding: const EdgeInsets.only(top: 2, left: 24),
+              child: Text(
+                detail,
+                style: GoogleFonts.inter(fontSize: 13.5, color: textMuted),
+                softWrap: true,
+              ),
             ),
-          )),
+          ),
         ],
       ),
     );
   }
-}
-
-extension StringCapitalize on String {
-  String capitalize() => isEmpty ? this : '${this[0].toUpperCase()}${substring(1)}';
-}
-
-class _IdGridPainter extends CustomPainter {
-  final Color color;
-  _IdGridPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color.withValues(alpha: 0.1)
-      ..strokeWidth = 0.5
-      ..style = PaintingStyle.stroke;
-    const spacing = 18.0;
-    for (double i = 0; i < size.width; i += spacing) {
-      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
-    }
-    for (double i = 0; i < size.height; i += spacing) {
-      canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

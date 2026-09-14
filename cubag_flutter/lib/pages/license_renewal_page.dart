@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';  // F-39 fix
+import 'package:url_launcher/url_launcher.dart'; // F-39 fix
 import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
+import '../components/app_logo.dart';
 import '../components/shimmer_loader.dart';
 import '../services/api_service.dart';
+import '../utils/app_logger.dart';
 
 class LicenseRenewalPage extends StatefulWidget {
   const LicenseRenewalPage({super.key});
@@ -18,11 +20,18 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
   Map<String, dynamic>? _memberInfo;
 
   @override
-  void initState() { super.initState(); _fetch(); }
+  void initState() {
+    super.initState();
+    _fetch();
+  }
 
   Future<void> _fetch() async {
     if (!_loading) setState(() => _loading = true);
-    await ApiService().fetchDataWithCache('/members/license-history', (data, isCached, {bool hasError = false}) {
+    await ApiService().fetchDataWithCache('/members/license-history', (
+      data,
+      isCached, {
+      bool hasError = false,
+    }) {
       if (mounted && data != null && data is Map) {
         setState(() {
           _loading = false;
@@ -40,6 +49,26 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
     final isActive = user['status'] == 'active';
     final yr = DateTime.now().year;
 
+    // ── Active License Guard ──────────────────────────────────────────────────
+    // Determine if the license is active and not yet in the 30-day renewal window
+    DateTime? expiryDate;
+    final expiryRaw = user['license_expiry_date'];
+    if (expiryRaw != null) {
+      try {
+        expiryDate = DateTime.tryParse(expiryRaw.toString());
+      } catch (e, st) {
+        AppLogger.error('license_renewal_page', e, st);
+      }
+    }
+    final today = DateTime.now();
+    final renewalOpenDate = expiryDate?.subtract(const Duration(days: 30));
+    // Block payment if: active + has expiry + today is before the 30-day window
+    final isLicenseBlocked =
+        isActive &&
+        expiryDate != null &&
+        renewalOpenDate != null &&
+        today.isBefore(renewalOpenDate);
+
     return AppLayout(
       title: 'License & Receipts',
       child: RefreshIndicator(
@@ -52,12 +81,22 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 800),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 24.0,
+                ),
                 child: !isActive && !_loading && _history.isEmpty
                     ? _buildLockedView(primary)
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // ── Active License Banner ──
+                          if (isLicenseBlocked && !_loading)
+                            _buildActiveLicenseBanner(
+                              expiryDate,
+                              renewalOpenDate,
+                            ),
+
                           // ── Status Timeline ──
                           if (!_loading && _history.isNotEmpty) ...[
                             _buildStatusTimeline(primary, user),
@@ -69,26 +108,40 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               itemCount: 3,
-                              separatorBuilder: (ctx, i) => const SizedBox(height: 16),
+                              separatorBuilder: (ctx, i) =>
+                                  const SizedBox(height: 16),
                               itemBuilder: (ctx, i) => const ShimmerListTile(),
                             )
                           else if (_history.isEmpty)
                             _buildEmptyState(primary)
                           else ...[
                             Padding(
-                              padding: const EdgeInsets.only(left: 4.0, bottom: 16.0),
+                              padding: const EdgeInsets.only(
+                                left: 4.0,
+                                bottom: 16.0,
+                              ),
                               child: Text(
                                 'Membership History',
                                 style: GoogleFonts.outfit(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).brightness == Brightness.dark
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
                                       ? Colors.white
-                                      : const Color(0xFF08060d),
+                                      : const Color(0xFF1A0F0A),
                                 ),
                               ),
                             ),
-                            ..._history.asMap().map((i, rec) => MapEntry(i, _buildRecordCard(rec, primary, yr))).values,
+                            ..._history
+                                .asMap()
+                                .map(
+                                  (i, rec) => MapEntry(
+                                    i,
+                                    _buildRecordCard(rec, primary, yr),
+                                  ),
+                                )
+                                .values,
                           ],
 
                           const SizedBox(height: 32),
@@ -120,9 +173,25 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
     final status = user['status']?.toString() ?? 'pending';
     final steps = [
       _TimelineStep('Application', 'Submitted', _StepState.done),
-      _TimelineStep('Payment', 'Dues Received', status == 'pending' ? _StepState.active : _StepState.done),
-      _TimelineStep('Verification', 'Under Review', status == 'pending' ? _StepState.pending : status == 'suspended' ? _StepState.error : _StepState.done),
-      _TimelineStep('License', 'Issued', status == 'active' ? _StepState.done : _StepState.pending),
+      _TimelineStep(
+        'Payment',
+        'Dues Received',
+        status == 'pending' ? _StepState.active : _StepState.done,
+      ),
+      _TimelineStep(
+        'Verification',
+        'Under Review',
+        status == 'pending'
+            ? _StepState.pending
+            : status == 'suspended'
+            ? _StepState.error
+            : _StepState.done,
+      ),
+      _TimelineStep(
+        'License',
+        'Issued',
+        status == 'active' ? _StepState.done : _StepState.pending,
+      ),
     ];
 
     return Container(
@@ -132,13 +201,13 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: Theme.of(context).brightness == Brightness.dark
-              ? [const Color(0xFF1f2028), const Color(0xFF16171d)]
+              ? [const Color(0xFF1A0F0A), const Color(0xFF1A0F0A)]
               : [primary, primary.withValues(alpha: 0.85)],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFF2e303a)
+              ? const Color(0xFF4D2D20)
               : Colors.white.withValues(alpha: 0.15),
           width: 1.5,
         ),
@@ -185,7 +254,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                       ),
                     ),
                     Text(
-                      'Track your license renewal status',
+                      'Track your membership renewal status',
                       style: GoogleFonts.inter(
                         color: Theme.of(context).brightness == Brightness.dark
                             ? const Color(0xFF9ca3af)
@@ -197,20 +266,23 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: status == 'active'
                       ? const Color(0xFF10b981).withValues(alpha: 0.2)
                       : status == 'suspended'
-                          ? const Color(0xFFef4444).withValues(alpha: 0.2)
-                          : Colors.amber.withValues(alpha: 0.2),
+                      ? const Color(0xFFef4444).withValues(alpha: 0.2)
+                      : Colors.amber.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: status == 'active'
                         ? const Color(0xFF10b981).withValues(alpha: 0.4)
                         : status == 'suspended'
-                            ? const Color(0xFFef4444).withValues(alpha: 0.4)
-                            : Colors.amber.withValues(alpha: 0.4),
+                        ? const Color(0xFFef4444).withValues(alpha: 0.4)
+                        : Colors.amber.withValues(alpha: 0.4),
                   ),
                 ),
                 child: Text(
@@ -221,8 +293,8 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                     color: status == 'active'
                         ? const Color(0xFF10b981)
                         : status == 'suspended'
-                            ? const Color(0xFFef4444)
-                            : Colors.amber,
+                        ? const Color(0xFFef4444)
+                        : Colors.amber,
                   ),
                 ),
               ),
@@ -253,7 +325,9 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                               shape: BoxShape.circle,
                               border: step.state == _StepState.active
                                   ? Border.all(
-                                      color: Theme.of(context).brightness == Brightness.dark
+                                      color:
+                                          Theme.of(context).brightness ==
+                                              Brightness.dark
                                           ? primary
                                           : Colors.white,
                                       width: 2,
@@ -265,7 +339,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                         color: primary.withValues(alpha: 0.4),
                                         blurRadius: 8,
                                         spreadRadius: 2,
-                                      )
+                                      ),
                                     ]
                                   : null,
                             ),
@@ -273,10 +347,10 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                               step.state == _StepState.done
                                   ? Icons.check_rounded
                                   : step.state == _StepState.error
-                                      ? Icons.close_rounded
-                                      : step.state == _StepState.active
-                                          ? Icons.autorenew_rounded
-                                          : Icons.circle_outlined,
+                                  ? Icons.close_rounded
+                                  : step.state == _StepState.active
+                                  ? Icons.autorenew_rounded
+                                  : Icons.circle_outlined,
                               color: Colors.white,
                               size: 18,
                             ),
@@ -297,7 +371,9 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                           Text(
                             step.subtitle,
                             style: GoogleFonts.inter(
-                              color: Theme.of(context).brightness == Brightness.dark
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
                                   ? const Color(0xFF9ca3af)
                                   : Colors.white.withValues(alpha: 0.65),
                               fontSize: 10,
@@ -341,9 +417,90 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
         return const Color(0xFFef4444);
       case _StepState.pending:
         return Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF2e303a)
+            ? const Color(0xFF4D2D20)
             : Colors.white.withValues(alpha: 0.25);
     }
+  }
+
+  Widget _buildActiveLicenseBanner(DateTime expiry, DateTime renewalOpens) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final expiryStr =
+        '${_monthName(expiry.month)} ${expiry.day}, ${expiry.year}';
+    final renewalStr =
+        '${_monthName(renewalOpens.month)} ${renewalOpens.day}, ${renewalOpens.year}';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF10b981).withAlpha(isDark ? 25 : 18),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF10b981).withAlpha(80)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF10b981).withAlpha(40),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.verified_rounded,
+              color: Color(0xFF10b981),
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'License Active — No Payment Required',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: const Color(0xFF10b981),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Your license is valid until $expiryStr. '
+                  'To prevent duplicate payments, renewal will open on $renewalStr (30 days before expiry).',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    height: 1.55,
+                    color: isDark
+                        ? const Color(0xFFa7f3d0)
+                        : const Color(0xFF065f46),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _monthName(int month) {
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    return months[month - 1];
   }
 
   Widget _buildLockedView(Color primary) {
@@ -356,8 +513,8 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFF2e303a)
-              : const Color(0xFFe5e4e7),
+              ? const Color(0xFF4D2D20)
+              : const Color(0xFFE8DED6),
           width: 1.0,
         ),
         boxShadow: [
@@ -391,7 +548,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
               fontSize: 22,
               color: Theme.of(context).brightness == Brightness.dark
                   ? Colors.white
-                  : const Color(0xFF08060d),
+                  : const Color(0xFF1A0F0A),
             ),
           ),
           const SizedBox(height: 12),
@@ -409,7 +566,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
             children: [
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => context.go('/payments'),
+                  onPressed: () => context.go('/compliance'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primary,
                     foregroundColor: Colors.white,
@@ -467,8 +624,8 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFF2e303a)
-              : const Color(0xFFe5e4e7),
+              ? const Color(0xFF4D2D20)
+              : const Color(0xFFE8DED6),
           width: 1.0,
         ),
       ),
@@ -494,7 +651,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
               fontSize: 20,
               color: Theme.of(context).brightness == Brightness.dark
                   ? Colors.white
-                  : const Color(0xFF08060d),
+                  : const Color(0xFF1A0F0A),
             ),
           ),
           const SizedBox(height: 8),
@@ -510,7 +667,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
             width: 160,
             height: 48,
             child: ElevatedButton(
-              onPressed: () => context.go('/payments'),
+              onPressed: () => context.go('/compliance'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: primary,
                 foregroundColor: Colors.white,
@@ -539,13 +696,13 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
     final statusColor = approved
         ? const Color(0xFF10b981)
         : suspended
-            ? const Color(0xFFef4444)
-            : const Color(0xFFf59e0b);
+        ? const Color(0xFFef4444)
+        : const Color(0xFFf59e0b);
     final statusLabel = approved
         ? 'Active'
         : suspended
-            ? 'Suspended'
-            : 'In Approval';
+        ? 'Suspended'
+        : 'In Approval';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -555,8 +712,8 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFF2e303a)
-              : const Color(0xFFe5e4e7),
+              ? const Color(0xFF4D2D20)
+              : const Color(0xFFE8DED6),
           width: 1.0,
         ),
         boxShadow: [
@@ -596,17 +753,18 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                     fontSize: 16,
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Colors.white
-                        : const Color(0xFF08060d),
+                        : const Color(0xFF1A0F0A),
                   ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.1),
-                  border: Border.all(
-                    color: statusColor.withValues(alpha: 0.3),
-                  ),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -625,79 +783,79 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
             {
               'icon': Icons.verified_user_outlined,
               'label': 'License Number',
-              'val': rec['license_number'] ??
-                  (approved
-                      ? 'CBG-$yr-${rec['user_id']?.toString() ?? rec['id']?.toString() ?? 'LIC'}'
-                      : 'Pending')
+              'val':
+                  rec['license_number'] ??
+                  (approved ? 'Active Standing' : 'Pending Approval'),
             },
             {
               'icon': Icons.business_outlined,
               'label': 'Organization',
-              'val': rec['company']
+              'val': rec['company'],
             },
             {
               'icon': Icons.location_on_outlined,
               'label': 'Port of Operation',
-              'val': rec['port_of_operation']
+              'val': rec['port_of_operation'],
             },
-          ].where((r) => r['val'] != null)).map((r) => Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? const Color(0xFF1f2028)
-                      : Colors.grey.shade50,
-                  border: Border.all(
-                    color: Theme.of(context).dividerColor,
+          ].where((r) => r['val'] != null)).map(
+            (r) => Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF1A0F0A)
+                    : Colors.grey.shade50,
+                border: Border.all(color: Theme.of(context).dividerColor),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      r['icon'] as IconData,
+                      color: primary,
+                      size: 18,
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        r['icon'] as IconData,
-                        color: primary,
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            r['label'].toString().toUpperCase(),
-                            style: GoogleFonts.inter(
-                              fontSize: 10,
-                              color: const Color(0xFF6b6375),
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          r['label'].toString().toUpperCase(),
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            color: const Color(0xFF6b6375),
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            r['val'].toString(),
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.white
-                                  : const Color(0xFF08060d),
-                            ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          r['val'].toString(),
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white
+                                : const Color(0xFF1A0F0A),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              )),
+                  ),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: 12),
           if (approved)
             Row(
@@ -729,7 +887,6 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                   child: ElevatedButton.icon(
                     onPressed: () async {
                       final memberId = _memberInfo?['id'];
-                      final licenseNum = rec['license_number']?.toString();
                       if (memberId == null) return;
 
                       String base = ApiService.baseUrl;
@@ -737,18 +894,18 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                         base = base.substring(0, base.length - 1);
                       }
 
+                      final ts = DateTime.now().millisecondsSinceEpoch;
                       final url = Uri.parse(
-                          '$base/members/$memberId/certificate-pdf');
+                        '$base/members/$memberId/certificate-pdf?t=$ts',
+                      );
 
                       try {
-                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                        await launchUrl(url);
                       } catch (e) {
-                        if (licenseNum != null) {
-                          final fallback =
-                              Uri.parse('$base/verify-member/$memberId');
-                          await launchUrl(fallback,
-                              mode: LaunchMode.externalApplication);
-                        }
+                        final fallback = Uri.parse(
+                          '$base/members/$memberId/certificate-pdf?t=$ts',
+                        );
+                        await launchUrl(fallback);
                       }
                     },
                     icon: const Icon(
@@ -815,9 +972,9 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
   }
 
   void _showCertificate(Map<String, dynamic> rec, int yr) {
-    final primary = Theme.of(context).primaryColor;
     final user = _memberInfo ?? {};
-    final licenseNum = user['license_number']?.toString() ??
+    final licenseNum =
+        user['license_number']?.toString() ??
         user['licenseNumber']?.toString() ??
         rec['license_number']?.toString() ??
         'PENDING';
@@ -862,7 +1019,11 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
           return Stack(
             alignment: Alignment.center,
             children: [
-              const Icon(Icons.brightness_7, size: 80, color: Color(0xFFd4af37)),
+              const Icon(
+                Icons.brightness_7,
+                size: 80,
+                color: Color(0xFFd4af37),
+              ),
               Container(
                 width: 62,
                 height: 62,
@@ -909,15 +1070,16 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
             horizontal: isMobile ? 8.0 : 16.0,
             vertical: isMobile ? 12.0 : 24.0,
           ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           child: Container(
             width: double.infinity,
             constraints: const BoxConstraints(maxWidth: 800),
             decoration: BoxDecoration(
-              color: const Color(0xFFfafaf9), // Off-white paper color
-              border: Border.all(color: primary, width: borderWidth),
+              color: const Color(0xFFF8F4F0), // Off-white paper color
+              border: Border.all(
+                color: const Color(0xFFFF5000),
+                width: borderWidth,
+              ),
               borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
@@ -948,7 +1110,9 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                           style: TextStyle(
                             fontSize: isMobile ? 60 : 120,
                             fontWeight: FontWeight.w900,
-                            color: primary.withValues(alpha: 0.04),
+                            color: const Color(
+                              0xFFFF5000,
+                            ).withValues(alpha: 0.04),
                           ),
                         ),
                       ),
@@ -962,16 +1126,24 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(width: isMobile ? 24 : 40), // Spacer to balance close button
+                            SizedBox(
+                              width: isMobile ? 24 : 40,
+                            ), // Spacer to balance close button
                             Expanded(
                               child: Column(
                                 children: [
+                                  // Logo image - use cached AppLogo component
+                                  AppLogo(
+                                    size: isMobile ? 44 : 60,
+                                    borderRadius: 8,
+                                  ),
+                                  const SizedBox(height: 8),
                                   Text(
                                     'CUBAG',
                                     style: GoogleFonts.cinzel(
                                       fontWeight: FontWeight.w900,
                                       fontSize: isMobile ? 28 : 42,
-                                      color: primary,
+                                      color: const Color(0xFFFF5000),
                                       letterSpacing: isMobile ? 2 : 4,
                                     ),
                                   ),
@@ -992,7 +1164,10 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                             IconButton(
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
-                              icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                              icon: const Icon(
+                                Icons.close_rounded,
+                                color: Colors.grey,
+                              ),
                               onPressed: () => Navigator.pop(ctx),
                             ),
                           ],
@@ -1004,7 +1179,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                           style: GoogleFonts.cinzel(
                             fontSize: isMobile ? 16 : 22,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF0f172a),
+                            color: const Color(0xFF1A0F0A),
                             letterSpacing: isMobile ? 1 : 2,
                           ),
                         ),
@@ -1019,12 +1194,14 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                         ),
                         SizedBox(height: isMobile ? 10 : 16),
                         Text(
-                          user['company']?.toString() ?? rec['company']?.toString() ?? 'Company Name',
+                          user['company']?.toString() ??
+                              rec['company']?.toString() ??
+                              'Company Name',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.montserrat(
                             fontWeight: FontWeight.w900,
                             fontSize: isMobile ? 18 : 24,
-                            color: const Color(0xFF1e293b),
+                            color: const Color(0xFF281710),
                           ),
                         ),
                         SizedBox(height: isMobile ? 6 : 8),
@@ -1043,7 +1220,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                           textAlign: TextAlign.center,
                           style: GoogleFonts.lora(
                             fontSize: isMobile ? 14 : 16,
-                            color: const Color(0xFF0f172a),
+                            color: const Color(0xFF1A0F0A),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -1100,7 +1277,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                     style: GoogleFonts.montserrat(
                                       fontSize: isMobile ? 11 : 12,
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF0f172a),
+                                      color: const Color(0xFF1A0F0A),
                                       letterSpacing: 1,
                                     ),
                                   ),
@@ -1110,7 +1287,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                     style: GoogleFonts.montserrat(
                                       fontSize: isMobile ? 11 : 12,
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF0f172a),
+                                      color: const Color(0xFF1A0F0A),
                                       letterSpacing: 1,
                                     ),
                                   ),
@@ -1124,20 +1301,33 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                         isMobile
                             ? Column(
                                 children: [
-                                  buildSignatureColumn('A. Mensah', 'President'),
+                                  buildSignatureColumn(
+                                    'Alhaji A. R. Busia',
+                                    'President',
+                                  ),
                                   const SizedBox(height: 24),
                                   buildOfficialSeal(),
                                   const SizedBox(height: 24),
-                                  buildSignatureColumn('K. Osei', 'Secretary General'),
+                                  buildSignatureColumn(
+                                    'Kwame E. Mensah',
+                                    'Secretary General',
+                                  ),
                                 ],
                               )
                             : Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  buildSignatureColumn('A. Mensah', 'President'),
+                                  buildSignatureColumn(
+                                    'Alhaji A. R. Busia',
+                                    'President',
+                                  ),
                                   buildOfficialSeal(),
-                                  buildSignatureColumn('K. Osei', 'Secretary General'),
+                                  buildSignatureColumn(
+                                    'Kwame E. Mensah',
+                                    'Secretary General',
+                                  ),
                                 ],
                               ),
                         const SizedBox(height: 16),
