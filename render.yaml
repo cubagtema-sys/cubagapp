@@ -6,7 +6,7 @@ services:
     region: frankfurt
     plan: free
     buildCommand: "cd cubag-backend && pip install -r requirements.txt"
-    startCommand: "gunicorn --chdir cubag-backend -w 3 --threads 2 -b 0.0.0.0:$PORT server:app"
+    startCommand: "gunicorn --chdir cubag-backend -w 1 --threads 8 -b 0.0.0.0:$PORT server:app"
     envVars:
       - key: FLASK_ENV
         value: "production"
@@ -15,7 +15,7 @@ services:
       - key: SECRET_KEY
         value: "26706942c79c68dea826ca91f1bb12f609d4cd87547c5c266561b999730fcc6a"
       - key: DATABASE_URL
-        value: "postgresql://postgres.jfypczfjycffsmivjjdn:lJuxR3csHVB9EGZ7@aws-1-eu-central-2.pooler.supabase.com:6543/postgres"
+        value: "postgresql://postgres.feanlatdsyhlghsnepxw:zBfvAUjogIEsVhSj@aws-1-eu-west-1.pooler.supabase.com:6543/postgres"
       - key: JWT_SECRET_KEY
         value: "54b5469e1d716229f722bf127939520a3e15b5b757bc296d746edc248a6964bb"
       - key: JWT_ACCESS_TOKEN_EXPIRES
@@ -34,20 +34,28 @@ services:
         value: "Brutality@54"
       - key: WHITSUNPAY_BASE_URL
         value: "https://developer.whitsun.dev"
+      - key: WHITSUNPAY_CLIENT_ID
+        value: "019e8ba678a27f00bc19c3757989ed0b"
       - key: x-client-id
         value: "019e8ba678a27f00bc19c3757989ed0b"
+      - key: WHITSUNPAY_API_KEY
+        value: "wp_live_h7Q8bld7YqtjvTVF2wwfBrUjxl6LShWexviNLfy5lQU"
       - key: x-api-key
         value: "wp_live_h7Q8bld7YqtjvTVF2wwfBrUjxl6LShWexviNLfy5lQU"
       - key: WHITSUNPAY_WEBHOOK_SECRET
         value: "2c4cf3096f18a079450126b25961aa8388226bd6fe66ed98a57b87c21a7e6f1b"
+      - key: WHITSUNPAY_CALLBACK_URL
+        value: "https://cubag-api-server.onrender.com/api/payments/webhook"
       - key: x-callback-url
         value: "https://cubag-api-server.onrender.com/api/payments/webhook"
       - key: SUPABASE_URL
-        value: "https://jfypczfjycffsmivjjdn.supabase.co"
+        value: "https://feanlatdsyhlghsnepxw.supabase.co"
       - key: SUPABASE_SERVICE_KEY
-        value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmeXBjemZqeWNmZnNtaXZqamRuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDU4Mzk0NywiZXhwIjoyMDk2MTU5OTQ3fQ.NRt6yhuGBQ814zdN62OXUu2PKQ155OviyRDeUMenIao"
+        value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlYW5sYXRkc3lobGdoc25lcHh3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDU4Mzk0NywiZXhwIjoyMDk2MTU5OTQ3fQ.S2c2IpXFkfJtFhZ2zG7ZQ3kFCG8YKrxiSFUqtc5OQZE"
       - key: SUPABASE_BUCKET
         value: "uploads"
+      - key: RESEND_API_KEY
+        sync: false # Set manually in Render dashboard (blocked by GitHub secret scanning)
       - key: AIS_API_KEY
         value: "696f6dc5d032b72c39b22b757ebc35c4445c570a"
       - key: FIREBASE_CREDENTIALS_JSON

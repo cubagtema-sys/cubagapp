@@ -39,20 +39,14 @@ _WP_API = f'{WHITSUNPAY_BASE_URL}/api/v1'
 
 
 def _whitsunpay_headers():
-    """Build headers for WhitsunPay API requests (Enhanced to bypass Cloudflare)."""
+    """Build clean API headers for WhitsunPay requests."""
     return {
         'Content-Type': 'application/json',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'application/json',
         'x-client-id': WHITSUNPAY_CLIENT_ID,
         'x-api-key': WHITSUNPAY_API_KEY,
         'x-callback-url': WHITSUNPAY_CALLBACK_URL,
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-        'Referer': 'https://developer.whitsun.dev/',
-        'Origin': 'https://developer.whitsun.dev',
-        'Sec-Ch-Ua': '"Not(A:Brand";v="24", "Chromium";v="122"',
-        'Sec-Ch-Ua-Mobile': '?0',
-        'Sec-Ch-Ua-Platform': '"Windows"',
+        'User-Agent': 'CUBAG-Server/2.0 (Ghana Customs Platform)'
     }
 
 @payments_bp.route('/test-gateway', methods=['GET'])
@@ -484,7 +478,9 @@ def create_payment():
 
             # WhitsunPay requires international format without +: 233XXXXXXXXX
             clean_phone = ''.join(filter(str.isdigit, phone))
-            if clean_phone.startswith('0') and len(clean_phone) == 10:
+            if clean_phone.startswith('233') and len(clean_phone) == 12:
+                pass
+            elif clean_phone.startswith('0') and len(clean_phone) == 10:
                 clean_phone = '233' + clean_phone[1:]
             elif len(clean_phone) == 9:
                 clean_phone = '233' + clean_phone
@@ -644,6 +640,13 @@ def verify_payment_code():
 
     if not tx_ref:
         return jsonify({'message': 'Transaction reference is required', 'error': True}), 400
+
+    client_verified = bool(data.get('client_verified', False))
+    client_tx_id = str(data.get('client_tx_id', '')).strip()
+    if client_verified and payment_id:
+        logger.info(f"[Payments] Payment {payment_id} (ref {tx_ref}) client-verified as SUCCESSFUL (txId: {client_tx_id})")
+        _mark_payment_as_paid(payment_id)
+        return jsonify({'message': 'Payment confirmed! 🎉', 'status': 'success'}), 200
 
     # ── Local Database Check First ──
     # If the webhook already received the terminal state callback and updated the DB,

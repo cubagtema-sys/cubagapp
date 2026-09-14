@@ -418,7 +418,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       'Good day, $firstName!',
                       style: GoogleFonts.outfit(
                         color: Colors.white,
-                        fontSize: 22,
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -1205,6 +1205,34 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                     ),
                   ),
+                  onTap: () async {
+                    final router = GoRouter.of(context);
+                    final rawUrl = task['action_url']?.toString().trim();
+                    if (rawUrl != null && rawUrl.isNotEmpty) {
+                      if (rawUrl.startsWith('http://') ||
+                          rawUrl.startsWith('https://')) {
+                        final uri = Uri.tryParse(rawUrl);
+                        if (uri != null && await canLaunchUrl(uri)) {
+                          await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                          return;
+                        }
+                      } else if (rawUrl.startsWith('/')) {
+                        if (!mounted) return;
+                        try {
+                          router.go(rawUrl);
+                          return;
+                        } catch (_) {
+                          if (mounted) router.go('/tasks');
+                          return;
+                        }
+                      }
+                    }
+                    if (!mounted) return;
+                    router.go('/tasks');
+                  },
                 );
               },
             ),
@@ -1570,7 +1598,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF8b5cf6).withAlpha(20),
+                    color: const Color(0xFFFF5000).withAlpha(20),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(

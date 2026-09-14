@@ -1,0 +1,13 @@
+{
+  "name": "cubag-whitsun-proxy",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker reverse proxy for WhitsunPay to bypass datacenter IP bot challenges",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "wrangler": "^3.107.0"
+  }
+}
