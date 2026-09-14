@@ -51,7 +51,6 @@ class _LoginPageState extends State<LoginPage> {
 
   final BiometricService _bioService = BiometricService();
   bool _bioAvailable = false;
-  bool _bioEnabled = false;
 
   @override
   void initState() {
@@ -83,19 +82,10 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _checkBiometric() async {
     if (kIsWeb) return;
     final available = await _bioService.isBiometricAvailable();
-    final enabled = await _bioService.isBiometricEnabled();
     if (mounted) {
       setState(() {
         _bioAvailable = available;
-        _bioEnabled = enabled;
       });
-      if (available && enabled) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && !_loading) {
-            _handleBiometricLogin();
-          }
-        });
-      }
     }
   }
 
@@ -103,7 +93,7 @@ class _LoginPageState extends State<LoginPage> {
     final creds = await _bioService.getSavedCredentials();
     if (creds == null) {
       setState(
-        () => _error = 'No saved credentials. Please sign in manually first.',
+        () => _error = 'Please sign in with your email and password once to set up biometric login.',
       );
       return;
     }
@@ -172,48 +162,8 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     if (_bioAvailable && !kIsWeb) {
-      final alreadyEnabled = await _bioService.isBiometricEnabled();
-      if (!alreadyEnabled && mounted) {
-        bool? consent = _rememberMe;
-        if (!_rememberMe) {
-          consent = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text(
-                'Enable Biometric Login?',
-                style: TextStyle(color: Colors.grey),
-              ),
-              content: const Text(
-                'Would you like to use fingerprint or face recognition next time?',
-                style: TextStyle(color: Colors.grey),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(false),
-                  child: const Text(
-                    'Not Now',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(ctx).pop(true),
-                  style: ElevatedButton.styleFrom(backgroundColor: _kOrange),
-                  child: const Text(
-                    'Enable',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-        if (consent == true) {
-          await _bioService.saveCredentials(raw, _passCtrl.text);
-          await _bioService.setBiometricEnabled(true);
-        }
-      } else if (alreadyEnabled) {
-        await _bioService.saveCredentials(raw, _passCtrl.text);
-      }
+      await _bioService.saveCredentials(identifier, _passCtrl.text);
+      await _bioService.setBiometricEnabled(true);
     }
 
     if (mounted) {
@@ -776,7 +726,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ],
 
-        if (_bioAvailable && _bioEnabled && !kIsWeb) ...[
+        if (_bioAvailable && !kIsWeb) ...[
           const SizedBox(height: 24),
           Row(
             children: [
