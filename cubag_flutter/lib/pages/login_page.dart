@@ -82,10 +82,18 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _checkBiometric() async {
     if (kIsWeb) return;
     final available = await _bioService.isBiometricAvailable();
+    final enabled = await _bioService.isBiometricEnabled();
     if (mounted) {
       setState(() {
         _bioAvailable = available;
       });
+      if (available && enabled) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !_loading) {
+            _handleBiometricLogin();
+          }
+        });
+      }
     }
   }
 
@@ -117,12 +125,23 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    final role = authService.userRole;
-    context.go(
-      (role == 'admin' || role == 'sub_admin' || role == 'super_admin')
-          ? '/admin/dashboard'
-          : '/dashboard',
-    );
+    if (mounted) {
+      final role = authService.userRole;
+      if (role == 'admin' || role == 'sub_admin' || role == 'super_admin') {
+        preloadAdminLibraries();
+        context.go('/admin/dashboard');
+      } else {
+        preloadMemberLibraries();
+        final status = authService.membershipStatus.toLowerCase().trim();
+        final isDocApproved = status == 'active' || status == 'approved';
+        final isRegFeePaid = authService.isRegistrationFeePaid;
+        if (isDocApproved && isRegFeePaid) {
+          context.go('/dashboard');
+        } else {
+          context.go('/application-documents');
+        }
+      }
+    }
   }
 
   Future<void> _handleLogin() async {
@@ -162,8 +181,33 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     if (_bioAvailable && !kIsWeb) {
-      await _bioService.saveCredentials(identifier, _passCtrl.text);
-      await _bioService.setBiometricEnabled(true);
+      final alreadyEnabled = await _bioService.isBiometricEnabled();
+      if (!alreadyEnabled && mounted) {
+        bool? consent = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text('Enable Biometric Login?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            content: Text('Would you like to use fingerprint or face recognition for quick sign-in next time?', style: GoogleFonts.inter()),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Not Now', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                style: ElevatedButton.styleFrom(backgroundColor: _kOrange),
+                child: const Text('Enable', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        );
+        if (consent == true) {
+          await _bioService.saveCredentials(identifier, _passCtrl.text);
+          await _bioService.setBiometricEnabled(true);
+        }
+      } else if (alreadyEnabled) {
+        await _bioService.saveCredentials(identifier, _passCtrl.text);
+      }
     }
 
     if (mounted) {
