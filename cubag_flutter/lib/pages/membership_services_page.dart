@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -42,6 +43,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
   List<Map<String, dynamic>> _renewalBreakdown = [];
   String _renewalTitle = 'Annual Renewal Dues';
   String _renewalTotal = '2170.00';
+  Map<String, dynamic>? _renewalApp;
 
   @override
   void initState() {
@@ -69,15 +71,24 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
   Future<void> _loadMemberServices() async {
     try {
       final api = ApiService();
-      final results = await Future.wait([
-        api.get('/auth/me'),
-        api.get('/documents/requirements'),
-      ]);
+      dynamic meRes;
+      dynamic docRes;
+      dynamic appRes;
 
-      final meRes = results[0];
-      final docRes = results[1];
+      try {
+        final results = await Future.wait([
+          api.get('/auth/me'),
+          api.get('/documents/requirements'),
+        ]);
+        meRes = results[0];
+        docRes = results[1];
+      } catch (_) {}
 
-      if (mounted && meRes.data is Map) {
+      try {
+        appRes = await api.get('/compliance/my-applications');
+      } catch (_) {}
+
+      if (mounted && meRes != null && meRes.data is Map) {
         final data =
             (meRes.data['member'] ?? meRes.data) as Map<String, dynamic>;
         _memberInfo = data;
@@ -97,7 +108,35 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
             data['application_fee_paid'] == true;
       }
 
-      if (mounted && docRes.data is Map) {
+      if (mounted && appRes != null && appRes.data is Map) {
+        final apps = appRes.data['applications'];
+        if (apps is List) {
+          for (final a in apps) {
+            if (a is Map && a['type'] == 'renewal') {
+              _renewalApp = Map<String, dynamic>.from(a);
+              final pAmt = double.tryParse(_renewalApp!['payment_amount']?.toString() ?? '');
+              if (pAmt != null && pAmt > 0) {
+                _renewalTotal = pAmt.toStringAsFixed(2);
+              }
+              if (_renewalApp!['fee_breakdown'] != null) {
+                try {
+                  final rawBd = _renewalApp!['fee_breakdown'] is String
+                      ? jsonDecode(_renewalApp!['fee_breakdown'])
+                      : _renewalApp!['fee_breakdown'];
+                  if (rawBd is List) {
+                    _renewalBreakdown = rawBd
+                        .map((x) => Map<String, dynamic>.from(x as Map))
+                        .toList();
+                  }
+                } catch (_) {}
+              }
+              break;
+            }
+          }
+        }
+      }
+
+      if (mounted && docRes != null && docRes.data is Map) {
         final docData = docRes.data as Map;
         _registrationFeeAmount =
             docData['registration_fee_amount']?.toString() ?? '600.00';
@@ -175,6 +214,17 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
     final bool isRenewalPaid = _memberInfo['is_renewal_paid'] == true || _memberInfo['renewal_paid'] == true;
     final bool isRenewalDueSoon = !isRenewalPaid && daysLeft != null && daysLeft <= 30 && daysLeft >= 0;
     final bool isRenewalExpired = !isRenewalPaid && daysLeft != null && daysLeft < 0;
+
+    final String renewalStatus = _renewalApp?['status']?.toString().toLowerCase() ?? '';
+    final double? renewalBillAmt = _renewalApp != null
+        ? double.tryParse(_renewalApp!['payment_amount']?.toString() ?? '')
+        : null;
+    final bool hasCalculatedRenewalBill = !isRenewalPaid &&
+        _renewalApp != null &&
+        ((renewalBillAmt != null && renewalBillAmt > 0) || renewalStatus == 'payment_pending');
+    final bool showRenewalFigures = isRenewalPaid || hasCalculatedRenewalBill;
+    final bool isUnderReview = renewalStatus == 'submitted' || renewalStatus == 'under_review';
+    final bool isRevision = renewalStatus == 'revision_requested';
 
     final bool isGoodStanding = _memberInfo['is_good_standing'] == true ||
         _memberInfo['good_standing'] == true ||
@@ -851,7 +901,9 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '3. ANNUAL RENEWAL DUES: ${_renewalTitle.toUpperCase()}',
+                                    showRenewalFigures
+                                        ? '3. ANNUAL RENEWAL DUES: ${_renewalTitle.toUpperCase()}'
+                                        : '3. ANNUAL RENEWAL DUES',
                                     style: GoogleFonts.outfit(
                                       fontSize: 17,
                                       fontWeight: FontWeight.bold,
@@ -862,7 +914,13 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Official renewal tariff breakdown mapped strictly to your registered profile.',
+                                    showRenewalFigures
+                                        ? 'Official renewal tariff breakdown mapped strictly to your registered profile.'
+                                        : (isUnderReview
+                                            ? 'Renewal compliance documents submitted and undergoing secretariat verification.'
+                                            : (isRevision
+                                                ? 'Secretariat has requested updates on your submitted renewal documents.'
+                                                : 'Official renewal tariff is dynamically assessed and calculated after document upload.')),
                                     style: GoogleFonts.inter(
                                       fontSize: 14,
                                       color: subTextColor,
@@ -882,160 +940,159 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               decoration: BoxDecoration(
                                 color: isRenewalPaid
                                     ? const Color(0xFF10b981).withAlpha(25)
-                                    : (isRenewalDueSoon
+                                    : (hasCalculatedRenewalBill
                                         ? const Color(0xFFF59E0B).withAlpha(25)
-                                        : (isRenewalExpired
-                                            ? const Color(0xFFEF4444).withAlpha(25)
-                                            : _kOrange.withAlpha(25))),
+                                        : (isUnderReview
+                                            ? const Color(0xFFF59E0B).withAlpha(25)
+                                            : (isRevision || isRenewalExpired
+                                                ? const Color(0xFFEF4444).withAlpha(25)
+                                                : (isRenewalDueSoon
+                                                    ? const Color(0xFFF59E0B).withAlpha(25)
+                                                    : _kOrange.withAlpha(25))))),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 isRenewalPaid
                                     ? 'PAID & ACTIVE'
-                                    : (isRenewalDueSoon
-                                        ? 'DUE IN $daysLeft DAYS'
-                                        : (isRenewalExpired
-                                            ? 'RENEWAL OVERDUE'
-                                            : 'PENDING ANNUAL RENEWAL')),
+                                    : (hasCalculatedRenewalBill
+                                        ? 'OFFICIAL BILL ISSUED'
+                                        : (isUnderReview
+                                            ? 'UNDER VETTING'
+                                            : (isRevision
+                                                ? 'REVISION REQUIRED'
+                                                : (isRenewalExpired
+                                                    ? 'RENEWAL OVERDUE'
+                                                    : (isRenewalDueSoon
+                                                        ? 'DUE IN $daysLeft DAYS'
+                                                        : 'ASSESSMENT PENDING'))))),
                                 style: GoogleFonts.outfit(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w900,
                                   color: isRenewalPaid
                                       ? const Color(0xFF059669)
-                                      : (isRenewalDueSoon
+                                      : (hasCalculatedRenewalBill || isUnderReview
                                           ? const Color(0xFFD97706)
-                                          : (isRenewalExpired
+                                          : (isRevision || isRenewalExpired
                                               ? const Color(0xFFDC2626)
-                                              : _kOrange)),
+                                              : (isRenewalDueSoon
+                                                  ? const Color(0xFFD97706)
+                                                  : _kOrange))),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
-                        const Divider(height: 1),
-                        const SizedBox(height: 8),
-                        ..._renewalBreakdown.map((item) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  item['label']?.toString() ?? '',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 15,
-                                    color: textColor,
-                                  ),
-                                ),
-                                Text(
-                                  'GHS ${item['amount']?.toString() ?? ''}',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: textColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
-                        const SizedBox(height: 8),
-                        const Divider(height: 1),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Total Annual Renewal Dues:',
-                              style: GoogleFonts.outfit(
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                                color: textColor,
+                        if (!showRenewalFigures) ...[
+                          const SizedBox(height: 18),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF352016) : const Color(0xFFFBF7F4),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isUnderReview
+                                    ? const Color(0xFFF59E0B).withAlpha(90)
+                                    : (isRevision
+                                        ? const Color(0xFFDC2626).withAlpha(90)
+                                        : _kOrange.withAlpha(60)),
+                                width: 1.2,
                               ),
                             ),
-                            Text(
-                              'GHS $_renewalTotal',
-                              style: GoogleFonts.outfit(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: _kOrange,
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (isRenewalPaid && expiry != null) ...[
-                          const SizedBox(height: 14),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF10b981).withAlpha(18),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFF10b981).withAlpha(50)),
-                            ),
-                            child: Row(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.check_circle_rounded, color: Color(0xFF059669), size: 18),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Annual cycle active & paid • Valid until ${_formatDate(expiry)} ($daysLeft days remaining)',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: (isUnderReview
+                                                ? const Color(0xFFF59E0B)
+                                                : (isRevision ? const Color(0xFFDC2626) : _kOrange))
+                                            .withAlpha(25),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        isUnderReview
+                                            ? Icons.hourglass_top_rounded
+                                            : (isRevision
+                                                ? Icons.warning_amber_rounded
+                                                : Icons.assignment_outlined),
+                                        color: isUnderReview
+                                            ? const Color(0xFFD97706)
+                                            : (isRevision ? const Color(0xFFDC2626) : _kOrange),
+                                        size: 24,
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ] else if (isRenewalDueSoon && expiry != null) ...[
-                          const SizedBox(height: 14),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF59E0B).withAlpha(18),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFFF59E0B).withAlpha(50)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.alarm_rounded, color: Color(0xFFD97706), size: 18),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Annual renewal window open ($daysLeft days left) • Renews for 365 days preserving remaining days',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? const Color(0xFFFBBF24) : const Color(0xFF92400E),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            isUnderReview
+                                                ? 'Documents Submitted & Under Vetting'
+                                                : (isRevision
+                                                    ? 'Document Revision Required'
+                                                    : 'Renewal Figures Calculated After Document Upload'),
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: textColor,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            isUnderReview
+                                                ? 'Your renewal statutory documents have been uploaded and are currently being audited by the secretariat. Your itemized renewal dues breakdown will be generated once vetting is completed.'
+                                                : (isRevision
+                                                    ? 'The secretariat has reviewed your submission and requested document updates. Please upload the revised certificates to proceed with renewal dues calculation.'
+                                                    : 'Official annual renewal dues are not fixed — they are dynamically calculated after your required statutory documents and company scale are uploaded and verified by the secretariat.'),
+                                            style: GoogleFonts.inter(
+                                              fontSize: 13.5,
+                                              height: 1.45,
+                                              color: subTextColor,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ),
-                        ] else if (isRenewalExpired) ...[
-                          const SizedBox(height: 14),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFDC2626).withAlpha(18),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFFDC2626).withAlpha(50)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 18),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Membership expired on ${_formatDate(expiry)} • Please renew to restore active standing',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? const Color(0xFFF87171) : const Color(0xFF991B1B),
+                                const SizedBox(height: 16),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: _kOrange,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 13),
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                    onPressed: () => context.go('/compliance'),
+                                    icon: Icon(
+                                      isUnderReview
+                                          ? Icons.fact_check_outlined
+                                          : (isRevision
+                                              ? Icons.upload_file_rounded
+                                              : Icons.cloud_upload_outlined),
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      isUnderReview
+                                          ? 'Track Renewal & Vetting Status'
+                                          : (isRevision
+                                              ? 'Submit Revised Documents'
+                                              : 'Upload Renewal Documents to Calculate Dues'),
+                                      style: GoogleFonts.outfit(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -1043,31 +1100,212 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                             ),
                           ),
                         ] else ...[
-                          const SizedBox(height: 14),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: _kOrange.withAlpha(18),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: _kOrange.withAlpha(50)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.info_outline_rounded, color: _kOrange, size: 18),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Annual renewal dues of GHS $_renewalTotal are scheduled for your active membership tier.',
+                          const SizedBox(height: 16),
+                          const Divider(height: 1),
+                          const SizedBox(height: 8),
+                          ..._renewalBreakdown.map((item) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    item['label']?.toString() ?? '',
                                     style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? const Color(0xFFFDBA74) : const Color(0xFFC2410C),
+                                      fontSize: 15,
+                                      color: textColor,
                                     ),
                                   ),
+                                  Text(
+                                    'GHS ${item['amount']?.toString() ?? ''}',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: textColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                          const SizedBox(height: 8),
+                          const Divider(height: 1),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Total Annual Renewal Dues:',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: textColor,
                                 ),
-                              ],
-                            ),
+                              ),
+                              Text(
+                                'GHS $_renewalTotal',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  color: _kOrange,
+                                ),
+                              ),
+                            ],
                           ),
+                          if (isRenewalPaid && expiry != null) ...[
+                            const SizedBox(height: 14),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10b981).withAlpha(18),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFF10b981).withAlpha(50)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.check_circle_rounded, color: Color(0xFF059669), size: 18),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Annual cycle active & paid • Valid until ${_formatDate(expiry)} ($daysLeft days remaining)',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else if (hasCalculatedRenewalBill) ...[
+                            const SizedBox(height: 14),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF59E0B).withAlpha(18),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFF59E0B).withAlpha(50)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.receipt_long_rounded, color: Color(0xFFD97706), size: 18),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Official renewal bill issued • Payment of GHS $_renewalTotal is due',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? const Color(0xFFFBBF24) : const Color(0xFF92400E),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _kOrange,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                onPressed: () => context.go('/payments?fee=Annual%20Renewal%20Dues&amount=$_renewalTotal'),
+                                icon: const Icon(Icons.payment_rounded, size: 18),
+                                label: Text(
+                                  'Pay Annual Renewal Dues (GHS $_renewalTotal)',
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ] else if (isRenewalDueSoon && expiry != null) ...[
+                            const SizedBox(height: 14),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF59E0B).withAlpha(18),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFF59E0B).withAlpha(50)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.alarm_rounded, color: Color(0xFFD97706), size: 18),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Annual renewal window open ($daysLeft days left) • Renews for 365 days preserving remaining days',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? const Color(0xFFFBBF24) : const Color(0xFF92400E),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else if (isRenewalExpired) ...[
+                            const SizedBox(height: 14),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFDC2626).withAlpha(18),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFDC2626).withAlpha(50)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 18),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Membership expired on ${_formatDate(expiry)} • Please renew to restore active standing',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? const Color(0xFFF87171) : const Color(0xFF991B1B),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else ...[
+                            const SizedBox(height: 14),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: _kOrange.withAlpha(18),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: _kOrange.withAlpha(50)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.info_outline_rounded, color: _kOrange, size: 18),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Annual renewal dues of GHS $_renewalTotal are scheduled for your active membership tier.',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? const Color(0xFFFDBA74) : const Color(0xFFC2410C),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ],
                       ],
                     ),
