@@ -98,7 +98,12 @@ class _TasksPageState extends State<TasksPage> {
         return;
       }
 
-      final formData = FormData.fromMap({'document_key': key, 'file': mpFile});
+      final formData = FormData.fromMap({
+        'document_key': key,
+        'file': mpFile,
+        'image': mpFile,
+        'photo': mpFile,
+      });
       final res = await ApiService().upload('/documents/upload', formData);
 
       if (res.statusCode == 200) {

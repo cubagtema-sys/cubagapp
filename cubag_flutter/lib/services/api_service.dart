@@ -241,7 +241,10 @@ class ApiService {
   Future<Response<dynamic>> upload(String path, FormData data) => _dio.post(
     _path(path),
     data: data,
-    options: Options(contentType: 'multipart/form-data'),
+    options: Options(
+      contentType: 'multipart/form-data',
+      validateStatus: (status) => status != null && status < 500,
+    ),
   );
 
   Future<dynamic> fetchData(String path) async {
