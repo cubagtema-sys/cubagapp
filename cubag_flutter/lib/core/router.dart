@@ -161,6 +161,8 @@ final GoRouter appRouter = GoRouter(
             loc == '/' ||
             loc == '/landing' ||
             loc == '/application-documents' ||
+            loc == '/compliance' ||
+            loc.startsWith('/compliance/') ||
             loc == '/payments' ||
             loc.startsWith('/payments/') ||
             loc == '/settings' ||
