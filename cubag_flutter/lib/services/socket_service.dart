@@ -3,6 +3,7 @@ import '../utils/session_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'api_service.dart';
 import 'cache_service.dart';
+import 'push_notification_service.dart';
 
 class SocketService {
   static final SocketService _instance = SocketService._internal();
@@ -98,6 +99,17 @@ class SocketService {
 
       _socket!.on('notification', (data) {
         debugPrint('[Socket] Notification: $data');
+        if (data is Map) {
+          final title = data['title']?.toString() ?? 'CUBAG';
+          final body = data['body']?.toString() ?? data['message']?.toString() ?? '';
+          if (body.isNotEmpty) {
+            PushNotificationService.showLocalNotification(
+              title: title,
+              body: body,
+              payload: data['type']?.toString(),
+            );
+          }
+        }
       });
     } catch (e) {
       _connecting = false;
