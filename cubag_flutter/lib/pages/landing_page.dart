@@ -1163,12 +1163,15 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
         children: [
           Icon(icon, size: 18, color: _kBrown),
           const SizedBox(width: 14),
-          Text(
-            text,
-            style: _outfit(
-              color: _kText,
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
+          Expanded(
+            child: Text(
+              text,
+              style: _outfit(
+                color: _kText,
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -2426,23 +2429,25 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Events & Meetings',
-                        style: _outfit(
-                          color: _kText,
-                          fontSize: isMobile ? 26 : 32,
-                          fontWeight: FontWeight.w900,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Events & Meetings',
+                          style: _outfit(
+                            color: _kText,
+                            fontSize: isMobile ? 26 : 32,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Upcoming CUBAG events and scheduled meetings.',
-                        style: _inter(color: _kMuted, fontSize: 16),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          'Upcoming CUBAG events and scheduled meetings.',
+                          style: _inter(color: _kMuted, fontSize: 16),
+                        ),
+                      ],
+                    ),
                   ),
                   if (!isMobile)
                     _textCta(
