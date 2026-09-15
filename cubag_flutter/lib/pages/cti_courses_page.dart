@@ -784,19 +784,9 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
-                ),
-              ),
-              Text(
-                fee,
-                style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w900, color: _kOrange),
-              ),
-            ],
+          Text(
+            title,
+            style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
           ),
           const SizedBox(height: 6),
           Text(
