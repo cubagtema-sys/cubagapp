@@ -436,8 +436,9 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
 
                           // If new attachment picked, upload it first
                           if (selectedImageBytes != null) {
+                            final exactBytes = Uint8List.fromList(selectedImageBytes!);
                             final mpFile = MultipartFile.fromBytes(
-                              selectedImageBytes!,
+                              exactBytes,
                               filename:
                                   selectedImageName ?? 'gallery_photo.jpg',
                             );
