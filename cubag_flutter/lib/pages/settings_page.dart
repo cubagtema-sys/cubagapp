@@ -326,58 +326,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
               ),
-              const Divider(height: 1, color: Color(0xFFf1f5f9)),
-              Consumer<ThemeService>(
-                builder: (context, themeService, _) {
-                  final isDark = themeService.isDark;
-                  return SwitchListTile(
-                    value: isDark,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    activeThumbColor: const Color(0xFFFF5000),
-                    activeTrackColor: const Color(0xFFFF5000).withAlpha(120),
-                    onChanged: (_) => themeService.toggleTheme(),
-                    secondary: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color:
-                            (isDark
-                                    ? const Color(0xFFFF5000)
-                                    : const Color(0xFF6B3E26))
-                                .withAlpha(20),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        isDark
-                            ? Icons.dark_mode_rounded
-                            : Icons.light_mode_rounded,
-                        color: isDark
-                            ? const Color(0xFFFF5000)
-                            : const Color(0xFF6B3E26),
-                        size: 18,
-                      ),
-                    ),
-                    title: Text(
-                      'Dark Mode',
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15.5,
-                        color: const Color(0xFF281710),
-                      ),
-                    ),
-                    subtitle: Text(
-                      isDark ? 'Dark theme enabled' : 'Light theme enabled',
-                      style: GoogleFonts.inter(
-                        fontSize: 13.5,
-                        color: const Color(0xFF94a3b8),
-                      ),
-                    ),
-                  );
-                },
-              ),
             ],
           ),
         ),

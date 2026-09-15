@@ -29,6 +29,7 @@ flutter_ios_podfile_setup
 
 target 'Runner' do
   use_frameworks!
+  inhibit_all_warnings!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   target 'RunnerTests' do
@@ -41,6 +42,17 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      # Suppress warnings in pod targets
+      config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+      # Clean stale/missing cryptex toolchain search paths
+      if config.build_settings['LIBRARY_SEARCH_PATHS']
+        paths = config.build_settings['LIBRARY_SEARCH_PATHS']
+        if paths.is_a?(Array)
+          config.build_settings['LIBRARY_SEARCH_PATHS'] = paths.reject { |p| p.to_s.include?('cryptexd') }
+        elsif paths.is_a?(String) && paths.include?('cryptexd')
+          config.build_settings['LIBRARY_SEARCH_PATHS'] = '$(inherited)'
+        end
+      end
     end
   end
 end

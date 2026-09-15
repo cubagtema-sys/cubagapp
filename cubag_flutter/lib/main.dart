@@ -35,14 +35,12 @@ void main() async {
     debugPrint = (String? message, {int? wrapWidth}) {};
   }
 
-  // 3. Pre-warm local storage, theme service, and Hive cache concurrently before checking auth state
+  // 3. Pre-warm session storage, theme, and auth state
+  await SessionStorage.instance.init();
   await Future.wait([
-    SessionStorage.instance.init().then((_) => ThemeService.instance.init()),
-    if (!kIsWeb) _initHiveCache(),
+    ThemeService.instance.init(),
+    AuthService().checkAuthStatus(),
   ]);
-
-  // Auth check strictly runs AFTER SessionStorage.instance.init() completes
-  await AuthService().checkAuthStatus();
 
   // 4. Start background non-critical services (Non-blocking)
   unawaited(_initAppServices());
@@ -66,8 +64,9 @@ Future<void> _initAppServices() async {
     _protectWebCollections();
   }
 
-  // Socket, Firebase and Backend Heartbeat in parallel (Auth is already initialized)
+  // Socket, Firebase, Hive cache, and Backend Heartbeat in parallel
   await Future.wait([
+    if (!kIsWeb) _initHiveCache(),
     SocketService().initSocket(),
     _initFirebase(),
     _backendHeartbeat(), // "Wake up" Render backend

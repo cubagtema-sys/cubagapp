@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../utils/session_storage.dart';
+import '../services/auth_service.dart';
 
 /// Professional Animated Quad-Split Splash Screen for CUBAG.
 /// Features a high-end 4-piece geometric convergence animation where the
@@ -18,6 +19,7 @@ class SplashPage extends StatefulWidget {
 class _SplashPageState extends State<SplashPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  bool _navigated = false;
 
   // Quadrant Transformations (0.0 -> 0.55)
   late Animation<Offset> _tlOffset;
@@ -45,12 +47,18 @@ class _SplashPageState extends State<SplashPage>
   late Animation<double> _subtitleOpacity;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    precacheImage(const AssetImage('assets/images/logo.jpeg'), context);
+  }
+
+  @override
   void initState() {
     super.initState();
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2600),
+      duration: const Duration(milliseconds: 1100),
     );
 
     // ── 1. Quadrant Convergence (0.0 -> 0.55) ───────────────────────────────
@@ -157,7 +165,40 @@ class _SplashPageState extends State<SplashPage>
   }
 
   Future<void> _navigateNext() async {
-    if (!mounted) return;
+    if (!mounted || _navigated) return;
+    _navigated = true;
+
+    final token = SessionStorage.instance.getStringSync('cubag_token');
+    final auth = AuthService();
+    final bool loggedIn = (token != null && token.isNotEmpty) || auth.isAuthenticated;
+
+    if (loggedIn) {
+      final role = SessionStorage.instance.getStringSync('cubag_role') ?? auth.userRole;
+      if (role == 'admin' || role == 'sub_admin' || role == 'super_admin') {
+        if (!kIsWeb) {
+          context.go('/admin-unavailable');
+        } else {
+          context.go('/admin/dashboard');
+        }
+        return;
+      }
+      final status = (SessionStorage.instance.getStringSync('cubag_member_status') ??
+              SessionStorage.instance.getStringSync('cubag_status') ??
+              auth.membershipStatus)
+          .toLowerCase()
+          .trim();
+      final regPaidStr = SessionStorage.instance.getStringSync('cubag_registration_fee_paid');
+      final bool isRegFeePaid = regPaidStr == 'true' || auth.isRegistrationFeePaid;
+      final bool isDocApproved = status == 'active' || status == 'approved';
+      if (isDocApproved && isRegFeePaid) {
+        context.go('/dashboard');
+        return;
+      } else {
+        context.go('/application-documents');
+        return;
+      }
+    }
+
     context.go('/');
   }
 
@@ -168,8 +209,43 @@ class _SplashPageState extends State<SplashPage>
 
     return Scaffold(
       backgroundColor: const Color(0xFF1A0F0A),
-      body: Stack(
-        children: [
+      body: GestureDetector(
+        onTap: _navigateNext,
+        behavior: HitTestBehavior.opaque,
+        child: Stack(
+          children: [
+            // ── Fast Skip Button ──────────────────────────────────────────
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 14,
+              right: 20,
+              child: GestureDetector(
+                onTap: _navigateNext,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(25),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withAlpha(35)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Skip',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(Icons.arrow_forward_ios, size: 10, color: Colors.white70),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           // ── Background Architectural Luxury Grid ──────────────────────────
           Positioned.fill(
             child: CustomPaint(
@@ -475,6 +551,7 @@ class _SplashPageState extends State<SplashPage>
             ),
           ),
         ],
+      ),
       ),
     );
   }
