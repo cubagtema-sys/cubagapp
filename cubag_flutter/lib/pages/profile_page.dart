@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
@@ -134,12 +135,13 @@ class _ProfilePageState extends State<ProfilePage> {
       final api = ApiService();
       late MultipartFile mpFile;
       if (file.bytes != null) {
-        mpFile = MultipartFile.fromBytes(file.bytes!, filename: file.name);
+        final exactBytes = Uint8List.fromList(file.bytes!);
+        mpFile = MultipartFile.fromBytes(exactBytes, filename: file.name);
       } else if (file.path != null && file.path!.isNotEmpty) {
         mpFile = await MultipartFile.fromFile(file.path!, filename: file.name);
       } else {
         final bytes = await file.xFile.readAsBytes();
-        mpFile = MultipartFile.fromBytes(bytes, filename: file.name);
+        mpFile = MultipartFile.fromBytes(Uint8List.fromList(bytes), filename: file.name);
       }
 
       final formData = FormData.fromMap({
