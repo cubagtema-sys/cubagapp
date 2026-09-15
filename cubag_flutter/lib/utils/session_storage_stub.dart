@@ -29,31 +29,36 @@ class StubSessionStorage implements SessionStorage {
   @override
   Future<void> init() async {
     if (_initialized) return;
-    final prefs = await _getPrefs();
-    for (final key in prefs.getKeys()) {
-      final val = prefs.get(key);
-      if (val is String) {
-        _memCache[key] = val;
-      } else if (val is List<String>) {
-        _memListCache[key] = List<String>.from(val);
-      }
-    }
-
-    // Secure token migration and synchronization
     try {
-      final secureToken = await _secureStorage.read(key: 'cubag_token');
-      if (secureToken != null && secureToken.isNotEmpty) {
-        _memCache['cubag_token'] = secureToken;
-        await prefs.setString('cubag_token', secureToken);
-      } else if (_memCache.containsKey('cubag_token')) {
-        // Migrate legacy plain token to secure storage
-        final legacyToken = _memCache['cubag_token']!;
-        if (legacyToken.isNotEmpty) {
-          await _secureStorage.write(key: 'cubag_token', value: legacyToken);
+      final prefs = await _getPrefs();
+      for (final key in prefs.getKeys()) {
+        final val = prefs.get(key);
+        if (val is String) {
+          _memCache[key] = val;
+        } else if (val is List<String>) {
+          _memListCache[key] = List<String>.from(val);
         }
       }
-    } catch (_) {
-      // Fallback gracefully to SharedPreferences if Keystore is temporarily locked
+
+      // Secure token migration and synchronization with robust error trapping
+      try {
+        final secureToken = await _secureStorage.read(key: 'cubag_token');
+        if (secureToken != null && secureToken.isNotEmpty) {
+          _memCache['cubag_token'] = secureToken;
+          await prefs.setString('cubag_token', secureToken);
+        } else if (_memCache.containsKey('cubag_token')) {
+          final legacyToken = _memCache['cubag_token']!;
+          if (legacyToken.isNotEmpty) {
+            try {
+              await _secureStorage.write(key: 'cubag_token', value: legacyToken);
+            } catch (_) {}
+          }
+        }
+      } catch (e) {
+        debugPrint('SecureStorage read/write skipped on init: $e');
+      }
+    } catch (e) {
+      debugPrint('SessionStorage init error: $e');
     }
 
     _initialized = true;
@@ -68,13 +73,17 @@ class StubSessionStorage implements SessionStorage {
   @override
   Future<void> setString(String key, String value) async {
     _memCache[key] = value;
-    final prefs = await _getPrefs();
-    await prefs.setString(key, value);
+    try {
+      final prefs = await _getPrefs();
+      await prefs.setString(key, value);
+    } catch (_) {}
 
     if (key == 'cubag_token') {
       try {
         await _secureStorage.write(key: 'cubag_token', value: value);
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('SecureStorage write failed for cubag_token: $e');
+      }
     }
   }
 
@@ -87,14 +96,20 @@ class StubSessionStorage implements SessionStorage {
           _memCache['cubag_token'] = secure;
           return secure;
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('SecureStorage read failed for cubag_token: $e');
+      }
     }
 
     if (_memCache.containsKey(key)) return _memCache[key];
-    final prefs = await _getPrefs();
-    final val = prefs.getString(key);
-    if (val != null) _memCache[key] = val;
-    return val;
+    try {
+      final prefs = await _getPrefs();
+      final val = prefs.getString(key);
+      if (val != null) _memCache[key] = val;
+      return val;
+    } catch (_) {
+      return _memCache[key];
+    }
   }
 
   @override
