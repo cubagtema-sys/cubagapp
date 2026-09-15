@@ -20,10 +20,13 @@ void main() async {
   // 1. Basic binding initialization
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Intercept uncaught async errors so browser console does not log Uncaught Error
+  // Intercept uncaught async errors
   PlatformDispatcher.instance.onError = (error, stack) {
     debugPrint('Intercepted uncaught async error: $error');
     return true;
+  };
+  FlutterError.onError = (details) {
+    debugPrint('FlutterError caught: ${details.exception}');
   };
 
   // Allow GoogleFonts runtime fetching non-blockingly in the background.
@@ -35,17 +38,7 @@ void main() async {
     debugPrint = (String? message, {int? wrapWidth}) {};
   }
 
-  // 3. Pre-warm session storage, theme, and auth state
-  await SessionStorage.instance.init();
-  await Future.wait([
-    ThemeService.instance.init(),
-    AuthService().checkAuthStatus(),
-  ]);
-
-  // 4. Start background non-critical services (Non-blocking)
-  unawaited(_initAppServices());
-
-  // 5. Launch App immediately with pre-warmed auth state and theme
+  // 3. Launch App IMMEDIATELY to satisfy iOS watchdog timer and prevent cold-start force close
   runApp(
     MultiProvider(
       providers: [
@@ -56,6 +49,22 @@ void main() async {
       child: const CubagApp(),
     ),
   );
+
+  // 4. Pre-warm session storage, theme, auth, and background services non-blockingly
+  unawaited(_initStartupServices());
+}
+
+Future<void> _initStartupServices() async {
+  try {
+    await SessionStorage.instance.init();
+    await Future.wait([
+      ThemeService.instance.init(),
+      AuthService().checkAuthStatus(),
+    ]);
+    await _initAppServices();
+  } catch (e) {
+    debugPrint('Background startup initialization error: $e');
+  }
 }
 
 /// Initializes heavy services in the background to speed up startup.
