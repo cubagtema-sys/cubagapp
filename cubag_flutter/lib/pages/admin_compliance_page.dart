@@ -1,4 +1,5 @@
 // ignore_for_file: use_build_context_synchronously
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -887,6 +888,200 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
   bool _requestingRevision = false;
   final _noteCtrl = TextEditingController();
 
+  List<Map<String, dynamic>> _billItems = [
+    {'label': 'Base Renewal Fee', 'amount': 500.0},
+  ];
+  DateTime? _paymentDeadline = DateTime.now().add(const Duration(days: 14));
+  bool _savingBill = false;
+
+  double get _calculatedTotal {
+    double sum = 0;
+    for (var item in _billItems) {
+      sum += double.tryParse(item['amount']?.toString() ?? '0') ?? 0;
+    }
+    return sum;
+  }
+
+  Future<void> _saveAndIssueBill() async {
+    if (_billItems.isEmpty) {
+      _showSnack('Please add at least one fee item.', color: _kRed);
+      return;
+    }
+    if (_paymentDeadline == null) {
+      _showSnack('Please select a payment deadline.', color: _kRed);
+      return;
+    }
+
+    setState(() => _savingBill = true);
+    try {
+      final deadlineStr = "${_paymentDeadline!.year}-${_paymentDeadline!.month.toString().padLeft(2, '0')}-${_paymentDeadline!.day.toString().padLeft(2, '0')}";
+      final res = await ApiService().post(
+        '/compliance/admin/applications/${widget.appId}/set-bill',
+        data: {
+          'fee_breakdown': _billItems,
+          'payment_deadline': deadlineStr,
+        },
+      );
+      if (res.statusCode == 200) {
+        _showSnack('Bill issued successfully!', color: _kGreen);
+        _fetch();
+      } else {
+        _showSnack(res.data?['message'] ?? 'Failed to issue bill', color: _kRed);
+      }
+    } catch (e) {
+      _showSnack('Error: $e', color: _kRed);
+    } finally {
+      if (mounted) setState(() => _savingBill = false);
+    }
+  }
+
+  Widget _buildBillGenerationSection(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDark ? _kCardDark : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? _kBorderDark : const Color(0xFFE2E8F0), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.receipt_long_rounded, color: _kPrimary, size: 20),
+              const SizedBox(width: 10),
+              Text(
+                'Profile-Specific Renewal Bill',
+                style: GoogleFonts.outfit(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : _kTextDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Set an itemized fee breakdown and payment deadline based on reviewed documents.',
+            style: GoogleFonts.inter(fontSize: 13, color: isDark ? Colors.white70 : Colors.grey.shade600),
+          ),
+          const SizedBox(height: 16),
+
+          ..._billItems.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final item = entry.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: TextFormField(
+                      initialValue: item['label']?.toString() ?? '',
+                      onChanged: (v) => item['label'] = v,
+                      decoration: InputDecoration(
+                        labelText: 'Fee Description',
+                        isDense: true,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      style: GoogleFonts.outfit(fontSize: 14),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: TextFormField(
+                      initialValue: item['amount']?.toString() ?? '',
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (v) => item['amount'] = double.tryParse(v) ?? 0.0,
+                      decoration: InputDecoration(
+                        labelText: 'Amount (GHS)',
+                        isDense: true,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      style: GoogleFonts.outfit(fontSize: 14),
+                    ),
+                  ),
+                  if (_billItems.length > 1)
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, color: _kRed, size: 20),
+                      onPressed: () => setState(() => _billItems.removeAt(idx)),
+                    ),
+                ],
+              ),
+            );
+          }),
+
+          TextButton.icon(
+            onPressed: () => setState(() => _billItems.add({'label': '', 'amount': 0.0})),
+            icon: const Icon(Icons.add_rounded, size: 16),
+            label: const Text('Add Fee Item'),
+            style: TextButton.styleFrom(foregroundColor: _kPrimary),
+          ),
+          const SizedBox(height: 12),
+          Divider(color: isDark ? _kBorderDark : const Color(0xFFE2E8F0)),
+          const SizedBox(height: 12),
+
+          Row(
+            children: [
+              const Icon(Icons.calendar_today_rounded, size: 16, color: Colors.grey),
+              const SizedBox(width: 8),
+              Text(
+                'Payment Deadline:',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14, color: isDark ? Colors.white : _kTextDark),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _paymentDeadline ?? DateTime.now().add(const Duration(days: 14)),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (picked != null) {
+                    setState(() => _paymentDeadline = picked);
+                  }
+                },
+                child: Text(
+                  _paymentDeadline != null
+                      ? "${_paymentDeadline!.year}-${_paymentDeadline!.month.toString().padLeft(2, '0')}-${_paymentDeadline!.day.toString().padLeft(2, '0')}"
+                      : 'Select Date',
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: _kPrimary, fontSize: 15),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total Bill: GHS ${_calculatedTotal.toStringAsFixed(2)}',
+                style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w900, color: _kPrimary),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _kPrimary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  elevation: 0,
+                ),
+                onPressed: _savingBill ? null : _saveAndIssueBill,
+                icon: _savingBill
+                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.save_rounded, size: 16),
+                label: Text(_savingBill ? 'Saving...' : 'Save & Issue Bill', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -910,6 +1105,20 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
           _loading = false;
           _app = Map<String, dynamic>.from(res.data['application'] ?? {});
           _docs = ApiService.ensureList(res.data['documents']);
+
+          if (_app['fee_breakdown'] != null) {
+            try {
+              final rawBreakdown = _app['fee_breakdown'] is String 
+                  ? jsonDecode(_app['fee_breakdown']) 
+                  : _app['fee_breakdown'];
+              if (rawBreakdown is List) {
+                _billItems = rawBreakdown.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+              }
+            } catch (_) {}
+          }
+          if (_app['payment_deadline'] != null) {
+            _paymentDeadline = DateTime.tryParse(_app['payment_deadline'].toString()) ?? _paymentDeadline;
+          }
         });
       }
     } catch (e, st) {
@@ -1156,6 +1365,10 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                           ),
                         ),
 
+                        const SizedBox(height: 24),
+
+                        // ── Profile-Specific Bill Generation ──────────────
+                        _buildBillGenerationSection(isDark),
                         const SizedBox(height: 24),
 
                         // ── Decision Buttons ──────────────────────────────

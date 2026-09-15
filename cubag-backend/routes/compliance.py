@@ -120,6 +120,8 @@ def _ensure_tables(cursor):
                 status                  VARCHAR(30) NOT NULL DEFAULT 'draft',
                 payment_ref             TEXT,
                 payment_amount          NUMERIC(10,2),
+                payment_deadline        DATE,
+                fee_breakdown           TEXT,
                 payment_confirmed_at    TIMESTAMP,
                 admin_note              TEXT,
                 reviewed_by             INTEGER,
@@ -128,6 +130,8 @@ def _ensure_tables(cursor):
                 updated_at              TIMESTAMP DEFAULT NOW()
             )
         """)
+        cursor.execute("ALTER TABLE compliance_applications ADD COLUMN IF NOT EXISTS payment_deadline DATE")
+        cursor.execute("ALTER TABLE compliance_applications ADD COLUMN IF NOT EXISTS fee_breakdown TEXT")
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS compliance_documents (
                 id              SERIAL PRIMARY KEY,
@@ -568,19 +572,35 @@ def submit_application(app_id):
 @compliance_bp.route('/applications/<int:app_id>/payment-fee', methods=['GET'])
 @jwt_required()
 def get_payment_fee(app_id):
-    """Return the payment fee from compliance_settings or a sensible default."""
+    """Return the payment fee from custom bill or compliance_settings."""
     member_id = get_jwt_identity()
     conn = get_db()
     try:
         with conn.cursor() as cursor:
             _ensure_tables(cursor)
             cursor.execute(
-                "SELECT type, status FROM compliance_applications WHERE id = %s AND member_id = %s",
+                "SELECT type, status, payment_amount, payment_deadline, fee_breakdown FROM compliance_applications WHERE id = %s AND member_id = %s",
                 (app_id, member_id)
             )
             app = cursor.fetchone()
             if not app:
                 return jsonify({'message': 'Application not found'}), 404
+
+            if app.get('payment_amount') is not None and float(app['payment_amount']) > 0:
+                import json
+                breakdown = []
+                try:
+                    if app.get('fee_breakdown'):
+                        breakdown = json.loads(app['fee_breakdown'])
+                except Exception:
+                    pass
+                return jsonify({
+                    'fee': float(app['payment_amount']),
+                    'payment_amount': float(app['payment_amount']),
+                    'payment_deadline': str(app.get('payment_deadline') or ''),
+                    'fee_breakdown': breakdown,
+                    'status': app.get('status')
+                }), 200
 
             fee = None
             app_type = app['type']
@@ -1127,6 +1147,88 @@ def admin_request_revision(app_id):
         return jsonify({'message': 'Revision requested. Member has been notified.'}), 200
     except Exception as e:
         logger.exception('[Compliance] admin_request_revision error')
+        return jsonify({'message': str(e)}), 500
+    finally:
+        conn.close()
+
+
+@compliance_bp.route('/admin/applications/<int:app_id>/set-bill', methods=['POST'])
+@sub_admin_required('members')
+def admin_set_application_bill(app_id):
+    """Set or update the itemized fee breakdown, total payment amount, and payment deadline for a compliance application."""
+    admin_id = get_jwt_identity()
+    data = request.get_json() or {}
+    fee_breakdown = data.get('fee_breakdown')
+    payment_deadline = data.get('payment_deadline')
+
+    if not fee_breakdown or not isinstance(fee_breakdown, list):
+        return jsonify({'message': 'fee_breakdown list is required'}), 400
+    if not payment_deadline:
+        return jsonify({'message': 'payment_deadline is required'}), 400
+
+    total_amount = 0.0
+    for item in fee_breakdown:
+        try:
+            amt = float(str(item.get('amount', 0)).replace(',', ''))
+            if amt < 0:
+                return jsonify({'message': 'Fee amount cannot be negative'}), 400
+            total_amount += amt
+        except (TypeError, ValueError):
+            return jsonify({'message': 'Invalid fee amount in breakdown'}), 400
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            _ensure_tables(cursor)
+            cursor.execute("""
+                SELECT ca.id, ca.member_id, m.email, m.name, m.fcm_token
+                FROM compliance_applications ca
+                JOIN members m ON m.id = ca.member_id
+                WHERE ca.id = %s
+            """, (app_id,))
+            app = cursor.fetchone()
+            if not app:
+                return jsonify({'message': 'Application not found'}), 404
+
+            import json
+            breakdown_json = json.dumps(fee_breakdown)
+
+            cursor.execute("""
+                UPDATE compliance_applications
+                SET payment_amount = %s,
+                    payment_deadline = %s,
+                    fee_breakdown = %s,
+                    status = 'payment_pending',
+                    updated_at = NOW()
+                WHERE id = %s
+            """, (total_amount, payment_deadline, breakdown_json, app_id))
+
+            if hasattr(cursor, 'connection') and cursor.connection:
+                cursor.connection.commit()
+
+            member_email = app.get('email')
+            member_name = app.get('name', 'Member')
+            if member_email:
+                body_html = f"""
+                <div style="font-family:Arial,sans-serif;padding:20px;color:#333;">
+                    <h2>New Renewal Bill Issued</h2>
+                    <p>Dear {member_name},</p>
+                    <p>Your renewal application documents have been reviewed and an official bill has been issued by the CUBAG Secretariat.</p>
+                    <p><strong>Total Amount Due: GHS {total_amount:.2f}</strong></p>
+                    <p><strong>Payment Deadline: {payment_deadline}</strong></p>
+                    <p>Please log in to the CUBAG portal to view your itemized fee breakdown and complete your payment.</p>
+                </div>
+                """
+                _send_compliance_email(member_email, member_name, 'New Renewal Bill Issued - CUBAG', body_html)
+
+            return jsonify({
+                'message': 'Bill issued successfully',
+                'payment_amount': total_amount,
+                'payment_deadline': payment_deadline,
+                'fee_breakdown': fee_breakdown
+            }), 200
+    except Exception as e:
+        logger.exception('[Compliance] admin_set_application_bill error')
         return jsonify({'message': str(e)}), 500
     finally:
         conn.close()

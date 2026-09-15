@@ -1,11 +1,13 @@
 // ignore_for_file: use_build_context_synchronously
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 import '../components/app_layout.dart';
 import '../components/skeleton_loader.dart';
 import '../services/api_service.dart';
@@ -800,6 +802,10 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                           status: status,
                           adminNote: _app['admin_note']?.toString(),
                         ),
+                        if (status == 'payment_pending' || (_app['payment_amount'] != null && (double.tryParse(_app['payment_amount'].toString()) ?? 0) > 0)) ...[
+                          const SizedBox(height: 16),
+                          _buildRenewalBillCard(isDark),
+                        ],
                         const SizedBox(height: 20),
                         _buildStepper(),
                         const SizedBox(height: 24),
@@ -904,6 +910,117 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                 ),
               ),
             ),
+    );
+  }
+
+  Widget _buildRenewalBillCard(bool isDark) {
+    final amount = double.tryParse(_app['payment_amount']?.toString() ?? '0') ?? 0.0;
+    final deadline = _app['payment_deadline']?.toString() ?? 'Not specified';
+    List<dynamic> breakdown = [];
+    try {
+      if (_app['fee_breakdown'] != null) {
+        breakdown = _app['fee_breakdown'] is String 
+            ? jsonDecode(_app['fee_breakdown']) 
+            : _app['fee_breakdown'];
+      }
+    } catch (_) {}
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? _kCardDark : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _kPrimary, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _kPrimary.withAlpha(20),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.receipt_long_rounded, color: _kPrimary, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Official Renewal Bill Issued',
+                      style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : _kTextDark),
+                    ),
+                    Text(
+                      'Payment Deadline: $deadline',
+                      style: GoogleFonts.inter(fontSize: 13.5, color: _kAmber, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Divider(color: isDark ? _kBorderDark : const Color(0xFFE2E8F0)),
+          const SizedBox(height: 12),
+
+          if (breakdown.isNotEmpty) ...[
+            ...breakdown.map((item) {
+              final label = item['label']?.toString() ?? 'Fee';
+              final amt = double.tryParse(item['amount']?.toString() ?? '0') ?? 0.0;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(label, style: GoogleFonts.inter(fontSize: 14, color: isDark ? Colors.white70 : Colors.grey.shade700)),
+                    Text('GHS ${amt.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontSize: 14.5, fontWeight: FontWeight.w700, color: isDark ? Colors.white : _kTextDark)),
+                  ],
+                ),
+              );
+            }),
+            Divider(color: isDark ? _kBorderDark : const Color(0xFFE2E8F0)),
+            const SizedBox(height: 8),
+          ],
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Total Amount Due:', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : _kTextDark)),
+              Text('GHS ${amount.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w900, color: _kPrimary)),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kPrimary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+              onPressed: () {
+                context.go('/payments?fee=Annual%20Renewal%20Dues&amount=${amount.toStringAsFixed(2)}');
+              },
+              icon: const Icon(Icons.payment_rounded, size: 18),
+              label: Text('Proceed to Payment (GHS ${amount.toStringAsFixed(2)})', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
