@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -122,17 +123,39 @@ class PushNotificationService {
         });
       }
 
-      // ── Register FCM token with backend ────────────────────────────────────
-      final token = await _messaging.getToken();
-      debugPrint('FCM Token: $token');
-      if (token != null) {
-        ApiService()
-            .putData('auth/fcm-token', {'fcm_token': token})
-            .catchError((e) => debugPrint('Failed to save FCM token: $e'));
+      // ── Register FCM token with backend (with iOS APNs retry) ─────────────
+      Future<void> syncFcmToken() async {
+        try {
+          if (defaultTargetPlatform == TargetPlatform.iOS) {
+            String? apns = await _messaging.getAPNSToken();
+            if (apns == null) {
+              debugPrint('Waiting for iOS APNs token from Apple...');
+              await Future.delayed(const Duration(seconds: 2));
+              apns = await _messaging.getAPNSToken();
+            }
+            if (apns == null) {
+              debugPrint('APNs token not yet available. Token will sync via onTokenRefresh.');
+              return;
+            }
+          }
+
+          final token = await _messaging.getToken();
+          debugPrint('FCM Token: $token');
+          if (token != null) {
+            await ApiService()
+                .putData('auth/fcm-token', {'fcm_token': token})
+                .catchError((e) => debugPrint('Failed to save FCM token: $e'));
+          }
+        } catch (e) {
+          debugPrint('FCM token acquisition deferred: $e');
+        }
       }
 
-      // Refresh token when it rotates
+      unawaited(syncFcmToken());
+
+      // Refresh token when it rotates or when APNs token arrives
       _messaging.onTokenRefresh.listen((newToken) {
+        debugPrint('FCM Token refreshed: $newToken');
         ApiService()
             .putData('auth/fcm-token', {'fcm_token': newToken})
             .catchError((e) => debugPrint('Failed to refresh FCM token: $e'));
