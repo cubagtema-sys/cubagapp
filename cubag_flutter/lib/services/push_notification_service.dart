@@ -35,7 +35,11 @@ class PushNotificationService {
       await _localNotifications.initialize(
         const InitializationSettings(
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-          iOS: DarwinInitializationSettings(),
+          iOS: DarwinInitializationSettings(
+            requestAlertPermission: true,
+            requestBadgePermission: true,
+            requestSoundPermission: true,
+          ),
         ),
         onDidReceiveNotificationResponse: (NotificationResponse response) {
           // Tapped on a foreground local notification
@@ -53,21 +57,23 @@ class PushNotificationService {
           ?.createNotificationChannel(_channel);
 
       // ── Request FCM permissions ─────────────────────────────────────────────
-      final currentSettings = await _messaging.getNotificationSettings();
-      if (currentSettings.authorizationStatus ==
-          AuthorizationStatus.notDetermined) {
-        // Do not request permission yet, let the UI handle the soft prompt!
-        debugPrint(
-          'FCM permission not determined yet, skipping native prompt.',
-        );
-      } else {
-        final settings = await _messaging.requestPermission(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-        debugPrint('FCM permission: ${settings.authorizationStatus}');
-      }
+      final settings = await _messaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+      debugPrint('FCM permission status: ${settings.authorizationStatus}');
+
+      // Enable foreground banners and sound on iOS
+      await _messaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 
       // ── Background handler ──────────────────────────────────────────────────
       FirebaseMessaging.onBackgroundMessage(
@@ -77,8 +83,7 @@ class PushNotificationService {
       // ── Foreground handler — show as local notification ─────────────────────
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         final notification = message.notification;
-        final android = message.notification?.android;
-        if (notification != null && android != null) {
+        if (notification != null) {
           _localNotifications.show(
             notification.hashCode,
             notification.title,
@@ -92,6 +97,11 @@ class PushNotificationService {
                 priority: Priority.high,
                 icon: '@mipmap/ic_launcher',
                 color: Color(0xFFFF5000), // CUBAG orange
+              ),
+              iOS: DarwinNotificationDetails(
+                presentAlert: true,
+                presentBadge: true,
+                presentSound: true,
               ),
             ),
             payload: message.data['type']?.toString(),

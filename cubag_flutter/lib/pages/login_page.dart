@@ -83,11 +83,12 @@ class _LoginPageState extends State<LoginPage> {
     if (kIsWeb) return;
     final available = await _bioService.isBiometricAvailable();
     final enabled = await _bioService.isBiometricEnabled();
+    final creds = await _bioService.getSavedCredentials();
     if (mounted) {
       setState(() {
         _bioAvailable = available;
       });
-      if (available && enabled) {
+      if (available && enabled && creds != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && !_loading) {
             _handleBiometricLogin();
@@ -100,12 +101,16 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _handleBiometricLogin() async {
     final creds = await _bioService.getSavedCredentials();
     if (creds == null) {
-      setState(
-        () => _error = 'Please sign in with your email and password once to set up biometric login.',
-      );
+      if (mounted) {
+        setState(
+          () => _error = 'Please sign in with your email and password once to save for Face ID / Touch ID.',
+        );
+      }
       return;
     }
-    final authenticated = await _bioService.authenticate();
+    final authenticated = await _bioService.authenticate(
+      reason: 'Scan Face ID or Touch ID to sign in to CUBAG',
+    );
     if (!authenticated || !mounted) return;
 
     setState(() {
@@ -116,12 +121,13 @@ class _LoginPageState extends State<LoginPage> {
     final identifier = creds['email']!;
     final error = await authService.login(identifier, creds['password']!);
 
-    if (!mounted) return;
     if (error != null) {
-      setState(() {
-        _loading = false;
-        _error = error;
-      });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = error;
+        });
+      }
       return;
     }
 
@@ -159,55 +165,43 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     final identifier = _loginMode == 'email' ? raw.toLowerCase() : raw;
+    final password = _passCtrl.text;
     final authService = Provider.of<AuthService>(context, listen: false);
-    final error = await authService.login(identifier, _passCtrl.text);
 
-    if (!mounted) return;
-    if (error != null) {
-      setState(() {
-        _loading = false;
-        _error = error;
-      });
-      return;
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    if (_rememberMe) {
-      await prefs.setString('remembered_identifier', raw);
-      await prefs.setString('remembered_mode', _loginMode);
-    } else {
-      await prefs.remove('remembered_identifier');
-      await prefs.remove('remembered_mode');
-    }
-
-    if (_bioAvailable && !kIsWeb) {
-      final alreadyEnabled = await _bioService.isBiometricEnabled();
-      if (!alreadyEnabled && mounted) {
-        bool? consent = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: Text('Enable Biometric Login?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-            content: Text('Would you like to use fingerprint or face recognition for quick sign-in next time?', style: GoogleFonts.inter()),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Not Now', style: TextStyle(color: Colors.grey)),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(ctx).pop(true),
-                style: ElevatedButton.styleFrom(backgroundColor: _kOrange),
-                child: const Text('Enable', style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-        );
-        if (consent == true) {
-          await _bioService.saveCredentials(identifier, _passCtrl.text);
-          await _bioService.setBiometricEnabled(true);
-        }
-      } else if (alreadyEnabled) {
-        await _bioService.saveCredentials(identifier, _passCtrl.text);
+    // 1. Remember identifier if chosen
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (_rememberMe) {
+        await prefs.setString('remembered_identifier', raw);
+        await prefs.setString('remembered_mode', _loginMode);
+      } else {
+        await prefs.remove('remembered_identifier');
+        await prefs.remove('remembered_mode');
       }
+    } catch (_) {}
+
+    // 2. Perform authentication with backend
+    final error = await authService.login(identifier, password);
+
+    // 3. Save credentials for Face ID / Touch ID immediately on successful login
+    if (error == null) {
+      if (!kIsWeb) {
+        try {
+          await _bioService.saveCredentials(identifier, password);
+          await _bioService.setBiometricEnabled(true);
+          debugPrint('[Login] Saved biometric credentials successfully for $identifier');
+        } catch (e) {
+          debugPrint('[Login] Failed saving biometric credentials: $e');
+        }
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = error;
+        });
+      }
+      return;
     }
 
     if (mounted) {
@@ -797,9 +791,11 @@ class _LoginPageState extends State<LoginPage> {
             child: OutlinedButton.icon(
               onPressed: _loading ? null : _handleBiometricLogin,
               icon: const Icon(Icons.fingerprint_rounded, size: 24),
-              label: const Text(
-                'Biometric Login',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+              label: Text(
+                defaultTargetPlatform == TargetPlatform.iOS
+                    ? 'Face ID / Touch ID Sign In'
+                    : 'Biometric Login',
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: _kBrown,
