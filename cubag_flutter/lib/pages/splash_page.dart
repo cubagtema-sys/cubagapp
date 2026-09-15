@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../utils/session_storage.dart';
 import '../services/auth_service.dart';
+import '../services/biometric_service.dart';
 
 /// Professional Animated Quad-Split Splash Screen for CUBAG.
 /// Features a high-end 4-piece geometric convergence animation where the
@@ -20,6 +21,7 @@ class _SplashPageState extends State<SplashPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   bool _navigated = false;
+  bool _needsManualUnlock = false;
 
   // Quadrant Transformations (0.0 -> 0.55)
   late Animation<Offset> _tlOffset;
@@ -173,33 +175,52 @@ class _SplashPageState extends State<SplashPage>
     final bool loggedIn = (token != null && token.isNotEmpty) || auth.isAuthenticated;
 
     if (loggedIn) {
-      final role = SessionStorage.instance.getStringSync('cubag_role') ?? auth.userRole;
-      if (role == 'admin' || role == 'sub_admin' || role == 'super_admin') {
-        if (!kIsWeb) {
-          context.go('/admin-unavailable');
-        } else {
-          context.go('/admin/dashboard');
+      if (!kIsWeb) {
+        final bioService = BiometricService();
+        final bioEnabled = await bioService.isBiometricEnabled();
+        if (bioEnabled) {
+          final passed = await bioService.authenticate(
+            reason: 'Scan Face ID or Touch ID to unlock CUBAG',
+          );
+          if (!passed) {
+            _navigated = false;
+            if (mounted) {
+              setState(() => _needsManualUnlock = true);
+            }
+            return;
+          }
         }
-        return;
       }
-      final status = (SessionStorage.instance.getStringSync('cubag_member_status') ??
-              SessionStorage.instance.getStringSync('cubag_status') ??
-              auth.membershipStatus)
-          .toLowerCase()
-          .trim();
-      final regPaidStr = SessionStorage.instance.getStringSync('cubag_registration_fee_paid');
-      final bool isRegFeePaid = regPaidStr == 'true' || auth.isRegistrationFeePaid;
-      final bool isDocApproved = status == 'active' || status == 'approved';
-      if (isDocApproved && isRegFeePaid) {
-        context.go('/dashboard');
-        return;
-      } else {
-        context.go('/application-documents');
-        return;
-      }
+      _proceedAfterLogin(auth);
+      return;
     }
 
     context.go('/');
+  }
+
+  void _proceedAfterLogin(AuthService auth) {
+    final role = SessionStorage.instance.getStringSync('cubag_role') ?? auth.userRole;
+    if (role == 'admin' || role == 'sub_admin' || role == 'super_admin') {
+      if (!kIsWeb) {
+        context.go('/admin-unavailable');
+      } else {
+        context.go('/admin/dashboard');
+      }
+      return;
+    }
+    final status = (SessionStorage.instance.getStringSync('cubag_member_status') ??
+            SessionStorage.instance.getStringSync('cubag_status') ??
+            auth.membershipStatus)
+        .toLowerCase()
+        .trim();
+    final regPaidStr = SessionStorage.instance.getStringSync('cubag_registration_fee_paid');
+    final bool isRegFeePaid = regPaidStr == 'true' || auth.isRegistrationFeePaid;
+    final bool isDocApproved = status == 'active' || status == 'approved';
+    if (isDocApproved && isRegFeePaid) {
+      context.go('/dashboard');
+    } else {
+      context.go('/application-documents');
+    }
   }
 
   @override
@@ -550,6 +571,56 @@ class _SplashPageState extends State<SplashPage>
               ],
             ),
           ),
+          if (_needsManualUnlock)
+            Positioned(
+              bottom: MediaQuery.of(context).padding.bottom + 32,
+              left: 24,
+              right: 24,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      _navigated = false;
+                      _navigateNext();
+                    },
+                    icon: const Icon(Icons.fingerprint_rounded, size: 24),
+                    label: Text(
+                      'Unlock with Face ID',
+                      style: GoogleFonts.outfit(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF5000),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 54),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 8,
+                      shadowColor: const Color(0xFFFF5000).withAlpha(120),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextButton(
+                    onPressed: () async {
+                      await AuthService().logout();
+                      if (mounted) context.go('/');
+                    },
+                    child: Text(
+                      'Sign in with another account',
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
       ),

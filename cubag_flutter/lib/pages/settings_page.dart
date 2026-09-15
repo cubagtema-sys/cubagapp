@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -7,6 +8,7 @@ import '../components/app_layout.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/theme_service.dart';
+import '../services/biometric_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -19,6 +21,8 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _changingPw = false;
   bool _loading = false;
   bool _notificationsEnabled = true;
+  bool _biometricEnabled = false;
+  bool _biometricAvailable = false;
   String _message = '';
   final _currentCtrl = TextEditingController();
   final _newCtrl = TextEditingController();
@@ -26,6 +30,19 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _showCurrent = false;
   bool _showNew = false;
   bool _showConfirm = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!kIsWeb) {
+      BiometricService().isBiometricAvailable().then((avail) {
+        if (mounted) setState(() => _biometricAvailable = avail);
+      });
+      BiometricService().isBiometricEnabled().then((enabled) {
+        if (mounted) setState(() => _biometricEnabled = enabled);
+      });
+    }
+  }
 
   Future<void> _changePassword() async {
     if (_newCtrl.text != _confirmCtrl.text) {
@@ -284,6 +301,56 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 onTap: () => setState(() => _changingPw = true),
               ),
+              if (!kIsWeb && _biometricAvailable) ...[
+                const Divider(height: 1, color: Color(0xFFf1f5f9)),
+                SwitchListTile(
+                  value: _biometricEnabled,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  activeThumbColor: primary,
+                  activeTrackColor: primary.withAlpha(120),
+                  secondary: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: primary.withAlpha(20),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.fingerprint_rounded,
+                      color: primary,
+                      size: 18,
+                    ),
+                  ),
+                  title: Text(
+                    'Face ID / Biometric Login',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15.5,
+                      color: const Color(0xFF281710),
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Require Face ID or Touch ID to sign in and unlock',
+                    style: GoogleFonts.inter(
+                      fontSize: 12.5,
+                      color: const Color(0xFF64748b),
+                    ),
+                  ),
+                  onChanged: (v) async {
+                    if (v) {
+                      final verified = await BiometricService().authenticate(
+                        reason: 'Verify Face ID to enable biometric login',
+                      );
+                      if (!verified) return;
+                    }
+                    await BiometricService().setBiometricEnabled(v);
+                    if (mounted) setState(() => _biometricEnabled = v);
+                  },
+                ),
+              ],
               const Divider(height: 1, color: Color(0xFFf1f5f9)),
               SwitchListTile(
                 value: _notificationsEnabled,

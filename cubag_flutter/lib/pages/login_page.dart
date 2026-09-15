@@ -183,15 +183,31 @@ class _LoginPageState extends State<LoginPage> {
     // 2. Perform authentication with backend
     final error = await authService.login(identifier, password);
 
-    // 3. Save credentials for Face ID / Touch ID immediately on successful login
+    // 3. Save credentials for Face ID / Touch ID on successful login
     if (error == null) {
-      if (!kIsWeb) {
+      if (!kIsWeb && _bioAvailable) {
         try {
-          await _bioService.saveCredentials(identifier, password);
-          await _bioService.setBiometricEnabled(true);
-          debugPrint('[Login] Saved biometric credentials successfully for $identifier');
+          final alreadyEnabled = await _bioService.isBiometricEnabled();
+          final savedCreds = await _bioService.getSavedCredentials();
+          if (alreadyEnabled && savedCreds != null) {
+            // Already enrolled: silently keep password fresh in keychain
+            await _bioService.saveCredentials(identifier, password);
+          } else if (mounted) {
+            // First time login: offer Face ID enrollment
+            final shouldEnable = await _promptEnableBiometrics();
+            if (shouldEnable == true) {
+              final verified = await _bioService.authenticate(
+                reason: 'Scan Face ID or Touch ID to enable for CUBAG',
+              );
+              if (verified) {
+                await _bioService.saveCredentials(identifier, password);
+                await _bioService.setBiometricEnabled(true);
+                debugPrint('[Login] Enrolled biometric credentials successfully for $identifier');
+              }
+            }
+          }
         } catch (e) {
-          debugPrint('[Login] Failed saving biometric credentials: $e');
+          debugPrint('[Login] Biometric setup error: $e');
         }
       }
     } else {
@@ -221,6 +237,118 @@ class _LoginPageState extends State<LoginPage> {
         }
       }
     }
+  }
+
+  Future<bool?> _promptEnableBiometrics() async {
+    return showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isDismissible: false,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 44,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              width: 68,
+              height: 68,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0F2027), Color(0xFF203A43)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0F2027).withAlpha(40),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.fingerprint_rounded,
+                size: 38,
+                color: Color(0xFFFFB300),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Enable Biometric Login?',
+              style: GoogleFonts.outfit(
+                fontSize: 21,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0F2027),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Use Face ID or Touch ID for instant, secure sign-in next time without typing your password.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 14.5,
+                color: const Color(0xFF64748B),
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 26),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.check_circle_outline_rounded, size: 20),
+                label: Text(
+                  'Enable Face ID / Biometrics',
+                  style: GoogleFonts.inter(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0F2027),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                onPressed: () => Navigator.of(ctx).pop(true),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: Text(
+                  'Maybe Later',
+                  style: GoogleFonts.inter(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF94A3B8),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
