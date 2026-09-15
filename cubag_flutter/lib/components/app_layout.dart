@@ -5,7 +5,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
-import '../services/theme_service.dart';
 import '../components/admin_search_delegate.dart';
 import '../components/member_search_delegate.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -145,7 +144,6 @@ class _AppLayoutState extends State<AppLayout> {
                 ],
               ),
               actions: [
-                _buildThemeToggle(context, isSmall: isSmall, isDark: true),
                 _buildNotificationIcon(
                   context,
                   authService.userRole,
@@ -212,43 +210,6 @@ class _AppLayoutState extends State<AppLayout> {
                   ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildThemeToggle(
-    BuildContext context, {
-    bool isSmall = false,
-    bool isDark = false,
-  }) {
-    final themeService = Provider.of<ThemeService>(context);
-    final isDarkMode = themeService.isDark;
-
-    return Tooltip(
-      message: isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode',
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () => themeService.toggleTheme(),
-        child: Padding(
-          padding: EdgeInsets.all(isSmall ? 6.0 : 8.0),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            transitionBuilder: (child, anim) => RotationTransition(
-              turns: anim,
-              child: FadeTransition(opacity: anim, child: child),
-            ),
-            child: Icon(
-              isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-              key: ValueKey(isDarkMode),
-              color: isDark
-                  ? (isDarkMode ? const Color(0xFFFF5000) : Colors.white)
-                  : (isDarkMode
-                        ? const Color(0xFFFF5000)
-                        : const Color(0xFF64748b)),
-              size: isSmall ? 20 : 22,
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -730,44 +691,6 @@ class _AppLayoutState extends State<AppLayout> {
                 ),
               ),
             ),
-            // Dark Mode Toggle Item
-            PopupMenuItem<String>(
-              onTap: () => ThemeService.instance.toggleTheme(),
-              child: Container(
-                width: 170,
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: (isThemeDark ? const Color(0xFFFF5000) : primary)
-                            .withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        isThemeDark
-                            ? Icons.light_mode_rounded
-                            : Icons.dark_mode_rounded,
-                        size: 18,
-                        color: isThemeDark ? const Color(0xFFFF5000) : primary,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        isThemeDark ? 'Light Mode' : 'Dark Mode',
-                        style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16.5,
-                          color: textColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
           PopupMenuItem<String>(
             enabled: false,
@@ -882,7 +805,6 @@ class _AppLayoutState extends State<AppLayout> {
                     : MemberSearchDelegate(),
               ),
             ),
-          _buildThemeToggle(context, isSmall: false, isDark: isThemeDark),
           _buildNotificationIcon(
             context,
             authService.userRole,

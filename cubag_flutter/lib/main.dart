@@ -148,13 +148,10 @@ class _CubagAppState extends State<CubagApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final themeService = context.watch<ThemeService>();
-
     return MaterialApp.router(
       title: 'CUBAG',
       theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: themeService.themeMode,
+      themeMode: ThemeMode.light,
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
