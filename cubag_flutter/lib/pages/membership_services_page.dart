@@ -1082,10 +1082,9 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () =>
-                          context.go('/payments?fee=Annual Renewal Dues'),
-                      icon: const Icon(Icons.autorenew_rounded),
-                      label: const Text('Start Renewal Request'),
+                      onPressed: () => context.go('/compliance'),
+                      icon: const Icon(Icons.assignment_turned_in_rounded),
+                      label: const Text('Submit Renewal & Documents'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _kOrange,
                         foregroundColor: Colors.white,

@@ -300,28 +300,28 @@ class _DashboardPageState extends State<DashboardPage> {
 
     if (daysLeft != null && daysLeft < 0) {
       statusText =
-          '🔴 Membership Expired: Your annual membership expired on ${_formatDate(expiry)}. Renew immediately to restore Active Standing.';
-      btnLabel = 'Pay Renewal';
+          '🔴 Membership Expired: Your annual membership expired on ${_formatDate(expiry)}. Submit renewal documents to begin verification.';
+      btnLabel = 'Submit Renewal';
       btnIcon = Icons.warning_amber_rounded;
-      btnAction = () => context.go('/payments');
+      btnAction = () => context.go('/compliance');
     } else if (daysLeft != null && daysLeft <= 30) {
       statusText =
-          '🔴 Urgent Reminder: Only $daysLeft days remaining until membership expires on ${_formatDate(expiry)}! Renew now to avoid suspension.';
-      btnLabel = 'Renew Now';
+          '🔴 Urgent Reminder: Only $daysLeft days remaining until membership expires on ${_formatDate(expiry)}! Submit renewal application now.';
+      btnLabel = 'Submit Renewal';
       btnIcon = Icons.autorenew_rounded;
-      btnAction = () => context.go('/payments');
+      btnAction = () => context.go('/compliance');
     } else if (daysLeft != null && daysLeft <= 60) {
       statusText =
           '🟠 Formal Notice: Approx. 2 months ($daysLeft days) remaining until membership expires on ${_formatDate(expiry)}. Please submit renewal.';
-      btnLabel = 'Renew Soon';
+      btnLabel = 'Submit Renewal';
       btnIcon = Icons.autorenew_rounded;
-      btnAction = () => context.go('/payments');
+      btnAction = () => context.go('/compliance');
     } else if (daysLeft != null && daysLeft <= 90) {
       statusText =
           '🟡 Early Notice: Your annual membership expires in 3 months ($daysLeft days). The renewal window is open.';
       btnLabel = 'Renew Membership';
       btnIcon = Icons.autorenew_rounded;
-      btnAction = () => context.go('/payments');
+      btnAction = () => context.go('/compliance');
     } else if (isPackagePending) {
       statusText =
           '🟡 Registration Fee Paid • Membership Entrance Package Pending Settlement ($memNo)';
