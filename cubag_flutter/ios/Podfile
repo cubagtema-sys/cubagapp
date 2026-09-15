@@ -38,19 +38,23 @@ target 'Runner' do
 end
 
 post_install do |installer|
+  installer.pods_project.root_object.attributes['LastUpgradeCheck'] = '1600'
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
-      # Suppress warnings in pod targets
       config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+      config.build_settings['SWIFT_SUPPRESS_WARNINGS'] = 'YES'
+      
       # Clean stale/missing cryptex toolchain search paths
-      if config.build_settings['LIBRARY_SEARCH_PATHS']
-        paths = config.build_settings['LIBRARY_SEARCH_PATHS']
-        if paths.is_a?(Array)
-          config.build_settings['LIBRARY_SEARCH_PATHS'] = paths.reject { |p| p.to_s.include?('cryptexd') }
-        elsif paths.is_a?(String) && paths.include?('cryptexd')
-          config.build_settings['LIBRARY_SEARCH_PATHS'] = '$(inherited)'
+      ['LIBRARY_SEARCH_PATHS', 'FRAMEWORK_SEARCH_PATHS', 'SWIFT_INCLUDE_PATHS'].each do |setting|
+        if config.build_settings[setting]
+          paths = config.build_settings[setting]
+          if paths.is_a?(Array)
+            config.build_settings[setting] = paths.reject { |p| p.to_s.include?('cryptexd') }
+          elsif paths.is_a?(String) && paths.include?('cryptexd')
+            config.build_settings[setting] = '$(inherited)'
+          end
         end
       end
     end
