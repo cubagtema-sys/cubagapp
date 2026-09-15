@@ -1221,6 +1221,20 @@ def admin_set_application_bill(app_id):
                 """
                 _send_compliance_email(member_email, member_name, 'New Renewal Bill Issued - CUBAG', body_html)
 
+            try:
+                from extensions import socketio
+                socketio.emit('renewal_bill_issued', {
+                    'member_id': app['member_id'],
+                    'app_id': app_id,
+                    'amount': total_amount,
+                    'deadline': payment_deadline,
+                    'fee_breakdown': fee_breakdown
+                })
+                socketio.emit('tasks_updated', {'member_id': app['member_id']})
+                socketio.emit('member_updated', {'member_id': app['member_id']})
+            except Exception:
+                pass
+
             return jsonify({
                 'message': 'Bill issued successfully',
                 'payment_amount': total_amount,

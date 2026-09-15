@@ -289,6 +289,49 @@ def _query_package_fee(conn, member_id):
     return tasks
 
 
+def _query_renewal_bills(conn, member_id):
+    """Fetch issued annual renewal bills for priority task synthesis."""
+    tasks = []
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT ca.id, ca.type, ca.status, ca.payment_amount, ca.payment_deadline,
+                       ca.fee_breakdown
+                FROM compliance_applications ca
+                WHERE ca.member_id = %s
+                  AND (ca.status = 'payment_pending' OR (ca.payment_amount IS NOT NULL AND ca.payment_amount > 0))
+                  AND ca.status NOT IN ('payment_confirmed', 'approved', 'completed')
+                ORDER BY ca.updated_at DESC
+                LIMIT 1
+            """, (member_id,))
+            app = cursor.fetchone()
+            if app:
+                app_id = app['id']
+                amount = float(app['payment_amount'] or 0.0)
+                deadline = str(app.get('payment_deadline') or 'Immediate')
+                amt_str = f"{amount:.2f}"
+                tasks.append({
+                    'id': f'sys_renewal_bill_{app_id}',
+                    'title': f'🧾 Annual Renewal Bill Ready (GHS {amt_str})',
+                    'description': f'Your compliance documents have been vetted and approved. An official annual renewal bill of GHS {amt_str} has been issued by the secretariat. Deadline: {deadline}.',
+                    'due_date': deadline,
+                    'priority': 'Urgent',
+                    'category': 'Annual Renewal Dues',
+                    'done': False,
+                    'action_url': f'/payments?fee=Annual%20Renewal%20Dues&amount={amt_str}',
+                    'action_label': f'Pay Renewal Dues (GHS {amt_str})',
+                    'is_system': True,
+                    'system_type': 'renewal_bill',
+                    'app_id': app_id,
+                    'amount': amount,
+                    'deadline': deadline,
+                    'fee_breakdown': app.get('fee_breakdown')
+                })
+    except Exception as e:
+        print(f"[Tasks] _query_renewal_bills error: {e}")
+    return tasks
+
+
 def _synthesize_system_tasks(cursor, member_id):
     """Run all priority-task queries concurrently for speed."""
     from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -302,19 +345,25 @@ def _synthesize_system_tasks(cursor, member_id):
             conn2.close()
 
     results = []
-    with ThreadPoolExecutor(max_workers=5) as pool:
+    with ThreadPoolExecutor(max_workers=6) as pool:
         futures = [
             pool.submit(_run, _query_license),
             pool.submit(_run, _query_rejections),
             pool.submit(_run, _query_surveys),
             pool.submit(_run, _query_onboarding_docs),
             pool.submit(_run, _query_package_fee),
+            pool.submit(_run, _query_renewal_bills),
         ]
         for fut in as_completed(futures):
             try:
                 results.extend(fut.result())
             except Exception:
                 pass
+
+    # If renewal bill is issued, suppress generic license renewal reminder
+    has_bill = any(t.get('system_type') == 'renewal_bill' for t in results)
+    if has_bill:
+        results = [t for t in results if t.get('id') != 'sys_license_renewal']
 
     # Sort: Urgent first, then High, then Medium
     priority_order = {'Urgent': 0, 'High': 1, 'Medium': 2, 'Low': 3}

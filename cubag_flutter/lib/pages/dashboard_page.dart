@@ -1,4 +1,5 @@
 import 'dart:async' show unawaited;
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../utils/session_storage.dart';
@@ -36,6 +37,7 @@ class _DashboardPageState extends State<DashboardPage> {
     'CNY': '2.15',
   };
   Map<String, dynamic> _user = {};
+  static String? _lastShownBillId;
 
   @override
   void initState() {
@@ -48,7 +50,16 @@ class _DashboardPageState extends State<DashboardPage> {
     SocketService().on('tasks_updated', _onLiveUpdate);
     SocketService().on('documents_updated', _onLiveUpdate);
     SocketService().on('member_documents_updated', _onLiveUpdate);
+    SocketService().on('renewal_bill_issued', _onRenewalBillReceived);
     SocketService().dataUpdateNotifier.addListener(_onGlobalNotifier);
+  }
+
+  void _onRenewalBillReceived(dynamic data) {
+    if (!mounted) return;
+    _onLiveUpdate(null);
+    if (data is Map) {
+      _showRenewalBillPopup(Map<String, dynamic>.from(data));
+    }
   }
 
   void _onGlobalNotifier() {
@@ -80,6 +91,7 @@ class _DashboardPageState extends State<DashboardPage> {
     SocketService().off('tasks_updated', _onLiveUpdate);
     SocketService().off('documents_updated', _onLiveUpdate);
     SocketService().off('member_documents_updated', _onLiveUpdate);
+    SocketService().off('renewal_bill_issued', _onRenewalBillReceived);
     SocketService().dataUpdateNotifier.removeListener(_onGlobalNotifier);
     super.dispose();
   }
@@ -207,12 +219,278 @@ class _DashboardPageState extends State<DashboardPage> {
       bool hasError = false,
     }) {
       if (mounted && data != null) {
+        final taskList = ApiService.ensureList(data);
         setState(() {
-          _tasks = ApiService.ensureList(data);
+          _tasks = taskList;
           _loadingTasks = false;
         });
+        _checkRenewalBillAlert(taskList);
       }
     });
+  }
+
+  void _checkRenewalBillAlert(List<dynamic> tasks) {
+    if (!mounted) return;
+    for (final t in tasks) {
+      if (t is Map && t['system_type'] == 'renewal_bill' && t['done'] != true) {
+        final taskId = t['id']?.toString() ?? '';
+        if (_lastShownBillId != taskId) {
+          _lastShownBillId = taskId;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _showRenewalBillPopup(Map<String, dynamic>.from(t));
+            }
+          });
+        }
+        break;
+      }
+    }
+  }
+
+  void _showRenewalBillPopup(Map<String, dynamic> billData) {
+    if (!mounted) return;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF2B211D);
+    final subTextColor = isDark ? Colors.white70 : const Color(0xFF6F625B);
+    final borderColor = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE8DED6);
+
+    final rawAmount = billData['amount'] ?? billData['payment_amount'];
+    final amount = double.tryParse(rawAmount?.toString() ?? '0') ?? 0.0;
+    final deadline = billData['deadline']?.toString() ?? billData['payment_deadline']?.toString() ?? 'Immediate';
+    final amtStr = amount > 0 ? amount.toStringAsFixed(2) : '2,170.00';
+
+    List<dynamic> breakdown = [];
+    try {
+      final rawBd = billData['fee_breakdown'];
+      if (rawBd != null) {
+        breakdown = rawBd is String ? jsonDecode(rawBd) : rawBd;
+      }
+    } catch (_) {}
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogCtx) {
+        return Dialog(
+          backgroundColor: cardBg,
+          elevation: 16,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: borderColor, width: 1.2),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _kOrange.withAlpha(25),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.receipt_long_rounded,
+                          color: _kOrange,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: _kOrange.withAlpha(25),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'OFFICIAL BILL ISSUED',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                  color: _kOrange,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Annual Renewal Dues Ready',
+                              style: GoogleFonts.outfit(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(dialogCtx).pop(),
+                        icon: Icon(Icons.close_rounded, color: subTextColor, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Your annual statutory compliance documents have been vetted and approved. The CUBAG secretariat has calculated and issued your official annual renewal bill.',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: subTextColor,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF352016) : const Color(0xFFFBF7F4),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: _kOrange.withAlpha(50)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Total Amount Due:',
+                              style: GoogleFonts.outfit(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: textColor,
+                              ),
+                            ),
+                            Text(
+                              'GHS $amtStr',
+                              style: GoogleFonts.outfit(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                color: _kOrange,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_today_rounded, size: 14, color: subTextColor),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Payment Deadline: $deadline',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (breakdown.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          const Divider(height: 1),
+                          const SizedBox(height: 8),
+                          ...breakdown.take(4).map((item) {
+                            final label = item['label']?.toString() ?? 'Fee';
+                            final itemAmt = item['amount']?.toString() ?? '0.00';
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 2.5),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      label,
+                                      style: GoogleFonts.inter(fontSize: 12.5, color: subTextColor),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Text(
+                                    'GHS $itemAmt',
+                                    style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: textColor),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kOrange,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.of(dialogCtx).pop();
+                        context.go('/payments?fee=Annual%20Renewal%20Dues&amount=$amtStr');
+                      },
+                      icon: const Icon(Icons.payment_rounded, size: 18),
+                      label: Text(
+                        'Pay Renewal Dues (GHS $amtStr)',
+                        style: GoogleFonts.outfit(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _kBrown,
+                        side: const BorderSide(color: _kBrown, width: 1.2),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.of(dialogCtx).pop();
+                        context.go('/compliance');
+                      },
+                      child: Text(
+                        'View Full Details in Compliance',
+                        style: GoogleFonts.outfit(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
 
