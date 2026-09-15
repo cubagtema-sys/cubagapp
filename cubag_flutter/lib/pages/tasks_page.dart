@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
@@ -91,7 +92,8 @@ class _TasksPageState extends State<TasksPage> {
     try {
       late dynamic mpFile;
       if (file.bytes != null) {
-        mpFile = MultipartFile.fromBytes(file.bytes!, filename: file.name);
+        final exactBytes = Uint8List.fromList(file.bytes!);
+        mpFile = MultipartFile.fromBytes(exactBytes, filename: file.name);
       } else if (file.path != null) {
         mpFile = await MultipartFile.fromFile(file.path!, filename: file.name);
       } else {

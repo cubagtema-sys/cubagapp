@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -338,7 +339,8 @@ class _State extends State<AdminSurveysPage>
 
     late MultipartFile mpFile;
     if (file.bytes != null) {
-      mpFile = MultipartFile.fromBytes(file.bytes!, filename: file.name);
+      final exactBytes = Uint8List.fromList(file.bytes!);
+      mpFile = MultipartFile.fromBytes(exactBytes, filename: file.name);
     } else {
       mpFile = await MultipartFile.fromFile(file.path!, filename: file.name);
     }
