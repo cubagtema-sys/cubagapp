@@ -26,11 +26,9 @@ void main() async {
     return true;
   };
 
-  // Disable GoogleFonts runtime fetching or wrap in try-catch to prevent network startup hangs
-  GoogleFonts.config.allowRuntimeFetching = false;
-  try {
-    _preloadFonts();
-  } catch (_) {}
+  // Allow GoogleFonts runtime fetching non-blockingly in the background.
+  GoogleFonts.config.allowRuntimeFetching = true;
+  unawaited(Future.microtask(() => _preloadFonts()));
 
   // 2. Silence logs in Production to boost speed
   if (kReleaseMode) {
