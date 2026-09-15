@@ -71,20 +71,28 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> checkAuthStatus() async {
-    final token = await SessionStorage.instance.getString('cubag_token');
-    _userRole = await SessionStorage.instance.getString('cubag_role');
-    _userPhotoUrl = await SessionStorage.instance.getString('cubag_photo');
-    _userName = await SessionStorage.instance.getString('cubag_name');
-    _userEmail = await SessionStorage.instance.getString('cubag_email');
-    _membershipStatus = (await SessionStorage.instance.getString('cubag_member_status') ??
-            await SessionStorage.instance.getString('cubag_status') ??
-            'none')
-        .toLowerCase()
-        .trim();
-    _registrationFeePaid =
-        (await SessionStorage.instance.getString('cubag_registration_fee_paid')) == 'true';
-    _permissions =
-        await SessionStorage.instance.getStringList('cubag_permissions') ?? [];
+    final results = await Future.wait([
+      SessionStorage.instance.getString('cubag_token'),
+      SessionStorage.instance.getString('cubag_role'),
+      SessionStorage.instance.getString('cubag_photo'),
+      SessionStorage.instance.getString('cubag_name'),
+      SessionStorage.instance.getString('cubag_email'),
+      SessionStorage.instance.getString('cubag_member_status'),
+      SessionStorage.instance.getString('cubag_status'),
+      SessionStorage.instance.getString('cubag_registration_fee_paid'),
+      SessionStorage.instance.getStringList('cubag_permissions'),
+    ]);
+
+    final token = results[0] as String?;
+    _userRole = results[1] as String?;
+    _userPhotoUrl = results[2] as String?;
+    _userName = results[3] as String?;
+    _userEmail = results[4] as String?;
+    final memberStatus = results[5] as String?;
+    final status = results[6] as String?;
+    _membershipStatus = (memberStatus ?? status ?? 'none').toLowerCase().trim();
+    _registrationFeePaid = (results[7] as String?) == 'true';
+    _permissions = (results[8] as List<String>?) ?? [];
 
     if (token != null) {
       _isAuthenticated = true;

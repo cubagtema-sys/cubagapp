@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyC6oly1Uer4jZoe7GB-0Y-Pf7oEdZwxOrk</string>
+	<key>GCM_SENDER_ID</key>
+	<string>375529202746</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.cubag.app</string>
+	<key>PROJECT_ID</key>
+	<string>schb-8cd66</string>
+	<key>STORAGE_BUCKET</key>
+	<string>schb-8cd66.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:375529202746:ios:4fb8b7a51ee9f05c0d4103</string>
+</dict>
+</plist>

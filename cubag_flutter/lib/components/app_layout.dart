@@ -1073,7 +1073,7 @@ class _AppLayoutState extends State<AppLayout> {
               ),
             )
           : Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
               decoration: BoxDecoration(
                 color: isDark
                     ? const Color(0xFF281710)

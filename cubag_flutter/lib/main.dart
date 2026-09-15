@@ -26,9 +26,11 @@ void main() async {
     return true;
   };
 
-  // Allow GoogleFonts runtime fetching so font variants (Outfit, Inter) download dynamically when needed.
-  GoogleFonts.config.allowRuntimeFetching = true;
-  _preloadFonts();
+  // Disable GoogleFonts runtime fetching or wrap in try-catch to prevent network startup hangs
+  GoogleFonts.config.allowRuntimeFetching = false;
+  try {
+    _preloadFonts();
+  } catch (_) {}
 
   // 2. Silence logs in Production to boost speed
   if (kReleaseMode) {

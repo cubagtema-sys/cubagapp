@@ -832,43 +832,8 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                 _headerLink('Register A Course', () => _scrollTo(_trainingKey)),
                 _headerLink('Surveys & Polls', () => _scrollTo(_surveysKey)),
                 _headerLink('Complaints', () => _scrollTo(_complaintsKey)),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
               ],
-
-              // Dark/Light Theme Toggle
-              Consumer<ThemeService>(
-                builder: (context, themeService, _) {
-                  final isDark = themeService.isDark;
-                  return Tooltip(
-                    message: isDark
-                        ? 'Switch to Light Mode'
-                        : 'Switch to Dark Mode',
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(20),
-                      onTap: () => themeService.toggleTheme(),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 250),
-                          transitionBuilder: (c, a) => RotationTransition(
-                            turns: a,
-                            child: FadeTransition(opacity: a, child: c),
-                          ),
-                          child: Icon(
-                            isDark
-                                ? Icons.light_mode_rounded
-                                : Icons.dark_mode_rounded,
-                            key: ValueKey(isDark),
-                            color: isDark ? const Color(0xFFFF5000) : _kBrown,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(width: 4),
 
               // Public Header CTAs (Always show Sign In / Join CUBAG on the public landing page)
               Row(
@@ -1043,53 +1008,6 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                       () => _scrollTo(_contactKey),
                     ),
                     const Spacer(),
-                    Divider(color: _kBorder),
-                    const SizedBox(height: 8),
-                    // Drawer Theme Toggle Row
-                    Consumer<ThemeService>(
-                      builder: (context, themeService, _) {
-                        final isDark = themeService.isDark;
-                        return InkWell(
-                          onTap: () => themeService.toggleTheme(),
-                          borderRadius: BorderRadius.circular(10),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 8,
-                              horizontal: 4,
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  isDark
-                                      ? Icons.light_mode_rounded
-                                      : Icons.dark_mode_rounded,
-                                  color: isDark
-                                      ? const Color(0xFFFF5000)
-                                      : _kBrown,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  isDark ? 'Light Theme' : 'Dark Theme',
-                                  style: _outfit(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: _kText,
-                                  ),
-                                ),
-                                const Spacer(),
-                                Switch(
-                                  value: isDark,
-                                  activeThumbColor: const Color(0xFFFF5000),
-                                  onChanged: (_) => themeService.toggleTheme(),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 8),
                     Consumer<AuthService>(
                       builder: (context, auth, _) {
                         if (auth.isAuthenticated) {
@@ -1658,7 +1576,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                   physics: const NeverScrollableScrollPhysics(),
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 0.92,
+                  childAspectRatio: 0.70,
                   children: [
                     _serviceCard(
                       'Find A Licensed Broker (Clearing Agent/Forwarder)',
@@ -2785,7 +2703,13 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                       children: [
                         Icon(Icons.schedule_outlined, size: 13, color: _kMuted),
                         const SizedBox(width: 4),
-                        Text(time, style: _inter(fontSize: 14, color: _kMuted)),
+                        Expanded(
+                          child: Text(
+                            time,
+                            style: _inter(fontSize: 14, color: _kMuted),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 3),
