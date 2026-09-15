@@ -5,12 +5,12 @@ import 'package:dio/dio.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../components/app_layout.dart';
 import '../components/trend_line.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/socket_service.dart';
-part 'profile/profile_widgets.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10b981);
@@ -551,259 +551,300 @@ class _ProfilePageState extends State<ProfilePage> {
     bool isPackagePending,
   ) {
     final badgeText = isPackagePending
-        ? 'NOT ACTIVE'
-        : (isGoodStanding ? 'ACTIVE IN GOOD STANDING' : 'NOT ACTIVE');
+        ? 'Pending'
+        : (isGoodStanding ? 'Active' : 'Inactive');
     final badgeColor = isPackagePending
         ? const Color(0xFFF59E0B)
-        : (isGoodStanding ? tier.color : const Color(0xFFEF4444));
+        : (isGoodStanding ? const Color(0xFF10B981) : const Color(0xFFEF4444));
 
     final expireText = (!isGoodStanding || isPackagePending)
-        ? 'Not Active'
-        : (expiry != null ? _formatDate(expiry) : 'Active & Valid');
-    final expireColor = (!isGoodStanding || isPackagePending)
-        ? const Color(0xFFEF4444)
-        : const Color(0xFF0F172A);
+        ? 'Pending Renewal'
+        : (expiry != null ? _formatDate(expiry) : 'Valid Member');
 
-    final standingText = isPackagePending
-        ? 'Waiting For Payment'
-        : (isGoodStanding ? 'Active in Good Standing' : 'Inactive');
-    final standingColor = isPackagePending
-        ? const Color(0xFFF59E0B)
-        : (isGoodStanding ? tier.color : const Color(0xFFEF4444));
+    final memberName = _user['name']?.toString().trim() ?? 'Member';
+    final companyName = _user['company']?.toString().trim() ?? 'Customs Brokerage Entity';
+    final port = _formatPortAbbreviation((_user['port_of_operation'] ?? _user['port'] ?? 'Tema').toString());
 
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 380),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: _kOrange.withAlpha(90), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(70),
-              blurRadius: 30,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: CustomPaint(painter: _IdGridPainter(color: const Color(0xFFFF5000))),
+      constraints: const BoxConstraints(maxWidth: 350),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Sleek Dismiss Action Bar above card
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: GestureDetector(
+                onTap: () => Navigator.of(dialogCtx).pop(),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(220),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(40),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF1E293B)),
+                ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(22),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+            ),
+          ),
+
+          // ID Card
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(35),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Header: CUBAG Brand & Status Badge
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Header
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: _kOrange.withAlpha(25),
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.shield_rounded, color: _kOrange, size: 16),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: _kOrange.withAlpha(25),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: _kOrange.withAlpha(80)),
+                            Text(
+                              'CUBAG',
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                                color: const Color(0xFF0F172A),
+                                letterSpacing: 0.5,
                               ),
-                              child: const Center(child: Icon(Icons.shield_rounded, color: _kOrange, size: 18)),
                             ),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'CUBAG',
-                                  style: GoogleFonts.outfit(
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 20,
-                                    color: const Color(0xFF0F172A),
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                                Text(
-                                  'DIGITAL IDENTITY CARD',
-                                  style: GoogleFonts.inter(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 10.5,
-                                    color: _kOrange,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                              ],
+                            Text(
+                              'DIGITAL ID',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 8.5,
+                                color: _kOrange,
+                                letterSpacing: 0.8,
+                              ),
                             ),
                           ],
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: badgeColor.withAlpha(25),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: badgeColor.withAlpha(80)),
-                          ),
-                          child: Text(
-                            badgeText,
-                            style: GoogleFonts.outfit(
-                              color: badgeColor,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 11.5,
-                            ),
-                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
-
-                    // Avatar
-                    Center(
-                      child: Container(
-                        width: 96,
-                        height: 96,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: badgeColor, width: 2.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: badgeColor.withAlpha(60),
-                              blurRadius: 14,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: _user['profile_photo'] != null && _user['profile_photo'].toString().isNotEmpty
-                              ? CachedNetworkImage(
-                                  imageUrl: ApiService.resolveImageUrl(_user['profile_photo'].toString()),
-                                  width: 96,
-                                  height: 96,
-                                  fit: BoxFit.cover,
-                                  errorWidget: (ctx, url, err) => _buildAvatarFallback(),
-                                )
-                              : _buildAvatarFallback(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Member Name & Company
-                    Text(
-                      _user['name']?.toString() ?? '',
-                      style: GoogleFonts.outfit(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: const Color(0xFF0F172A),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _user['company']?.toString() ?? 'Customs Brokerage Entity',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF64748B),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 18),
-
-                    // Clean Credentials Box (Official Membership ID ONLY)
                     Container(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        color: badgeColor.withAlpha(25),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: badgeColor.withAlpha(80), width: 0.8),
                       ),
-                      child: Column(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('MEMBERSHIP ID', style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.bold, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
-                                    const SizedBox(height: 2),
-                                    Text(_membershipId, style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 15, color: const Color(0xFF0F172A))),
-                                  ],
-                                ),
-                              ),
-                              Container(height: 26, width: 1, color: const Color(0xFFE2E8F0)),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('CHAPTER / PORT', style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.bold, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
-                                    const SizedBox(height: 2),
-                                    Text(_formatPortAbbreviation((_user['port_of_operation'] ?? _user['port'] ?? 'Tema').toString()), style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 15, color: const Color(0xFF0F172A))),
-                                  ],
-                                ),
-                              ),
-                            ],
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: badgeColor,
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
-                            child: Divider(height: 1, color: Color(0xFFE2E8F0)),
-                          ),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('MEMBER EXPIRE', style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.bold, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
-                                    const SizedBox(height: 2),
-                                    Text(expireText, style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 14.5, color: expireColor)),
-                                  ],
-                                ),
-                              ),
-                              Container(height: 26, width: 1, color: const Color(0xFFE2E8F0)),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('STANDING', style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.bold, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
-                                    const SizedBox(height: 2),
-                                    Text(standingText, style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 14.5, color: standingColor)),
-                                  ],
-                                ),
-                              ),
-                            ],
+                          const SizedBox(width: 5),
+                          Text(
+                            badgeText.toUpperCase(),
+                            style: GoogleFonts.outfit(
+                              color: badgeColor,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 10.5,
+                              letterSpacing: 0.4,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 18),
+                  ],
+                ),
 
-                    // Close Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0F172A),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () => Navigator.of(dialogCtx).pop(),
-                        child: Text('Close Card', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15)),
+                const SizedBox(height: 16),
+
+                // 2. Middle Section: Photo & Member Details
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 66,
+                      height: 66,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: _kOrange.withAlpha(80), width: 2),
+                      ),
+                      child: ClipOval(
+                        child: _user['profile_photo'] != null && _user['profile_photo'].toString().isNotEmpty
+                            ? CachedNetworkImage(
+                                imageUrl: ApiService.resolveImageUrl(_user['profile_photo'].toString()),
+                                width: 66,
+                                height: 66,
+                                fit: BoxFit.cover,
+                                errorWidget: (ctx, url, err) => _buildAvatarFallback(),
+                              )
+                            : _buildAvatarFallback(),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            memberName,
+                            style: GoogleFonts.outfit(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF0F172A),
+                              height: 1.15,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            companyName,
+                            style: GoogleFonts.inter(
+                              fontSize: 12.5,
+                              color: const Color(0xFF64748B),
+                              height: 1.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 5),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '$port Chapter',
+                              style: GoogleFonts.inter(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF475569),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 16),
+                const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                const SizedBox(height: 12),
+
+                // 3. Footer: Credentials & Verification QR
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'MEMBER ID',
+                          style: GoogleFonts.inter(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF94A3B8),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _membershipId,
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'VALID THRU',
+                          style: GoogleFonts.inter(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF94A3B8),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          expireText,
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.5,
+                            color: isGoodStanding ? const Color(0xFF334155) : const Color(0xFFEF4444),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                      ),
+                      child: QrImageView(
+                        data: 'CUBAG:$_membershipId:${_user['id'] ?? ''}',
+                        version: QrVersions.auto,
+                        size: 52.0,
+                        padding: EdgeInsets.zero,
+                        eyeStyle: const QrEyeStyle(
+                          eyeShape: QrEyeShape.square,
+                          color: Color(0xFF0F172A),
+                        ),
+                        dataModuleStyle: const QrDataModuleStyle(
+                          dataModuleShape: QrDataModuleShape.square,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
