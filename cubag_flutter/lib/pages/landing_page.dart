@@ -1571,15 +1571,9 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               ),
               const SizedBox(height: 28),
 
-              // Mobile: 2×3 grid | Desktop: 6-across row
+              // Mobile: Vertical step-by-step horizontal cards for elderly accessibility | Desktop: 6-across row
               if (isMobile)
-                GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.70,
+                Column(
                   children: [
                     _serviceCard(
                       'Find A Licensed Broker (Clearing Agent/Forwarder)',
@@ -1587,30 +1581,35 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                       Icons.manage_search_rounded,
                       () => _scrollTo(_directoryKey),
                     ),
+                    const SizedBox(height: 12),
                     _serviceCard(
                       'Community Polls & Surveys',
                       'Vote & voice your opinion',
                       Icons.how_to_vote_outlined,
                       () => _scrollTo(_surveysKey),
                     ),
+                    const SizedBox(height: 12),
                     _serviceCard(
                       'Register A Course',
                       'Professional CTI training',
                       Icons.school_outlined,
                       () => context.go('/guest-services/cti_training'),
                     ),
+                    const SizedBox(height: 12),
                     _serviceCard(
                       'Complaints & Tracking',
                       'Lodge & track grievance',
                       Icons.report_problem_outlined,
                       () => _scrollTo(_complaintsKey),
                     ),
+                    const SizedBox(height: 12),
                     _serviceCard(
                       'Become a Member',
                       'Join the association',
                       Icons.person_add_outlined,
                       () => context.go('/register'),
                     ),
+                    const SizedBox(height: 12),
                     _serviceCard(
                       'Renew Membership',
                       'Extend your membership',
@@ -1697,60 +1696,64 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _kBorder),
+            border: Border.all(color: _kBorder, width: 1.5),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Row(
             children: [
-              // Small premium icon container — 48px box, 22px icon
+              // Large senior-friendly icon container — 56px box, 26px icon
               Container(
-                width: 48,
-                height: 48,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
-                  color: _kBrown.withAlpha(18),
-                  borderRadius: BorderRadius.circular(12),
+                  color: _kBrown.withAlpha(22),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, size: 22, color: _kBrown),
+                child: Icon(icon, size: 26, color: _kBrown),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 14),
-                  Text(
-                    title,
-                    style: _outfit(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: _kText,
-                      height: 1.3,
+              const SizedBox(width: 16),
+              // Title, subtitle & action
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: _outfit(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: _kText,
+                        height: 1.25,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(subtitle, style: _inter(fontSize: 14, color: _kMuted)),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Text(
-                        'Get started',
-                        style: _outfit(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                    const SizedBox(height: 6),
+                    Text(
+                      subtitle,
+                      style: _inter(fontSize: 14.5, color: _kMuted),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Text(
+                          'Get started',
+                          style: _outfit(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                            color: _kAccent,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 15,
                           color: _kAccent,
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 14,
-                        color: _kAccent,
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

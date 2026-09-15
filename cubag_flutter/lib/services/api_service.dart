@@ -46,7 +46,12 @@ class ApiService {
       return 'http://10.0.2.2:5005/api/v1';
     }
 
-    // ── 5. iOS / macOS / Windows / Linux ───────────────────────────────────
+    // ── 5. iOS — physical device / simulator connects to host machine IP ─
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      return 'http://192.168.4.127:5005/api/v1';
+    }
+
+    // ── 6. macOS / Windows / Linux ─────────────────────────────────────────
     return 'http://127.0.0.1:5005/api/v1';
   }
 
@@ -61,7 +66,7 @@ class ApiService {
   String get instanceBaseUrl => _normalizedBase;
 
   /// Resolves relative image paths and converts localhost/127.0.0.1 URLs
-  /// to 10.0.2.2 on Android native builds so profile photos load on APK.
+  /// to 10.0.2.2 on Android native builds and Mac LAN IP on iOS.
   static String resolveImageUrl(String? rawUrl) {
     if (rawUrl == null || rawUrl.trim().isEmpty) return '';
     String url = rawUrl.trim();
@@ -71,6 +76,12 @@ class ApiService {
           url = url.replaceFirst('localhost:5005', '10.0.2.2:5005');
         } else if (url.contains('127.0.0.1:5005')) {
           url = url.replaceFirst('127.0.0.1:5005', '10.0.2.2:5005');
+        }
+      } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+        if (url.contains('localhost:5005')) {
+          url = url.replaceFirst('localhost:5005', '192.168.4.127:5005');
+        } else if (url.contains('127.0.0.1:5005')) {
+          url = url.replaceFirst('127.0.0.1:5005', '192.168.4.127:5005');
         }
       }
       return url;
@@ -154,6 +165,30 @@ class ApiService {
                   if (requestOptions.baseUrl.contains('127.0.0.1:5005')) {
                     requestOptions.baseUrl = requestOptions.baseUrl
                         .replaceFirst('127.0.0.1:5005', '10.0.2.2:5005');
+                  }
+                }
+              }
+
+              // On iOS, swap between 192.168.4.127:5005 and 127.0.0.1:5005 if connection failed
+              if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+                final currentUri = requestOptions.uri.toString();
+                if (currentUri.contains('192.168.4.127:5005')) {
+                  requestOptions.path = requestOptions.path.replaceFirst(
+                    '192.168.4.127:5005',
+                    '127.0.0.1:5005',
+                  );
+                  if (requestOptions.baseUrl.contains('192.168.4.127:5005')) {
+                    requestOptions.baseUrl = requestOptions.baseUrl
+                        .replaceFirst('192.168.4.127:5005', '127.0.0.1:5005');
+                  }
+                } else if (currentUri.contains('127.0.0.1:5005')) {
+                  requestOptions.path = requestOptions.path.replaceFirst(
+                    '127.0.0.1:5005',
+                    '192.168.4.127:5005',
+                  );
+                  if (requestOptions.baseUrl.contains('127.0.0.1:5005')) {
+                    requestOptions.baseUrl = requestOptions.baseUrl
+                        .replaceFirst('127.0.0.1:5005', '192.168.4.127:5005');
                   }
                 }
               }
