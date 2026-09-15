@@ -6,14 +6,13 @@ import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 import '../components/app_layout.dart';
+import '../components/in_app_document_viewer.dart';
 import '../components/skeleton_loader.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
-import '../utils/session_storage.dart';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const _kPrimary = Color(0xFFFF5000);
@@ -641,22 +640,14 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
   }
 
   Future<void> _downloadCertificate() async {
-    try {
-      // Read the JWT from local storage and append as ?token=... so the
-      // browser GET request works without needing an Authorization header.
-      final jwt = await SessionStorage.instance.getString('cubag_token') ?? '';
-      final url =
-          '${ApiService.baseUrl}/api/v1/compliance/applications/${widget.appId}/certificate'
-          '${jwt.isNotEmpty ? '?token=${Uri.encodeComponent(jwt)}' : ''}';
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        _showSnack('Could not open certificate', color: _kRed);
-      }
-    } catch (e) {
-      _showSnack('Error opening certificate: $e', color: _kRed);
-    }
+    final url =
+        '${ApiService.baseUrl}/api/v1/compliance/applications/${widget.appId}/certificate';
+    await InAppDocumentViewer.show(
+      context,
+      url: url,
+      title: 'Annual Certificate of Compliance',
+      subtitle: 'Official CUBAG Certificate',
+    );
   }
 
   void _showSnack(
@@ -895,8 +886,8 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                           const SizedBox(height: 16),
                           if (isApproved)
                             _ActionButton(
-                              label: 'Download Compliance Certificate',
-                              icon: Icons.download_rounded,
+                              label: 'View Compliance Certificate',
+                              icon: Icons.workspace_premium_rounded,
                               color: _kGreen,
                               loading: false,
                               onTap: _downloadCertificate,
@@ -1034,16 +1025,14 @@ class _StatusViewPage extends StatelessWidget {
   const _StatusViewPage({required this.app, required this.appId});
 
   Future<void> _downloadCertificate(BuildContext context) async {
-    try {
-      final jwt = await SessionStorage.instance.getString('cubag_token') ?? '';
-      final url =
-          '${ApiService.baseUrl}/api/v1/compliance/applications/$appId/certificate'
-          '${jwt.isNotEmpty ? '?token=${Uri.encodeComponent(jwt)}' : ''}';
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    } catch (_) {}
+    final url =
+        '${ApiService.baseUrl}/api/v1/compliance/applications/$appId/certificate';
+    await InAppDocumentViewer.show(
+      context,
+      url: url,
+      title: 'Annual Certificate of Compliance',
+      subtitle: 'Official CUBAG Certificate',
+    );
   }
 
   @override
@@ -1143,9 +1132,9 @@ class _StatusViewPage extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      icon: const Icon(Icons.download_rounded),
+                      icon: const Icon(Icons.workspace_premium_rounded),
                       label: Text(
-                        'Download Compliance Certificate',
+                        'View Compliance Certificate',
                         style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -1707,43 +1696,22 @@ class _DocRow extends StatelessWidget {
           if ((fileUrl?.isNotEmpty ?? false)) ...[
             const SizedBox(height: 6),
             GestureDetector(
-              onTap: () async {
+              onTap: () {
                 final trimmed = fileUrl?.trim() ?? '';
                 if (trimmed.isEmpty) return;
-                final resolved =
-                    trimmed.startsWith('http://') ||
-                        trimmed.startsWith('https://')
-                    ? trimmed
-                    : (trimmed.startsWith('/')
-                          ? '${ApiService.baseUrl}${trimmed.substring(1)}'
-                          : '${ApiService.baseUrl}$trimmed');
-                final uri = Uri.tryParse(resolved);
-                if (uri == null ||
-                    !uri.hasScheme ||
-                    (uri.scheme != 'http' && uri.scheme != 'https')) {
-                  return;
-                }
-                if (kIsWeb) {
-                  final opened = await launchUrl(uri);
-                  if (!opened) {
-                    // no-op: browser open failed
-                  }
-                } else {
-                  final launched = await launchUrl(
-                    uri,
-                    mode: LaunchMode.externalApplication,
-                  );
-                  if (!launched) {
-                    await launchUrl(uri, mode: LaunchMode.platformDefault);
-                  }
-                }
+                InAppDocumentViewer.show(
+                  context,
+                  url: trimmed,
+                  title: doc['file_name']?.toString() ?? 'Compliance Document',
+                  subtitle: doc['category']?.toString() ?? 'Uploaded Requirement',
+                );
               },
               child: Row(
                 children: [
                   const SizedBox(width: 30),
                   const Icon(
-                    Icons.open_in_new_rounded,
-                    size: 12,
+                    Icons.visibility_outlined,
+                    size: 14,
                     color: _kPrimary,
                   ),
                   const SizedBox(width: 4),

@@ -1,20 +1,57 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 Widget buildDocPreview(String url, String viewKey) {
-  return Center(
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.preview_rounded, size: 48, color: Color(0xFF6b6375)),
-          const SizedBox(height: 8),
-          Text(
-            'Preview not available on this platform.',
-            style: TextStyle(color: Colors.grey[600]),
+  return _MobileDocPreview(url: url, key: ValueKey(viewKey));
+}
+
+class _MobileDocPreview extends StatefulWidget {
+  final String url;
+  const _MobileDocPreview({required this.url, super.key});
+
+  @override
+  State<_MobileDocPreview> createState() => _MobileDocPreviewState();
+}
+
+class _MobileDocPreviewState extends State<_MobileDocPreview> {
+  late final WebViewController _controller;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    String targetUrl = widget.url;
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      final clean = widget.url.toLowerCase().split('?').first;
+      if (clean.endsWith('.pdf') || widget.url.contains('certificate')) {
+        targetUrl = 'https://docs.google.com/gview?embedded=true&url=${Uri.encodeComponent(widget.url)}';
+      }
+    }
+
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(Colors.transparent)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageFinished: (_) {
+            if (mounted) setState(() => _isLoading = false);
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(targetUrl));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        WebViewWidget(controller: _controller),
+        if (_isLoading)
+          const Center(
+            child: CircularProgressIndicator(color: Color(0xFF9E4A28)),
           ),
-        ],
-      ),
-    ),
-  );
+      ],
+    );
+  }
 }

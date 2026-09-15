@@ -1900,39 +1900,9 @@ class _AdminDocRowState extends State<_AdminDocRow> {
                           ),
                         ),
                       )
-                    : kIsWeb
-                    ? doc_preview.buildDocPreview(
+                    : doc_preview.buildDocPreview(
                         fileUrl,
                         'modal_${title.hashCode}',
-                      )
-                    : Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.picture_as_pdf_rounded,
-                              size: 48,
-                              color: _kPrimary,
-                            ),
-                            const SizedBox(height: 12),
-                            ElevatedButton.icon(
-                              icon: const Icon(Icons.open_in_new_rounded),
-                              label: const Text('Open Document'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: _kPrimary,
-                              ),
-                              onPressed: () async {
-                                final uri = Uri.parse(fileUrl);
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(
-                                    uri,
-                                    mode: LaunchMode.externalApplication,
-                                  );
-                                }
-                              },
-                            ),
-                          ],
-                        ),
                       ),
               ),
             ],
@@ -2194,48 +2164,7 @@ class _AdminDocRowState extends State<_AdminDocRow> {
                             ),
                           ),
                         )
-                      : kIsWeb
-                      ? doc_preview.buildDocPreview(fileUrl, docKey)
-                      : Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.picture_as_pdf_rounded,
-                                size: 40,
-                                color: _kPrimary,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'PDF preview available on Web.',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              ElevatedButton.icon(
-                                icon: const Icon(
-                                  Icons.open_in_new_rounded,
-                                  size: 14,
-                                ),
-                                label: const Text('Open Document'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _kPrimary,
-                                ),
-                                onPressed: () async {
-                                  final uri = Uri.parse(fileUrl);
-                                  if (await canLaunchUrl(uri)) {
-                                    await launchUrl(
-                                      uri,
-                                      mode: LaunchMode.externalApplication,
-                                    );
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
+                      : doc_preview.buildDocPreview(fileUrl, docKey),
                 ),
               ),
             ],

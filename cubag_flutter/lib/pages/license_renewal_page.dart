@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart'; // F-39 fix
 import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/app_logo.dart';
+import '../components/in_app_document_viewer.dart';
 import '../components/shimmer_loader.dart';
 import '../services/api_service.dart';
 import '../utils/app_logger.dart';
@@ -885,7 +885,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () async {
+                    onPressed: () {
                       final memberId = _memberInfo?['id'];
                       if (memberId == null) return;
 
@@ -895,26 +895,22 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                       }
 
                       final ts = DateTime.now().millisecondsSinceEpoch;
-                      final url = Uri.parse(
-                        '$base/members/$memberId/certificate-pdf?t=$ts',
-                      );
+                      final url = '$base/members/$memberId/certificate-pdf?t=$ts';
 
-                      try {
-                        await launchUrl(url);
-                      } catch (e) {
-                        final fallback = Uri.parse(
-                          '$base/members/$memberId/certificate-pdf?t=$ts',
-                        );
-                        await launchUrl(fallback);
-                      }
+                      InAppDocumentViewer.show(
+                        context,
+                        url: url,
+                        title: 'Certificate of Membership',
+                        subtitle: 'Annual License Certificate',
+                      );
                     },
                     icon: const Icon(
-                      Icons.download_rounded,
+                      Icons.workspace_premium_rounded,
                       size: 16,
                       color: Colors.white,
                     ),
                     label: Text(
-                      'Download PDF',
+                      'View Certificate',
                       style: GoogleFonts.inter(
                         color: Colors.white,
                         fontSize: 13,

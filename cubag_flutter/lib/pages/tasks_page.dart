@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 import '../components/app_layout.dart';
+import '../components/in_app_document_viewer.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 
@@ -299,12 +299,14 @@ class _TasksPageState extends State<TasksPage> {
               if (isUploaded && fileUrl != null && fileUrl.isNotEmpty)
                 IconButton(
                   icon: const Icon(Icons.visibility_outlined, size: 18, color: _kOrange),
-                  onPressed: () async {
-                    final resolved = fileUrl.startsWith('http') ? fileUrl : '${ApiService.baseUrl}$fileUrl';
-                    final uri = Uri.tryParse(resolved);
-                    if (uri != null && await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                    }
+                  tooltip: 'View Document',
+                  onPressed: () {
+                    InAppDocumentViewer.show(
+                      context,
+                      url: fileUrl,
+                      title: label,
+                      subtitle: 'Uploaded Statutory Document',
+                    );
                   },
                 ),
               ElevatedButton(

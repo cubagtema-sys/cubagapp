@@ -1338,28 +1338,10 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                           ),
                         ),
                       )
-                    : kIsWeb
-                        ? doc_preview.buildDocPreview(
-                            fileUrl,
-                            'modal_${title.hashCode}',
-                          )
-                        : Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.picture_as_pdf_rounded,
-                                  size: 48,
-                                  color: Color(0xFF6b6375),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Preview not available on this platform.',
-                                  style: TextStyle(color: Colors.grey[600]),
-                                ),
-                              ],
-                            ),
-                          ),
+                    : doc_preview.buildDocPreview(
+                        fileUrl,
+                        'modal_${title.hashCode}',
+                      ),
               ),
             ],
           ),
