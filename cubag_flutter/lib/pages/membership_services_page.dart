@@ -621,33 +621,17 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '1. REGISTRATION FEE (ONE-TIME)',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.bold,
-                                      color: textColor,
-                                      height: 1.25,
-                                    ),
-                                    softWrap: true,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Paid separately upon registration before statutory documents are vetted.',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      color: subTextColor,
-                                      height: 1.3,
-                                    ),
-                                    softWrap: true,
-                                  ),
-                                ],
+                              child: Text(
+                                '1. REGISTRATION FEE (ONE-TIME)',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: textColor,
+                                  height: 1.25,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -665,7 +649,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               child: Text(
                                 _isRegFeePaid ? 'PAID IN FULL' : 'PENDING PAYMENT',
                                 style: GoogleFonts.outfit(
-                                  fontSize: 13,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w900,
                                   color: _isRegFeePaid
                                       ? const Color(0xFF059669)
@@ -674,6 +658,15 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Paid separately upon registration before statutory documents are vetted.',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: subTextColor,
+                            height: 1.35,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         const Divider(height: 1),
@@ -747,33 +740,17 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '2. NEW MEMBERSHIP DUES: ${_packageTitle.toUpperCase()}',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.bold,
-                                      color: textColor,
-                                      height: 1.25,
-                                    ),
-                                    softWrap: true,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Specific entrance package breakdown for your registered company classification and scope.',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      color: subTextColor,
-                                      height: 1.3,
-                                    ),
-                                    softWrap: true,
-                                  ),
-                                ],
+                              child: Text(
+                                '2. NEW MEMBERSHIP DUES: ${_packageTitle.toUpperCase()}',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: textColor,
+                                  height: 1.25,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -791,7 +768,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               child: Text(
                                 _isPackageFeePaid ? 'PAID IN FULL' : 'PENDING SETTLEMENT',
                                 style: GoogleFonts.outfit(
-                                  fontSize: 13,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w900,
                                   color: _isPackageFeePaid
                                       ? const Color(0xFF059669)
@@ -800,6 +777,15 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Specific entrance package breakdown for your registered company classification and scope.',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: subTextColor,
+                            height: 1.35,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         const Divider(height: 1),
@@ -894,41 +880,19 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    showRenewalFigures
-                                        ? '3. ANNUAL RENEWAL DUES: ${_renewalTitle.toUpperCase()}'
-                                        : '3. ANNUAL RENEWAL DUES',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.bold,
-                                      color: textColor,
-                                      height: 1.25,
-                                    ),
-                                    softWrap: true,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    showRenewalFigures
-                                        ? 'Official renewal tariff breakdown mapped strictly to your registered profile.'
-                                        : (isUnderReview
-                                            ? 'Renewal compliance documents submitted and undergoing secretariat verification.'
-                                            : (isRevision
-                                                ? 'Secretariat has requested updates on your submitted renewal documents.'
-                                                : 'Official renewal tariff is dynamically assessed and calculated after document upload.')),
-                                    style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      color: subTextColor,
-                                      height: 1.3,
-                                    ),
-                                    softWrap: true,
-                                  ),
-                                ],
+                              child: Text(
+                                showRenewalFigures
+                                    ? '3. ANNUAL RENEWAL DUES: ${_renewalTitle.toUpperCase()}'
+                                    : '3. ANNUAL RENEWAL DUES',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: textColor,
+                                  height: 1.25,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -966,7 +930,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                                         ? 'DUE IN $daysLeft DAYS'
                                                         : 'ASSESSMENT PENDING'))))),
                                 style: GoogleFonts.outfit(
-                                  fontSize: 13,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w900,
                                   color: isRenewalPaid
                                       ? const Color(0xFF059669)
@@ -981,6 +945,21 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          showRenewalFigures
+                              ? 'Official renewal tariff breakdown mapped strictly to your registered profile.'
+                              : (isUnderReview
+                                  ? 'Renewal compliance documents submitted and undergoing secretariat verification.'
+                                  : (isRevision
+                                      ? 'Secretariat has requested updates on your submitted renewal documents.'
+                                      : 'Official renewal tariff is dynamically assessed and calculated after document upload.')),
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: subTextColor,
+                            height: 1.35,
+                          ),
                         ),
                         if (!showRenewalFigures) ...[
                           const SizedBox(height: 18),
@@ -1315,50 +1294,26 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
 
               const SizedBox(height: 32),
 
-              // ── 3. Quick Action Buttons ────────────────────────────────────
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => context.go('/compliance'),
-                      icon: const Icon(Icons.assignment_turned_in_rounded),
-                      label: const Text('Submit Renewal & Documents'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _kOrange,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(0, 52),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        textStyle: GoogleFonts.outfit(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
+              // ── Quick Action Button ────────────────────────────────────
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => context.go('/compliance'),
+                  icon: const Icon(Icons.folder_shared_outlined, size: 20),
+                  label: const Text('Manage Compliance & Documents'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _kBrown,
+                    side: const BorderSide(color: _kBrown, width: 1.5),
+                    minimumSize: const Size(0, 52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    textStyle: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => context.go('/compliance'),
-                      icon: const Icon(Icons.upload_file_rounded),
-                      label: const Text('Manage Documents'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: _kBrown,
-                        side: const BorderSide(color: _kBrown, width: 1.5),
-                        minimumSize: const Size(0, 52),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        textStyle: GoogleFonts.outfit(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
               const SizedBox(height: 20),
             ],
