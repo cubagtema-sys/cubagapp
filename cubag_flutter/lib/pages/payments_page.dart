@@ -235,7 +235,7 @@ class _PaymentsPageState extends State<PaymentsPage>
           } else if (!_isPackageFeePaid) {
             _reason = 'New Membership Dues';
           } else {
-            _reason = 'Annual Renewal Dues';
+            _reason = 'Registration Fee';
           }
 
           if (_reason == 'Registration Fee') {
@@ -1602,12 +1602,6 @@ class _PaymentsPageState extends State<PaymentsPage>
                   ),
                 );
               }
-              dropdownItems.add(
-                DropdownItem<String>(
-                  value: 'Annual Renewal Dues',
-                  label: '$renewalTitle · GH₵ $renewalAmtStr',
-                ),
-              );
 
               // Add non-tier general service fees from platform settings if configured
               for (var f in _fees) {
