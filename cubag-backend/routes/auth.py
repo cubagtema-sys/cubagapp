@@ -946,28 +946,33 @@ def upload_photo():
     supabase_key = os.getenv('SUPABASE_SERVICE_KEY', '').strip().strip('\'"')
     photo_bucket = os.getenv('SUPABASE_BUCKET', 'uploads').strip().strip('\'"')
 
-    if not supabase_url or not supabase_key:
-        logger.error("[upload-photo] SUPABASE_URL or SUPABASE_SERVICE_KEY not set")
-        return jsonify({'message': 'Storage not configured. Set SUPABASE_URL and SUPABASE_SERVICE_KEY.'}), 500
+    public_url = None
+    if supabase_url and supabase_key:
+        storage_url = f"{supabase_url}/storage/v1/object/{photo_bucket}/{safe_name}"
+        headers = {
+            "apikey": supabase_key,
+            "Authorization": f"Bearer {supabase_key}",
+            "Content-Type": content_type,
+            "x-upsert": "true",
+        }
+        try:
+            resp = http_req.post(storage_url, data=file_bytes, headers=headers, timeout=10)
+            if resp.status_code in (200, 201):
+                public_url = f"{supabase_url}/storage/v1/object/public/{photo_bucket}/{safe_name}"
+            else:
+                logger.warning(f"[upload-photo] Supabase upload returned {resp.status_code}: {resp.text}")
+        except Exception as e:
+            logger.warning(f"[upload-photo] Request to Supabase failed: {e}")
 
-    storage_url = f"{supabase_url}/storage/v1/object/{photo_bucket}/{safe_name}"
-    headers = {
-        "apikey": supabase_key,
-        "Authorization": f"Bearer {supabase_key}",
-        "Content-Type": content_type,
-        "x-upsert": "true",
-    }
-
-    try:
-        resp = http_req.post(storage_url, data=file_bytes, headers=headers, timeout=30)
-        if resp.status_code not in (200, 201):
-            logger.error(f"[upload-photo] Supabase upload failed: {resp.status_code} - {resp.text}")
-            return jsonify({'message': f'Upload failed: {resp.text}'}), 500
-    except Exception as e:
-        logger.error(f"[upload-photo] Request to Supabase failed: {e}")
-        return jsonify({'message': 'Failed to connect to storage service'}), 500
-
-    public_url = f"{supabase_url}/storage/v1/object/public/{photo_bucket}/{safe_name}"
+    # Fallback to local static storage if Supabase failed or unconfigured
+    if not public_url:
+        upload_dir = os.path.join(os.getcwd(), 'static', 'uploads', 'avatars')
+        os.makedirs(upload_dir, exist_ok=True)
+        local_filename = safe_name
+        local_path = os.path.join(upload_dir, local_filename)
+        with open(local_path, 'wb') as f:
+            f.write(file_bytes)
+        public_url = f"/static/uploads/avatars/{local_filename}"
 
     # Save URL to DB
     conn = get_db()
@@ -975,11 +980,10 @@ def upload_photo():
         with conn.cursor() as cursor:
             cursor.execute("UPDATE members SET profile_photo = %s WHERE id = %s", (public_url, member_id))
             conn.commit()
-        return jsonify({'message': 'Photo uploaded', 'photo_url': public_url}), 200
+        return jsonify({'message': 'Photo uploaded successfully', 'photo_url': public_url}), 200
     except Exception as e:
         logger.error(f"[upload-photo] DB update failed: {e}")
-        logger.error(f'[change-password] {e}')
-        return jsonify({'message': 'Password change failed. Please try again.'}), 500
+        return jsonify({'message': 'Failed to save profile photo to database.'}), 500
     finally:
         conn.close()
 
