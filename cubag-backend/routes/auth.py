@@ -980,7 +980,14 @@ def upload_photo():
         with conn.cursor() as cursor:
             cursor.execute("UPDATE members SET profile_photo = %s WHERE id = %s", (public_url, member_id))
             conn.commit()
-        return jsonify({'message': 'Photo uploaded successfully', 'photo_url': public_url}), 200
+
+        try:
+            from socket_instance import socketio
+            socketio.emit('member_updated', {'id': member_id, 'profile_photo': public_url})
+        except Exception:
+            pass
+
+        return jsonify({'message': 'Photo uploaded successfully', 'photo_url': public_url, 'profile_photo': public_url}), 200
     except Exception as e:
         logger.error(f"[upload-photo] DB update failed: {e}")
         return jsonify({'message': 'Failed to save profile photo to database.'}), 500

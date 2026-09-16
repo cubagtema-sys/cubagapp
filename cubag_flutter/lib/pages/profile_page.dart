@@ -149,8 +149,9 @@ class _ProfilePageState extends State<ProfilePage> {
       });
       final res = await api.upload('/auth/upload-photo', formData);
 
-      if (res.statusCode == 200 && res.data['photo_url'] != null) {
-        final photoUrl = res.data['photo_url'].toString();
+      if (res.statusCode == 200 && (res.data['photo_url'] != null || res.data['profile_photo'] != null)) {
+        final rawUrl = (res.data['photo_url'] ?? res.data['profile_photo']).toString();
+        final photoUrl = ApiService.resolveImageUrl(rawUrl);
         setState(() {
           _user = {..._user, 'profile_photo': photoUrl};
         });

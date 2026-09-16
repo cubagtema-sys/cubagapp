@@ -65,8 +65,9 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> updatePhoto(String url) async {
-    _userPhotoUrl = url;
-    await SessionStorage.instance.setString('cubag_photo', url);
+    final resolved = ApiService.resolveImageUrl(url);
+    _userPhotoUrl = resolved.isNotEmpty ? resolved : null;
+    await SessionStorage.instance.setString('cubag_photo', _userPhotoUrl ?? '');
     notifyListeners();
   }
 
@@ -159,10 +160,13 @@ class AuthService extends ChangeNotifier {
           await SessionStorage.instance.setString('cubag_license_number', _licenseNumber!);
         }
 
-        final photo = res.data['profile_photo']?.toString();
-        if (photo != null && photo.isNotEmpty && photo != _userPhotoUrl) {
-          _userPhotoUrl = photo;
-          await SessionStorage.instance.setString('cubag_photo', photo);
+        final rawPhoto = res.data['profile_photo']?.toString();
+        if (rawPhoto != null && rawPhoto.isNotEmpty) {
+          final resolvedPhoto = ApiService.resolveImageUrl(rawPhoto);
+          if (resolvedPhoto.isNotEmpty && resolvedPhoto != _userPhotoUrl) {
+            _userPhotoUrl = resolvedPhoto;
+            await SessionStorage.instance.setString('cubag_photo', resolvedPhoto);
+          }
         }
         notifyListeners();
       }

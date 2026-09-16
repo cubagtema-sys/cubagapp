@@ -485,25 +485,48 @@ class _AppLayoutState extends State<AppLayout> {
           shape: BoxShape.circle,
           border: Border.all(color: borderColor, width: 1.5),
         ),
-        child: CircleAvatar(
-          radius: isSmall ? 14 : 16,
-          backgroundColor: isThemeDark
-              ? const Color(0xFF3E2418)
-              : const Color(0xFFf1f5f9),
-          backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
-              ? ResizeImage(
-                  CachedNetworkImageProvider(photoUrl),
-                  width: 100,
-                  height: 100,
-                )
-              : null,
-          child: (photoUrl == null || photoUrl.isEmpty)
-              ? Icon(
-                  Icons.person_rounded,
-                  color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
-                  size: isSmall ? 18 : 20,
-                )
-              : null,
+        child: SizedBox(
+          width: isSmall ? 28 : 32,
+          height: isSmall ? 28 : 32,
+          child: ClipOval(
+            child: (photoUrl != null && photoUrl.isNotEmpty)
+                ? CachedNetworkImage(
+                    imageUrl: photoUrl,
+                    width: isSmall ? 28 : 32,
+                    height: isSmall ? 28 : 32,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      color: isThemeDark
+                          ? const Color(0xFF3E2418)
+                          : const Color(0xFFf1f5f9),
+                      child: Icon(
+                        Icons.person_rounded,
+                        color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                        size: isSmall ? 18 : 20,
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: isThemeDark
+                          ? const Color(0xFF3E2418)
+                          : const Color(0xFFf1f5f9),
+                      child: Icon(
+                        Icons.person_rounded,
+                        color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                        size: isSmall ? 18 : 20,
+                      ),
+                    ),
+                  )
+                : Container(
+                    color: isThemeDark
+                        ? const Color(0xFF3E2418)
+                        : const Color(0xFFf1f5f9),
+                    child: Icon(
+                      Icons.person_rounded,
+                      color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                      size: isSmall ? 18 : 20,
+                    ),
+                  ),
+          ),
         ),
       ),
       offset: const Offset(0, 48),
@@ -532,15 +555,30 @@ class _AppLayoutState extends State<AppLayout> {
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: primary.withValues(alpha: 0.1),
-                    backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
-                        ? CachedNetworkImageProvider(photoUrl)
-                        : null,
-                    child: (photoUrl == null || photoUrl.isEmpty)
-                        ? Icon(Icons.person_rounded, color: primary, size: 22)
-                        : null,
+                  SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: ClipOval(
+                      child: (photoUrl != null && photoUrl.isNotEmpty)
+                          ? CachedNetworkImage(
+                              imageUrl: photoUrl,
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: primary.withValues(alpha: 0.1),
+                                child: Icon(Icons.person_rounded, color: primary, size: 22),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: primary.withValues(alpha: 0.1),
+                                child: Icon(Icons.person_rounded, color: primary, size: 22),
+                              ),
+                            )
+                          : Container(
+                              color: primary.withValues(alpha: 0.1),
+                              child: Icon(Icons.person_rounded, color: primary, size: 22),
+                            ),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1046,27 +1084,48 @@ class _AppLayoutState extends State<AppLayout> {
                       shape: BoxShape.circle,
                       border: Border.all(color: borderThemeColor, width: 1.5),
                     ),
-                    child: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: isDark
-                          ? const Color(0xFF3E2418)
-                          : const Color(0xFFf1f5f9),
-                      backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
-                          ? ResizeImage(
-                              CachedNetworkImageProvider(photoUrl),
-                              width: 100,
-                              height: 100,
-                            )
-                          : null,
-                      child: (photoUrl == null || photoUrl.isEmpty)
-                          ? Icon(
-                              Icons.person_rounded,
-                              color: isDark
-                                  ? Colors.white70
-                                  : const Color(0xFF94a3b8),
-                              size: 18,
-                            )
-                          : null,
+                    child: SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: ClipOval(
+                        child: (photoUrl != null && photoUrl.isNotEmpty)
+                            ? CachedNetworkImage(
+                                imageUrl: photoUrl,
+                                width: 36,
+                                height: 36,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  color: isDark
+                                      ? const Color(0xFF3E2418)
+                                      : const Color(0xFFf1f5f9),
+                                  child: Icon(
+                                    Icons.person_rounded,
+                                    color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                                    size: 18,
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  color: isDark
+                                      ? const Color(0xFF3E2418)
+                                      : const Color(0xFFf1f5f9),
+                                  child: Icon(
+                                    Icons.person_rounded,
+                                    color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                                    size: 18,
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                color: isDark
+                                    ? const Color(0xFF3E2418)
+                                    : const Color(0xFFf1f5f9),
+                                child: Icon(
+                                  Icons.person_rounded,
+                                  color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                                  size: 18,
+                                ),
+                              ),
+                      ),
                     ),
                   ),
                 ),
@@ -1083,19 +1142,30 @@ class _AppLayoutState extends State<AppLayout> {
               ),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: primary.withValues(alpha: 0.1),
-                    backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
-                        ? ResizeImage(
-                            CachedNetworkImageProvider(photoUrl),
-                            width: 100,
-                            height: 100,
-                          )
-                        : null,
-                    child: (photoUrl == null || photoUrl.isEmpty)
-                        ? Icon(Icons.person_rounded, color: primary, size: 18)
-                        : null,
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: ClipOval(
+                      child: (photoUrl != null && photoUrl.isNotEmpty)
+                          ? CachedNetworkImage(
+                              imageUrl: photoUrl,
+                              width: 32,
+                              height: 32,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: primary.withValues(alpha: 0.1),
+                                child: Icon(Icons.person_rounded, color: primary, size: 18),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: primary.withValues(alpha: 0.1),
+                                child: Icon(Icons.person_rounded, color: primary, size: 18),
+                              ),
+                            )
+                          : Container(
+                              color: primary.withValues(alpha: 0.1),
+                              child: Icon(Icons.person_rounded, color: primary, size: 18),
+                            ),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
