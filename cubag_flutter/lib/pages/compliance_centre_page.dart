@@ -447,74 +447,32 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
 
       for (int i = 0; i < result.files.length; i++) {
         final file = result.files[i];
-        final ext = file.name.contains('.')
-            ? file.name.split('.').last.toLowerCase()
-            : 'pdf';
-        final size = file.size;
 
         uploadTasks.add(() async {
-          final signRes = await ApiService().post(
-            '/compliance/applications/${widget.appId}/sign-upload',
-            data: {
-              'requirement': key,
-              'label': docReq['label'],
-              'ext': ext,
-              'size': size,
-            },
-          );
-          if (signRes.statusCode != 200 || signRes.data is! Map) {
-            throw Exception(
-              signRes.data?['message']?.toString() ?? 'Sign failed',
-            );
-          }
-
-          final uploadUrl = signRes.data['upload_url']?.toString();
-          final publicUrl = signRes.data['public_url']?.toString();
-          final supaKey = signRes.data['supabase_key']?.toString() ?? '';
-
-          if (uploadUrl == null || uploadUrl.isEmpty) {
-            throw Exception('Upload URL was not provided by server');
-          }
-
-          late Uint8List bytes;
+          late MultipartFile mpFile;
           if (file.bytes != null) {
-            bytes = file.bytes!;
+            mpFile = MultipartFile.fromBytes(Uint8List.fromList(file.bytes!), filename: file.name);
+          } else if (file.path != null && file.path!.isNotEmpty) {
+            mpFile = await MultipartFile.fromFile(file.path!, filename: file.name);
           } else {
-            bytes = await file.xFile.readAsBytes();
+            final bytes = await file.xFile.readAsBytes();
+            mpFile = MultipartFile.fromBytes(Uint8List.fromList(bytes), filename: file.name);
           }
-          final mimeMap = {
-            'pdf': 'application/pdf',
-            'png': 'image/png',
-            'jpg': 'image/jpeg',
-            'jpeg': 'image/jpeg',
-          };
-          final mime = mimeMap[ext] ?? 'application/octet-stream';
 
-          await Dio().put(
-            uploadUrl,
-            data: bytes,
-            options: Options(
-              headers: {
-                'apikey': supaKey,
-                'Authorization': 'Bearer $supaKey',
-                'Content-Type': mime,
-                'Content-Length': bytes.length,
-                'x-upsert': 'true',
-              },
-              contentType: mime,
-            ),
+          final formData = FormData.fromMap({
+            'requirement': key,
+            'label': docReq['label'] ?? key,
+            'file': mpFile,
+          });
+
+          final res = await ApiService().upload(
+            '/compliance/applications/${widget.appId}/upload',
+            formData,
           );
 
-          await ApiService().post(
-            '/compliance/applications/${widget.appId}/confirm-upload',
-            data: {
-              'requirement': key,
-              'label': docReq['label'],
-              'public_url': publicUrl,
-              'filename': file.name,
-              'size': size,
-            },
-          );
+          if (res.statusCode != 200) {
+            throw Exception(res.data?['message']?.toString() ?? 'Upload failed');
+          }
         }());
       }
 

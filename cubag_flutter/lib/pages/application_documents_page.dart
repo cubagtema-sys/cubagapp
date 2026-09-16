@@ -175,9 +175,6 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
       for (final file in result.files) {
         uploadTasks.add(() async {
           final api = ApiService();
-          final ext = file.name.contains('.')
-              ? file.name.split('.').last.toLowerCase()
-              : 'pdf';
           late Uint8List fileBytes;
           if (file.bytes != null) {
             fileBytes = file.bytes!;
@@ -185,78 +182,14 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
             fileBytes = await file.xFile.readAsBytes();
           }
 
-          bool directSuccess = false;
-          try {
-            final signRes = await api.post(
-              '/documents/sign-upload',
-              data: {
-                'requirement': key,
-                'label': label,
-                'filename': file.name,
-                'ext': ext,
-                'size': fileBytes.length,
-              },
-            );
-
-            if (signRes.statusCode == 200 && signRes.data is Map) {
-              final uploadUrl = signRes.data['upload_url']?.toString();
-              final publicUrl = signRes.data['public_url']?.toString();
-              final supabaseKey =
-                  signRes.data['supabase_key']?.toString() ?? '';
-              final contentType = _contentTypeFor(ext);
-
-              if (uploadUrl == null || uploadUrl.isEmpty) {
-                throw Exception('Upload URL was not returned by server.');
-              }
-
-              final dio = Dio();
-              final putRes = await dio.put(
-                uploadUrl,
-                data: fileBytes,
-                options: Options(
-                  headers: {
-                    'Content-Type': contentType,
-                    'Content-Length': fileBytes.length,
-                    'x-upsert': 'true',
-                    'apikey': supabaseKey,
-                    'Authorization': 'Bearer $supabaseKey',
-                  },
-                  sendTimeout: const Duration(seconds: 12),
-                  receiveTimeout: const Duration(seconds: 12),
-                  validateStatus: (s) => s != null && s < 400,
-                ),
-              );
-
-              if (putRes.statusCode == 200 || putRes.statusCode == 201) {
-                await api.post(
-                  '/documents/confirm-upload',
-                  data: {
-                    'requirement': key,
-                    'label': label,
-                    'public_url': publicUrl,
-                    'filename': file.name,
-                    'size': fileBytes.length,
-                  },
-                );
-                directSuccess = true;
-              }
-            }
-          } catch (e) {
-            debugPrint(
-              '[DocUpload] Signed direct upload failed/blocked, falling back to backend: $e',
-            );
-          }
-
-          if (!directSuccess) {
-            final formData = FormData.fromMap({
-              'requirement': key,
-              'label': label,
-              'file': MultipartFile.fromBytes(fileBytes, filename: file.name),
-            });
-            final res = await api.post('/documents/upload', data: formData);
-            if (res.statusCode != 200) {
-              throw Exception(res.data['message'] ?? 'Upload failed');
-            }
+          final formData = FormData.fromMap({
+            'requirement': key,
+            'label': label,
+            'file': MultipartFile.fromBytes(fileBytes, filename: file.name),
+          });
+          final res = await api.upload('/documents/upload', formData);
+          if (res.statusCode != 200) {
+            throw Exception(res.data?['message']?.toString() ?? 'Upload failed');
           }
         }());
       }
@@ -271,20 +204,6 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
       if (mounted) _showSnack('Upload error. Please try again.', _kRed);
     }
     if (mounted) setState(() => _uploading[key] = false);
-  }
-
-  String _contentTypeFor(String ext) {
-    switch (ext.toLowerCase()) {
-      case 'pdf':
-        return 'application/pdf';
-      case 'png':
-        return 'image/png';
-      case 'jpg':
-      case 'jpeg':
-        return 'image/jpeg';
-      default:
-        return 'application/octet-stream';
-    }
   }
 
   Future<void> _submitApplication() async {

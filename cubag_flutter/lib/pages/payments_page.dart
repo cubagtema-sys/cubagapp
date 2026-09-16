@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:dio/dio.dart' show Response, Options, Dio;
+import 'package:dio/dio.dart' show Response, FormData, MultipartFile;
 import '../components/app_layout.dart';
 import '../components/custom_dropdown.dart';
 import '../services/api_service.dart';
@@ -703,67 +703,32 @@ class _PaymentsPageState extends State<PaymentsPage>
 
       for (int i = 0; i < result.files.length; i++) {
         final file = result.files[i];
-        final ext = file.name.contains('.')
-            ? file.name.split('.').last.toLowerCase()
-            : 'pdf';
-        final size = file.size;
 
         uploadTasks.add(() async {
-          final signRes = await ApiService().post(
-            '/compliance/applications/$_complianceAppId/sign-upload',
-            data: {
-              'requirement': key,
-              'label': docReq['label'],
-              'ext': ext,
-              'size': size,
-            },
-          );
-          if (signRes.statusCode != 200) {
-            throw Exception(signRes.data['message'] ?? 'Sign failed');
-          }
-
-          final uploadUrl = signRes.data['upload_url'] as String;
-          final publicUrl = signRes.data['public_url'] as String;
-          final supaKey = signRes.data['supabase_key'] as String;
-          late Uint8List bytes;
+          late MultipartFile mpFile;
           if (file.bytes != null) {
-            bytes = file.bytes!;
+            mpFile = MultipartFile.fromBytes(Uint8List.fromList(file.bytes!), filename: file.name);
+          } else if (file.path != null && file.path!.isNotEmpty) {
+            mpFile = await MultipartFile.fromFile(file.path!, filename: file.name);
           } else {
-            bytes = await file.xFile.readAsBytes();
+            final bytes = await file.xFile.readAsBytes();
+            mpFile = MultipartFile.fromBytes(Uint8List.fromList(bytes), filename: file.name);
           }
-          final mimeMap = {
-            'pdf': 'application/pdf',
-            'png': 'image/png',
-            'jpg': 'image/jpeg',
-            'jpeg': 'image/jpeg',
-          };
-          final mime = mimeMap[ext] ?? 'application/octet-stream';
 
-          await Dio().put(
-            uploadUrl,
-            data: bytes,
-            options: Options(
-              headers: {
-                'apikey': supaKey,
-                'Authorization': 'Bearer $supaKey',
-                'Content-Type': mime,
-                'Content-Length': bytes.length,
-                'x-upsert': 'true',
-              },
-              contentType: mime,
-            ),
+          final formData = FormData.fromMap({
+            'requirement': key,
+            'label': docReq['label'] ?? key,
+            'file': mpFile,
+          });
+
+          final res = await ApiService().upload(
+            '/compliance/applications/${_complianceAppId!}/upload',
+            formData,
           );
 
-          await ApiService().post(
-            '/compliance/applications/${_complianceAppId!}/confirm-upload',
-            data: {
-              'requirement': key,
-              'label': docReq['label'],
-              'public_url': publicUrl,
-              'filename': file.name,
-              'size': size,
-            },
-          );
+          if (res.statusCode != 200) {
+            throw Exception(res.data?['message']?.toString() ?? 'Upload failed');
+          }
         }());
       }
 

@@ -444,6 +444,110 @@ def sign_upload(app_id):
     }), 200
 
 
+@compliance_bp.route('/applications/<int:app_id>/upload', methods=['POST'])
+@jwt_required()
+def upload_compliance_document(app_id):
+    """Direct multipart upload for compliance documents with local fallback."""
+    member_id   = get_jwt_identity()
+    requirement = (request.form.get('requirement') or request.form.get('document_key') or '').strip()
+    label       = request.form.get('label', '').strip()
+    file        = request.files.get('file') or request.files.get('photo') or request.files.get('image')
+
+    if not requirement:
+        return jsonify({'message': 'Requirement key is required'}), 400
+    if not file or not file.filename:
+        return jsonify({'message': 'No file provided'}), 400
+
+    ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else 'pdf'
+    if ext not in ('pdf', 'png', 'jpg', 'jpeg'):
+        return jsonify({'message': 'Only PDF, PNG, JPG, JPEG files are accepted'}), 400
+
+    file.seek(0, 2)
+    size_bytes = file.tell()
+    file.seek(0)
+    if size_bytes > 15 * 1024 * 1024:
+        return jsonify({'message': 'File too large. Max 15MB.'}), 413
+
+    file_bytes = file.read()
+    content_type = file.content_type or ('application/pdf' if ext == 'pdf' else 'image/jpeg')
+
+    public_url = None
+    if SUPABASE_URL and SUPABASE_KEY:
+        safe_name = f"compliance/{member_id}/{app_id}/{requirement}_{uuid.uuid4().hex}.{ext}"
+        storage_url = f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{safe_name}"
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": content_type,
+            "x-upsert": "true",
+        }
+        try:
+            resp = requests.post(storage_url, data=file_bytes, headers=headers, timeout=10)
+            if resp.status_code in (200, 201):
+                public_url = f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{safe_name}"
+            else:
+                logger.warning(f"[Compliance] Supabase returned {resp.status_code}: {resp.text}")
+        except Exception as e:
+            logger.warning(f"[Compliance] Supabase upload failed: {e}")
+
+    if not public_url:
+        upload_dir = os.path.join(os.getcwd(), 'static', 'uploads', 'compliance_docs', str(app_id))
+        os.makedirs(upload_dir, exist_ok=True)
+        local_filename = f"{requirement}_{uuid.uuid4().hex[:8]}.{ext}"
+        local_path = os.path.join(upload_dir, local_filename)
+        with open(local_path, 'wb') as f:
+            f.write(file_bytes)
+        public_url = f"/static/uploads/compliance_docs/{app_id}/{local_filename}"
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            _ensure_tables(cursor)
+            cursor.execute(
+                "SELECT type, status FROM compliance_applications WHERE id = %s AND member_id = %s",
+                (app_id, member_id)
+            )
+            app = cursor.fetchone()
+            if not app:
+                return jsonify({'message': 'Application not found'}), 404
+            if app['status'] not in ('draft', 'revision_requested', 'rejected', 'under_review', 'submitted'):
+                return jsonify({'message': 'Application is not editable in its current state'}), 400
+
+            if not label:
+                label = next(
+                    (r['label'] for r in _reqs_for_type(app['type']) if r['key'] == requirement),
+                    requirement.replace('_', ' ').title()
+                )
+
+            cursor.execute(
+                "SELECT id FROM compliance_documents WHERE application_id = %s AND requirement = %s",
+                (app_id, requirement)
+            )
+            existing = cursor.fetchone()
+            if existing:
+                cursor.execute("""
+                    UPDATE compliance_documents
+                    SET file_url = %s, file_name = %s, file_size = %s,
+                        status = 'pending', admin_note = NULL, uploaded_at = NOW(),
+                        auto_filled = FALSE, source_uploaded_at = NULL
+                    WHERE id = %s
+                """, (public_url, file.filename, size_bytes, existing['id']))
+            else:
+                cursor.execute("""
+                    INSERT INTO compliance_documents
+                        (application_id, requirement, label, file_url, file_name, file_size, status)
+                    VALUES (%s, %s, %s, %s, %s, %s, 'pending')
+                """, (app_id, requirement, label, public_url, file.filename, size_bytes))
+            conn.commit()
+
+        return jsonify({'message': 'Document uploaded successfully', 'file_url': public_url}), 200
+    except Exception as e:
+        logger.exception('[Compliance] upload_compliance_document error')
+        return jsonify({'message': str(e)}), 500
+    finally:
+        conn.close()
+
+
 @compliance_bp.route('/applications/<int:app_id>/confirm-upload', methods=['POST'])
 @jwt_required()
 def confirm_upload(app_id):
