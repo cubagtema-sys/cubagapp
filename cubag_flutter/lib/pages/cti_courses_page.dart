@@ -33,6 +33,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
   bool _loading = true;
   bool _loadingMy = false;
   String _searchQuery = '';
+  final TextEditingController _searchCtrl = TextEditingController();
   String? _selectedMode;
 
   Timer? _debounce;
@@ -72,6 +73,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
   void dispose() {
     SocketService().off('courses_updated', _onRealtimeCoursesUpdate);
     _debounce?.cancel();
+    _searchCtrl.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -689,51 +691,97 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
 
   Widget _buildCatalogView(bool isDark, Color cardBg, Color border, Color textPrimary, Color textMuted) {
     final list = _filteredCourses;
+    final modes = ['All', 'Hybrid', 'In-Person', 'Online'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Simple search and filter
+        // 1. Dedicated Search Bar
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
           decoration: BoxDecoration(
             color: cardBg,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: border),
           ),
           child: Row(
             children: [
+              Icon(Icons.search_rounded, size: 20, color: textMuted),
+              const SizedBox(width: 10),
               Expanded(
                 child: TextField(
-                  onChanged: _onSearchChanged,
-                  style: GoogleFonts.outfit(fontSize: 14, color: textPrimary),
+                  controller: _searchCtrl,
+                  onChanged: (v) {
+                    _onSearchChanged(v);
+                    setState(() {});
+                  },
+                  style: GoogleFonts.outfit(fontSize: 14.5, color: textPrimary),
                   decoration: InputDecoration(
-                    hintText: 'Search courses...',
-                    hintStyle: GoogleFonts.inter(fontSize: 13, color: textMuted),
-                    prefixIcon: Icon(Icons.search_rounded, size: 16, color: textMuted),
+                    hintText: 'Search training courses, topics...',
+                    hintStyle: GoogleFonts.inter(fontSize: 13.5, color: textMuted),
                     isDense: true,
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                 ),
               ),
-              DropdownButton<String>(
-                value: _selectedMode ?? 'All',
-                dropdownColor: cardBg,
-                style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: textPrimary),
-                underline: const SizedBox.shrink(),
-                items: const [
-                  DropdownMenuItem(value: 'All', child: Text('All')),
-                  DropdownMenuItem(value: 'Hybrid', child: Text('Hybrid')),
-                  DropdownMenuItem(value: 'In-Person', child: Text('In-Person')),
-                  DropdownMenuItem(value: 'Online', child: Text('Online')),
-                ],
-                onChanged: (v) => setState(() => _selectedMode = v == 'All' ? null : v),
-              ),
+              if (_searchCtrl.text.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  color: textMuted,
+                  onPressed: () {
+                    _searchCtrl.clear();
+                    _onSearchChanged('');
+                    setState(() {});
+                  },
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
+
+        // 2. Dedicated Filter Chips Row
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: modes.map((mode) {
+              final isSelected = (_selectedMode == null && mode == 'All') || (_selectedMode == mode);
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      _selectedMode = mode == 'All' ? null : mode;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: isSelected ? _kOrange : (isDark ? const Color(0xFF281710) : Colors.white),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected ? _kOrange : border,
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      mode == 'All' ? 'All Formats' : mode,
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                        color: isSelected ? Colors.white : textPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 14),
 
         if (_loading)
           ListView.separated(
