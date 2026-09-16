@@ -35,18 +35,11 @@ class InAppDocumentViewer extends StatefulWidget {
     final cleanUrl = url.trim();
     if (cleanUrl.isEmpty) return;
 
-    // Resolve relative URL to full backend URL if necessary
-    String resolvedUrl = cleanUrl;
-    if (!resolvedUrl.startsWith('http://') && !resolvedUrl.startsWith('https://')) {
-      final base = ApiService.baseUrl.endsWith('/')
-          ? ApiService.baseUrl.substring(0, ApiService.baseUrl.length - 1)
-          : ApiService.baseUrl;
-      final path = resolvedUrl.startsWith('/') ? resolvedUrl : '/$resolvedUrl';
-      resolvedUrl = '$base$path';
-    }
+    // Resolve relative URL to full backend URL using ApiService.resolveImageUrl
+    String resolvedUrl = ApiService.resolveImageUrl(cleanUrl);
 
-    // Attach auth token if hitting the CUBAG backend API to ensure access to protected documents/certificates
-    if (resolvedUrl.contains('/api/') || resolvedUrl.contains('/members/')) {
+    // Attach auth token if hitting protected backend endpoints (not static files)
+    if (!resolvedUrl.contains('/static/') && (resolvedUrl.contains('/api/') || resolvedUrl.contains('/members/'))) {
       try {
         final token = await SessionStorage.instance.getString('cubag_token');
         if (token != null && token.isNotEmpty && !resolvedUrl.contains('token=')) {

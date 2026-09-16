@@ -454,6 +454,10 @@ def serve_logo():
 
 @app.route('/static/uploads/<path:filename>')
 @app.route('/uploads/<path:filename>')
+@app.route('/api/v1/static/uploads/<path:filename>')
+@app.route('/api/static/uploads/<path:filename>')
+@app.route('/api/v1/uploads/<path:filename>')
+@app.route('/api/uploads/<path:filename>')
 def serve_uploads(filename):
     for base in [
         os.path.join(os.path.dirname(__file__), 'static', 'uploads'),
