@@ -189,7 +189,13 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
           });
           final res = await api.upload('/documents/upload', formData);
           if (res.statusCode != 200) {
-            throw Exception(res.data?['message']?.toString() ?? 'Upload failed');
+            String errorMsg = 'Upload failed';
+            if (res.data is Map && res.data['message'] != null) {
+              errorMsg = res.data['message'].toString();
+            } else if (res.data is String && (res.data as String).isNotEmpty) {
+              errorMsg = res.data.toString();
+            }
+            throw Exception(errorMsg);
           }
         }());
       }
@@ -201,7 +207,8 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
         _fetchRequirements();
       }
     } catch (e) {
-      if (mounted) _showSnack('Upload error. Please try again.', _kRed);
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      if (mounted) _showSnack('Upload error: $msg', _kRed);
     }
     if (mounted) setState(() => _uploading[key] = false);
   }

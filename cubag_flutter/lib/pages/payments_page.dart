@@ -727,7 +727,13 @@ class _PaymentsPageState extends State<PaymentsPage>
           );
 
           if (res.statusCode != 200) {
-            throw Exception(res.data?['message']?.toString() ?? 'Upload failed');
+            String errorMsg = 'Upload failed';
+            if (res.data is Map && res.data['message'] != null) {
+              errorMsg = res.data['message'].toString();
+            } else if (res.data is String && (res.data as String).isNotEmpty) {
+              errorMsg = res.data.toString();
+            }
+            throw Exception(errorMsg);
           }
         }());
       }
@@ -738,7 +744,8 @@ class _PaymentsPageState extends State<PaymentsPage>
       _showSnack('${docReq['label']} uploaded!', color: _kGreen);
       await _loadComplianceApplicationDetails(_complianceAppId!);
     } catch (e) {
-      if (mounted) _showSnack('Upload failed: $e', color: _kRed);
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      if (mounted) _showSnack('Upload failed: $msg', color: _kRed);
     } finally {
       if (mounted) setState(() {});
     }
