@@ -923,12 +923,9 @@ def upload_photo():
     """Upload profile photo to Supabase Storage and save URL in DB."""
     member_id = get_jwt_identity()
 
-    if 'photo' not in request.files:
-        return jsonify({'message': 'No photo provided'}), 400
-
-    file = request.files['photo']
+    file = request.files.get('photo') or request.files.get('file') or request.files.get('image')
     if not file or not file.filename:
-        return jsonify({'message': 'No file selected'}), 400
+        return jsonify({'message': 'No photo provided'}), 400
 
     ext = file.filename.rsplit('.', 1)[-1].lower()
     if ext not in ('jpg', 'jpeg', 'png', 'webp'):

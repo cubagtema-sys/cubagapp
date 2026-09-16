@@ -320,9 +320,9 @@ def get_requirements():
 def upload_document():
     """Upload a file for a specific requirement key."""
     member_id   = get_jwt_identity()
-    requirement = request.form.get('requirement', '').strip()
+    requirement = (request.form.get('requirement') or request.form.get('document_key') or '').strip()
     label       = request.form.get('label', '').strip()
-    file        = request.files.get('file')
+    file        = request.files.get('file') or request.files.get('photo') or request.files.get('image')
 
     if not requirement:
         return jsonify({'message': 'Requirement key is required'}), 400

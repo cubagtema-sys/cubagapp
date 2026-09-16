@@ -146,8 +146,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
       final formData = FormData.fromMap({
         'photo': mpFile,
-        'image': mpFile,
-        'file': mpFile,
       });
       final res = await api.upload('/auth/upload-photo', formData);
 
