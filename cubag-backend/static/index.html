@@ -35,7 +35,7 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="CUBAG Enterprise Mobility Platform">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -58,6 +58,12 @@
       background-color: #f8fafc;
       margin: 0;
       padding: 0;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    flt-glass-pane {
+      user-select: text !important;
+      -webkit-user-select: text !important;
     }
     @media (prefers-color-scheme: dark) {
       html, body {

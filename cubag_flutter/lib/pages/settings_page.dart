@@ -3,11 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import '../components/app_layout.dart';
+import '../components/in_app_legal_viewer.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
-import '../services/theme_service.dart';
 import '../services/biometric_service.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -511,14 +510,11 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 trailing: const Icon(
-                  Icons.open_in_new_rounded,
+                  Icons.chevron_right_rounded,
                   color: Color(0xFF94a3b8),
-                  size: 18,
+                  size: 20,
                 ),
-                onTap: () async {
-                  final uri = Uri.parse('https://cubag-web-app.onrender.com/#/privacy');
-                  if (await canLaunchUrl(uri)) await launchUrl(uri);
-                },
+                onTap: () => InAppLegalViewer.showPrivacyPolicy(context),
               ),
               const Divider(height: 1, color: Color(0xFFf1f5f9)),
               ListTile(
@@ -548,14 +544,11 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 trailing: const Icon(
-                  Icons.open_in_new_rounded,
+                  Icons.chevron_right_rounded,
                   color: Color(0xFF94a3b8),
-                  size: 18,
+                  size: 20,
                 ),
-                onTap: () async {
-                  final uri = Uri.parse('https://cubag-web-app.onrender.com/#/terms');
-                  if (await canLaunchUrl(uri)) await launchUrl(uri);
-                },
+                onTap: () => InAppLegalViewer.showTermsOfService(context),
               ),
             ],
           ),
@@ -815,7 +808,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                           )
                         : Text(
-                            'Update Password',
+                            'Update',
                             style: GoogleFonts.outfit(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,

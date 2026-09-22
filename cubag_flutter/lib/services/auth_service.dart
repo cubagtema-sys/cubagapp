@@ -34,7 +34,9 @@ class AuthService extends ChangeNotifier {
 
   bool get isAuthenticated => _isAuthenticated;
   String? get userRole => _userRole;
-  String? get userPhotoUrl => _userPhotoUrl;
+  String? get userPhotoUrl => _userPhotoUrl != null && _userPhotoUrl!.isNotEmpty
+      ? ApiService.resolveImageUrl(_userPhotoUrl)
+      : null;
   String? get userName => _userName;
   String? get userEmail => _userEmail;
   String? get userCompany => _userCompany;

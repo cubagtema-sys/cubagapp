@@ -467,7 +467,7 @@ def admin_required(fn):
                 log_backend_error('Decorator admin_required Error', f"Error: {str(e)}\nTraceback:\n{tb}")
             except Exception as log_err:
                 logger.error(f"Failed to log decorator error to DB: {log_err}")
-            return jsonify({'message': str(e), 'traceback': tb}), 500
+            return jsonify({'message': 'An internal error occurred'}), 500
         finally:
             conn.close()
         return fn(*args, **kwargs)
@@ -598,4 +598,17 @@ def eval_good_standing(member_dict, cursor):
 
     is_good = len(reasons) == 0
     return is_good, reasons
+
+
+def emit_to_member(socketio, member_id, event: str, data: dict = None):
+    """Send a Socket.IO event only to the member room and admins (not globally)."""
+    if member_id is None:
+        return
+    payload = dict(data or {})
+    payload.setdefault('member_id', member_id)
+    try:
+        socketio.emit(event, payload, room=f'member_{member_id}')
+        socketio.emit(event, payload, room='admins')
+    except Exception as e:
+        logger.debug('[emit_to_member] %s failed: %s', event, e)
 

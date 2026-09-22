@@ -85,24 +85,35 @@ class _InAppDocumentViewerState extends State<InAppDocumentViewer> {
 
   void _checkFileType() {
     final lower = widget.url.toLowerCase().split('?').first;
-    _isImage = lower.endsWith('.jpg') ||
-        lower.endsWith('.jpeg') ||
-        lower.endsWith('.png') ||
-        lower.endsWith('.webp') ||
-        lower.endsWith('.gif') ||
-        lower.endsWith('.bmp') ||
-        lower.endsWith('.svg');
+    final titleLower = widget.title.toLowerCase();
+    final subLower = (widget.subtitle ?? '').toLowerCase();
+
+    bool isImg(String s) =>
+        s.endsWith('.jpg') ||
+        s.endsWith('.jpeg') ||
+        s.endsWith('.png') ||
+        s.endsWith('.webp') ||
+        s.endsWith('.gif') ||
+        s.endsWith('.bmp') ||
+        s.endsWith('.svg');
+
+    _isImage = isImg(lower) || isImg(titleLower) || isImg(subLower);
   }
 
   void _initWebView() {
     String targetUrl = widget.url;
 
     // On Android, WebViews do not have built-in native PDF rendering like iOS WKWebView does.
-    // If the file is a PDF on Android, load it via Google Docs Viewer for seamless in-app preview.
+    // If the file is a PDF on Android and hosted on a public server, load it via Google Docs Viewer.
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       final clean = widget.url.toLowerCase().split('?').first;
-      if (clean.endsWith('.pdf') || widget.url.contains('certificate')) {
-        targetUrl = 'https://docs.google.com/gview?embedded=true&url=${Uri.encodeComponent(widget.url)}';
+      final isLocal = widget.url.contains('192.168.') ||
+          widget.url.contains('10.0.2.2') ||
+          widget.url.contains('127.0.0.1') ||
+          widget.url.contains('localhost');
+      if (!isLocal && (clean.endsWith('.pdf') || widget.url.contains('certificate'))) {
+        targetUrl =
+            'https://docs.google.com/gview?embedded=true&url=${Uri.encodeComponent(widget.url)}';
       }
     }
 

@@ -159,7 +159,10 @@ def init_db():
                 ADD COLUMN IF NOT EXISTS registration_fee_paid BOOLEAN DEFAULT FALSE,
                 ADD COLUMN IF NOT EXISTS application_fee_paid BOOLEAN DEFAULT FALSE,
                 ADD COLUMN IF NOT EXISTS package_fee_paid BOOLEAN DEFAULT FALSE,
-                ADD COLUMN IF NOT EXISTS good_standing BOOLEAN DEFAULT TRUE;
+                ADD COLUMN IF NOT EXISTS good_standing BOOLEAN DEFAULT TRUE,
+                ADD COLUMN IF NOT EXISTS renewal_fee_amount NUMERIC(10,2),
+                ADD COLUMN IF NOT EXISTS renewal_fee_breakdown TEXT,
+                ADD COLUMN IF NOT EXISTS renewal_fee_title TEXT;
             """)
 
             # OTP Codes table for pre-registration verification
@@ -297,9 +300,20 @@ def init_db():
                 )
             """)
 
-            # Ensure payment_ref column exists on older databases
+            # Ensure payment_ref and bank transfer columns exist on databases
             cursor.execute("""
                 ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_ref VARCHAR(255);
+                ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50) DEFAULT 'momo';
+                ALTER TABLE payments ADD COLUMN IF NOT EXISTS receipt_url TEXT;
+                ALTER TABLE payments ADD COLUMN IF NOT EXISTS bank_name VARCHAR(100);
+                ALTER TABLE payments ADD COLUMN IF NOT EXISTS account_name VARCHAR(100);
+                ALTER TABLE payments ADD COLUMN IF NOT EXISTS account_number VARCHAR(100);
+                ALTER TABLE payments ADD COLUMN IF NOT EXISTS notes TEXT;
+                ALTER TABLE payments ADD COLUMN IF NOT EXISTS verified_by INT;
+                ALTER TABLE payments ADD COLUMN IF NOT EXISTS verified_at TIMESTAMP;
+                ALTER TABLE payments ADD COLUMN IF NOT EXISTS is_installment BOOLEAN DEFAULT FALSE;
+                ALTER TABLE payments ADD COLUMN IF NOT EXISTS installment_number INT DEFAULT 1;
+                ALTER TABLE payments ADD COLUMN IF NOT EXISTS application_id INT;
             """)
 
             # Surveys
@@ -381,6 +395,15 @@ def init_db():
                     created_at              TIMESTAMP DEFAULT NOW(),
                     updated_at              TIMESTAMP DEFAULT NOW()
                 )
+            """)
+            cursor.execute("""
+                ALTER TABLE compliance_applications
+                ADD COLUMN IF NOT EXISTS fee_breakdown TEXT,
+                ADD COLUMN IF NOT EXISTS payment_deadline DATE,
+                ADD COLUMN IF NOT EXISTS bill_title TEXT,
+                ADD COLUMN IF NOT EXISTS amount_paid NUMERIC(10,2) DEFAULT 0.00,
+                ADD COLUMN IF NOT EXISTS allow_installments BOOLEAN DEFAULT TRUE,
+                ADD COLUMN IF NOT EXISTS min_installment_amount NUMERIC(10,2) DEFAULT 0.00;
             """)
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS compliance_documents (
@@ -575,7 +598,7 @@ def init_db():
                 default_ports = [
                     ('Tema Port', 'TMA'),
                     ('Takoradi Port', 'TKD'),
-                    ('Kotoka International Airport (KIA)', 'ACC'),
+                    ('Accra International Airport (KIA)', 'ACC'),
                     ('Elubo Border Port', 'ELB'),
                     ('Aflao Border Port', 'AFL'),
                     ('Paga Border Port', 'PAG')
@@ -661,7 +684,7 @@ def init_db():
                 default_bulletins = [
                     ('Tema Port Terminal', 'TMP', 'Operational', 'Berth 3 & MPS Terminal 3 fully operational. Digital gate clearance active.', '#2E7D32'),
                     ('Takoradi Port Terminal', 'TKD', 'Operational', 'Dry bulk terminal expansion active. Expedited cocoa export loading in effect.', '#2E7D32'),
-                    ('Kotoka Int. Airport', 'KIA', 'Operational', 'Air cargo terminal customs desk operating 24/7. New scanner equipment deployed.', '#2E7D32'),
+                    ('Accra Int. Airport', 'KIA', 'Operational', 'Air cargo terminal customs desk operating 24/7. New scanner equipment deployed.', '#2E7D32'),
                     ('Buipe Inland Port', 'BUP', 'Normal', 'Volta lake transport barge operations running on schedule.', '#2E7D32')
                 ]
                 for b_port, b_code, b_status, b_notice, b_color in default_bulletins:

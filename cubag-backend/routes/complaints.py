@@ -235,8 +235,11 @@ Customs Brokers Association of Ghana
             msg.attach(MIMEText(body_text, 'plain'))
             msg.attach(MIMEText(html, 'html'))
 
-            server = smtplib.SMTP(smtp_host, smtp_port)
-            server.starttls()
+            if smtp_port == 465 or os.getenv('SMTP_SECURE', '').lower() == 'true':
+                server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=10)
+            else:
+                server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
+                server.starttls()
             if smtp_pass:
                 server.login(sender_email, smtp_pass)
             server.sendmail(sender_email, to_email, msg.as_string())

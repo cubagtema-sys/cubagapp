@@ -9,6 +9,7 @@ from config.db import get_db
 from routes.admin import log_admin_action
 from utils import admin_required, sub_admin_required, eval_good_standing
 from config.cache import cache
+from config.rate_limit import rate_limit
 
 # PDF Generation imports
 try:
@@ -35,7 +36,7 @@ def get_member_directory():
         from utils import eval_good_standing
         with conn.cursor() as cursor:
             cursor.execute("""
-                SELECT id, name, email, phone, company, member_type,
+                SELECT id, name, company, member_type,
                        COALESCE(primary_port, port_of_operation, 'Tema Port') as port_of_operation,
                        license_number, star_rating, compliance_score, role,
                        status, profile_photo, good_standing
@@ -67,11 +68,10 @@ def get_public_members():
 
         # Public directory search strictly requires Good Standing & active status and excludes admins/staff
         query = """
-            SELECT id, name, company, email, phone, member_type, role,
+            SELECT id, name, company, member_type, role, email, phone, digital_address, location,
                    COALESCE(primary_port, port_of_operation, 'Tema Port') as primary_port,
                    COALESCE(membership_number, 'CUBAG-2026-00' || id) as membership_number,
                    star_rating, compliance_score, profile_photo,
-                   location, digital_address,
                    COALESCE(good_standing, FALSE) as good_standing,
                    status
             FROM members 
@@ -233,6 +233,7 @@ def get_public_fee_schedules():
 
 
 @members_bp.route('/public/guest-service', methods=['POST'])
+@rate_limit('guest_service', max_requests=8, window_seconds=300)
 def submit_guest_service_request():
     """
     Public endpoint — no auth required.
@@ -315,7 +316,6 @@ def request_hardcopy_certificate():
     address = data.get('delivery_address', '').strip()
     phone = data.get('contact_phone', '').strip()
     method = data.get('delivery_method', 'courier')
-    fee = float(data.get('fee_amount', 150.00))
 
     if not address or not phone:
         return jsonify({'message': 'Delivery address and contact phone are required.'}), 400
@@ -323,6 +323,8 @@ def request_hardcopy_certificate():
     conn = get_db()
     try:
         with conn.cursor() as cursor:
+            from config.payment_validation import get_hardcopy_certificate_fee
+            fee = get_hardcopy_certificate_fee(cursor)
             cursor.execute("""
                 INSERT INTO hardcopy_certificate_requests 
                 (member_id, certificate_type, fee_amount, delivery_method, delivery_address, contact_phone, payment_status, processing_status, collection_status)
@@ -407,13 +409,16 @@ def get_all_members_admin():
                        m.port_of_operation, m.license_number, m.agency_code,
                        m.location, m.digital_address, m.tin, m.status, m.created_at,
                        COALESCE(m.payment_ref, p.payment_ref) as payment_ref,
+                       p.payment_id, p.receipt_url, p.payment_method, p.payment_status,
+                       p.payment_amount, p.bank_name, p.notes, p.payment_date,
                        m.fcm_token, m.license_expiry_date,
                        m.compliance_score, m.star_rating, m.manual_review_score
                 FROM members m
                 LEFT JOIN LATERAL (
-                    SELECT payment_ref
+                    SELECT id as payment_id, payment_ref, receipt_url, payment_method, status as payment_status,
+                           amount as payment_amount, bank_name, notes, created_at as payment_date
                     FROM payments
-                    WHERE member_id = m.id AND description ILIKE '%%License Renewal%%'
+                    WHERE member_id = m.id
                     ORDER BY created_at DESC
                     LIMIT 1
                 ) p ON TRUE
@@ -426,6 +431,10 @@ def get_all_members_admin():
             result = []
             for m in members:
                 d = dict(m)
+                if d.get('payment_amount') is not None:
+                    d['payment_amount'] = float(d['payment_amount'])
+                if d.get('payment_date'):
+                    d['payment_date'] = d['payment_date'].isoformat() if hasattr(d['payment_date'], 'isoformat') else str(d['payment_date'])
                 score = d.get('compliance_score') if d.get('compliance_score') is not None else 100
                 stars = float(d.get('star_rating')) if d.get('star_rating') is not None else 5.0
                 manual = d.get('manual_review_score') if d.get('manual_review_score') is not None else 10
@@ -515,6 +524,19 @@ def submit_renewal():
                         'renewal_opens': str(renewal_open_date),
                         'error_code': 'LICENSE_ACTIVE',
                     }), 200
+
+            cursor.execute(
+                """
+                SELECT id FROM payments
+                WHERE member_id = %s AND payment_ref = %s
+                  AND LOWER(status) IN ('paid', 'completed', 'success', 'successful')
+                LIMIT 1
+                """,
+                (member_id, payment_ref),
+            )
+            paid = cursor.fetchone()
+            if not paid:
+                return jsonify({'message': 'Payment reference is not a confirmed payment for this account.'}), 400
 
             cursor.execute("UPDATE members SET status = 'pending', payment_ref = %s WHERE id = %s", (payment_ref, member_id))
             conn.commit()
@@ -621,7 +643,7 @@ def update_member_status(member_id):
         cache.delete(f'me_{member_id}')
 
         try:
-            from config.socket import socketio
+            from socket_instance import socketio
             socketio.emit('member_updated', {'member_id': member_id, 'status': new_status})
             socketio.emit('fees_updated', {'member_id': member_id})
             socketio.emit('tasks_updated', {'member_id': member_id})
@@ -889,7 +911,28 @@ def get_member(member_id):
                 result['manual_review_score']  = rating_data['manual_review_score']
                 result['breakdown']            = rating_data.get('breakdown', {})
                 result['rating_history']       = history
-                
+
+                # Fetch member payments (including bank deposit slips)
+                cursor.execute("""
+                    SELECT p.id, p.id as tx_id, p.amount, p.description, p.status,
+                           COALESCE(p.payment_method, 'bank') as payment_method,
+                           p.payment_ref, p.receipt_url, p.bank_name, p.account_name,
+                           p.account_number, p.notes, p.created_at, p.paid_at, p.verified_at
+                    FROM payments p
+                    WHERE p.member_id = %s
+                    ORDER BY p.created_at DESC
+                """, (member_id,))
+                pay_rows = cursor.fetchall()
+                payments_list = []
+                for pr in pay_rows:
+                    item = dict(pr)
+                    if item.get('amount') is not None:
+                        item['amount'] = float(item['amount'])
+                    if item.get('created_at'):
+                        item['date'] = item['created_at'].isoformat() if hasattr(item['created_at'], 'isoformat') else str(item['created_at'])
+                    payments_list.append(item)
+                result['payments'] = payments_list
+
                 # Commit the rating updates made by calculate_and_update_member_rating
                 conn.commit()
                 
@@ -1015,93 +1058,95 @@ def generate_certificate_pdf(member_id):
         c.rect(0, 0, width, height, fill=1, stroke=0)
         
         # 2. Executive Multi-Layer Border
-        margin = 0.4 * inch
+        margin = 0.38 * inch
         # Outer Orange Frame
-        c.setStrokeColor(colors.HexColor("#FF5000"))
-        c.setLineWidth(4)
+        c.setStrokeColor(colors.HexColor("#ea580c"))
+        c.setLineWidth(2.5)
         c.rect(margin, margin, width - 2*margin, height - 2*margin)
         
         # Inner Metallic Gold Line
         c.setStrokeColor(colors.HexColor("#d4af37"))
-        c.setLineWidth(1.5)
+        c.setLineWidth(1.2)
         c.rect(margin + 6, margin + 6, width - 2*margin - 12, height - 2*margin - 12)
-
-        # Thin Accent Navy Line
-        c.setStrokeColor(colors.HexColor("#1e293b"))
-        c.setLineWidth(0.5)
-        c.rect(margin + 10, margin + 10, width - 2*margin - 20, height - 2*margin - 20)
         
-        # Corner Flourish Accents
+        # Corner Flourish Accents (Concentric Brass Rivets)
         for (cx, cy) in [
-            (margin + 14, margin + 14),
-            (width - margin - 14, margin + 14),
-            (margin + 14, height - margin - 14),
-            (width - margin - 14, height - margin - 14)
+            (margin + 12, margin + 12),
+            (width - margin - 12, margin + 12),
+            (margin + 12, height - margin - 12),
+            (width - margin - 12, height - margin - 12)
         ]:
             c.setStrokeColor(colors.HexColor("#d4af37"))
-            c.setLineWidth(1.5)
-            c.circle(cx, cy, 4, fill=0, stroke=1)
+            c.setLineWidth(1.2)
+            c.circle(cx, cy, 4.5, fill=0, stroke=1)
+            c.circle(cx, cy, 1.8, fill=0, stroke=1)
         
         # 3. Watermark Emblem
         c.saveState()
         c.translate(width/2.0, height/2.0)
-        c.rotate(25)
-        c.setFont("Helvetica-Bold", 130)
+        c.rotate(-12)
+        c.setFont("Helvetica-Bold", 140)
         c.setFillColor(colors.Color(0.83, 0.68, 0.21, alpha=0.035)) # Metallic Gold Faint
-        c.drawCentredString(0, -35, "CUBAG")
+        c.drawCentredString(0, -35, "cubag")
         c.restoreState()
         
         # Draw Brand Logo Image at top center (absolute path, no mask for JPEG)
         logo_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'static', 'logo.jpeg'))
         if not os.path.exists(logo_path):
-            # Fallback: look relative to cwd
             logo_path = os.path.abspath(os.path.join('static', 'logo.jpeg'))
         if os.path.exists(logo_path):
-            logo_w = 52
-            logo_h = 52
-            c.drawImage(logo_path, width / 2.0 - logo_w / 2.0, height - 1.1 * inch, width=logo_w, height=logo_h)
+            logo_w = 54
+            logo_h = 54
+            c.drawImage(logo_path, width / 2.0 - logo_w / 2.0, height - 1.25 * inch, width=logo_w, height=logo_h)
         
         # 4. Header: Organization & Title — CUBAG in brand orange
-        c.setFillColor(colors.HexColor("#FF5000"))
-        c.setFont("Helvetica-Bold", 38)
-        c.drawCentredString(width/2.0, height - 1.6 * inch, "CUBAG")
+        c.setFillColor(colors.HexColor("#ea580c"))
+        c.setFont("Helvetica-Bold", 34)
+        c.drawCentredString(width/2.0, height - 1.72 * inch, "CUBAG")
         
-        c.setFillColor(colors.HexColor("#64748b"))
-        c.setFont("Helvetica-Bold", 11)
-        c.drawCentredString(width/2.0, height - 1.82 * inch, "CUSTOMS BROKERS ASSOCIATION OF GHANA")
+        c.setFillColor(colors.HexColor("#1e3a8a"))
+        c.setFont("Helvetica-Bold", 10.5)
+        c.drawCentredString(width/2.0, height - 1.94 * inch, "CUSTOMS BROKERS ASSOCIATION OF GHANA")
         
-        # Decorative Gold Line
-        c.setStrokeColor(colors.HexColor("#d4af37"))
+        # Decorative Divider Line
+        c.setStrokeColor(colors.HexColor("#cbd5e1"))
         c.setLineWidth(1)
-        c.line(width/2.0 - 140, height - 1.98 * inch, width/2.0 + 140, height - 1.98 * inch)
+        c.line(width/2.0 - 140, height - 2.08 * inch, width/2.0 + 140, height - 2.08 * inch)
         
         # Main Certificate Title
-        c.setFillColor(colors.HexColor("#1e293b"))
-        c.setFont("Helvetica-Bold", 24)
-        c.drawCentredString(width/2.0, height - 2.45 * inch, "CERTIFICATE OF LICENSURE & STANDING")
+        c.setFillColor(colors.HexColor("#0f172a"))
+        c.setFont("Helvetica-Bold", 22)
+        c.drawCentredString(width/2.0, height - 2.52 * inch, "CERTIFICATE OF LICENSURE & STANDING")
         
         # 5. Body Text & Recipient Details
-        c.setFont("Helvetica-Oblique", 13)
-        c.setFillColor(colors.HexColor("#475569"))
+        c.setFont("Times-Italic", 13.5)
+        c.setFillColor(colors.HexColor("#64748b"))
         c.drawCentredString(width/2.0, height - 2.95 * inch, "This is to officially certify that")
         
-        company_name = (member.get('company') or member.get('name') or 'Member Organization').strip()
-        c.setFont("Helvetica-Bold", 24)
+        company_name = (member.get('company') or member.get('name') or 'HART LOGISTICS').strip().upper()
+        c.setFont("Helvetica-Bold", 26)
         c.setFillColor(colors.HexColor("#0f172a"))
-        c.drawCentredString(width/2.0, height - 3.45 * inch, company_name)
+        c.drawCentredString(width/2.0, height - 3.42 * inch, company_name)
         
-        c.setFont("Helvetica-Oblique", 13)
+        rep_name = (member.get('name') or '').strip().upper()
+        c.setFont("Times-Italic", 13)
         c.setFillColor(colors.HexColor("#64748b"))
-        c.drawCentredString(width/2.0, height - 3.82 * inch, f"represented by  {member.get('name', '')}")
+        c.drawCentredString(width/2.0, height - 3.78 * inch, f"represented by   {rep_name}")
         
-        c.setFont("Helvetica", 13)
+        raw_scale = member.get('member_scale') or member.get('member_type') or 'Individual Broker'
+        if 'broker' not in raw_scale.lower():
+            type_display = f"{raw_scale.title()} Broker"
+        else:
+            type_display = raw_scale.title()
+
+        c.setFont("Helvetica", 12.5)
         c.setFillColor(colors.HexColor("#1e293b"))
-        c.drawCentredString(width/2.0, height - 4.38 * inch, f"is a duly registered, licensed, and active {member.get('member_type', 'Member')} of CUBAG")
+        c.drawCentredString(width/2.0, height - 4.30 * inch, f"is a duly registered, licensed, and active {type_display} of CUBAG")
         
         # Port & ID Container Box
-        box_y = height - 5.0 * inch
-        box_w = 480
-        box_h = 30
+        box_y = height - 4.90 * inch
+        box_w = 460
+        box_h = 28
         box_x = width/2.0 - box_w/2.0
         c.setFillColor(colors.HexColor("#f8fafc"))
         c.setStrokeColor(colors.HexColor("#e2e8f0"))
@@ -1109,48 +1154,48 @@ def generate_certificate_pdf(member_id):
         c.roundRect(box_x, box_y, box_w, box_h, 6, fill=1, stroke=1)
         
         c.setFont("Helvetica-Bold", 10)
-        c.setFillColor(colors.HexColor("#334155"))
-        port_txt = member.get('port_of_operation') or 'All Ports of Ghana'
+        c.setFillColor(colors.HexColor("#1e293b"))
+        port_txt = member.get('port_of_operation') or 'KIA Air Cargo'
         lic_num = member.get('license_number') or 'Pending'
-        c.drawCentredString(width/2.0, box_y + 10, f"License No:  {lic_num}    |    Port of Operation:  {port_txt}")
+        c.drawCentredString(width/2.0, box_y + 9, f"License No:  {lic_num}    |    Port of Operation:  {port_txt}")
         
         # 6. Validity Date Footer Line
         expiry = member.get('license_expiry_date')
         expiry_str = expiry.strftime("%d %B %Y") if expiry else "Active Standing"
-        c.setFont("Helvetica-Bold", 10)
-        c.setFillColor(colors.HexColor("#64748b"))
-        c.drawCentredString(width/2.0, height - 5.4 * inch, f"Valid Until: {expiry_str}")
+        c.setFont("Helvetica-Bold", 10.5)
+        c.setFillColor(colors.HexColor("#475569"))
+        c.drawCentredString(width/2.0, height - 5.30 * inch, f"Valid Until: {expiry_str}")
         
         # 7. Executive Signatures (Left & Right)
-        sig_y = margin + 0.9 * inch
+        sig_y = margin + 0.85 * inch
         
         # Left Signature (President)
-        c.setFont("Times-BoldItalic", 19)
+        c.setFont("Times-BoldItalic", 20)
         c.setFillColor(colors.HexColor("#1e3a8a")) # Deep Royal Navy Blue Ink
-        c.drawCentredString(margin + 2.2*inch, sig_y + 9, "Alhaji A. R. Busia")
-        c.setStrokeColor(colors.HexColor("#475569"))
-        c.setLineWidth(1)
-        c.line(margin + 1.2*inch, sig_y, margin + 3.2*inch, sig_y)
-        c.setFont("Helvetica-Bold", 9)
-        c.setFillColor(colors.HexColor("#334155"))
-        c.drawCentredString(margin + 2.2*inch, sig_y - 13, "President")
-        c.setFont("Helvetica", 8)
-        c.setFillColor(colors.HexColor("#94a3b8"))
-        c.drawCentredString(margin + 2.2*inch, sig_y - 23, "CUBAG Executive Council")
+        c.drawCentredString(margin + 2.0*inch, sig_y + 11, "Alhaji A. R. Busia")
+        c.setStrokeColor(colors.HexColor("#1e3a8a"))
+        c.setLineWidth(1.2)
+        c.line(margin + 1.1*inch, sig_y + 4, margin + 2.9*inch, sig_y + 4)
+        c.setFont("Helvetica-Bold", 10)
+        c.setFillColor(colors.HexColor("#0f172a"))
+        c.drawCentredString(margin + 2.0*inch, sig_y - 9, "President")
+        c.setFont("Helvetica", 8.5)
+        c.setFillColor(colors.HexColor("#64748b"))
+        c.drawCentredString(margin + 2.0*inch, sig_y - 20, "CUBAG Executive Council")
         
         # Right Signature (Secretary General)
-        c.setFont("Times-BoldItalic", 19)
+        c.setFont("Times-BoldItalic", 20)
         c.setFillColor(colors.HexColor("#1e3a8a"))
-        c.drawCentredString(width - margin - 2.2*inch, sig_y + 9, "Kwame E. Mensah")
-        c.setStrokeColor(colors.HexColor("#475569"))
-        c.setLineWidth(1)
-        c.line(width - margin - 3.2*inch, sig_y, width - margin - 1.2*inch, sig_y)
-        c.setFont("Helvetica-Bold", 9)
-        c.setFillColor(colors.HexColor("#334155"))
-        c.drawCentredString(width - margin - 2.2*inch, sig_y - 13, "Secretary General")
-        c.setFont("Helvetica", 8)
-        c.setFillColor(colors.HexColor("#94a3b8"))
-        c.drawCentredString(width - margin - 2.2*inch, sig_y - 23, "CUBAG Executive Secretariat")
+        c.drawCentredString(width - margin - 2.0*inch, sig_y + 11, "Kwame E. Mensah")
+        c.setStrokeColor(colors.HexColor("#1e3a8a"))
+        c.setLineWidth(1.2)
+        c.line(width - margin - 2.9*inch, sig_y + 4, width - margin - 1.1*inch, sig_y + 4)
+        c.setFont("Helvetica-Bold", 10)
+        c.setFillColor(colors.HexColor("#0f172a"))
+        c.drawCentredString(width - margin - 2.0*inch, sig_y - 9, "Secretary General")
+        c.setFont("Helvetica", 8.5)
+        c.setFillColor(colors.HexColor("#64748b"))
+        c.drawCentredString(width - margin - 2.0*inch, sig_y - 20, "CUBAG Executive Secretariat")
         
         # 8. Premium Official Gold Seal (Centered at Bottom)
         seal_x = width/2.0

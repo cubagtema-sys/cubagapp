@@ -165,15 +165,6 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             },
                           ),
                           ChoiceChip(
-                            label: Text('Corporate: Renewal Dues', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold)),
-                            selected: section == 'renewal',
-                            selectedColor: _kBrown,
-                            labelStyle: TextStyle(color: section == 'renewal' ? Colors.white : textCol),
-                            onSelected: (val) {
-                              if (val) setDlgState(() => section = 'renewal');
-                            },
-                          ),
-                          ChoiceChip(
                             label: Text('Associate', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold)),
                             selected: section == 'associate',
                             selectedColor: const Color(0xFFD97706),
@@ -446,29 +437,31 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
     final textMuted = isDark ? Colors.white70 : const Color(0xFF475569);
 
     // Grouping by categories:
-    // 1. Corporate / Freight Forwarders (Includes both new_membership and renewal sections)
+    // 1. Corporate / Freight Forwarders (New onboarding membership packages)
     final corporateFees = _fees.where((f) {
       final sec = f['section']?.toString() ?? '';
       final id = f['id']?.toString() ?? '';
-      return (sec == 'new_membership' || sec == 'renewal' || id.startsWith('new_') || id.startsWith('renewal_') || id.startsWith('reg_')) &&
+      return (sec == 'new_membership' || id.startsWith('new_') || id.startsWith('reg_')) &&
           !id.startsWith('associate_') &&
           !id.startsWith('licentiate_') &&
           sec != 'associate' &&
-          sec != 'licentiate';
+          sec != 'licentiate' &&
+          sec != 'renewal' &&
+          !id.startsWith('renewal_');
     }).toList();
 
     // 2. Associate Membership
     final associateFees = _fees.where((f) {
       final sec = f['section']?.toString() ?? '';
       final id = f['id']?.toString() ?? '';
-      return sec == 'associate' || id.startsWith('associate_');
+      return (sec == 'associate' || id.startsWith('associate_')) && sec != 'renewal' && !id.startsWith('renewal_');
     }).toList();
 
     // 3. Licentiate Membership
     final licentiateFees = _fees.where((f) {
       final sec = f['section']?.toString() ?? '';
       final id = f['id']?.toString() ?? '';
-      return sec == 'licentiate' || id.startsWith('licentiate_');
+      return (sec == 'licentiate' || id.startsWith('licentiate_')) && sec != 'renewal' && !id.startsWith('renewal_');
     }).toList();
 
     // Determine current display list based on active category & sub-filter
@@ -478,12 +471,10 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
 
     if (_selectedCategory == 'corporate') {
       activeThemeColor = _kOrange;
-      activeTitle = 'Corporate Membership Tariffs (SME & Large Corporate)';
+      activeTitle = 'Corporate New Membership Tariffs (SME & Large Corporate)';
 
       if (_subFilter == 'new_packages') {
         activeList = corporateFees.where((f) => f['is_summary'] == true && (f['section'] == 'new_membership' || f['id'].toString().startsWith('new_'))).toList();
-      } else if (_subFilter == 'renewal_packages') {
-        activeList = corporateFees.where((f) => f['is_summary'] == true && (f['section'] == 'renewal' || f['id'].toString().startsWith('renewal_'))).toList();
       } else if (_subFilter == 'sme') {
         activeList = corporateFees.where((f) {
           final id = (f['id'] ?? '').toString().toLowerCase();
@@ -504,27 +495,15 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
     } else if (_selectedCategory == 'associate') {
       activeThemeColor = const Color(0xFFD97706);
       activeTitle = 'Associate Membership Tariffs';
-      if (_subFilter == 'onetime') {
-        activeList = associateFees.where((f) => (f['frequency'] ?? '').toString().toLowerCase().contains('one')).toList();
-      } else if (_subFilter == 'annual') {
-        activeList = associateFees.where((f) => (f['frequency'] ?? '').toString().toLowerCase().contains('annual')).toList();
-      } else {
-        activeList = associateFees;
-      }
+      activeList = associateFees;
     } else if (_selectedCategory == 'licentiate') {
       activeThemeColor = const Color(0xFF6B3E26);
       activeTitle = 'Licentiate Membership Tariffs (Individual)';
-      if (_subFilter == 'onetime') {
-        activeList = licentiateFees.where((f) => (f['frequency'] ?? '').toString().toLowerCase().contains('one')).toList();
-      } else if (_subFilter == 'annual') {
-        activeList = licentiateFees.where((f) => (f['frequency'] ?? '').toString().toLowerCase().contains('annual')).toList();
-      } else {
-        activeList = licentiateFees;
-      }
+      activeList = licentiateFees;
     } else {
       activeThemeColor = _kPurple;
-      activeTitle = 'Master Fee Schedule (All Categories)';
-      activeList = _fees;
+      activeTitle = 'Master Fee Schedule (New Onboarding)';
+      activeList = _fees.where((f) => f['section'] != 'renewal' && !f['id'].toString().startsWith('renewal_')).toList();
     }
 
     final filteredDisplayList = _filterList(activeList);
@@ -541,7 +520,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
             // ── TOP EXECUTIVE HEADER ─────────────────────────────────────────
             AdminHeader(
               title: 'Platform Fees & Tariff Schedule',
-              subtitle: 'Configure entrance packages, renewal dues, and operational tariffs for Corporate (SME & Large), Associate, and Licentiate categories.',
+              subtitle: 'Configure New Member Registration Fees & Onboarding Entrance Tariffs for Corporate (SME & Large), Associate, and Licentiate categories.',
               actions: [
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
@@ -560,6 +539,47 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                   ),
                 ),
               ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // ── DYNAMIC RENEWAL BILLING NOTICE ───────────────────────────────
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: _kBlue.withAlpha(20),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _kBlue.withAlpha(80), width: 1.2),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, color: _kBlue, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        style: GoogleFonts.inter(fontSize: 13, color: isDark ? Colors.white70 : const Color(0xFF334155)),
+                        children: [
+                          const TextSpan(
+                            text: 'Annual License Renewals: ',
+                            style: TextStyle(fontWeight: FontWeight.bold, color: _kBlue),
+                          ),
+                          const TextSpan(
+                            text: 'Renewal bills are now customized and generated dynamically based on document vetting per client under the ',
+                          ),
+                          TextSpan(
+                            text: 'Compliance Centre (#/admin/compliance)',
+                            style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                          ),
+                          const TextSpan(
+                            text: '. This page manages New Registration & Entrance Package Tariffs.',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
 
             if (_message.isNotEmpty) ...[
@@ -607,7 +627,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                     _buildCategoryKpiCard(
                       key: 'corporate',
                       title: 'Corporate / Freight',
-                      subtitle: 'SMEs & Large Corporate (New & Renewal)',
+                      subtitle: 'SMEs & Large Corporate (New Registration)',
                       itemCount: corporateFees.length,
                       color: _kOrange,
                       icon: Icons.domain_rounded,
@@ -936,8 +956,6 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
         const SizedBox(width: 6),
         _pill('new_packages', '📦 New Member Packages (SME & Large)'),
         const SizedBox(width: 6),
-        _pill('renewal_packages', '🔄 Annual Renewal Packages'),
-        const SizedBox(width: 6),
         _pill('sme', '🏢 SME Only Tariffs'),
         const SizedBox(width: 6),
         _pill('large', '🏛️ Large Corporate Only'),
@@ -947,18 +965,10 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
     } else if (_selectedCategory == 'associate') {
       return [
         _pill('all', 'All Associate Tariffs'),
-        const SizedBox(width: 6),
-        _pill('onetime', 'One-Time Onboarding Fee'),
-        const SizedBox(width: 6),
-        _pill('annual', 'Annual Dues (Renewed)'),
       ];
     } else if (_selectedCategory == 'licentiate') {
       return [
         _pill('all', 'All Licentiate Tariffs'),
-        const SizedBox(width: 6),
-        _pill('onetime', 'One-Time Onboarding Fee'),
-        const SizedBox(width: 6),
-        _pill('annual', 'Annual Dues (Renewed)'),
       ];
     } else {
       return [

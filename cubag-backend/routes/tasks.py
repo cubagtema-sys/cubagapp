@@ -300,7 +300,19 @@ def _query_renewal_bills(conn, member_id):
                 FROM compliance_applications ca
                 WHERE ca.member_id = %s
                   AND (ca.status = 'payment_pending' OR (ca.payment_amount IS NOT NULL AND ca.payment_amount > 0))
-                  AND ca.status NOT IN ('payment_confirmed', 'approved', 'completed')
+                  AND ca.status NOT IN ('payment_confirmed', 'approved', 'completed', 'paid', 'payment_submitted', 'under_review')
+                  AND NOT EXISTS (
+                      SELECT 1 FROM payments p
+                      WHERE p.member_id = ca.member_id
+                        AND LOWER(p.status) IN ('paid', 'completed', 'success', 'successful', 'pending', 'processing', 'submitted')
+                        AND (
+                            (ca.payment_ref IS NOT NULL AND p.payment_ref = ca.payment_ref)
+                            OR LOWER(p.description) LIKE '%%renewal%%'
+                            OR LOWER(p.description) LIKE '%%dues%%'
+                            OR LOWER(p.description) LIKE '%%annual%%'
+                            OR LOWER(p.description) LIKE '%%bill%%'
+                        )
+                  )
                 ORDER BY ca.updated_at DESC
                 LIMIT 1
             """, (member_id,))

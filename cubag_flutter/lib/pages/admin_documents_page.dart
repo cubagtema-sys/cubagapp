@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../components/app_layout.dart';
-import '../components/admin_components.dart';
 import '../components/shimmer_loader.dart';
 import '../components/cors_image_widget.dart';
 import '../services/api_service.dart';
@@ -13,7 +12,6 @@ import '../utils/app_logger.dart';
 import '../components/doc_preview_stub.dart'
     if (dart.library.html) '../components/doc_preview_web.dart'
     as doc_preview;
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10B981);
@@ -173,73 +171,105 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
     );
   }
 
-  Widget _buildCategoryButton({
-    required String title,
-    required String subtitle,
-    required String category,
-    required int count,
-    required IconData icon,
-    required Color color,
-    required bool isDark,
-    required Color cardBg,
-    required Color borderColor,
-  }) {
+  Widget _buildCategoryTab(String title, String category, int count, IconData icon, Color color, bool isDark, Color cardBg, Color borderColor) {
     final isSelected = _selectedCategory == category;
     return Expanded(
       child: InkWell(
-        onTap: () {
-          setState(() {
-            _selectedCategory = category;
-          });
-        },
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        onTap: () => setState(() => _selectedCategory = category),
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? color.withAlpha(isDark ? 35 : 20) : cardBg,
-            borderRadius: BorderRadius.circular(14),
+            color: isSelected ? (isDark ? color.withAlpha(45) : color.withAlpha(20)) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? color : borderColor,
-              width: isSelected ? 2 : 1,
+              color: isSelected ? color : Colors.transparent,
+              width: 1.5,
             ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 18, color: isSelected ? color : Colors.grey),
+              Icon(icon, size: 17, color: isSelected ? color : (isDark ? Colors.white60 : const Color(0xFF64748B))),
               const SizedBox(width: 8),
               Text(
                 title,
                 style: GoogleFonts.outfit(
-                  fontSize: 17,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                  color: isSelected
-                      ? color
-                      : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                  fontSize: 15,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  color: isSelected ? (isDark ? Colors.white : color) : (isDark ? Colors.white70 : const Color(0xFF475569)),
                 ),
               ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? color
-                      : (isDark ? Colors.white12 : Colors.black12),
+                  color: isSelected ? color : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   '$count',
                   style: GoogleFonts.outfit(
-                    fontSize: 15,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.bold,
-                    color: isSelected
-                        ? Colors.white
-                        : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                    color: isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569)),
                   ),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, String key, int count, IconData icon, Color activeColor, bool isDark) {
+    final isSel = _filter == key;
+    return InkWell(
+      onTap: () => setState(() => _filter = key),
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSel ? activeColor.withAlpha(isDark ? 40 : 25) : (isDark ? const Color(0xFF281710) : Colors.white),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSel ? activeColor : (isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0)),
+            width: isSel ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: isSel ? activeColor : (isDark ? Colors.white60 : const Color(0xFF64748B))),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.outfit(
+                fontSize: 13.5,
+                fontWeight: isSel ? FontWeight.w700 : FontWeight.w600,
+                color: isSel ? activeColor : (isDark ? Colors.white70 : const Color(0xFF475569)),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                color: isSel ? activeColor : (isDark ? Colors.white12 : const Color(0xFFF1F5F9)),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '$count',
+                style: GoogleFonts.outfit(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.bold,
+                  color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF64748B)),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -250,17 +280,32 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC);
     final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final borderColor = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFE2E8F0);
+    final borderColor = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
     final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark
-        ? const Color(0xFF94A3B8)
-        : const Color(0xFF64748B);
+    final textMuted = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     final corpMembers = _getMembersForCategory('corporate');
     final licMembers = _getMembersForCategory('licentiate');
     final assocMembers = _getMembersForCategory('associate');
+
+    final currentCategoryMembers = _getMembersForCategory(_selectedCategory);
+    final countAll = currentCategoryMembers.length;
+    final countNeedsReview = currentCategoryMembers.where((m) {
+      final up = (m['docs_uploaded'] as num?)?.toInt() ?? 0;
+      final ap = (m['docs_approved'] as num?)?.toInt() ?? 0;
+      final totalReq = (m['total_required'] as num?)?.toInt() ?? 0;
+      return totalReq > 0 && up >= totalReq && ap < totalReq;
+    }).length;
+    final countIncomplete = currentCategoryMembers.where((m) {
+      final up = (m['docs_uploaded'] as num?)?.toInt() ?? 0;
+      final totalReq = (m['total_required'] as num?)?.toInt() ?? 0;
+      return totalReq > 0 && up < totalReq;
+    }).length;
+    final countVetted = currentCategoryMembers.where((m) {
+      final ap = (m['docs_approved'] as num?)?.toInt() ?? 0;
+      final totalReq = (m['total_required'] as num?)?.toInt() ?? 0;
+      return (totalReq > 0 && ap >= totalReq) || totalReq == 0;
+    }).length;
 
     return AppLayout(
       title: 'Registration Hub',
@@ -270,430 +315,307 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── TOP HEADER ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
-              child: AdminHeader(
-                title: 'Registration',
-                subtitle:
-                    'Verify statutory CUBAG compliance certificates, review director vetting records, and approve membership.',
-                actions: [
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Applicant Dossiers',
+                          style: GoogleFonts.outfit(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: textPrimary,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Review statutory compliance certificates, company records, and membership vetting.',
+                          style: GoogleFonts.inter(
+                            fontSize: 13.5,
+                            color: textMuted,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: isDark
-                          ? Colors.white
-                          : const Color(0xFF1E293B),
-                      side: BorderSide(color: borderColor, width: 1.2),
+                      foregroundColor: textPrimary,
+                      side: BorderSide(color: borderColor),
                       backgroundColor: cardBg,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     onPressed: () {
                       context.push('/admin/document-rules').then((_) => _fetch(forceRefresh: true));
                     },
-                    icon: const Icon(
-                      Icons.rule_folder_rounded,
-                      size: 18,
-                      color: _kOrange,
-                    ),
+                    icon: const Icon(Icons.rule_folder_rounded, size: 16, color: _kOrange),
                     label: Text(
                       'Document Rules',
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 13.5),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _kOrange,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     onPressed: () => _fetch(forceRefresh: true),
-                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    icon: const Icon(Icons.refresh_rounded, size: 16),
                     label: Text(
-                      'Refresh Dossiers',
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
+                      'Refresh',
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 13.5),
                     ),
                   ),
                 ],
               ),
             ),
 
+            // ── CATEGORY SEGMENTS ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 10),
-              child: Row(
-                children: [
-                  _buildCategoryButton(
-                    title: 'Corporate Brokerages',
-                    subtitle: 'Full Statutory Compliance',
-                    category: 'corporate',
-                    count: corpMembers.length,
-                    icon: Icons.business_rounded,
-                    color: _kIndigo,
-                    isDark: isDark,
-                    cardBg: cardBg,
-                    borderColor: borderColor,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildCategoryButton(
-                    title: 'Licentiate Agents',
-                    subtitle: 'Individual Licensed Brokers',
-                    category: 'licentiate',
-                    count: licMembers.length,
-                    icon: Icons.badge_rounded,
-                    color: _kOrange,
-                    isDark: isDark,
-                    cardBg: cardBg,
-                    borderColor: borderColor,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildCategoryButton(
-                    title: 'Associate / Affiliates',
-                    subtitle: 'Maritime Partners & Allied',
-                    category: 'associate',
-                    count: assocMembers.length,
-                    icon: Icons.handshake_rounded,
-                    color: _kGreen,
-                    isDark: isDark,
-                    cardBg: cardBg,
-                    borderColor: borderColor,
-                  ),
-                ],
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: cardBg,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: borderColor),
-                      ),
-                      child: TextField(
-                        onChanged: _onSearchChanged,
-                        style: GoogleFonts.inter(
-                          fontSize: 15,
-                          color: textPrimary,
-                        ),
-                        decoration: InputDecoration(
-                          hintText:
-                              'Search applicant dossiers by name, company, TIN or membership number...',
-                          hintStyle: GoogleFonts.inter(
-                            fontSize: 15,
-                            color: textMuted,
-                          ),
-                          prefixIcon: Icon(
-                            Icons.search_rounded,
-                            size: 18,
-                            color: textMuted,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                            horizontal: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  _buildFilterTab('All Dossiers', 'all', _getMembersForCategory(_selectedCategory).length, Icons.folder_copy_rounded),
-                  const SizedBox(width: 8),
-                  _buildFilterTab(
-                    'Needs Review',
-                    'pending_review',
-                    _getMembersForCategory(_selectedCategory).where((m) {
-                      final up = (m['docs_uploaded'] as num?)?.toInt() ?? 0;
-                      final ap = (m['docs_approved'] as num?)?.toInt() ?? 0;
-                      final totalReq = (m['total_required'] as num?)?.toInt() ?? 0;
-                      return totalReq > 0 && up >= totalReq && ap < totalReq;
-                    }).length,
-                    Icons.hourglass_top_rounded,
-                    activeColor: _kAmber,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildFilterTab(
-                    'Incomplete',
-                    'incomplete',
-                    _getMembersForCategory(_selectedCategory).where((m) {
-                      final up = (m['docs_uploaded'] as num?)?.toInt() ?? 0;
-                      final totalReq = (m['total_required'] as num?)?.toInt() ?? 0;
-                      return totalReq > 0 && up < totalReq;
-                    }).length,
-                    Icons.upload_file_rounded,
-                    activeColor: _kBlue,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildFilterTab(
-                    'Vetted',
-                    'fully_approved',
-                    _getMembersForCategory(_selectedCategory).where((m) {
-                      final ap = (m['docs_approved'] as num?)?.toInt() ?? 0;
-                      final totalReq = (m['total_required'] as num?)?.toInt() ?? 0;
-                      return (totalReq > 0 && ap >= totalReq) || totalReq == 0;
-                    }).length,
-                    Icons.check_circle_rounded,
-                    activeColor: _kGreen,
-                  ),
-                ],
-              ),
-            ),
-
-            // ── TABLE HEADER ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 12,
-                ),
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF1A0F0A)
-                      : const Color(0xFFF1F5F9),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
-                  ),
+                  color: isDark ? const Color(0xFF281710) : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: borderColor),
                 ),
                 child: Row(
                   children: [
-                    SizedBox(
-                      width: 44,
-                      child: Text('#', style: _headerColStyle(textMuted)),
-                    ),
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        'APPLICANT & CORPORATE FIRM',
-                        style: _headerColStyle(textMuted),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        'CLASSIFICATION & SCOPE',
-                        style: _headerColStyle(textMuted),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 170,
-                      child: Center(
-                        child: Text(
-                          'STATUTORY DOCS',
-                          style: _headerColStyle(textMuted),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 140,
-                      child: Center(
-                        child: Text(
-                          'STATUS',
-                          style: _headerColStyle(textMuted),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                      width: 130,
-                      child: Center(
-                        child: Text(
-                          'ACTION',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.8,
-                            color: Color(0xFF94A3B8),
-                          ),
-                        ),
-                      ),
-                    ),
+                    _buildCategoryTab('Corporate Brokerages', 'corporate', corpMembers.length, Icons.business_rounded, _kIndigo, isDark, cardBg, borderColor),
+                    _buildCategoryTab('Licentiate Agents', 'licentiate', licMembers.length, Icons.badge_rounded, _kOrange, isDark, cardBg, borderColor),
+                    _buildCategoryTab('Associates / Allied', 'associate', assocMembers.length, Icons.handshake_rounded, _kGreen, isDark, cardBg, borderColor),
                   ],
                 ),
               ),
             ),
 
+            const SizedBox(height: 10),
+
+            // ── SEARCH & FILTER CONTROLS ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 750;
+                  final searchField = Container(
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: cardBg,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: TextField(
+                      onChanged: _onSearchChanged,
+                      style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
+                      decoration: InputDecoration(
+                        hintText: 'Search by company, applicant name, TIN, or member ID...',
+                        hintStyle: GoogleFonts.inter(fontSize: 13.5, color: textMuted),
+                        prefixIcon: Icon(Icons.search_rounded, size: 18, color: textMuted),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 11, horizontal: 12),
+                      ),
+                    ),
+                  );
+
+                  final filterChips = Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      _buildFilterChip('All', 'all', countAll, Icons.folder_copy_rounded, _kOrange, isDark),
+                      _buildFilterChip('Needs Review', 'pending_review', countNeedsReview, Icons.hourglass_top_rounded, _kAmber, isDark),
+                      _buildFilterChip('Incomplete', 'incomplete', countIncomplete, Icons.upload_file_rounded, _kBlue, isDark),
+                      _buildFilterChip('Vetted', 'fully_approved', countVetted, Icons.check_circle_rounded, _kGreen, isDark),
+                    ],
+                  );
+
+                  if (isNarrow) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        searchField,
+                        const SizedBox(height: 8),
+                        filterChips,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      Expanded(child: searchField),
+                      const SizedBox(width: 12),
+                      filterChips,
+                    ],
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // ── MAIN CONTENT (TABLE OR CARDS) ──
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Container(
                   decoration: BoxDecoration(
                     color: cardBg,
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(12),
-                    ),
-                    border: Border(
-                      left: BorderSide(color: borderColor),
-                      right: BorderSide(color: borderColor),
-                      bottom: BorderSide(color: borderColor),
-                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: borderColor),
                   ),
-                  child: _loading
-                      ? ListView.separated(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: 5,
-                          separatorBuilder: (_, index) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (_, index) => const ShimmerListTile(),
-                        )
-                      : _filtered.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: _kOrange.withAlpha(15),
-                                  shape: BoxShape.circle,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: _loading
+                        ? ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: 6,
+                            separatorBuilder: (_, index) => const SizedBox(height: 10),
+                            itemBuilder: (_, index) => const ShimmerListTile(),
+                          )
+                        : _filtered.isEmpty
+                            ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(32),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: _kOrange.withAlpha(15),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(Icons.folder_off_rounded, size: 40, color: _kOrange.withAlpha(180)),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'No dossiers found',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.bold,
+                                          color: textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Try adjusting your search query or switching filters.',
+                                        style: GoogleFonts.inter(fontSize: 13.5, color: textMuted),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                child: Icon(
-                                  Icons.folder_off_rounded,
-                                  size: 48,
-                                  color: _kOrange.withAlpha(180),
-                                ),
+                              )
+                            : LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final isWide = constraints.maxWidth >= 900;
+                                  if (!isWide) {
+                                    // Mobile/Tablet responsive card list
+                                    return ListView.separated(
+                                      padding: const EdgeInsets.all(12),
+                                      itemCount: _filtered.length,
+                                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                                      itemBuilder: (ctx, i) => _buildApplicantCard(
+                                        _filtered[i],
+                                        isDark,
+                                        cardBg,
+                                        borderColor,
+                                        textPrimary,
+                                        textMuted,
+                                      ),
+                                    );
+                                  }
+
+                                  // Desktop Table
+                                  return Column(
+                                    children: [
+                                      // Table Header
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                                        decoration: BoxDecoration(
+                                          color: isDark ? const Color(0xFF1F120B) : const Color(0xFFF1F5F9),
+                                          border: Border(bottom: BorderSide(color: borderColor)),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            SizedBox(
+                                              width: 36,
+                                              child: Text('#', style: _headerColStyle(textMuted)),
+                                            ),
+                                            Expanded(
+                                              flex: 3,
+                                              child: Text('APPLICANT & FIRM', style: _headerColStyle(textMuted)),
+                                            ),
+                                            Expanded(
+                                              flex: 2,
+                                              child: Text('TYPE & PORT', style: _headerColStyle(textMuted)),
+                                            ),
+                                            SizedBox(
+                                              width: 180,
+                                              child: Text('STATUTORY DOCS', style: _headerColStyle(textMuted)),
+                                            ),
+                                            SizedBox(
+                                              width: 140,
+                                              child: Center(child: Text('STATUS', style: _headerColStyle(textMuted))),
+                                            ),
+                                            const SizedBox(
+                                              width: 100,
+                                              child: Align(
+                                                alignment: Alignment.centerRight,
+                                                child: Text(
+                                                  'ACTION',
+                                                  style: TextStyle(
+                                                    fontSize: 12.5,
+                                                    fontWeight: FontWeight.w800,
+                                                    letterSpacing: 0.6,
+                                                    color: Color(0xFF94A3B8),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      // Table Body
+                                      Expanded(
+                                        child: ListView.separated(
+                                          padding: EdgeInsets.zero,
+                                          itemCount: _filtered.length,
+                                          separatorBuilder: (_, _) => Divider(height: 1, color: borderColor),
+                                          itemBuilder: (ctx, i) => _buildApplicantRow(
+                                            _filtered[i],
+                                            i + 1,
+                                            isDark,
+                                            cardBg,
+                                            borderColor,
+                                            textPrimary,
+                                            textMuted,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No applicant dossiers found matching the criteria.',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 19,
-                                  fontWeight: FontWeight.bold,
-                                  color: textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Try adjusting your search keywords or switching filters.',
-                                style: GoogleFonts.inter(
-                                  fontSize: 17,
-                                  color: textMuted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView.separated(
-                          padding: EdgeInsets.zero,
-                          itemCount: _filtered.length,
-                          separatorBuilder: (_, index) =>
-                              Divider(height: 1, color: borderColor),
-                          itemBuilder: (ctx, i) => _buildApplicantRow(
-                            _filtered[i],
-                            i + 1,
-                            isDark,
-                            cardBg,
-                            borderColor,
-                            textPrimary,
-                            textMuted,
-                          ),
-                        ),
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilterTab(
-    String label,
-    String key,
-    int? count,
-    IconData icon, {
-    Color? activeColor,
-  }) {
-    final isSel = _filter == key;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = activeColor ?? _kOrange;
-
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _filter = key;
-        });
-      },
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSel
-              ? color.withAlpha(isDark ? 35 : 20)
-              : (isDark ? const Color(0xFF4D2D20) : Colors.white),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSel
-                ? color.withAlpha(isDark ? 100 : 70)
-                : (isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0)),
-            width: isSel ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 15,
-              color: isSel
-                  ? color
-                  : (isDark ? Colors.white70 : const Color(0xFF64748B)),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: GoogleFonts.outfit(
-                fontSize: 16,
-                fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
-                color: isSel
-                    ? color
-                    : (isDark ? Colors.white : const Color(0xFF334155)),
-              ),
-            ),
-            if (count != null) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: isSel
-                      ? color
-                      : (isDark ? Colors.white12 : Colors.grey.shade200),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '$count',
-                  style: GoogleFonts.outfit(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: isSel
-                        ? Colors.white
-                        : (isDark ? Colors.white70 : const Color(0xFF475569)),
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
       ),
@@ -722,9 +644,6 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
 
     final memberType = (m['member_type'] as String? ?? 'Licentiate').trim();
     final isSme = ((m['member_scale'] as String? ?? 'sme').toLowerCase()) == 'sme';
-    final isDual = ((m['fee_category'] as String? ?? 'cf_only').toLowerCase()) == 'cf_consolidation';
-    final isConsol = ((m['fee_category'] as String? ?? 'cf_only').toLowerCase()) == 'consolidation';
-
     final totalExpected = (m['total_required'] as num?)?.toInt() ?? 0;
 
     Color typeColor = _kOrange;
@@ -739,46 +658,46 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
     IconData statusIcon;
     if (status == 'active') {
       statusColor = _kGreen;
-      statusLabel = 'Active Good Standing';
+      statusLabel = 'Active';
       statusIcon = Icons.verified_rounded;
     } else if (totalExpected == 0) {
       statusColor = _kGreen;
-      statusLabel = 'No Document Required';
+      statusLabel = 'Exempt';
       statusIcon = Icons.check_circle_outline_rounded;
     } else if (approved >= totalExpected && totalExpected > 0) {
       statusColor = _kGreen;
-      statusLabel = '$totalExpected/$totalExpected Vetted';
+      statusLabel = 'Fully Vetted';
       statusIcon = Icons.check_circle_rounded;
     } else if (uploaded >= totalExpected) {
       statusColor = _kAmber;
-      statusLabel = 'In Review ($uploaded/$totalExpected)';
+      statusLabel = 'Needs Review';
       statusIcon = Icons.hourglass_top_rounded;
     } else if (uploaded > 0) {
       statusColor = _kBlue;
-      statusLabel = 'Incomplete ($uploaded/$totalExpected)';
+      statusLabel = 'Incomplete';
       statusIcon = Icons.upload_file_rounded;
     } else {
       statusColor = _kRed;
-      statusLabel = '0/$totalExpected Uploaded';
+      statusLabel = 'Pending Upload';
       statusIcon = Icons.warning_amber_rounded;
     }
 
     return Material(
-      color: cardBg,
+      color: Colors.transparent,
       child: InkWell(
         onTap: () => context.push('/admin/documents/${m['id']}'),
         hoverColor: _kOrange.withAlpha(8),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           child: Row(
             children: [
               SizedBox(
-                width: 44,
+                width: 36,
                 child: Text(
                   '$index',
                   style: GoogleFonts.outfit(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                     color: subCol,
                   ),
                 ),
@@ -788,22 +707,12 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                 child: Row(
                   children: [
                     Container(
-                      width: 42,
-                      height: 42,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [typeColor, typeColor.withAlpha(180)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: typeColor.withAlpha(40),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                        color: typeColor.withAlpha(25),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: typeColor.withAlpha(60)),
                       ),
                       child: Center(
                         child: Text(
@@ -811,14 +720,14 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                               ? company[0].toUpperCase()
                               : (name.isNotEmpty ? name[0].toUpperCase() : 'C'),
                           style: GoogleFonts.outfit(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: typeColor,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -826,8 +735,8 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                           Text(
                             company,
                             style: GoogleFonts.outfit(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
                               color: textCol,
                             ),
                             maxLines: 1,
@@ -836,31 +745,16 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                           const SizedBox(height: 2),
                           Row(
                             children: [
-                              Icon(
-                                Icons.person_outline_rounded,
-                                size: 12,
-                                color: subCol,
-                              ),
-                              const SizedBox(width: 3),
-                              Flexible(
-                                child: Text(
-                                  name,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: subCol,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                              Text(
+                                name,
+                                style: GoogleFonts.inter(fontSize: 13, color: subCol),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                               if (memNo.isNotEmpty && memNo != 'PENDING') ...[
                                 const SizedBox(width: 6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 5,
-                                    vertical: 1.5,
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                   decoration: BoxDecoration(
                                     color: _kOrange.withAlpha(20),
                                     borderRadius: BorderRadius.circular(4),
@@ -868,7 +762,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                                   child: Text(
                                     memNo,
                                     style: GoogleFonts.outfit(
-                                      fontSize: 12,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.bold,
                                       color: _kOrange,
                                     ),
@@ -888,86 +782,31 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
-                            color: typeColor.withAlpha(25),
+                            color: typeColor.withAlpha(20),
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: typeColor.withAlpha(60),
-                            ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.badge_outlined,
-                                size: 11,
-                                color: typeColor,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                memberType.toUpperCase(),
-                                style: GoogleFonts.outfit(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: typeColor,
-                                  letterSpacing: 0.4,
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            memberType.toLowerCase().contains('corporate')
+                                ? (isSme ? 'Corporate • SME' : 'Large Corporate')
+                                : memberType,
+                            style: GoogleFonts.outfit(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: typeColor,
+                            ),
                           ),
                         ),
-                        if (memberType.toLowerCase().contains('corporate'))
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: (isSme ? _kOrange : _kIndigo).withAlpha(20),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: (isSme ? _kOrange : _kIndigo).withAlpha(50),
-                              ),
-                            ),
-                            child: Text(
-                              isSme ? "SME" : "LARGE CORPORATE",
-                              style: GoogleFonts.outfit(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: isSme ? _kOrange : _kIndigo,
-                              ),
-                            ),
-                          ),
                       ],
                     ),
-                    if (memberType.toLowerCase().contains('corporate')) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        isDual
-                            ? 'Consolidation, Clearing & Forwarding'
-                            : (isConsol
-                                  ? 'Consolidation Scope'
-                                  : 'Clearing & Forwarding Only'),
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: textCol,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                    const SizedBox(height: 2),
                     Text(
-                      'Port: $port',
+                      port,
                       style: GoogleFonts.inter(fontSize: 12, color: subCol),
                       maxLines: 1,
                     ),
@@ -975,81 +814,34 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                 ),
               ),
               SizedBox(
-                width: 170,
+                width: 180,
                 child: totalExpected == 0
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                    ? Row(
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.check_circle_outline_rounded,
-                                size: 13,
-                                color: _kGreen,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '0 / 0 Uploaded',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: _kGreen,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _kGreen.withAlpha(20),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'No Document Required',
-                              style: GoogleFonts.inter(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: _kGreen,
-                              ),
-                            ),
-                          ),
+                          const Icon(Icons.check_circle_outline_rounded, size: 14, color: _kGreen),
+                          const SizedBox(width: 5),
+                          Text('No Docs Required', style: GoogleFonts.inter(fontSize: 12.5, color: _kGreen, fontWeight: FontWeight.w600)),
                         ],
                       )
                     : Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(
-                                Icons.upload_file_rounded,
-                                size: 13,
-                                color: uploaded >= totalExpected
-                                    ? _kGreen
-                                    : (uploaded > 0 ? _kOrange : _kRed),
-                              ),
-                              const SizedBox(width: 4),
                               Text(
-                                '$uploaded / $totalExpected Uploaded',
+                                '$uploaded / $totalExpected Docs',
                                 style: GoogleFonts.outfit(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: uploaded >= totalExpected
-                                      ? _kGreen
-                                      : textCol,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: uploaded >= totalExpected ? _kGreen : textCol,
                                 ),
                               ),
                               if (approved > 0) ...[
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 4),
                                 Text(
                                   '($approved ✓)',
                                   style: GoogleFonts.outfit(
-                                    fontSize: 13,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                     color: _kGreen,
                                   ),
@@ -1057,23 +849,18 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                               ],
                             ],
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           SizedBox(
                             width: 140,
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(3),
                               child: LinearProgressIndicator(
-                                value: (uploaded / totalExpected.toDouble())
-                                    .clamp(0.0, 1.0),
-                                backgroundColor: isDark
-                                    ? const Color(0xFF4D2D20)
-                                    : const Color(0xFFE2E8F0),
+                                value: (uploaded / totalExpected.toDouble()).clamp(0.0, 1.0),
+                                backgroundColor: isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0),
                                 color: uploaded >= totalExpected
                                     ? _kGreen
-                                    : (uploaded >= (totalExpected / 2)
-                                          ? _kOrange
-                                          : _kRed),
-                                minHeight: 5,
+                                    : (uploaded >= (totalExpected / 2) ? _kOrange : _kRed),
+                                minHeight: 4,
                               ),
                             ),
                           ),
@@ -1084,10 +871,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                 width: 140,
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 5,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                     decoration: BoxDecoration(
                       color: statusColor.withAlpha(20),
                       borderRadius: BorderRadius.circular(20),
@@ -1098,15 +882,12 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                       children: [
                         Icon(statusIcon, size: 12, color: statusColor),
                         const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            statusLabel,
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              color: statusColor,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                        Text(
+                          statusLabel,
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: statusColor,
                           ),
                         ),
                       ],
@@ -1115,44 +896,222 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                 ),
               ),
               SizedBox(
-                width: 130,
+                width: 100,
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: ElevatedButton.icon(
-                    onPressed: () =>
-                        context.push('/admin/documents/${m['id']}'),
+                  child: ElevatedButton(
+                    onPressed: () => context.push('/admin/documents/${m['id']}'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isDark
-                          ? const Color(0xFF4D2D20)
-                          : const Color(0xFFF1F5F9),
+                      backgroundColor: isDark ? const Color(0xFF4D2D20) : const Color(0xFFF1F5F9),
                       foregroundColor: textCol,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                         side: BorderSide(color: border),
                       ),
                     ),
-                    icon: const Icon(
-                      Icons.folder_open_rounded,
-                      size: 14,
-                      color: _kOrange,
-                    ),
-                    label: Text(
-                      'View Applicant',
-                      style: GoogleFonts.outfit(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Review', style: GoogleFonts.outfit(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                        const SizedBox(width: 4),
+                        Icon(Icons.arrow_forward_rounded, size: 12, color: _kOrange),
+                      ],
                     ),
                   ),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildApplicantCard(
+    Map<String, dynamic> m,
+    bool isDark,
+    Color cardBg,
+    Color border,
+    Color textCol,
+    Color subCol,
+  ) {
+    final name = ((m['name'] as String?) ?? 'Applicant').trim();
+    final company = ((m['company'] as String?) ?? 'Unnamed Enterprise').trim();
+    final memNo = (m['membership_number'] as String?) ?? 'PENDING';
+    final port = (m['port_of_operation'] as String?) ?? 'Tema Port';
+
+    final rawUp = m['docs_uploaded'];
+    final rawAp = m['docs_approved'];
+    final uploaded = rawUp == null ? 0 : (rawUp as num).toInt();
+    final approved = rawAp == null ? 0 : (rawAp as num).toInt();
+
+    final memberType = (m['member_type'] as String? ?? 'Licentiate').trim();
+    final isSme = ((m['member_scale'] as String? ?? 'sme').toLowerCase()) == 'sme';
+    final totalExpected = (m['total_required'] as num?)?.toInt() ?? 0;
+
+    Color typeColor = _kOrange;
+    if (memberType.toLowerCase().contains('corporate')) {
+      typeColor = _kIndigo;
+    } else if (memberType.toLowerCase().contains('associate')) {
+      typeColor = _kGreen;
+    }
+
+    Color statusColor;
+    String statusLabel;
+    IconData statusIcon;
+    if (totalExpected == 0) {
+      statusColor = _kGreen;
+      statusLabel = 'Exempt';
+      statusIcon = Icons.check_circle_outline_rounded;
+    } else if (approved >= totalExpected && totalExpected > 0) {
+      statusColor = _kGreen;
+      statusLabel = 'Vetted';
+      statusIcon = Icons.check_circle_rounded;
+    } else if (uploaded >= totalExpected) {
+      statusColor = _kAmber;
+      statusLabel = 'Needs Review';
+      statusIcon = Icons.hourglass_top_rounded;
+    } else if (uploaded > 0) {
+      statusColor = _kBlue;
+      statusLabel = 'Incomplete';
+      statusIcon = Icons.upload_file_rounded;
+    } else {
+      statusColor = _kRed;
+      statusLabel = 'Pending';
+      statusIcon = Icons.warning_amber_rounded;
+    }
+
+    return InkWell(
+      onTap: () => context.push('/admin/documents/${m['id']}'),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: typeColor.withAlpha(25),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: typeColor.withAlpha(60)),
+                  ),
+                  child: Center(
+                    child: Text(
+                      company.isNotEmpty ? company[0].toUpperCase() : (name.isNotEmpty ? name[0].toUpperCase() : 'C'),
+                      style: GoogleFonts.outfit(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: typeColor,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        company,
+                        style: GoogleFonts.outfit(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
+                          color: textCol,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        name + (memNo.isNotEmpty && memNo != 'PENDING' ? ' • $memNo' : ''),
+                        style: GoogleFonts.inter(fontSize: 12.5, color: subCol),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: statusColor.withAlpha(20),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: statusColor.withAlpha(60)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(statusIcon, size: 11, color: statusColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        statusLabel,
+                        style: GoogleFonts.outfit(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: statusColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: typeColor.withAlpha(20),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    memberType.toLowerCase().contains('corporate')
+                        ? (isSme ? 'Corporate • SME' : 'Large Corporate')
+                        : memberType,
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: typeColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(port, style: GoogleFonts.inter(fontSize: 12, color: subCol)),
+                const Spacer(),
+                Text(
+                  totalExpected == 0 ? 'Exempt' : '$uploaded/$totalExpected Docs${approved > 0 ? ' ($approved ✓)' : ''}',
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: uploaded >= totalExpected ? _kGreen : textCol,
+                  ),
+                ),
+              ],
+            ),
+            if (totalExpected > 0) ...[
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  value: (uploaded / totalExpected.toDouble()).clamp(0.0, 1.0),
+                  backgroundColor: isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0),
+                  color: uploaded >= totalExpected ? _kGreen : (uploaded >= (totalExpected / 2) ? _kOrange : _kRed),
+                  minHeight: 4,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -1533,21 +1492,15 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                   )
                 : Column(
                 children: [
+                  // ── APPLICANT HEADER CARD ──
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
                     child: Container(
-                      padding: const EdgeInsets.all(18),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: cardBg,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: border, width: 1.2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(isDark ? 40 : 8),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: border),
                       ),
                       child: Column(
                         children: [
@@ -1561,50 +1514,40 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                     context.go('/admin/documents');
                                   }
                                 },
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(8),
                                 child: Container(
-                                  padding: const EdgeInsets.all(10),
+                                  padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: isDark
                                         ? const Color(0xFF4D2D20)
                                         : const Color(0xFFF1F5F9),
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(8),
                                     border: Border.all(color: border),
                                   ),
                                   child: Icon(
                                     Icons.arrow_back_ios_new_rounded,
-                                    size: 16,
+                                    size: 15,
                                     color: textPrimary,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 14),
+                              const SizedBox(width: 12),
 
-                              Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [headerTypeColor, headerTypeColor.withAlpha(180)],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    company.isNotEmpty
-                                        ? company[0].toUpperCase()
-                                        : 'C',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white,
-                                    ),
+                              CircleAvatar(
+                                radius: 22,
+                                backgroundColor: headerTypeColor,
+                                child: Text(
+                                  company.isNotEmpty
+                                      ? company[0].toUpperCase()
+                                      : 'C',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 16),
+                              const SizedBox(width: 12),
 
                               Expanded(
                                 child: Column(
@@ -1616,18 +1559,18 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                           child: Text(
                                             company,
                                             style: GoogleFonts.outfit(
-                                              fontSize: 22,
+                                              fontSize: 17,
                                               fontWeight: FontWeight.w800,
                                               color: textPrimary,
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        const SizedBox(width: 10),
+                                        const SizedBox(width: 8),
                                         Container(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 3,
+                                            horizontal: 7,
+                                            vertical: 2,
                                           ),
                                           decoration: BoxDecoration(
                                             color: headerTypeColor.withAlpha(25),
@@ -1639,7 +1582,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                           child: Text(
                                             memberType.toUpperCase(),
                                             style: GoogleFonts.outfit(
-                                              fontSize: 14,
+                                              fontSize: 11,
                                               fontWeight: FontWeight.w800,
                                               color: headerTypeColor,
                                             ),
@@ -1649,21 +1592,18 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                           const SizedBox(width: 6),
                                           Container(
                                             padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 3,
+                                              horizontal: 7,
+                                              vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
                                               color: (scale == 'sme' ? _kOrange : _kIndigo).withAlpha(20),
                                               borderRadius: BorderRadius.circular(6),
-                                              border: Border.all(
-                                                color: (scale == 'sme' ? _kOrange : _kIndigo).withAlpha(50),
-                                              ),
                                             ),
                                             child: Text(
-                                              scale == 'sme' ? "SME" : "LARGE CORPORATE",
+                                              scale == 'sme' ? "SME" : "LARGE CORP",
                                               style: GoogleFonts.outfit(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w800,
+                                                fontSize: 10.5,
+                                                fontWeight: FontWeight.bold,
                                                 color: scale == 'sme' ? _kOrange : _kIndigo,
                                               ),
                                             ),
@@ -1671,7 +1611,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                         ],
                                       ],
                                     ),
-                                    const SizedBox(height: 4),
+                                    const SizedBox(height: 3),
                                     Wrap(
                                       spacing: 12,
                                       runSpacing: 4,
@@ -1679,76 +1619,35 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                         Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Icon(
-                                              Icons.person_rounded,
-                                              size: 13,
-                                              color: textMuted,
-                                            ),
+                                            Icon(Icons.person_rounded, size: 13, color: textMuted),
                                             const SizedBox(width: 4),
-                                            Text(
-                                              name,
-                                              style: GoogleFonts.inter(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                                color: textMuted,
-                                              ),
-                                            ),
+                                            Text(name, style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: textMuted)),
                                           ],
                                         ),
                                         if (phone.isNotEmpty)
                                           Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              Icon(
-                                                Icons.phone_rounded,
-                                                size: 13,
-                                                color: textMuted,
-                                              ),
+                                              Icon(Icons.phone_rounded, size: 13, color: textMuted),
                                               const SizedBox(width: 4),
-                                              Text(
-                                                phone,
-                                                style: GoogleFonts.inter(
-                                                  fontSize: 14,
-                                                  color: textMuted,
-                                                ),
-                                              ),
+                                              Text(phone, style: GoogleFonts.inter(fontSize: 12.5, color: textMuted)),
                                             ],
                                           ),
                                         if (tin.isNotEmpty)
                                           Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              Icon(
-                                                Icons.tag_rounded,
-                                                size: 13,
-                                                color: textMuted,
-                                              ),
+                                              Icon(Icons.tag_rounded, size: 13, color: textMuted),
                                               const SizedBox(width: 4),
-                                              Text(
-                                                'TIN: $tin',
-                                                style: GoogleFonts.inter(
-                                                  fontSize: 14,
-                                                  color: textMuted,
-                                                ),
-                                              ),
+                                              Text('TIN: $tin', style: GoogleFonts.inter(fontSize: 12.5, color: textMuted)),
                                             ],
                                           ),
                                         Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Icon(
-                                              Icons.anchor_rounded,
-                                              size: 13,
-                                              color: textMuted,
-                                            ),
+                                            Icon(Icons.anchor_rounded, size: 13, color: textMuted),
                                             const SizedBox(width: 4),
-                                            Text(
-                                              port,
-                                              style: GoogleFonts.inter(
-                                                fontSize: 14,
-                                                color: textMuted,
-                                              ),
-                                            ),
+                                            Text(port, style: GoogleFonts.inter(fontSize: 12.5, color: textMuted)),
                                           ],
                                         ),
                                       ],
@@ -1758,51 +1657,42 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                               ),
 
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: hasPaid
-                                      ? _kGreen.withAlpha(20)
-                                      : _kAmber.withAlpha(20),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: (hasPaid ? _kGreen : _kAmber)
-                                        .withAlpha(60),
-                                  ),
+                                  color: hasPaid ? _kGreen.withAlpha(20) : _kAmber.withAlpha(20),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: (hasPaid ? _kGreen : _kAmber).withAlpha(50)),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                  Text(
-                                    'REGISTRATION STATUS',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                      color: hasPaid ? _kGreen : _kAmber,
-                                      letterSpacing: 0.5,
+                                    Text(
+                                      'FEE STATUS',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
+                                        color: hasPaid ? _kGreen : _kAmber,
+                                        letterSpacing: 0.4,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    hasPaid
-                                        ? (lastPaymentAmt != null && lastPaymentAmt > 0
-                                              ? 'PAID (GHS ${lastPaymentAmt.toStringAsFixed(2)})'
-                                              : 'PAID IN FULL')
-                                        : (regFeeAmt > 0
-                                              ? 'UNPAID (GHS ${regFeeAmt.toStringAsFixed(2)})'
-                                              : 'UNPAID'),
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w900,
-                                      color: hasPaid ? _kGreen : _kAmber,
+                                    Text(
+                                      hasPaid
+                                          ? (lastPaymentAmt != null && lastPaymentAmt > 0
+                                                ? 'PAID (GH₵ ${lastPaymentAmt.toStringAsFixed(0)})'
+                                                : 'PAID')
+                                          : (regFeeAmt > 0
+                                                ? 'UNPAID (GH₵ ${regFeeAmt.toStringAsFixed(0)})'
+                                                : 'UNPAID'),
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                        color: hasPaid ? _kGreen : _kAmber,
+                                      ),
                                     ),
-                                  ),
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 14),
+                              const SizedBox(width: 10),
 
                               ElevatedButton.icon(
                                 onPressed: (isApproved || _approvingAll)
@@ -1813,89 +1703,47 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                       ? Colors.grey.shade700
                                       : _kGreen,
                                   foregroundColor: Colors.white,
-                                  disabledBackgroundColor: Colors.grey
-                                      .withAlpha(120),
-                                  disabledForegroundColor: Colors.white70,
                                   elevation: 0,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
                                 icon: isApproved
-                                    ? const Icon(
-                                        Icons.check_circle_rounded,
-                                        size: 18,
-                                      )
+                                    ? const Icon(Icons.check_circle_rounded, size: 16)
                                     : (_approvingAll
                                           ? const SizedBox(
-                                              width: 16,
-                                              height: 16,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: Colors.white,
-                                              ),
+                                              width: 14,
+                                              height: 14,
+                                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                             )
-                                          : const Icon(
-                                              Icons.verified_rounded,
-                                              size: 18,
-                                            )),
+                                          : const Icon(Icons.verified_rounded, size: 16)),
                                 label: Text(
                                   isApproved
                                       ? 'Dossier Verified'
                                       : (_approvingAll
-                                            ? 'Activating...'
+                                            ? 'Verifying...'
                                             : (total > 0
                                                   ? 'Approve All ($total/$total)'
                                                   : 'Approve Application')),
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: GoogleFonts.outfit(fontSize: 13.5, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 14),
-                          const Divider(height: 1),
                           const SizedBox(height: 12),
+                          const Divider(height: 1),
+                          const SizedBox(height: 10),
 
                           Row(
                             children: [
-                              _buildMiniPill(
-                                'Total Required',
-                                '$total Docs',
-                                _kSlate,
-                                border,
-                                isDark,
-                              ),
+                              _buildMiniPill('Required', '$total', _kSlate, border, isDark),
                               const SizedBox(width: 8),
-                              _buildMiniPill(
-                                'Uploaded',
-                                total > 0 ? '$uploaded / $total' : '0 / 0 (None Req)',
-                                _kBlue,
-                                border,
-                                isDark,
-                              ),
+                              _buildMiniPill('Uploaded', '$uploaded', _kBlue, border, isDark),
                               const SizedBox(width: 8),
-                              _buildMiniPill(
-                                'Awaiting Review',
-                                '$pending',
-                                _kAmber,
-                                border,
-                                isDark,
-                              ),
+                              _buildMiniPill('Awaiting Review', '$pending', _kAmber, border, isDark),
                               const SizedBox(width: 8),
-                              _buildMiniPill(
-                                'Approved & Vetted',
-                                '$approved',
-                                _kGreen,
-                                border,
-                                isDark,
-                              ),
+                              _buildMiniPill('Approved', '$approved', _kGreen, border, isDark),
                             ],
                           ),
                         ],
@@ -1916,7 +1764,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                         labelColor: _kOrange,
                         unselectedLabelColor: textMuted,
                         labelStyle: GoogleFonts.outfit(
-                          fontSize: 15,
+                          fontSize: 13.5,
                           fontWeight: FontWeight.bold,
                         ),
                         tabs: [
@@ -1952,34 +1800,34 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
     bool isDark,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF4D2D20) : const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 8,
-            height: 8,
+            width: 7,
+            height: 7,
             decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 5),
           Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 15,
+              fontSize: 12,
               fontWeight: FontWeight.w500,
               color: isDark ? Colors.white70 : const Color(0xFF64748B),
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 5),
           Text(
             value,
             style: GoogleFonts.outfit(
-              fontSize: 15,
+              fontSize: 12.5,
               fontWeight: FontWeight.bold,
               color: isDark ? Colors.white : const Color(0xFF0F172A),
             ),
@@ -2002,11 +1850,11 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.folder_open_rounded, size: 48, color: textMuted.withAlpha(100)),
-            const SizedBox(height: 12),
+            Icon(Icons.folder_open_rounded, size: 40, color: textMuted.withAlpha(100)),
+            const SizedBox(height: 10),
             Text(
               'No statutory documents in this section.',
-              style: GoogleFonts.outfit(fontSize: 19, fontWeight: FontWeight.bold, color: textPrimary),
+              style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: textPrimary),
             ),
           ],
         ),
@@ -2014,9 +1862,9 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       itemCount: items.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (ctx, i) {
         final d = items[i];
         final id = d['id'] as int?;
@@ -2034,39 +1882,39 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
         String pillLabel = 'Not Uploaded';
         if (status == 'approved') {
           pillColor = _kGreen;
-          pillLabel = 'Approved & Verified';
+          pillLabel = 'Approved';
         } else if (status == 'rejected') {
           pillColor = _kRed;
-          pillLabel = 'Rejected / Resubmission Required';
+          pillLabel = 'Rejected';
         } else if (isUploaded) {
           pillColor = _kAmber;
-          pillLabel = 'Awaiting Secretariat Vetting';
+          pillLabel = 'Awaiting Vetting';
         }
 
         return Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: cardBg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: border, width: 1.2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: border),
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: pillColor.withAlpha(20),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   isUploaded ? Icons.description_rounded : Icons.warning_amber_rounded,
                   color: pillColor,
-                  size: 22,
+                  size: 20,
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
 
               Expanded(
                 child: Column(
@@ -2078,23 +1926,23 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                           child: Text(
                             label,
                             style: GoogleFonts.outfit(
-                              fontSize: 19,
+                              fontSize: 14.5,
                               fontWeight: FontWeight.bold,
                               color: textPrimary,
                             ),
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
                             color: pillColor.withAlpha(20),
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(5),
                             border: Border.all(color: pillColor.withAlpha(50)),
                           ),
                           child: Text(
                             pillLabel,
                             style: GoogleFonts.outfit(
-                              fontSize: 14.5,
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
                               color: pillColor,
                             ),
@@ -2102,51 +1950,43 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       isUploaded
                           ? 'File: $fileName • Uploaded: ${uploadedAt ?? "Recently"}'
                           : 'Applicant has not uploaded this statutory certificate yet.',
-                      style: GoogleFonts.inter(fontSize: 16, color: textMuted),
+                      style: GoogleFonts.inter(fontSize: 12, color: textMuted),
                     ),
                     if (isUploaded) ...[
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 6),
                       Row(
                         children: [
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: _kOrange,
-                              side: const BorderSide(color: _kOrange),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          InkWell(
+                            onTap: () => _showDocPreviewModal(context, label, fileUrl),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.remove_red_eye_rounded, size: 13, color: _kOrange),
+                                  const SizedBox(width: 4),
+                                  Text('Preview', style: GoogleFonts.outfit(fontSize: 12, color: _kOrange, fontWeight: FontWeight.w600)),
+                                ],
+                              ),
                             ),
-                            icon: const Icon(Icons.remove_red_eye_rounded, size: 14),
-                            label: const Text('Preview'),
-                            onPressed: () => _showDocPreviewModal(context, label, fileUrl),
                           ),
-                          const SizedBox(width: 8),
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: _kOrange,
-                              side: const BorderSide(color: _kOrange),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          const SizedBox(width: 10),
+                          InkWell(
+                            onTap: () => launchUrl(Uri.parse(fileUrl), mode: LaunchMode.externalApplication),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.open_in_new_rounded, size: 13, color: textMuted),
+                                  const SizedBox(width: 4),
+                                  Text('Open in Tab', style: GoogleFonts.outfit(fontSize: 12, color: textMuted, fontWeight: FontWeight.w600)),
+                                ],
+                              ),
                             ),
-                            icon: const Icon(Icons.open_in_new_rounded, size: 14),
-                            label: const Text('View Document'),
-                            onPressed: () => launchUrl(Uri.parse(fileUrl), mode: LaunchMode.externalApplication),
-                          ),
-                          const SizedBox(width: 8),
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: textMuted,
-                              side: BorderSide(color: border),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            ),
-                            icon: const Icon(Icons.download_rounded, size: 14),
-                            label: const Text('Download'),
-                            onPressed: () => launchUrl(Uri.parse(fileUrl), mode: LaunchMode.externalApplication),
                           ),
                         ],
                       ),
@@ -2154,33 +1994,35 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 14),
 
               if (id != null && isUploaded)
-                Column(
+                Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _kGreen,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        elevation: 0,
                       ),
                       onPressed: _actionLoading[id] == true ? null : () => _setStatus(id, 'approved', key),
-                      icon: const Icon(Icons.check_rounded, size: 14),
-                      label: const Text('Approve'),
+                      icon: const Icon(Icons.check_rounded, size: 13),
+                      label: Text('Approve', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(width: 6),
                     OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
+                      style: ElevatedButton.styleFrom(
                         foregroundColor: _kRed,
                         side: const BorderSide(color: _kRed),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       ),
                       onPressed: _actionLoading[id] == true ? null : () => _setStatus(id, 'rejected', key),
-                      icon: const Icon(Icons.close_rounded, size: 14),
-                      label: const Text('Reject'),
+                      icon: const Icon(Icons.close_rounded, size: 13),
+                      label: Text('Reject', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),

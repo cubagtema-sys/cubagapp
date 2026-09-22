@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_service.dart';
+import '../services/api_service.dart';
 import '../services/biometric_service.dart';
 import '../components/app_logo.dart';
 import '../core/router.dart';
@@ -77,6 +78,168 @@ class _LoginPageState extends State<LoginPage> {
         if (savedMode != null) _loginMode = savedMode;
       });
     }
+  }
+
+  Future<void> _showServerConfigDialog() async {
+    final ctrl = TextEditingController(text: ApiService.baseUrl);
+    bool testing = false;
+    String? testResult;
+    bool? testSuccess;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: _kWhite,
+          title: Row(
+            children: [
+              Icon(Icons.dns_rounded, color: _kBrown, size: 24),
+              const SizedBox(width: 10),
+              Text(
+                'Server Configuration',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 20, color: _kText),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Backend API Base URL:',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: _kMuted),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: ctrl,
+                  style: TextStyle(color: _kText, fontSize: 14, fontFamily: 'monospace'),
+                  decoration: InputDecoration(
+                    hintText: 'http://192.168.4.127:5005/api/v1',
+                    filled: true,
+                    fillColor: _kCream,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: _kBorder),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: _kOrange, width: 2),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (testResult != null)
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: testSuccess == true ? const Color(0xFFf0fdf4) : const Color(0xFFfef2f2),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: testSuccess == true ? const Color(0xFFbbf7d0) : const Color(0xFFfecaca),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          testSuccess == true ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                          color: testSuccess == true ? const Color(0xFF16a34a) : const Color(0xFFdc2626),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            testResult!,
+                            style: TextStyle(
+                              color: testSuccess == true ? const Color(0xFF15803d) : const Color(0xFFb91c1c),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ActionChip(
+                      label: const Text('Mac IP (192.168.4.127:5005)'),
+                      onPressed: () {
+                        setDialogState(() {
+                          ctrl.text = 'http://192.168.4.127:5005/api/v1';
+                          testResult = null;
+                        });
+                      },
+                    ),
+                    ActionChip(
+                      label: const Text('Localhost (127.0.0.1:5005)'),
+                      onPressed: () {
+                        setDialogState(() {
+                          ctrl.text = 'http://127.0.0.1:5005/api/v1';
+                          testResult = null;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: testing ? null : () async {
+                setDialogState(() {
+                  testing = true;
+                  testResult = 'Pinging server...';
+                  testSuccess = null;
+                });
+                final ok = await ApiService.testConnection(ctrl.text.trim());
+                setDialogState(() {
+                  testing = false;
+                  testSuccess = ok;
+                  testResult = ok
+                      ? 'Connected successfully! Server is responding.'
+                      : 'Unable to reach server. Make sure your device is on the same Wi-Fi.';
+                });
+              },
+              child: testing
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Text('Test Connection', style: TextStyle(color: _kBrown, fontWeight: FontWeight.bold)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kOrange,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () async {
+                await ApiService.updateBaseUrl(ctrl.text.trim());
+                if (ctx.mounted) {
+                  Navigator.of(ctx).pop();
+                }
+                if (mounted) {
+                  setState(() {
+                    _error = null;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Server updated to: ${ApiService.baseUrl}'),
+                      backgroundColor: const Color(0xFF16a34a),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Save & Apply', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _checkBiometric() async {
@@ -686,9 +849,9 @@ class _LoginPageState extends State<LoginPage> {
         ),
         const SizedBox(height: 32),
 
-        if (_error != null)
+        if (_error != null) ...[
           Container(
-            margin: const EdgeInsets.only(bottom: 24),
+            margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: const Color(0xFFfef2f2),
@@ -716,6 +879,28 @@ class _LoginPageState extends State<LoginPage> {
               ],
             ),
           ),
+          if (_error!.toLowerCase().contains('reach') ||
+              _error!.toLowerCase().contains('server') ||
+              _error!.toLowerCase().contains('connection'))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Center(
+                child: TextButton.icon(
+                  onPressed: _showServerConfigDialog,
+                  icon: const Icon(Icons.settings_ethernet_rounded, size: 18, color: Color(0xFFb91c1c)),
+                  label: Text(
+                    'Configure Server Connection (${ApiService.activeHost})',
+                    style: const TextStyle(
+                      color: Color(0xFFb91c1c),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
 
         Container(
           decoration: BoxDecoration(
@@ -975,6 +1160,21 @@ class _LoginPageState extends State<LoginPage> {
                 color: _kBrown,
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Center(
+          child: TextButton.icon(
+            onPressed: _showServerConfigDialog,
+            icon: Icon(Icons.dns_outlined, size: 16, color: _kMuted),
+            label: Text(
+              'Server: ${ApiService.activeHost}  (tap to change)',
+              style: TextStyle(
+                color: _kMuted,
+                fontSize: 13,
+                decoration: TextDecoration.underline,
               ),
             ),
           ),

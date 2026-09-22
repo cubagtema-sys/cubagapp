@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../services/api_service.dart';
+import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
 
 const _kOrange = Color(0xFFFF5000);
@@ -11,9 +12,7 @@ const _kGreen = Color(0xFF10B981);
 const _kBlue = Color(0xFF3B82F6);
 const _kIndigo = Color(0xFF6366F1);
 const _kRed = Color(0xFFEF4444);
-const _kDarkBrown = Color(0xFF1A0F0A);
-const _kCardBrown = Color(0xFF281710);
-const _kBorderBrown = Color(0xFF4D2D20);
+const _kSlate = Color(0xFF64748B);
 
 class AdminCtiCoursesPage extends StatefulWidget {
   const AdminCtiCoursesPage({super.key});
@@ -25,7 +24,7 @@ class AdminCtiCoursesPage extends StatefulWidget {
 class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
     with SingleTickerProviderStateMixin {
   final ApiService _api = ApiService();
-  late TabController _adminTabController;
+  late TabController _tabController;
 
   List<dynamic> _courses = [];
   List<dynamic> _enrollments = [];
@@ -33,48 +32,48 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
   bool _loading = true;
   bool _loadingEnrollments = false;
   bool _loadingGuestEnrollments = false;
-  String? _error;
+
+  // Catalog filters
   String _searchQuery = '';
   int _filterTab = 0; // 0: All, 1: Active, 2: Archived
-  String _enrollmentCourseFilter = 'all'; // 'all' or course ID/title
+
+  // Member enrollments filter
+  String _enrollmentCourseFilter = 'all';
   String _enrollmentSearchQuery = '';
 
-  // Guest Enrollments tab filters
-  String _guestStatusFilter = 'all'; // 'all', 'paid', 'pending'
+  // Guest enrollments filter
+  String _guestStatusFilter = 'all';
   String _guestCourseFilter = 'all';
   String _guestSearchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _adminTabController = TabController(length: 3, vsync: this);
-    _adminTabController.addListener(() {
-      if (_adminTabController.index == 1 &&
-          _enrollments.isEmpty &&
-          !_loadingEnrollments) {
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.index == 1 && _enrollments.isEmpty && !_loadingEnrollments) {
         _fetchEnrollments();
-      } else if (_adminTabController.index == 2 &&
-          _guestEnrollments.isEmpty &&
-          !_loadingGuestEnrollments) {
+      } else if (_tabController.index == 2 && _guestEnrollments.isEmpty && !_loadingGuestEnrollments) {
         _fetchGuestEnrollments();
       }
     });
+    _fetchAll();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchAll() async {
     _fetchCourses();
     _fetchEnrollments();
     _fetchGuestEnrollments();
   }
 
-  @override
-  void dispose() {
-    _adminTabController.dispose();
-    super.dispose();
-  }
-
   Future<void> _fetchCourses() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    setState(() => _loading = true);
     try {
       final res = await _api.get('/events/admin/courses');
       if (mounted && res.data is Map && res.data['items'] is List) {
@@ -88,16 +87,9 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
           _loading = false;
         });
       }
-      _fetchEnrollments();
-      _fetchGuestEnrollments();
     } catch (e, st) {
       AppLogger.error('admin_cti_courses', e, st);
-      if (mounted) {
-        setState(() {
-          _error = 'Failed to load CTI courses';
-          _loading = false;
-        });
-      }
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -142,6 +134,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
           SnackBar(
             content: Text('Guest enrollment $ref marked as paid!'),
             backgroundColor: _kGreen,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -151,6 +144,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
           SnackBar(
             content: Text('Failed to update status: $e'),
             backgroundColor: _kRed,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -169,672 +163,6 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
       }
       return false;
     }).toList();
-  }
-
-  void _showCourseEnrollmentsDialog(dynamic course) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dialogBg = isDark ? _kCardBrown : Colors.white;
-    final borderCol = isDark ? _kBorderBrown : const Color(0xFFE2E8F0);
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark ? Colors.white70 : const Color(0xFF64748B);
-    final fieldBg = isDark ? _kDarkBrown : const Color(0xFFF8FAFC);
-
-    final courseTitle = course['title'] ?? 'CTI Course';
-    final courseEnrollments = _getEnrollmentsForCourse(course);
-    String studentFilter = '';
-
-    showDialog(
-      context: context,
-      builder: (dlgCtx) => StatefulBuilder(
-        builder: (context, setDlgState) {
-          final filteredList = courseEnrollments.where((e) {
-            if (studentFilter.isEmpty) return true;
-            final q = studentFilter.toLowerCase();
-            final name = (e['member_name']?.toString() ?? '').toLowerCase();
-            final comp = (e['company']?.toString() ?? '').toLowerCase();
-            final email = (e['email']?.toString() ?? '').toLowerCase();
-            final phone = (e['phone']?.toString() ?? '').toLowerCase();
-            final ref = (e['payment_ref']?.toString() ?? '').toLowerCase();
-            return name.contains(q) ||
-                comp.contains(q) ||
-                email.contains(q) ||
-                phone.contains(q) ||
-                ref.contains(q);
-          }).toList();
-
-          return AlertDialog(
-            backgroundColor: dialogBg,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: _kOrange.withAlpha(25),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.school_rounded,
-                    color: _kOrange,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        courseTitle,
-                        style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 17,
-                          color: textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Enrolled Students & Course Roster (${courseEnrollments.length} Total)',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: _kOrange,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  color: Colors.grey,
-                  onPressed: () => Navigator.pop(dlgCtx),
-                ),
-              ],
-            ),
-            content: SizedBox(
-              width: 620,
-              height: 520,
-              child: Column(
-                children: [
-                  // Course Summary Header Bar
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: fieldBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: borderCol),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _summaryCol(
-                          'START DATE',
-                          course['start_date'] ?? 'N/A',
-                          Icons.calendar_today_rounded,
-                          _kBlue,
-                          textPrimary,
-                        ),
-                        _summaryCol(
-                          'DURATION',
-                          course['duration'] ?? 'N/A',
-                          Icons.timelapse_rounded,
-                          _kIndigo,
-                          textPrimary,
-                        ),
-                        _summaryCol(
-                          'MODE',
-                          course['mode'] ?? 'Hybrid',
-                          Icons.location_on_outlined,
-                          _kOrange,
-                          textPrimary,
-                        ),
-                        _summaryCol(
-                          'FEE',
-                          course['fee'] ?? 'Free',
-                          Icons.payments_outlined,
-                          _kGreen,
-                          textPrimary,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Search box
-                  TextField(
-                    onChanged: (v) => setDlgState(() => studentFilter = v.trim()),
-                    style: GoogleFonts.inter(fontSize: 13, color: textPrimary),
-                    decoration: InputDecoration(
-                      hintText: 'Search enrolled students by name, email, or company...',
-                      hintStyle: GoogleFonts.inter(fontSize: 12.5, color: textMuted),
-                      prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Colors.grey),
-                      filled: true,
-                      fillColor: fieldBg,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(color: borderCol),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(color: borderCol),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Students List
-                  Expanded(
-                    child: filteredList.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.people_outline_rounded,
-                                  size: 42,
-                                  color: Colors.grey.shade400,
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  courseEnrollments.isEmpty
-                                      ? 'No members have enrolled in this course yet.'
-                                      : 'No matching students found.',
-                                  style: GoogleFonts.outfit(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14.5,
-                                    color: textMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : ListView.separated(
-                            itemCount: filteredList.length,
-                            separatorBuilder: (_, index) => const SizedBox(height: 8),
-                            itemBuilder: (ctx, i) {
-                              final en = filteredList[i];
-                              final memberName = en['member_name'] ?? 'Enrolled Member';
-                              final company = en['company'] ?? 'Licensed Brokerage';
-                              final email = en['email'] ?? '';
-                              final phone = en['phone'] ?? '';
-                              final amount = en['amount']?.toString() ?? '';
-                              final ref = en['payment_ref'] ?? '';
-                              final enrolledDate = en['created_at']?.toString().split('T').first ?? '';
-
-                              return Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: fieldBg,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: borderCol),
-                                ),
-                                child: Row(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 20,
-                                      backgroundColor: _kOrange.withAlpha(30),
-                                      child: Text(
-                                        memberName.isNotEmpty ? memberName[0].toUpperCase() : 'M',
-                                        style: GoogleFonts.outfit(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                          color: _kOrange,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Text(
-                                                memberName,
-                                                style: GoogleFonts.outfit(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 13.5,
-                                                  color: textPrimary,
-                                                ),
-                                              ),
-                                              if (company.isNotEmpty) ...[
-                                                const SizedBox(width: 6),
-                                                Text(
-                                                  '• $company',
-                                                  style: GoogleFonts.inter(
-                                                    fontSize: 11.5,
-                                                    color: textMuted,
-                                                  ),
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            '$email • $phone',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 11.5,
-                                              color: textMuted,
-                                            ),
-                                          ),
-                                          if (ref.isNotEmpty) ...[
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              'Ref: $ref ${enrolledDate.isNotEmpty ? '• Enrolled on $enrolledDate' : ''}',
-                                              style: GoogleFonts.inter(
-                                                fontSize: 11,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    ),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.end,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 3,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: _kGreen.withAlpha(25),
-                                            borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(
-                                              color: _kGreen.withAlpha(60),
-                                            ),
-                                          ),
-                                          child: Text(
-                                            'PAID & ENROLLED',
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 9.5,
-                                              fontWeight: FontWeight.bold,
-                                              color: _kGreen,
-                                            ),
-                                          ),
-                                        ),
-                                        if (amount.isNotEmpty) ...[
-                                          const SizedBox(height: 3),
-                                          Text(
-                                            'GHS $amount',
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 11.5,
-                                              fontWeight: FontWeight.bold,
-                                              color: _kOrange,
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dlgCtx),
-                child: Text(
-                  'Close',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
-                ),
-              ),
-              if (courseEnrollments.isNotEmpty)
-                ElevatedButton.icon(
-                  onPressed: () {
-                    final names = courseEnrollments
-                        .map((e) => '${e['member_name']} (${e['company'] ?? 'Broker'}) - ${e['phone']} - ${e['email']}')
-                        .join('\n');
-                    Clipboard.setData(ClipboardData(text: names));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Enrolled students roster copied to clipboard'),
-                        backgroundColor: _kGreen,
-                        duration: Duration(seconds: 1),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.copy_rounded, size: 15),
-                  label: Text(
-                    'Copy Student Roster',
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _kOrange,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _summaryCol(
-    String label,
-    String val,
-    IconData icon,
-    Color iconColor,
-    Color textColor,
-  ) {
-    return Column(
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 12, color: iconColor),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: GoogleFonts.outfit(
-                fontSize: 9.5,
-                fontWeight: FontWeight.bold,
-                color: iconColor,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 3),
-        Text(
-          val,
-          style: GoogleFonts.outfit(
-            fontSize: 12.5,
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _showCourseDialog([dynamic existing]) async {
-    final isEdit = existing != null;
-    final titleCtrl = TextEditingController(text: existing?['title']?.toString() ?? '');
-    final dateCtrl = TextEditingController(text: existing?['start_date']?.toString() ?? '25 Aug 2026');
-    final durationCtrl = TextEditingController(text: existing?['duration']?.toString() ?? '4 Weeks');
-    final feeCtrl = TextEditingController(text: existing?['fee']?.toString() ?? 'GHS 1,980');
-    final descCtrl = TextEditingController(text: existing?['description']?.toString() ?? '');
-    String mode = existing?['mode']?.toString() ?? 'Hybrid';
-    bool notifyMembers = true;
-    bool submitting = false;
-
-    await showDialog(
-      context: context,
-      builder: (dlgCtx) => StatefulBuilder(
-        builder: (context, setDlgState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: _kOrange.withAlpha(25), borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.school_rounded, color: _kOrange, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  isEdit ? 'Edit CTI Course' : 'Add New CTI Course',
-                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: SizedBox(
-              width: 500,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Add or update CUBAG Training Institute (CTI) courses displayed on the portal and mobile app.',
-                    style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: titleCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Course Title *',
-                      hintText: 'e.g. Freight Forwarding Fundamentals',
-                      prefixIcon: Icon(Icons.menu_book_rounded),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: dateCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Start Date *',
-                            hintText: 'e.g. 25 Aug 2026',
-                            prefixIcon: Icon(Icons.calendar_today_rounded),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: durationCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Duration *',
-                            hintText: 'e.g. 4 Weeks',
-                            prefixIcon: Icon(Icons.timelapse_rounded),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: mode,
-                          decoration: const InputDecoration(labelText: 'Delivery Mode'),
-                          items: const [
-                            DropdownMenuItem(value: 'Hybrid', child: Text('Hybrid (In-Person + Online)')),
-                            DropdownMenuItem(value: 'In-Person', child: Text('In-Person Classroom')),
-                            DropdownMenuItem(value: 'Online', child: Text('Online Live / Virtual')),
-                          ],
-                          onChanged: (v) => setDlgState(() => mode = v ?? 'Hybrid'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: feeCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Fee (GHS) *',
-                            hintText: 'e.g. GHS 1,980',
-                            prefixIcon: Icon(Icons.payments_outlined),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: descCtrl,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Description & Scope *',
-                      hintText: 'Detailed syllabus, target audience, and certification details...',
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Notify all members checkbox
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: _kOrange.withAlpha(15),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: _kOrange.withAlpha(50)),
-                    ),
-                    child: CheckboxListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        '🔔 Broadcast Announcement & Push Notification to all Members',
-                        style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: _kOrange),
-                      ),
-                      subtitle: Text(
-                        'Automatically sends an in-app alert, announcement post, and push notification.',
-                        style: GoogleFonts.inter(fontSize: 10.5, color: Colors.grey.shade600),
-                      ),
-                      value: notifyMembers,
-                      activeColor: _kOrange,
-                      onChanged: (v) => setDlgState(() => notifyMembers = v ?? true),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dlgCtx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: _kOrange, foregroundColor: Colors.white),
-              onPressed: submitting
-                  ? null
-                  : () async {
-                      if (titleCtrl.text.trim().isEmpty) return;
-                      setDlgState(() => submitting = true);
-
-                      final payload = {
-                        'title': titleCtrl.text.trim(),
-                        'start_date': dateCtrl.text.trim(),
-                        'duration': durationCtrl.text.trim(),
-                        'mode': mode,
-                        'fee': feeCtrl.text.trim(),
-                        'description': descCtrl.text.trim(),
-                        'notify_members': notifyMembers,
-                      };
-
-                      final messenger = ScaffoldMessenger.of(context);
-                      try {
-                        if (isEdit) {
-                          await _api.put('/events/admin/courses/${existing['id']}', data: payload);
-                        } else {
-                          await _api.post('/events/admin/courses', data: payload);
-                        }
-                        if (dlgCtx.mounted) Navigator.pop(dlgCtx);
-                        _fetchCourses();
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              isEdit ? 'Course updated successfully!' : 'Course created and announced to all members!',
-                            ),
-                            backgroundColor: _kGreen,
-                          ),
-                        );
-                      } catch (e) {
-                        setDlgState(() => submitting = false);
-                        messenger.showSnackBar(
-                          SnackBar(content: Text('Error: $e'), backgroundColor: _kRed),
-                        );
-                      }
-                    },
-              child: Text(submitting ? 'Saving...' : (isEdit ? 'Save Changes' : 'Publish & Announce Course')),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _restoreCourse(dynamic course) async {
-    try {
-      await _api.post('/events/admin/courses/${course['id']}/restore');
-      _fetchCourses();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Course restored to active catalog! 🎉'),
-            backgroundColor: _kGreen,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to restore course: $e'), backgroundColor: _kRed),
-        );
-      }
-    }
-  }
-
-  Future<void> _deleteCourse(dynamic course, {bool permanent = false}) async {
-    final title = permanent ? 'Permanently Delete CTI Course?' : 'Archive CTI Course?';
-    final content = permanent
-        ? 'This will permanently remove "${course['title']}" and its course record. This action cannot be undone.'
-        : 'Are you sure you want to archive "${course['title']}"? It will be moved to the Archived tab and can be restored anytime.';
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(title, style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        content: Text(content, style: GoogleFonts.inter(fontSize: 13.5)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _kRed,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(permanent ? 'Permanently Delete' : 'Archive Course'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      try {
-        final url = permanent
-            ? '/events/admin/courses/${course['id']}?permanent=true'
-            : '/events/admin/courses/${course['id']}';
-        await _api.delete(url);
-        _fetchCourses();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(permanent ? 'Course permanently deleted.' : 'Course archived. You can view it in the Archived tab.'),
-              backgroundColor: permanent ? _kRed : _kOrange,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e'), backgroundColor: _kRed),
-          );
-        }
-      }
-    }
   }
 
   List<dynamic> get _filteredCourses {
@@ -922,82 +250,58 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? _kCardBrown : Colors.white;
-    final borderColor = isDark ? _kBorderBrown : const Color(0xFFE2E8F0);
+    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final subTextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     final total = _courses.length;
     final active = _courses.where((c) => c['is_active'] == true).length;
-    final inactive = total - active;
 
     return AppLayout(
-      title: 'CTI Courses Admin',
+      title: 'CTI Courses',
       scrollable: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           AdminHeader(
-            title: 'CUBAG Training Institute (CTI) Courses',
-            subtitle: 'Manage training course catalog, view enrolled members & guest applicants, schedules, and fee receipts.',
+            title: 'CUBAG Training Institute (CTI)',
+            subtitle: 'Manage professional training courses, curricula, and student enrollment registries.',
             actions: [
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: isDark ? Colors.white : const Color(0xFF334155),
+                  side: BorderSide(color: borderColor),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: _fetchAll,
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: Text('Refresh', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13)),
+              ),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: kAdminOrange,
+                  backgroundColor: _kOrange,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   elevation: 0,
                 ),
                 onPressed: () => _showCourseDialog(),
-                icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
-                label: Text('Add New Course', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: Text('New Course', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
               ),
             ],
           ),
+          const SizedBox(height: 14),
+
+          // Streamlined KPI Cards
+          _buildKPIRow(isDark, cardBg, borderColor, textColor, subTextColor, total, active),
           const SizedBox(height: 16),
 
-          // Metric Stats Cards
-          Row(
-            children: [
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Total Courses',
-                  value: '$total',
-                  icon: Icons.school_outlined,
-                  color: kAdminBlue,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Active Courses',
-                  value: '$active',
-                  icon: Icons.check_circle_outline_rounded,
-                  color: kAdminGreen,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Member Enrolled',
-                  value: '${_enrollments.length}',
-                  icon: Icons.people_alt_outlined,
-                  color: _kIndigo,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Guest Enrolled',
-                  value: '${_guestEnrollments.length}',
-                  icon: Icons.person_pin_circle_outlined,
-                  color: _kOrange,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Tabs: Course Catalog vs Enrolled Members vs Guest Enrollments
+          // Clean Tab Bar
           Container(
             decoration: BoxDecoration(
               color: cardBg,
@@ -1005,285 +309,370 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
               border: Border.all(color: borderColor),
             ),
             child: TabBar(
-              controller: _adminTabController,
+              controller: _tabController,
               indicatorColor: _kOrange,
               labelColor: _kOrange,
-              unselectedLabelColor: Colors.grey,
+              unselectedLabelColor: subTextColor,
+              labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13),
+              unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
               tabs: [
-                const Tab(icon: Icon(Icons.school_rounded, size: 16), text: 'Course Catalog & Publishing'),
-                Tab(icon: const Icon(Icons.people_alt_rounded, size: 16), text: 'Member Enrolled (${_enrollments.length})'),
-                Tab(icon: const Icon(Icons.person_pin_rounded, size: 16), text: 'Guest Enrolled & Paid (${_guestEnrollments.length})'),
+                Tab(
+                  icon: const Icon(Icons.school_rounded, size: 16),
+                  text: 'Course Catalog ($total)',
+                ),
+                Tab(
+                  icon: const Icon(Icons.people_alt_rounded, size: 16),
+                  text: 'Member Enrolled (${_enrollments.length})',
+                ),
+                Tab(
+                  icon: const Icon(Icons.person_pin_rounded, size: 16),
+                  text: 'Guest Enrolled & Paid (${_guestEnrollments.length})',
+                ),
               ],
             ),
           ),
           const SizedBox(height: 16),
 
+          // Tab Views
           AnimatedBuilder(
-            animation: _adminTabController,
+            animation: _tabController,
             builder: (context, _) {
-              if (_adminTabController.index == 0) {
-                return _buildCoursesTab(total, active, inactive, isDark, cardBg, borderColor);
-              } else if (_adminTabController.index == 1) {
-                return _buildEnrollmentsTab(isDark, cardBg, borderColor);
+              if (_tabController.index == 0) {
+                return _buildCoursesTab(total, active, isDark, cardBg, borderColor, textColor, subTextColor);
+              } else if (_tabController.index == 1) {
+                return _buildEnrollmentsTab(isDark, cardBg, borderColor, textColor, subTextColor);
               } else {
-                return _buildGuestEnrollmentsTab(isDark, cardBg, borderColor);
+                return _buildGuestEnrollmentsTab(isDark, cardBg, borderColor, textColor, subTextColor);
               }
             },
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKPIRow(
+    bool isDark,
+    Color cardBg,
+    Color borderColor,
+    Color textColor,
+    Color subTextColor,
+    int total,
+    int active,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 750;
+        final cards = [
+          _kpiStat('Total Courses', '$total', Icons.school_outlined, _kIndigo, cardBg, borderColor, textColor, subTextColor),
+          _kpiStat('Active Catalog', '$active', Icons.check_circle_outline_rounded, _kGreen, cardBg, borderColor, textColor, subTextColor),
+          _kpiStat('Member Enrolled', '${_enrollments.length}', Icons.people_alt_outlined, _kBlue, cardBg, borderColor, textColor, subTextColor),
+          _kpiStat('Guest Enrolled', '${_guestEnrollments.length}', Icons.person_pin_circle_outlined, _kOrange, cardBg, borderColor, textColor, subTextColor),
+        ];
+
+        if (isWide) {
+          return Row(
+            children: cards.map((c) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: c))).toList(),
+          );
+        }
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: cards.map((c) => Container(width: 160, margin: const EdgeInsets.only(right: 8), child: c)).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _kpiStat(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+    Color cardBg,
+    Color borderColor,
+    Color textColor,
+    Color subTextColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 16),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: textColor),
+                ),
+                Text(
+                  label,
+                  style: GoogleFonts.outfit(fontSize: 11.5, color: subTextColor, fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
+  // ── TAB 1: COURSE CATALOG ──────────────────────────────────────────────────
   Widget _buildCoursesTab(
     int total,
     int active,
-    int inactive,
     bool isDark,
     Color cardBg,
     Color borderColor,
+    Color textColor,
+    Color subTextColor,
   ) {
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark ? Colors.white70 : const Color(0xFF64748B);
+    final courses = _filteredCourses;
+    final inactive = total - active;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Search & Filter controls
-        AdminToolbar(
-          searchHint: 'Search courses by title, delivery mode, or keywords...',
-          onSearchChanged: (v) => setState(() => _searchQuery = v),
-          filters: [
-            AdminFilterChip(
-              label: 'All Courses',
-              count: total,
-              isSelected: _filterTab == 0,
-              onTap: () => setState(() => _filterTab = 0),
-            ),
-            AdminFilterChip(
-              label: 'Active',
-              count: active,
-              isSelected: _filterTab == 1,
-              onTap: () => setState(() => _filterTab = 1),
-              selectedColor: kAdminGreen,
-            ),
-            AdminFilterChip(
-              label: 'Archived',
-              count: inactive,
-              isSelected: _filterTab == 2,
-              onTap: () => setState(() => _filterTab = 2),
-              selectedColor: Colors.grey.shade700,
-            ),
-          ],
+        // Search & Filter Bar
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 38,
+                  child: TextField(
+                    onChanged: (v) => setState(() => _searchQuery = v.trim()),
+                    style: GoogleFonts.outfit(fontSize: 13.5, color: textColor),
+                    decoration: InputDecoration(
+                      hintText: 'Search courses by title, mode, or keywords...',
+                      hintStyle: GoogleFonts.inter(fontSize: 12.5, color: subTextColor),
+                      prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
+                      filled: true,
+                      fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _filterPill('All ($total)', _filterTab == 0, () => setState(() => _filterTab = 0), borderColor, textColor),
+                    const SizedBox(width: 6),
+                    _filterPill('Active ($active)', _filterTab == 1, () => setState(() => _filterTab = 1), borderColor, textColor, activeColor: _kGreen),
+                    const SizedBox(width: 6),
+                    _filterPill('Archived ($inactive)', _filterTab == 2, () => setState(() => _filterTab = 2), borderColor, textColor, activeColor: _kSlate),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
         if (_loading)
-          const Padding(
-            padding: EdgeInsets.all(40),
-            child: Center(child: CircularProgressIndicator(color: _kOrange)),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: List.generate(3, (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile())),
+            ),
           )
-        else if (_error != null)
-          Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
-        else if (_filteredCourses.isEmpty)
+        else if (courses.isEmpty)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(40),
+            padding: const EdgeInsets.all(36),
             decoration: BoxDecoration(
               color: cardBg,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: borderColor),
             ),
-            child: Column(
-              children: [
-                Icon(Icons.school_outlined, size: 48, color: Colors.grey.shade400),
-                const SizedBox(height: 12),
-                Text(
-                  'No CTI courses found.',
-                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: textPrimary),
-                ),
-              ],
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(Icons.school_outlined, size: 36, color: subTextColor),
+                  const SizedBox(height: 8),
+                  Text('No courses found', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
+                ],
+              ),
             ),
           )
         else
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: _filteredCourses.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 14),
+            itemCount: courses.length,
+            separatorBuilder: (_, index) => const SizedBox(height: 10),
             itemBuilder: (ctx, i) {
-              final c = _filteredCourses[i];
+              final c = courses[i];
               final isActive = c['is_active'] == true;
-              final enrolledList = _getEnrollmentsForCourse(c);
-              final enrolledCount = enrolledList.length;
+              final enrolledCount = _getEnrollmentsForCourse(c).length;
 
               return Container(
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: cardBg,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: borderColor),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.02), blurRadius: 4, offset: const Offset(0, 2)),
+                  ],
                 ),
-                child: Column(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: _kOrange.withAlpha(20),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.school_rounded, color: _kOrange, size: 26),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: _kOrange.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.school_rounded, color: _kOrange, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      c['title'] ?? '',
-                                      style: GoogleFonts.outfit(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16.5,
-                                        color: textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: (isActive ? _kGreen : Colors.grey).withAlpha(25),
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                        color: (isActive ? _kGreen : Colors.grey).withAlpha(60),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      isActive ? 'ACTIVE' : 'ARCHIVED',
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: isActive ? _kGreen : Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                c['description'] ?? '',
-                                style: GoogleFonts.inter(
-                                  fontSize: 12.5,
-                                  color: textMuted,
-                                  height: 1.35,
+                              Expanded(
+                                child: Text(
+                                  c['title'] ?? '',
+                                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15, color: textColor),
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 6,
-                                children: [
-                                  _infoChip(Icons.calendar_today_rounded, 'Start: ${c['start_date']}', isDark),
-                                  _infoChip(Icons.timelapse_rounded, 'Duration: ${c['duration']}', isDark),
-                                  _infoChip(Icons.location_on_outlined, 'Mode: ${c['mode']}', isDark),
-                                  _infoChip(Icons.payments_outlined, 'Fee: ${c['fee']}', isDark, color: _kOrange),
-                                ],
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: (isActive ? _kGreen : _kSlate).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  isActive ? 'ACTIVE' : 'ARCHIVED',
+                                  style: GoogleFonts.outfit(fontSize: 9.5, fontWeight: FontWeight.bold, color: isActive ? _kGreen : _kSlate),
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Divider(color: borderColor, height: 1),
-                    const SizedBox(height: 12),
-
-                    // Actions & Enrolled Students button
-                    Row(
-                      children: [
-                        // View Enrolled Button
-                        OutlinedButton.icon(
-                          onPressed: () => _showCourseEnrollmentsDialog(c),
-                          icon: Icon(
-                            Icons.people_alt_rounded,
-                            size: 16,
-                            color: enrolledCount > 0 ? _kGreen : _kOrange,
-                          ),
-                          label: Text(
-                            enrolledCount == 1
-                                ? '1 Enrolled Student'
-                                : '$enrolledCount Enrolled Students',
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: enrolledCount > 0 ? _kGreen : _kOrange,
+                          if (c['description'] != null && c['description'].toString().isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              c['description'],
+                              style: GoogleFonts.inter(fontSize: 12, color: subTextColor, height: 1.3),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: (enrolledCount > 0 ? _kGreen : _kOrange).withAlpha(120),
-                              width: 1.2,
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-
-                        // Actions
-                        if (!isActive) ...[
-                          // Restore button for archived courses
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _kGreen,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              elevation: 0,
-                            ),
-                            icon: const Icon(Icons.restore_from_trash_rounded, size: 16),
-                            label: Text(
-                              'Restore',
-                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12.5),
-                            ),
-                            onPressed: () => _restoreCourse(c),
-                          ),
-                          const SizedBox(width: 6),
-                          // Edit
-                          IconButton(
-                            icon: const Icon(Icons.edit_outlined, color: _kBlue, size: 20),
-                            tooltip: 'Edit Course',
-                            onPressed: () => _showCourseDialog(c),
-                          ),
-                          // Permanent Delete
-                          IconButton(
-                            icon: const Icon(Icons.delete_forever_rounded, color: _kRed, size: 20),
-                            tooltip: 'Permanently Delete',
-                            onPressed: () => _deleteCourse(c, permanent: true),
-                          ),
-                        ] else ...[
-                          // Edit
-                          IconButton(
-                            icon: const Icon(Icons.edit_outlined, color: _kBlue, size: 20),
-                            tooltip: 'Edit Course',
-                            onPressed: () => _showCourseDialog(c),
-                          ),
-                          // Archive
-                          IconButton(
-                            icon: const Icon(Icons.archive_outlined, color: _kOrange, size: 20),
-                            tooltip: 'Archive Course',
-                            onPressed: () => _deleteCourse(c),
+                          ],
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: [
+                              _infoBadge(Icons.calendar_today_rounded, '${c['start_date'] ?? 'N/A'}', isDark, subTextColor),
+                              _infoBadge(Icons.timelapse_rounded, '${c['duration'] ?? 'N/A'}', isDark, subTextColor),
+                              _infoBadge(Icons.location_on_outlined, '${c['mode'] ?? 'Hybrid'}', isDark, subTextColor),
+                              _infoBadge(Icons.payments_outlined, '${c['fee'] ?? 'Free'}', isDark, _kOrange),
+                            ],
                           ),
                         ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        // Enrolled button
+                        InkWell(
+                          onTap: () => _showCourseEnrollmentsDialog(c),
+                          borderRadius: BorderRadius.circular(6),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: (enrolledCount > 0 ? _kGreen : _kOrange).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: (enrolledCount > 0 ? _kGreen : _kOrange).withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.people_alt_rounded, size: 12, color: enrolledCount > 0 ? _kGreen : _kOrange),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '$enrolledCount Enrolled',
+                                  style: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.bold, color: enrolledCount > 0 ? _kGreen : _kOrange),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, size: 16),
+                              color: _kBlue,
+                              tooltip: 'Edit Course',
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () => _showCourseDialog(c),
+                            ),
+                            if (isActive)
+                              IconButton(
+                                icon: const Icon(Icons.archive_outlined, size: 16),
+                                color: _kOrange,
+                                tooltip: 'Archive',
+                                visualDensity: VisualDensity.compact,
+                                onPressed: () => _deleteCourse(c),
+                              )
+                            else ...[
+                              IconButton(
+                                icon: const Icon(Icons.restore_from_trash_rounded, size: 16),
+                                color: _kGreen,
+                                tooltip: 'Restore',
+                                visualDensity: VisualDensity.compact,
+                                onPressed: () => _restoreCourse(c),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_forever_rounded, size: 16),
+                                color: _kRed,
+                                tooltip: 'Delete Permanently',
+                                visualDensity: VisualDensity.compact,
+                                onPressed: () => _deleteCourse(c, permanent: true),
+                              ),
+                            ],
+                          ],
+                        ),
                       ],
                     ),
                   ],
@@ -1295,31 +684,25 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
     );
   }
 
-  Widget _buildEnrollmentsTab(bool isDark, Color cardBg, Color borderColor) {
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark ? Colors.white70 : const Color(0xFF64748B);
-    final fieldBg = isDark ? _kDarkBrown : const Color(0xFFF8FAFC);
-
-    if (_loadingEnrollments) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(40),
-          child: CircularProgressIndicator(color: _kOrange),
-        ),
-      );
-    }
-
+  // ── TAB 2: MEMBER ENROLLED ─────────────────────────────────────────────────
+  Widget _buildEnrollmentsTab(
+    bool isDark,
+    Color cardBg,
+    Color borderColor,
+    Color textColor,
+    Color subTextColor,
+  ) {
     final filteredList = _filteredEnrollments;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Course Filter Dropdown & Search Bar
+        // Filter toolbar
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: cardBg,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: borderColor),
           ),
           child: Column(
@@ -1327,95 +710,74 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
             children: [
               Row(
                 children: [
-                  const Icon(Icons.filter_list_rounded, color: _kOrange, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'FILTER ENROLLMENTS BY COURSE',
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: _kOrange,
-                      letterSpacing: 0.6,
+                  Expanded(
+                    child: SizedBox(
+                      height: 38,
+                      child: TextField(
+                        onChanged: (v) => setState(() => _enrollmentSearchQuery = v.trim()),
+                        style: GoogleFonts.outfit(fontSize: 13.5, color: textColor),
+                        decoration: InputDecoration(
+                          hintText: 'Search enrolled students by name, company, email, ref...',
+                          hintStyle: GoogleFonts.inter(fontSize: 12.5, color: subTextColor),
+                          prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
+                          filled: true,
+                          fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-
-              // Course Selector Pills / Dropdown
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _courseFilterPill(
-                    'All Courses (${_enrollments.length})',
-                    'all',
-                    isDark,
-                  ),
-                  ..._courses.map((c) {
-                    final cId = c['id']?.toString() ?? '';
-                    final cTitle = c['title'] ?? 'Course';
-                    final count = _getEnrollmentsForCourse(c).length;
-                    return _courseFilterPill(
-                      '$cTitle ($count)',
-                      cId,
-                      isDark,
-                    );
-                  }),
-                ],
-              ),
-              const SizedBox(height: 14),
-
-              // Search Bar
-              TextField(
-                onChanged: (v) => setState(() => _enrollmentSearchQuery = v.trim()),
-                style: GoogleFonts.inter(fontSize: 13, color: textPrimary),
-                decoration: InputDecoration(
-                  hintText: 'Search enrolled students by name, company, email, or payment ref...',
-                  hintStyle: GoogleFonts.inter(fontSize: 12.5, color: textMuted),
-                  prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Colors.grey),
-                  filled: true,
-                  fillColor: fieldBg,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _coursePill('All Courses (${_enrollments.length})', 'all', isDark, borderColor, textColor),
+                    ..._courses.map((c) {
+                      final cId = c['id']?.toString() ?? '';
+                      final cTitle = c['title'] ?? 'Course';
+                      final count = _getEnrollmentsForCourse(c).length;
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 6),
+                        child: _coursePill('$cTitle ($count)', cId, isDark, borderColor, textColor),
+                      );
+                    }),
+                  ],
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
-        if (filteredList.isEmpty)
+        if (_loadingEnrollments)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: List.generate(3, (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile())),
+            ),
+          )
+        else if (filteredList.isEmpty)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(40),
+            padding: const EdgeInsets.all(36),
             decoration: BoxDecoration(
               color: cardBg,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: borderColor),
             ),
-            child: Column(
-              children: [
-                Icon(Icons.people_outline_rounded, size: 48, color: Colors.grey.shade400),
-                const SizedBox(height: 12),
-                Text(
-                  _enrollmentCourseFilter != 'all'
-                      ? 'No members have enrolled in this selected course yet.'
-                      : 'No member course enrollments found.',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: textPrimary,
-                  ),
-                ),
-              ],
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(Icons.people_outline_rounded, size: 36, color: subTextColor),
+                  const SizedBox(height: 8),
+                  Text('No enrolled members found', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
+                ],
+              ),
             ),
           )
         else
@@ -1423,9 +785,9 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: filteredList.length,
-            separatorBuilder: (_, index) => const SizedBox(height: 10),
-            itemBuilder: (context, idx) {
-              final en = filteredList[idx];
+            separatorBuilder: (_, index) => const SizedBox(height: 8),
+            itemBuilder: (ctx, i) {
+              final en = filteredList[i];
               final memberName = en['member_name'] ?? 'Enrolled Member';
               final company = en['company'] ?? 'Licensed Broker';
               final courseTitle = en['course_title'] ?? 'CTI Course';
@@ -1437,88 +799,49 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
               final enrolledDate = en['created_at']?.toString().split('T').first ?? '';
 
               return Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: cardBg,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: borderColor),
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _kGreen.withAlpha(20),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.verified_user_rounded,
-                        color: _kGreen,
-                        size: 22,
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: _kGreen.withValues(alpha: 0.12),
+                      child: Text(
+                        memberName.isNotEmpty ? memberName[0].toUpperCase() : 'M',
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: _kGreen),
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              Text(
-                                memberName,
-                                style: GoogleFonts.outfit(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                  color: textPrimary,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '• $company',
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  color: textMuted,
-                                ),
-                              ),
+                              Text(memberName, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13.5, color: textColor)),
+                              if (company.isNotEmpty) ...[
+                                const SizedBox(width: 6),
+                                Text('• $company', style: GoogleFonts.inter(fontSize: 11.5, color: _kOrange, fontWeight: FontWeight.w500)),
+                              ],
                             ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Enrolled in: $courseTitle ($mode)',
-                            style: GoogleFonts.outfit(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: _kOrange,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Ref: $paymentRef • GHS $amount • Phone: $phone • Email: $email ${enrolledDate.isNotEmpty ? '• Date: $enrolledDate' : ''}',
-                            style: GoogleFonts.inter(
-                              fontSize: 11.5,
-                              color: textMuted,
-                            ),
-                          ),
+                          const SizedBox(height: 2),
+                          Text('Course: $courseTitle ($mode)', style: GoogleFonts.inter(fontSize: 12, color: textColor, fontWeight: FontWeight.w500)),
+                          Text('Ref: $paymentRef • GHS $amount • $phone • $email ${enrolledDate.isNotEmpty ? '• Date: $enrolledDate' : ''}', style: GoogleFonts.inter(fontSize: 11, color: subTextColor)),
                         ],
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                       decoration: BoxDecoration(
-                        color: _kGreen,
-                        borderRadius: BorderRadius.circular(6),
+                        color: _kGreen.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text(
-                        'PAID & ENROLLED',
-                        style: GoogleFonts.outfit(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: Text('PAID & ENROLLED', style: GoogleFonts.outfit(fontSize: 9.5, fontWeight: FontWeight.bold, color: _kGreen)),
                     ),
                   ],
                 ),
@@ -1529,75 +852,14 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
     );
   }
 
-  Widget _courseFilterPill(String label, String value, bool isDark) {
-    final isSelected = _enrollmentCourseFilter == value;
-    return InkWell(
-      onTap: () => setState(() => _enrollmentCourseFilter = value),
-      borderRadius: BorderRadius.circular(8),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? _kOrange
-              : (isDark ? _kDarkBrown : const Color(0xFFF1F5F9)),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected
-                ? _kOrange
-                : (isDark ? _kBorderBrown : const Color(0xFFCBD5E1)),
-          ),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.outfit(
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-            color: isSelected
-                ? Colors.white
-                : (isDark ? Colors.white70 : const Color(0xFF334155)),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _infoChip(IconData icon, String text, bool isDark, {Color? color}) {
-    final col = color ?? (isDark ? Colors.white70 : const Color(0xFF475569));
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: (color ?? (isDark ? Colors.white : Colors.black)).withAlpha(isDark ? 20 : 10),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: col),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: GoogleFonts.inter(
-              fontSize: 11.5,
-              color: col,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // ── TAB 3: GUEST ENROLLED & PAID ───────────────────────────────────────────
   Widget _buildGuestEnrollmentsTab(
     bool isDark,
     Color cardBg,
     Color borderColor,
+    Color textColor,
+    Color subTextColor,
   ) {
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark ? Colors.white70 : const Color(0xFF64748B);
-    final fieldBg = isDark ? _kDarkBrown : const Color(0xFFF8FAFC);
-    final borderCol = isDark ? _kBorderBrown : const Color(0xFFE2E8F0);
-
     final filtered = _filteredGuestEnrollments;
     final totalGuests = _guestEnrollments.length;
     final paidGuests = _guestEnrollments.where((e) {
@@ -1609,12 +871,12 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Controls container (search + filters + copy roster)
+        // Controls toolbar
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: cardBg,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: borderColor),
           ),
           child: Column(
@@ -1623,30 +885,23 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
               Row(
                 children: [
                   Expanded(
-                    child: TextField(
-                      onChanged: (v) => setState(() => _guestSearchQuery = v),
-                      decoration: InputDecoration(
-                        hintText: 'Search guest name, phone, email, CTI reference, or course...',
-                        prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                        filled: true,
-                        fillColor: fieldBg,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: borderCol),
+                    child: SizedBox(
+                      height: 38,
+                      child: TextField(
+                        onChanged: (v) => setState(() => _guestSearchQuery = v.trim()),
+                        style: GoogleFonts.outfit(fontSize: 13.5, color: textColor),
+                        decoration: InputDecoration(
+                          hintText: 'Search guest name, phone, email, CTI reference...',
+                          hintStyle: GoogleFonts.inter(fontSize: 12.5, color: subTextColor),
+                          prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
+                          filled: true,
+                          fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: borderCol),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  IconButton(
-                    tooltip: 'Refresh Guest Enrollments',
-                    onPressed: _fetchGuestEnrollments,
-                    icon: const Icon(Icons.refresh_rounded),
                   ),
                   if (filtered.isNotEmpty) ...[
                     const SizedBox(width: 8),
@@ -1664,47 +919,67 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                         Clipboard.setData(ClipboardData(text: roster));
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Guest enrollment roster copied to clipboard!'),
+                            content: Text('Guest roster copied to clipboard!'),
                             backgroundColor: _kGreen,
+                            behavior: SnackBarBehavior.floating,
                           ),
                         );
                       },
-                      icon: const Icon(Icons.copy_rounded, size: 16),
-                      label: Text('Copy Roster', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                      icon: const Icon(Icons.copy_rounded, size: 14),
+                      label: Text('Copy Roster', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _kOrange,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        elevation: 0,
                       ),
                     ),
                   ],
                 ],
               ),
-              const SizedBox(height: 14),
-
-              // Status filters
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              const SizedBox(height: 8),
+              Row(
                 children: [
-                  _guestStatusFilterChip('All Status ($totalGuests)', 'all', isDark),
-                  _guestStatusFilterChip('Paid ($paidGuests)', 'paid', isDark),
-                  _guestStatusFilterChip('Pending ($pendingGuests)', 'pending', isDark),
+                  _filterPill('All Status ($totalGuests)', _guestStatusFilter == 'all', () => setState(() => _guestStatusFilter = 'all'), borderColor, textColor),
+                  const SizedBox(width: 6),
+                  _filterPill('Paid ($paidGuests)', _guestStatusFilter == 'paid', () => setState(() => _guestStatusFilter = 'paid'), borderColor, textColor, activeColor: _kGreen),
+                  const SizedBox(width: 6),
+                  _filterPill('Pending ($pendingGuests)', _guestStatusFilter == 'pending', () => setState(() => _guestStatusFilter = 'pending'), borderColor, textColor, activeColor: _kOrange),
                 ],
               ),
-              const SizedBox(height: 10),
-
-              // Course filter chips
+              const SizedBox(height: 8),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _guestCourseFilterChip('All Courses', 'all', isDark),
+                    _coursePill('All Courses', 'all', isDark, borderColor, textColor),
                     ..._courses.map((c) {
                       final cTitle = c['title']?.toString() ?? 'Course';
+                      final isSel = _guestCourseFilter.toLowerCase() == cTitle.toLowerCase();
                       return Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: _guestCourseFilterChip(cTitle, cTitle, isDark),
+                        padding: const EdgeInsets.only(left: 6),
+                        child: InkWell(
+                          onTap: () => setState(() => _guestCourseFilter = isSel ? 'all' : cTitle),
+                          borderRadius: BorderRadius.circular(6),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: isSel ? _kIndigo : (isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF1F5F9)),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: isSel ? _kIndigo : borderColor),
+                            ),
+                            child: Text(
+                              cTitle,
+                              style: GoogleFonts.outfit(
+                                fontSize: 11.5,
+                                fontWeight: isSel ? FontWeight.bold : FontWeight.w600,
+                                color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF334155)),
+                              ),
+                            ),
+                          ),
+                        ),
                       );
                     }),
                   ],
@@ -1713,37 +988,32 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
-        // List of guest records
         if (_loadingGuestEnrollments)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 40),
-            child: Center(child: CircularProgressIndicator()),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: List.generate(3, (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile())),
+            ),
           )
         else if (filtered.isEmpty)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 48),
+            padding: const EdgeInsets.all(36),
             decoration: BoxDecoration(
               color: cardBg,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: borderColor),
             ),
-            child: Column(
-              children: [
-                Icon(Icons.person_search_rounded, size: 48, color: Colors.grey.shade400),
-                const SizedBox(height: 12),
-                Text(
-                  'No guest course enrollments found.',
-                  style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'When guests register for courses from the landing page, their payments & references will appear here.',
-                  style: GoogleFonts.inter(fontSize: 12.5, color: textMuted),
-                ),
-              ],
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(Icons.person_search_rounded, size: 36, color: subTextColor),
+                  const SizedBox(height: 8),
+                  Text('No guest course enrollments found', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
+                ],
+              ),
             ),
           )
         else
@@ -1751,185 +1021,59 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: filtered.length,
-            separatorBuilder: (_, index) => const SizedBox(height: 10),
+            separatorBuilder: (_, index) => const SizedBox(height: 8),
             itemBuilder: (ctx, i) {
               final g = filtered[i];
               final name = g['guest_name']?.toString() ?? 'Guest Student';
               final phone = g['phone']?.toString() ?? '';
               final email = g['email']?.toString() ?? '';
-              final company = g['company']?.toString() ?? 'Guest Student / Applicant';
-              final course = g['course_title']?.toString() ?? 'CTI Professional Course';
+              final course = g['course_title']?.toString() ?? 'CTI Course';
               final rawRef = g['reference_no']?.toString() ?? '';
               final ctiRef = rawRef.replaceAll('GSR-', 'CTI-');
               final amount = g['amount']?.toString() ?? '1500.00';
-              final network = g['payment_network']?.toString() ?? 'Mobile Money';
               final status = (g['status']?.toString() ?? 'paid').toLowerCase();
               final isPaid = status == 'paid' || status == 'completed' || status == 'success';
               final dateStr = g['created_at']?.toString().split('T').first ?? '';
 
               return Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: cardBg,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: borderColor),
                 ),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     CircleAvatar(
-                      radius: 24,
-                      backgroundColor: isPaid ? _kGreen.withAlpha(25) : _kOrange.withAlpha(25),
+                      radius: 18,
+                      backgroundColor: isPaid ? _kGreen.withValues(alpha: 0.12) : _kOrange.withValues(alpha: 0.12),
                       child: Text(
                         name.isNotEmpty ? name[0].toUpperCase() : 'G',
-                        style: GoogleFonts.outfit(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: isPaid ? _kGreen : _kOrange,
-                        ),
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: isPaid ? _kGreen : _kOrange),
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              Text(
-                                name,
-                                style: GoogleFonts.outfit(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: textPrimary,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
+                              Text(name, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13.5, color: textColor)),
+                              const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                                 decoration: BoxDecoration(
-                                  color: _kIndigo.withAlpha(20),
-                                  borderRadius: BorderRadius.circular(6),
+                                  color: _kIndigo.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: Text(
-                                  'GUEST ENROLLMENT',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: _kIndigo,
-                                  ),
-                                ),
-                              ),
-                              if (company.isNotEmpty && company != 'Guest Student') ...[
-                                const SizedBox(width: 6),
-                                Text(
-                                  '• $company',
-                                  style: GoogleFonts.inter(fontSize: 12, color: textMuted),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '📚 Course: $course',
-                            style: GoogleFonts.outfit(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: _kOrange,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Wrap(
-                            spacing: 12,
-                            runSpacing: 4,
-                            children: [
-                              if (phone.isNotEmpty)
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.phone_rounded, size: 13, color: textMuted),
-                                    const SizedBox(width: 4),
-                                    Text(phone, style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
-                                  ],
-                                ),
-                              if (email.isNotEmpty)
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.email_outlined, size: 13, color: textMuted),
-                                    const SizedBox(width: 4),
-                                    Text(email, style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
-                                  ],
-                                ),
-                              if (network.isNotEmpty)
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.payment_rounded, size: 13, color: textMuted),
-                                    const SizedBox(width: 4),
-                                    Text(network, style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
-                                  ],
-                                ),
-                              if (dateStr.isNotEmpty)
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.calendar_today_rounded, size: 12, color: textMuted),
-                                    const SizedBox(width: 4),
-                                    Text(dateStr, style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
-                                  ],
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: fieldBg,
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: borderCol),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      'CTI Ref: $ctiRef',
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: _kOrange,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    InkWell(
-                                      onTap: () {
-                                        Clipboard.setData(ClipboardData(text: ctiRef));
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('$ctiRef copied to clipboard!'),
-                                            backgroundColor: _kGreen,
-                                            duration: const Duration(seconds: 1),
-                                          ),
-                                        );
-                                      },
-                                      child: const Icon(Icons.copy_rounded, size: 13, color: _kOrange),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                'Fee: GHS $amount',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: textPrimary,
-                                ),
+                                child: Text('GUEST', style: GoogleFonts.outfit(fontSize: 9.5, fontWeight: FontWeight.bold, color: _kIndigo)),
                               ),
                             ],
                           ),
+                          const SizedBox(height: 2),
+                          Text('Course: $course • Fee: GHS $amount', style: GoogleFonts.inter(fontSize: 12, color: textColor, fontWeight: FontWeight.w500)),
+                          Text('Ref: $ctiRef • $phone • $email ${dateStr.isNotEmpty ? '• Date: $dateStr' : ''}', style: GoogleFonts.inter(fontSize: 11, color: subTextColor)),
                         ],
                       ),
                     ),
@@ -1937,45 +1081,23 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                           decoration: BoxDecoration(
-                            color: isPaid ? _kGreen.withAlpha(25) : _kOrange.withAlpha(25),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: isPaid ? _kGreen.withAlpha(60) : _kOrange.withAlpha(60),
-                            ),
+                            color: (isPaid ? _kGreen : _kOrange).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isPaid ? Icons.check_circle_rounded : Icons.pending_rounded,
-                                size: 13,
-                                color: isPaid ? _kGreen : _kOrange,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                isPaid ? 'PAID & ENROLLED' : 'PENDING APPROVAL',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: isPaid ? _kGreen : _kOrange,
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            isPaid ? 'PAID' : 'PENDING',
+                            style: GoogleFonts.outfit(fontSize: 9.5, fontWeight: FontWeight.bold, color: isPaid ? _kGreen : _kOrange),
                           ),
                         ),
                         if (!isPaid) ...[
-                          const SizedBox(height: 8),
-                          ElevatedButton.icon(
-                            onPressed: () => _markGuestPaid(rawRef),
-                            icon: const Icon(Icons.check_rounded, size: 14),
-                            label: Text('Mark Paid', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _kGreen,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          const SizedBox(height: 4),
+                          InkWell(
+                            onTap: () => _markGuestPaid(rawRef),
+                            child: Text(
+                              'Mark Paid',
+                              style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: _kGreen),
                             ),
                           ),
                         ],
@@ -1990,69 +1112,471 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
     );
   }
 
-  Widget _guestStatusFilterChip(String label, String value, bool isDark) {
-    final isSelected = _guestStatusFilter == value;
+  // ── HELPER WIDGETS & DIALOGS ───────────────────────────────────────────────
+  Widget _infoBadge(IconData icon, String text, bool isDark, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.15 : 0.08),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: color),
+          const SizedBox(width: 4),
+          Text(text, style: GoogleFonts.inter(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterPill(String label, bool isSelected, VoidCallback onTap, Color borderColor, Color textColor, {Color? activeColor}) {
+    final col = activeColor ?? _kOrange;
     return InkWell(
-      onTap: () => setState(() => _guestStatusFilter = value),
-      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected
-              ? _kOrange
-              : (isDark ? _kDarkBrown : const Color(0xFFF1F5F9)),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected
-                ? _kOrange
-                : (isDark ? _kBorderBrown : const Color(0xFFCBD5E1)),
-          ),
+          color: isSelected ? col : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: isSelected ? col : borderColor),
         ),
         child: Text(
           label,
           style: GoogleFonts.outfit(
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-            color: isSelected
-                ? Colors.white
-                : (isDark ? Colors.white70 : const Color(0xFF334155)),
+            fontSize: 11.5,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected ? Colors.white : textColor,
           ),
         ),
       ),
     );
   }
 
-  Widget _guestCourseFilterChip(String label, String value, bool isDark) {
-    final isSelected = _guestCourseFilter == value;
+  Widget _coursePill(String label, String value, bool isDark, Color borderColor, Color textColor) {
+    final isSelected = _enrollmentCourseFilter == value;
     return InkWell(
-      onTap: () => setState(() => _guestCourseFilter = value),
-      borderRadius: BorderRadius.circular(8),
+      onTap: () => setState(() => _enrollmentCourseFilter = value),
+      borderRadius: BorderRadius.circular(6),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: isSelected
-              ? _kIndigo
-              : (isDark ? _kDarkBrown : const Color(0xFFF1F5F9)),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected
-                ? _kIndigo
-                : (isDark ? _kBorderBrown : const Color(0xFFCBD5E1)),
-          ),
+          color: isSelected ? _kOrange : (isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF1F5F9)),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: isSelected ? _kOrange : borderColor),
         ),
         child: Text(
           label,
           style: GoogleFonts.outfit(
-            fontSize: 12,
+            fontSize: 11.5,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-            color: isSelected
-                ? Colors.white
-                : (isDark ? Colors.white70 : const Color(0xFF334155)),
+            color: isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF334155)),
           ),
         ),
       ),
     );
+  }
+
+  void _showCourseEnrollmentsDialog(dynamic course) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = isDark ? const Color(0xFF281710) : Colors.white;
+    final borderCol = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textMuted = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final fieldBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC);
+
+    final courseTitle = course['title'] ?? 'CTI Course';
+    final courseEnrollments = _getEnrollmentsForCourse(course);
+    String studentFilter = '';
+
+    showDialog(
+      context: context,
+      builder: (dlgCtx) => StatefulBuilder(
+        builder: (context, setDlgState) {
+          final filteredList = courseEnrollments.where((e) {
+            if (studentFilter.isEmpty) return true;
+            final q = studentFilter.toLowerCase();
+            final name = (e['member_name']?.toString() ?? '').toLowerCase();
+            final comp = (e['company']?.toString() ?? '').toLowerCase();
+            final email = (e['email']?.toString() ?? '').toLowerCase();
+            return name.contains(q) || comp.contains(q) || email.contains(q);
+          }).toList();
+
+          return AlertDialog(
+            backgroundColor: dialogBg,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: _kOrange.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
+                  child: const Icon(Icons.school_rounded, color: _kOrange, size: 20),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(courseTitle, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text('Enrolled Students (${courseEnrollments.length} Total)', style: GoogleFonts.inter(fontSize: 12, color: _kOrange, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  color: textMuted,
+                  onPressed: () => Navigator.pop(dlgCtx),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 540,
+              height: 420,
+              child: Column(
+                children: [
+                  TextField(
+                    onChanged: (v) => setDlgState(() => studentFilter = v.trim()),
+                    style: GoogleFonts.inter(fontSize: 13, color: textPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Search students by name, email, or company...',
+                      hintStyle: GoogleFonts.inter(fontSize: 12.5, color: textMuted),
+                      prefixIcon: const Icon(Icons.search_rounded, size: 16),
+                      filled: true,
+                      fillColor: fieldBg,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderCol)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderCol)),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: filteredList.isEmpty
+                        ? Center(
+                            child: Text(
+                              courseEnrollments.isEmpty ? 'No members enrolled yet.' : 'No matching students found.',
+                              style: GoogleFonts.outfit(fontSize: 13.5, color: textMuted),
+                            ),
+                          )
+                        : ListView.separated(
+                            itemCount: filteredList.length,
+                            separatorBuilder: (_, index) => const SizedBox(height: 6),
+                            itemBuilder: (ctx, i) {
+                              final en = filteredList[i];
+                              final memberName = en['member_name'] ?? 'Member';
+                              final company = en['company'] ?? 'Broker';
+                              final email = en['email'] ?? '';
+                              final phone = en['phone'] ?? '';
+                              final amount = en['amount']?.toString() ?? '';
+
+                              return Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(color: fieldBg, borderRadius: BorderRadius.circular(8), border: Border.all(color: borderCol)),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 16,
+                                      backgroundColor: _kOrange.withValues(alpha: 0.15),
+                                      child: Text(memberName.isNotEmpty ? memberName[0].toUpperCase() : 'M', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12, color: _kOrange)),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text('$memberName • $company', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary)),
+                                          Text('$email • $phone', style: GoogleFonts.inter(fontSize: 11.5, color: textMuted)),
+                                        ],
+                                      ),
+                                    ),
+                                    if (amount.isNotEmpty)
+                                      Text('GHS $amount', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: _kGreen)),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dlgCtx),
+                child: Text('Close', style: GoogleFonts.outfit(color: textMuted)),
+              ),
+              if (courseEnrollments.isNotEmpty)
+                ElevatedButton.icon(
+                  onPressed: () {
+                    final names = courseEnrollments.map((e) => '${e['member_name']} (${e['company'] ?? 'Broker'}) - ${e['phone']} - ${e['email']}').join('\n');
+                    Clipboard.setData(ClipboardData(text: names));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Student roster copied to clipboard'),
+                        backgroundColor: _kGreen,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.copy_rounded, size: 14),
+                  label: Text('Copy Roster', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _kOrange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: 0,
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _showCourseDialog([dynamic existing]) async {
+    final isEdit = existing != null;
+    final titleCtrl = TextEditingController(text: existing?['title']?.toString() ?? '');
+    final dateCtrl = TextEditingController(text: existing?['start_date']?.toString() ?? '25 Aug 2026');
+    final durationCtrl = TextEditingController(text: existing?['duration']?.toString() ?? '4 Weeks');
+    final feeCtrl = TextEditingController(text: existing?['fee']?.toString() ?? 'GHS 1,980');
+    final descCtrl = TextEditingController(text: existing?['description']?.toString() ?? '');
+    String mode = existing?['mode']?.toString() ?? 'Hybrid';
+    bool notifyMembers = true;
+    bool submitting = false;
+
+    await showDialog(
+      context: context,
+      builder: (dlgCtx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: _kOrange.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.school_rounded, color: _kOrange, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  isEdit ? 'Edit CTI Course' : 'Add New CTI Course',
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: SizedBox(
+              width: 480,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: titleCtrl,
+                    style: GoogleFonts.outfit(fontSize: 13.5),
+                    decoration: const InputDecoration(labelText: 'Course Title *', hintText: 'e.g. Freight Forwarding Fundamentals'),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: dateCtrl,
+                          style: GoogleFonts.outfit(fontSize: 13.5),
+                          decoration: const InputDecoration(labelText: 'Start Date *', hintText: 'e.g. 25 Aug 2026'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: durationCtrl,
+                          style: GoogleFonts.outfit(fontSize: 13.5),
+                          decoration: const InputDecoration(labelText: 'Duration *', hintText: 'e.g. 4 Weeks'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: mode,
+                          decoration: const InputDecoration(labelText: 'Delivery Mode'),
+                          items: const [
+                            DropdownMenuItem(value: 'Hybrid', child: Text('Hybrid')),
+                            DropdownMenuItem(value: 'In-Person', child: Text('In-Person Classroom')),
+                            DropdownMenuItem(value: 'Online', child: Text('Online Virtual')),
+                          ],
+                          onChanged: (v) => setDlgState(() => mode = v ?? 'Hybrid'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: feeCtrl,
+                          style: GoogleFonts.outfit(fontSize: 13.5),
+                          decoration: const InputDecoration(labelText: 'Fee (GHS) *', hintText: 'e.g. GHS 1,980'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: descCtrl,
+                    maxLines: 3,
+                    style: GoogleFonts.inter(fontSize: 13),
+                    decoration: const InputDecoration(labelText: 'Description & Scope *'),
+                  ),
+                  const SizedBox(height: 10),
+                  CheckboxListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      '🔔 Broadcast Push Notification to all Members',
+                      style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: _kOrange),
+                    ),
+                    value: notifyMembers,
+                    activeColor: _kOrange,
+                    onChanged: (v) => setDlgState(() => notifyMembers = v ?? true),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dlgCtx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kOrange,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                elevation: 0,
+              ),
+              onPressed: submitting
+                  ? null
+                  : () async {
+                      if (titleCtrl.text.trim().isEmpty) return;
+                      setDlgState(() => submitting = true);
+
+                      final payload = {
+                        'title': titleCtrl.text.trim(),
+                        'start_date': dateCtrl.text.trim(),
+                        'duration': durationCtrl.text.trim(),
+                        'mode': mode,
+                        'fee': feeCtrl.text.trim(),
+                        'description': descCtrl.text.trim(),
+                        'notify_members': notifyMembers,
+                      };
+
+                      final messenger = ScaffoldMessenger.of(context);
+                      try {
+                        if (isEdit) {
+                          await _api.put('/events/admin/courses/${existing['id']}', data: payload);
+                        } else {
+                          await _api.post('/events/admin/courses', data: payload);
+                        }
+                        if (dlgCtx.mounted) Navigator.pop(dlgCtx);
+                        _fetchCourses();
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(isEdit ? 'Course updated successfully!' : 'Course created and announced!'),
+                            backgroundColor: _kGreen,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      } catch (e) {
+                        setDlgState(() => submitting = false);
+                        messenger.showSnackBar(
+                          SnackBar(content: Text('Error: $e'), backgroundColor: _kRed, behavior: SnackBarBehavior.floating),
+                        );
+                      }
+                    },
+              child: Text(submitting ? 'Saving...' : (isEdit ? 'Save Changes' : 'Publish Course')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _restoreCourse(dynamic course) async {
+    try {
+      await _api.post('/events/admin/courses/${course['id']}/restore');
+      _fetchCourses();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Course restored to active catalog!'), backgroundColor: _kGreen, behavior: SnackBarBehavior.floating),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to restore: $e'), backgroundColor: _kRed, behavior: SnackBarBehavior.floating),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteCourse(dynamic course, {bool permanent = false}) async {
+    final title = permanent ? 'Permanently Delete Course?' : 'Archive Course?';
+    final content = permanent
+        ? 'This will permanently remove "${course['title']}". Action cannot be undone.'
+        : 'Archive "${course['title']}"? It can be restored anytime from the Archived tab.';
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        title: Text(title, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+        content: Text(content, style: GoogleFonts.inter(fontSize: 13)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _kRed,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              elevation: 0,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(permanent ? 'Delete' : 'Archive'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        final url = permanent
+            ? '/events/admin/courses/${course['id']}?permanent=true'
+            : '/events/admin/courses/${course['id']}';
+        await _api.delete(url);
+        _fetchCourses();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(permanent ? 'Course permanently deleted.' : 'Course archived.'),
+              backgroundColor: permanent ? _kRed : _kOrange,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: _kRed, behavior: SnackBarBehavior.floating),
+          );
+        }
+      }
+    }
   }
 }

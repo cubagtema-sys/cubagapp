@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
@@ -39,6 +38,7 @@ class _PaymentsPageState extends State<PaymentsPage>
   bool _appLoading = false;
   bool _submittingApplication = false;
   bool _loading = false;
+  bool _submittingPayment = false;
   bool _showSuccess = false;
   bool _showError = false;
   String _errorMsg = '';
@@ -65,6 +65,44 @@ class _PaymentsPageState extends State<PaymentsPage>
   List<Map<String, dynamic>> _renewalFeeBreakdown = [];
   String _renewalFeeCategoryTitle = '';
   double? _renewalFeeAmount;
+  double _renewalAmountPaid = 0.0;
+  double _renewalBalanceDue = 0.0;
+  bool _allowInstallments = true;
+  double _minInstallmentAmount = 0.0;
+  bool _isPartiallyPaid = false;
+  bool _isInstallmentMode = false;
+  List<dynamic> _installments = [];
+
+  // Bank transfer receipt state
+  String? _receiptUrl;
+  String? _receiptFileName;
+  bool _uploadingReceipt = false;
+  int _selectedBankIndex = 0;
+  final _bankRefCtrl = TextEditingController();
+  final _bankNotesCtrl = TextEditingController();
+
+  List<Map<String, dynamic>> _getBankList(dynamic bank) {
+    if (_paySettings['bankAccounts'] is List) {
+      final list = (_paySettings['bankAccounts'] as List)
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .where((b) => b['type'] != 'momo')
+          .toList();
+      if (list.isNotEmpty) return list;
+    }
+    if (bank is Map && bank.isNotEmpty) {
+      return [Map<String, dynamic>.from(bank)];
+    }
+    return [
+      {
+        'bankName': 'GCB Bank Limited',
+        'accountName': 'Customs Brokers Association of Ghana (CUBAG)',
+        'accountNumber': '1011130002145',
+        'branch': 'Tema Main Branch',
+        'sortCode': '01011',
+        'swiftCode': 'GHBKGHAC',
+      }
+    ];
+  }
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnim;
@@ -101,7 +139,75 @@ class _PaymentsPageState extends State<PaymentsPage>
     SocketService().socket?.off('payment_approved');
     _pulseController.dispose();
     _amountCtrl.dispose();
+    _bankRefCtrl.dispose();
+    _bankNotesCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAndUploadBankReceipt() async {
+    try {
+      FilePickerResult? result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg', 'webp'],
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+      final file = result.files.first;
+      setState(() => _uploadingReceipt = true);
+
+      MultipartFile mpFile;
+      if (file.bytes != null && file.bytes!.isNotEmpty) {
+        mpFile = MultipartFile.fromBytes(
+          file.bytes!,
+          filename: file.name,
+        );
+      } else if (file.path != null && file.path!.isNotEmpty) {
+        mpFile = await MultipartFile.fromFile(file.path!, filename: file.name);
+      } else {
+        setState(() => _uploadingReceipt = false);
+        return;
+      }
+
+      final formData = FormData.fromMap({'receipt': mpFile});
+      final res = await ApiService().upload('/payments/upload-receipt', formData);
+
+      final resData = res.data is Map ? res.data as Map : null;
+      if (res.statusCode == 200 && resData != null) {
+        setState(() {
+          _receiptUrl = resData['receipt_url'] ?? resData['url'];
+          _receiptFileName = file.name;
+          _uploadingReceipt = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Bank deposit slip uploaded successfully!'),
+              backgroundColor: _kGreen,
+            ),
+          );
+        }
+      } else {
+        setState(() => _uploadingReceipt = false);
+        final errText = resData != null
+            ? (resData['message']?.toString() ?? 'Failed to upload receipt.')
+            : (res.data?.toString() ?? 'Failed to upload receipt.');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errText),
+              backgroundColor: _kRed,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() => _uploadingReceipt = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Upload error: $e'), backgroundColor: _kRed),
+        );
+      }
+    }
   }
 
   String _normalizeGhanaPhone(String input) {
@@ -197,6 +303,14 @@ class _PaymentsPageState extends State<PaymentsPage>
             if (rawRenewalAmt != null) {
               _renewalFeeAmount = double.tryParse(rawRenewalAmt.toString());
             }
+            _renewalAmountPaid = double.tryParse(_memberInfo['renewal_amount_paid']?.toString() ?? '0') ?? 0.0;
+            _renewalBalanceDue = double.tryParse(_memberInfo['renewal_balance_due']?.toString() ?? '') ??
+                (_renewalFeeAmount != null ? (_renewalFeeAmount! - _renewalAmountPaid).clamp(0.0, double.infinity) : 0.0);
+            _allowInstallments = _memberInfo['renewal_allow_installments'] != false;
+            _minInstallmentAmount = double.tryParse(_memberInfo['renewal_min_installment_amount']?.toString() ?? '0') ?? 0.0;
+            _isPartiallyPaid = _memberInfo['renewal_is_partially_paid'] == true;
+            _installments = ApiService.ensureList(_memberInfo['renewal_installments']);
+
             _isRegFeePaid = regPaidFromDoc ||
                 _memberInfo['registration_fee_paid'] == true ||
                 _memberInfo['registration_paid'] == true ||
@@ -216,6 +330,34 @@ class _PaymentsPageState extends State<PaymentsPage>
           final state = GoRouterState.of(context);
           final redirectUrl = state.uri.queryParameters['redirect'];
           final queryFee = state.uri.queryParameters['fee'];
+          final queryAmt = state.uri.queryParameters['amount'];
+          final queryIsInstallment = state.uri.queryParameters['is_installment'] == 'true';
+          final queryMinAmt = state.uri.queryParameters['min_amount'];
+          final queryMaxAmt = state.uri.queryParameters['max_amount'];
+          final queryAppId = state.uri.queryParameters['app_id'];
+
+          if (queryAppId != null && queryAppId.isNotEmpty) {
+            _complianceAppId = int.tryParse(queryAppId) ?? _complianceAppId;
+          }
+          if (queryIsInstallment) {
+            _isInstallmentMode = true;
+          }
+          if (queryMinAmt != null && queryMinAmt.isNotEmpty) {
+            _minInstallmentAmount = double.tryParse(queryMinAmt) ?? _minInstallmentAmount;
+          }
+          if (queryMaxAmt != null && queryMaxAmt.isNotEmpty) {
+            _renewalBalanceDue = double.tryParse(queryMaxAmt) ?? _renewalBalanceDue;
+          }
+
+          if (queryAmt != null && queryAmt.isNotEmpty) {
+            final parsedAmt = double.tryParse(queryAmt);
+            if (parsedAmt != null) {
+              _amountCtrl.text = parsedAmt.toStringAsFixed(2);
+              if (queryFee == null || queryFee.toLowerCase().contains('renewal') || queryFee.toLowerCase().contains('annual')) {
+                _renewalFeeAmount = parsedAmt;
+              }
+            }
+          }
           
           if (queryFee != null && queryFee.isNotEmpty) {
             final qfLower = queryFee.toLowerCase();
@@ -225,6 +367,17 @@ class _PaymentsPageState extends State<PaymentsPage>
             } else if (qfLower.contains('package') || qfLower.contains('entrance') || qfLower.contains('new member')) {
               _reason = 'New Membership Dues';
               _isCategoryLocked = true;
+            } else if (qfLower.contains('renewal') || qfLower.contains('annual')) {
+              _reason = 'Annual Renewal Dues';
+            } else if (qfLower.contains('cti') || qfLower.contains('course') || qfLower.contains('training')) {
+              _reason = queryFee;
+              _isCategoryLocked = true;
+              if (queryAmt != null && queryAmt.isNotEmpty) {
+                final pAmt = double.tryParse(queryAmt);
+                if (pAmt != null && pAmt > 0) {
+                  _amountCtrl.text = pAmt.toStringAsFixed(2);
+                }
+              }
             } else {
               _reason = queryFee;
             }
@@ -235,8 +388,10 @@ class _PaymentsPageState extends State<PaymentsPage>
             _reason = 'Registration Fee';
           } else if (!_isPackageFeePaid) {
             _reason = 'New Membership Dues';
+          } else if (_renewalFeeAmount != null && _renewalFeeAmount! > 0) {
+            _reason = 'Annual Renewal Dues';
           } else {
-            _reason = 'Registration Fee';
+            _reason = 'Annual Renewal Dues';
           }
 
           if (_reason == 'Registration Fee') {
@@ -244,10 +399,14 @@ class _PaymentsPageState extends State<PaymentsPage>
           } else if (_reason == 'New Membership Dues' || _reason.toLowerCase().contains('package') || _reason.toLowerCase().contains('entrance') || _reason.toLowerCase().contains('new member')) {
             _reason = 'New Membership Dues';
             _amountCtrl.text = _packageFeeStr;
-          } else if (_reason.toLowerCase().contains('renewal') &&
-              _renewalFeeAmount != null &&
-              _renewalFeeAmount! > 0) {
-            _amountCtrl.text = _renewalFeeAmount!.toStringAsFixed(2);
+          } else if (_reason.toLowerCase().contains('renewal')) {
+            if (queryAmt != null && queryAmt.isNotEmpty) {
+              _amountCtrl.text = double.tryParse(queryAmt)?.toStringAsFixed(2) ?? queryAmt;
+            } else if (_renewalFeeAmount != null && _renewalFeeAmount! > 0) {
+              _amountCtrl.text = _renewalFeeAmount!.toStringAsFixed(2);
+            }
+          } else if (_reason.toLowerCase().contains('cti') || _reason.toLowerCase().contains('course')) {
+            // Keep pre-filled course fee from query parameter
           } else if (_reason.isNotEmpty && _fees.isNotEmpty) {
             // Pre-fill fee amount directly from platform fees configuration (_fees)
             double? foundAmt;
@@ -305,7 +464,7 @@ class _PaymentsPageState extends State<PaymentsPage>
   }
 
   Future<void> _submitPayment() async {
-    if (_loading) return;
+    if (_loading || _submittingPayment) return;
     final amt = double.tryParse(_amountCtrl.text) ?? 0;
     if (amt <= 0) {
       setState(() {
@@ -321,11 +480,21 @@ class _PaymentsPageState extends State<PaymentsPage>
       });
       return;
     }
+    if (_method == 'bank' && (_receiptUrl == null || _receiptUrl!.isEmpty)) {
+      setState(() {
+        _errorMsg = 'Please upload a copy of your bank deposit slip or wire transfer receipt.';
+        _showError = true;
+      });
+      return;
+    }
     final effectiveReason = _reason.trim().isEmpty
         ? 'Association Payment'
         : _reason;
 
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _submittingPayment = true;
+    });
 
     // For MoMo: jump to the waiting screen IMMEDIATELY (before network call)
     // so the user sees feedback right away instead of waiting ~30s for the API.
@@ -340,12 +509,31 @@ class _PaymentsPageState extends State<PaymentsPage>
 
     try {
       final api = ApiService();
+      final bankList = _getBankList(null);
+      final chosenBank = (_selectedBankIndex >= 0 && _selectedBankIndex < bankList.length)
+          ? bankList[_selectedBankIndex]
+          : (bankList.isNotEmpty ? bankList.first : {});
+      final bName = (chosenBank['bankName'] ?? chosenBank['bank_name'] ?? 'GCB Bank Limited').toString();
+      final aName = (chosenBank['accountName'] ?? chosenBank['account_name'] ?? 'Customs Brokers Association of Ghana (CUBAG)').toString();
+      final aNum = (chosenBank['accountNumber'] ?? chosenBank['account_number'] ?? '1011130002145').toString();
+
+      final isInstallment = _isInstallmentMode ||
+          (_reason.toLowerCase().contains('renewal') && _allowInstallments && amt < ((_renewalFeeAmount ?? amt) - 0.01));
       final requestData = {
         'amount': amt,
         'description': effectiveReason,
         'method': _method,
         'network': _momoNetwork,
         'phone': _momoPhone,
+        'receipt_url': _receiptUrl,
+        'bank_name': _method == 'bank' ? bName : null,
+        'account_name': _method == 'bank' ? aName : null,
+        'account_number': _method == 'bank' ? aNum : null,
+        'payment_ref': _bankRefCtrl.text.trim().isNotEmpty ? _bankRefCtrl.text.trim() : null,
+        'notes': _bankNotesCtrl.text.trim().isNotEmpty ? _bankNotesCtrl.text.trim() : null,
+        'is_installment': isInstallment,
+        'installment_number': _installments.length + 1,
+        'compliance_application_id': _complianceAppId,
       };
       if (_complianceAppId != null) {
         requestData['meta'] = {'compliance_application_id': _complianceAppId};
@@ -423,17 +611,17 @@ class _PaymentsPageState extends State<PaymentsPage>
                         child: Row(
                           children: [
                             const Icon(
-                              Icons.event_available_rounded,
+                              Icons.calendar_today_rounded,
                               size: 16,
                               color: _kOrange,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Renewal opens: $renewalOpens',
+                                'Renewal opens on $renewalOpens',
                                 style: const TextStyle(
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.bold,
                                   color: _kOrange,
                                 ),
                               ),
@@ -447,21 +635,51 @@ class _PaymentsPageState extends State<PaymentsPage>
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx),
-                    child: const Text(
-                      'Got it',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                    child: const Text('Dismiss'),
                   ),
                 ],
               ),
             );
           }
-          // ── Completed Payment Guard
+          // ── Duplicate Bank Deposit Slip Guard (already submitted & pending verification)
+        } else if (res.data is Map &&
+            res.data['error_code'] == 'PAYMENT_ALREADY_SUBMITTED') {
+          final resData = res.data as Map;
+          final paymentId = resData['payment_id'];
+          final txRef = resData['transaction_ref'] ?? '';
+          final receipt = resData['receipt_url'];
+
+          // Suppress bill popup and invalidate caches
+          await SessionStorage.instance.setString('cubag_renewal_submitted', 'true');
+          ApiService.deleteCacheKeysMatching('/tasks');
+          ApiService.deleteCacheKeysMatching('/payments');
+
+          if (mounted) {
+            setState(() {
+              _currentPaymentId = paymentId;
+              _currentTxRef = txRef;
+              if (receipt != null && receipt.toString().isNotEmpty) {
+                _receiptUrl = receipt.toString();
+              }
+              _confirmedAmount = _amountCtrl.text;
+              _loading = false;
+              _submittingPayment = false;
+              _step = 5;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(resData['message']?.toString() ?? 'Deposit receipt already received and under review.'),
+                backgroundColor: _kOrange,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+          // ── Duplicate Completed Payment Guard
         } else if (res.data is Map &&
             res.data['error_code'] == 'PAYMENT_ALREADY_COMPLETED') {
-          final msg =
-              res.data['message'] ??
-              'Payment for this item has already been completed.';
+          final msg = res.data['message'] ??
+              'This payment has already been completed.';
           if (mounted) setState(() => _step = 4);
           if (mounted) {
             showDialog(
@@ -524,9 +742,19 @@ class _PaymentsPageState extends State<PaymentsPage>
           }
           // ── Normal payment success
         } else if (_method == 'momo') {
-          final paymentId = res.data['payment_id'];
+          final resData = res.data is Map ? res.data as Map : {};
+          final paymentId = resData['payment_id'];
           final txRef =
-              res.data['transaction_ref'] ?? res.data['whitsun_ref'] ?? '';
+              resData['transaction_ref'] ?? resData['whitsun_ref'] ?? '';
+
+          // Suppress renewal bill popup immediately and invalidate caches
+          final rLower = effectiveReason.toLowerCase();
+          if (rLower.contains('renewal') || rLower.contains('license') || rLower.contains('dues')) {
+            await SessionStorage.instance.setString('cubag_renewal_submitted', 'true');
+          }
+          ApiService.deleteCacheKeysMatching('/tasks');
+          ApiService.deleteCacheKeysMatching('/payments');
+
           // Update IDs now that we have them from the server, then start polling
           if (mounted) {
             setState(() {
@@ -536,8 +764,29 @@ class _PaymentsPageState extends State<PaymentsPage>
           }
           _pollWhitsunPayStatus(paymentId, txRef);
         } else {
-          _confirmedAmount = _amountCtrl.text;
-          _handlePaymentSuccess();
+          // ── Bank Transfer Submitted
+          final resData = res.data is Map ? res.data as Map : {};
+          final paymentId = resData['payment_id'];
+          final txRef = resData['transaction_ref'] ?? '';
+
+          // Suppress renewal bill popup immediately and invalidate caches
+          final rLower = effectiveReason.toLowerCase();
+          if (rLower.contains('renewal') || rLower.contains('license') || rLower.contains('dues')) {
+            await SessionStorage.instance.setString('cubag_renewal_submitted', 'true');
+          }
+          ApiService.deleteCacheKeysMatching('/tasks');
+          ApiService.deleteCacheKeysMatching('/payments');
+
+          if (mounted) {
+            setState(() {
+              _currentPaymentId = paymentId;
+              _currentTxRef = txRef;
+              _confirmedAmount = _amountCtrl.text;
+              _loading = false;
+              _submittingPayment = false;
+              _step = 5;
+            });
+          }
         }
       } else {
         final serverMsg = res.data is Map
@@ -567,18 +816,27 @@ class _PaymentsPageState extends State<PaymentsPage>
         });
       }
     }
-    if (mounted) setState(() => _loading = false);
+    if (mounted) {
+      setState(() {
+        _loading = false;
+        _submittingPayment = false;
+      });
+    }
   }
 
 
 
   bool get _isNoDocPaymentReason {
+    if (_complianceAppId != null) return true;
     final r = _reason.toLowerCase();
     return r.contains('registration') ||
         r.contains('new membership') ||
         r.contains('membership dues') ||
         r.contains('entrance') ||
-        r.contains('onboarding');
+        r.contains('onboarding') ||
+        r.contains('cti') ||
+        r.contains('course') ||
+        r.contains('training');
   }
 
   bool _isComplianceReason(String? label) {
@@ -835,7 +1093,7 @@ class _PaymentsPageState extends State<PaymentsPage>
       final int? pId = data is Map
           ? int.tryParse(data['payment_id']?.toString() ?? '')
           : null;
-      if (pId == paymentId || pId == null) {
+      if (pId == paymentId) {
         isComplete = true;
         _handlePaymentSuccess();
       }
@@ -862,7 +1120,8 @@ class _PaymentsPageState extends State<PaymentsPage>
         if (_currentPaymentId != paymentId) break;
 
         if (res.statusCode == 200) {
-          final status = res.data['status']?.toString().toLowerCase() ?? '';
+          final resData = res.data is Map ? res.data as Map : {};
+          final status = resData['status']?.toString().toLowerCase() ?? '';
           if (status == 'success' ||
               status == 'successful' ||
               status == 'completed') {
@@ -876,7 +1135,7 @@ class _PaymentsPageState extends State<PaymentsPage>
             if (mounted) {
               setState(() {
                 _errorMsg =
-                    res.data['message'] ?? 'Payment was declined or cancelled.';
+                    resData['message'] ?? 'Payment was declined or cancelled.';
                 _showError = true;
                 _step = 1;
               });
@@ -939,7 +1198,8 @@ class _PaymentsPageState extends State<PaymentsPage>
         },
       );
       if (!mounted) return;
-      final status = res.data['status']?.toString().toLowerCase() ?? '';
+      final resData = res.data is Map ? res.data as Map : {};
+      final status = resData['status']?.toString().toLowerCase() ?? '';
       if (status == 'success' ||
           status == 'successful' ||
           status == 'completed') {
@@ -948,7 +1208,7 @@ class _PaymentsPageState extends State<PaymentsPage>
           status == 'declined' ||
           status == 'cancelled') {
         setState(() {
-          _errorMsg = res.data['message'] ?? 'Payment declined.';
+          _errorMsg = resData['message'] ?? 'Payment declined.';
           _showError = true;
           _step = 1;
         });
@@ -966,7 +1226,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Still pending: ${res.data['message'] ?? 'Please check your phone for the MoMo prompt.'}',
+                    'Still pending: ${resData['message'] ?? 'Please check your phone for the MoMo prompt.'}',
                     style: GoogleFonts.outfit(
                       fontWeight: FontWeight.bold,
                       fontSize: 15.5,
@@ -1382,8 +1642,8 @@ class _PaymentsPageState extends State<PaymentsPage>
                                     ),
                                     onPressed: () {
                                       setState(() => _showSuccess = false);
-                                      if (returnToApp) {
-                                        context.go('/application-documents');
+                                      if (redirectUrl != null && redirectUrl.isNotEmpty) {
+                                        context.go(redirectUrl);
                                       } else {
                                         context.go('/payment-history');
                                       }
@@ -1391,7 +1651,11 @@ class _PaymentsPageState extends State<PaymentsPage>
                                     child: Text(
                                       returnToApp
                                           ? 'Return to Complete Your Application'
-                                          : 'View Payment History',
+                                          : (redirectUrl != null && (redirectUrl.contains('cti') || redirectUrl.contains('course'))
+                                              ? 'Return to CTI Courses'
+                                              : (redirectUrl != null && redirectUrl.isNotEmpty
+                                                  ? 'Return to App'
+                                                  : 'View Payment History')),
                                       style: GoogleFonts.outfit(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
@@ -1399,7 +1663,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                     ),
                                   ),
                                 ),
-                                if (returnToApp) ...[
+                                if (redirectUrl != null && redirectUrl.isNotEmpty) ...[
                                   const SizedBox(height: 8),
                                   TextButton(
                                     onPressed: () {
@@ -1576,6 +1840,14 @@ class _PaymentsPageState extends State<PaymentsPage>
                 );
               }
 
+              // Always include Annual Renewal Dues for members
+              dropdownItems.add(
+                DropdownItem<String>(
+                  value: 'Annual Renewal Dues',
+                  label: '$renewalTitle · GH₵ $renewalAmtStr',
+                ),
+              );
+
               // Add non-tier general service fees from platform settings if configured
               for (var f in _fees) {
                 final label = (f['label'] ?? f['name'] ?? '').toString();
@@ -1706,9 +1978,155 @@ class _PaymentsPageState extends State<PaymentsPage>
               );
             },
           ),
+          // ── If Renewal and installments allowed, show payment mode selector ──
+          if (_reason.toLowerCase().contains('renewal') && _allowInstallments) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: isDark ? Colors.white12 : const Color(0xFFCBD5E1)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.pie_chart_outline_rounded, size: 16, color: _kOrange),
+                      const SizedBox(width: 8),
+                      Text(
+                        'PAYMENT OPTION',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                          color: _kOrange,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () {
+                            setState(() {
+                              _isInstallmentMode = false;
+                              final fullBal = _renewalBalanceDue > 0
+                                  ? _renewalBalanceDue
+                                  : (_renewalFeeAmount ?? 0.0);
+                              _amountCtrl.text = fullBal > 0 ? fullBal.toStringAsFixed(2) : _amountCtrl.text;
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: !_isInstallmentMode
+                                  ? _kOrange.withAlpha(25)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: !_isInstallmentMode
+                                    ? _kOrange
+                                    : (isDark ? Colors.white12 : const Color(0xFFCBD5E1)),
+                                width: !_isInstallmentMode ? 1.5 : 1.0,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Full Balance',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: !_isInstallmentMode
+                                        ? _kOrange
+                                        : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'GH₵ ${(_renewalBalanceDue > 0 ? _renewalBalanceDue : (_renewalFeeAmount ?? 0.0)).toStringAsFixed(2)}',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () {
+                            setState(() {
+                              _isInstallmentMode = true;
+                              if (_minInstallmentAmount > 0) {
+                                _amountCtrl.text = _minInstallmentAmount.toStringAsFixed(2);
+                              } else if (_renewalBalanceDue > 0) {
+                                final half = (_renewalBalanceDue / 2).clamp(1.0, _renewalBalanceDue);
+                                _amountCtrl.text = half.toStringAsFixed(2);
+                              }
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: _isInstallmentMode
+                                  ? _kOrange.withAlpha(25)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _isInstallmentMode
+                                    ? _kOrange
+                                    : (isDark ? Colors.white12 : const Color(0xFFCBD5E1)),
+                                width: _isInstallmentMode ? 1.5 : 1.0,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Part-Payment',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: _isInstallmentMode
+                                        ? _kOrange
+                                        : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _minInstallmentAmount > 0
+                                      ? 'Min GH₵ ${_minInstallmentAmount.toStringAsFixed(2)}'
+                                      : 'Installment',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 20),
           Text(
-            'AMOUNT TO PAY',
+            _isInstallmentMode ? 'INSTALLMENT AMOUNT TO PAY' : 'AMOUNT TO PAY',
             style: GoogleFonts.outfit(
               fontSize: 13,
               color: const Color(0xFF64748b),
@@ -1759,22 +2177,88 @@ class _PaymentsPageState extends State<PaymentsPage>
                     controller: _amountCtrl,
                     onChanged: (v) => setState(() {}),
                     keyboardType: TextInputType.number,
-                    readOnly: _reason.isNotEmpty && _reason != 'Other',
+                    readOnly: (_reason.isNotEmpty && _reason != 'Other') &&
+                        !(_reason.toLowerCase().contains('renewal') && _allowInstallments && _isInstallmentMode),
                     style: GoogleFonts.outfit(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF1A0F0A),
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                       hintText: '0.00',
+                      suffixIcon: (_reason.toLowerCase().contains('renewal') && _allowInstallments && _isInstallmentMode)
+                          ? const Tooltip(
+                              message: 'Editable installment amount',
+                              child: Icon(Icons.edit_note_rounded, color: _kOrange, size: 22),
+                            )
+                          : null,
                     ),
                   ),
                 ),
               ],
             ),
           ),
+          if (_reason.toLowerCase().contains('renewal') && _allowInstallments && _isInstallmentMode) ...[
+            Builder(
+              builder: (ctx) {
+                final enteredAmt = double.tryParse(_amountCtrl.text) ?? 0.0;
+                final maxBal = _renewalBalanceDue > 0 ? _renewalBalanceDue : (_renewalFeeAmount ?? double.infinity);
+                final minBal = _minInstallmentAmount > 0 ? _minInstallmentAmount : 1.0;
+
+                if (_amountCtrl.text.isNotEmpty && enteredAmt < (minBal - 0.01)) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6, left: 4),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline_rounded, size: 14, color: Colors.redAccent),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Minimum installment is GH₵ ${minBal.toStringAsFixed(2)}',
+                          style: GoogleFonts.inter(fontSize: 12, color: Colors.redAccent, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                if (_amountCtrl.text.isNotEmpty && enteredAmt > (maxBal + 0.01)) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6, left: 4),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline_rounded, size: 14, color: Colors.redAccent),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Cannot exceed remaining balance of GH₵ ${maxBal.toStringAsFixed(2)}',
+                          style: GoogleFonts.inter(fontSize: 12, color: Colors.redAccent, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(top: 6, left: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, size: 14, color: _kAmber),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Enter any installment between GH₵ ${minBal.toStringAsFixed(2)} and GH₵ ${maxBal.toStringAsFixed(2)}',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: _kAmber,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
           const SizedBox(height: 20),
 
           // ── Fee Breakdown Card (Registration Fee vs New Membership Package) ──
@@ -1991,6 +2475,120 @@ class _PaymentsPageState extends State<PaymentsPage>
             ),
           ],
 
+          // ── Installment Progress Overview Card (When partially paid or installments active) ──
+          if (_reason.toLowerCase().contains('renewal') && (_renewalAmountPaid > 0 || _isPartiallyPaid || _isInstallmentMode)) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withAlpha(8) : const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF059669).withAlpha(80)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.account_balance_wallet_outlined, size: 16, color: Color(0xFF059669)),
+                          const SizedBox(width: 6),
+                          Text(
+                            'INSTALLMENT PLAN OVERVIEW',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF059669),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF059669).withAlpha(20),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          _isPartiallyPaid ? 'PARTIALLY PAID' : 'INSTALLMENTS PERMITTED',
+                          style: GoogleFonts.inter(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF059669),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: ((_renewalFeeAmount ?? (_renewalAmountPaid + _renewalBalanceDue)) > 0)
+                          ? (_renewalAmountPaid / (_renewalFeeAmount ?? (_renewalAmountPaid + _renewalBalanceDue))).clamp(0.0, 1.0)
+                          : 0.0,
+                      minHeight: 8,
+                      backgroundColor: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('TOTAL BILLED', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFF64748b))),
+                          const SizedBox(height: 2),
+                          Text(
+                            'GHS ${((_renewalFeeAmount != null && _renewalFeeAmount! > 0) ? _renewalFeeAmount! : (_renewalAmountPaid + _renewalBalanceDue)).toStringAsFixed(2)}',
+                            style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
+                          ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text('PAID TO DATE', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFF059669))),
+                          const SizedBox(height: 2),
+                          Text('GHS ${_renewalAmountPaid.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF059669))),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text('OUTSTANDING BALANCE', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFFD97706))),
+                          const SizedBox(height: 2),
+                          Text('GHS ${_renewalBalanceDue.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFFD97706))),
+                        ],
+                      ),
+                    ],
+                  ),
+                  if (_isInstallmentMode) ...[
+                    const Divider(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Remaining After This Payment:',
+                          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF64748b)),
+                        ),
+                        Text(
+                          'GHS ${((_renewalBalanceDue - (double.tryParse(_amountCtrl.text) ?? 0.0)).clamp(0.0, double.infinity)).toStringAsFixed(2)}',
+                          style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w700, color: _kOrange),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+
           // ── Itemized Fee Breakdown Card (For Annual Renewal Dues) ──
           if (_renewalFeeBreakdown.isNotEmpty &&
               _reason.toLowerCase().contains('renewal')) ...[
@@ -2061,7 +2659,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Total Payable:',
+                        _isInstallmentMode ? 'Paying This Installment:' : 'Total Payable:',
                         style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -2147,10 +2745,27 @@ class _PaymentsPageState extends State<PaymentsPage>
                     r.contains('renewal') ||
                     r.contains('dues') ||
                     r.contains('annual fee');
+                final isRenewal = r.contains('renewal');
+                final amt = double.tryParse(_amountCtrl.text) ?? 0.0;
+                final maxPayable = _renewalBalanceDue > 0
+                    ? _renewalBalanceDue
+                    : (_renewalFeeAmount ?? double.infinity);
+                final minPayable = _minInstallmentAmount > 0
+                    ? _minInstallmentAmount
+                    : 1.0;
+
+                bool isAmountValid = amt > 0;
+                if (isRenewal && _allowInstallments && _isInstallmentMode) {
+                  if (amt < (minPayable - 0.01) || amt > (maxPayable + 0.01)) {
+                    isAmountValid = false;
+                  }
+                }
+
                 // Block only if: license is active AND reason is license-related
                 final canContinue =
                     _reason.isNotEmpty &&
                     _amountCtrl.text.isNotEmpty &&
+                    isAmountValid &&
                     !(_isLicenseBlocked && isLicenseReason);
                 final isNoDoc = _isNoDocPaymentReason;
                 return ElevatedButton.icon(
@@ -2805,212 +3420,699 @@ class _PaymentsPageState extends State<PaymentsPage>
     if (_step == 3) {
       final cleanDigits = _normalizeGhanaPhone(_momoPhone);
       final isPhoneValid = cleanDigits.length == 10;
-      final canProceed = _momoNetwork.isNotEmpty && isPhoneValid;
+      final isMomo = _method == 'momo';
+      final isBank = _method == 'bank';
+      final hasReceipt = _receiptUrl != null && _receiptUrl!.isNotEmpty;
+      final canProceed = isMomo
+          ? (_momoNetwork.isNotEmpty && isPhoneValid)
+          : hasReceipt;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Clean Header Label & Auto-filled Carrier Tag
+          // ── Payment Method Toggle Selector ──
+          Text(
+            'SELECT PAYMENT CHANNEL',
+            style: GoogleFonts.outfit(
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
+              color: const Color(0xFF64748b),
+              letterSpacing: 0.6,
+            ),
+          ),
+          const SizedBox(height: 10),
           Row(
             children: [
-              Text(
-                'MOBILE MONEY NUMBER',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 13.5,
-                  color: const Color(0xFF64748b),
-                  letterSpacing: 0.6,
-                ),
-              ),
-              const Spacer(),
-              if (_momoNetwork.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _kOrange.withAlpha(20),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: _kOrange.withAlpha(90),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _method = 'momo'),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: isMomo ? _kOrange.withAlpha(16) : Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isMomo ? _kOrange : const Color(0xFFcbd5e1),
+                        width: isMomo ? 2.0 : 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isMomo ? _kOrange.withAlpha(20) : Colors.black.withAlpha(3),
+                          blurRadius: isMomo ? 8 : 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.phone_android_rounded,
+                          color: isMomo ? _kOrange : const Color(0xFF64748b),
+                          size: 22,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            'Mobile Money',
+                            style: GoogleFonts.outfit(
+                              fontWeight: isMomo ? FontWeight.w800 : FontWeight.w600,
+                              fontSize: 15,
+                              color: isMomo ? _kOrange : const Color(0xFF334155),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.check_circle_rounded,
-                        size: 13,
-                        color: _kOrange,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _method = 'bank'),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: isBank ? _kOrange.withAlpha(16) : Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isBank ? _kOrange : const Color(0xFFcbd5e1),
+                        width: isBank ? 2.0 : 1.2,
                       ),
-                      const SizedBox(width: 5),
-                      Text(
-                        _carrierName(_momoNetwork),
-                        style: GoogleFonts.outfit(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.bold,
-                          color: _kOrange,
+                      boxShadow: [
+                        BoxShadow(
+                          color: isBank ? _kOrange.withAlpha(25) : Colors.black.withAlpha(3),
+                          blurRadius: isBank ? 8 : 4,
+                          offset: const Offset(0, 2),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.account_balance_rounded,
+                          color: isBank ? _kOrange : const Color(0xFF64748b),
+                          size: 22,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            'Bank Transfer',
+                            style: GoogleFonts.outfit(
+                              fontWeight: isBank ? FontWeight.w800 : FontWeight.w600,
+                              fontSize: 15,
+                              color: isBank ? _kOrange : const Color(0xFF334155),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 20),
 
-          // Direct 10-Digit Phone Number Input (NO COUNTRY CODE)
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isPhoneValid
-                    ? _kOrange
-                    : (_momoPhone.isNotEmpty
-                        ? const Color(0xFF94a3b8)
-                        : const Color(0xFFcbd5e1)),
-                width: isPhoneValid ? 2.0 : 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isPhoneValid
-                      ? _kOrange.withAlpha(20)
-                      : Colors.black.withAlpha(4),
-                  blurRadius: isPhoneValid ? 10 : 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Row(
+          // ── CHANNEL A: MOBILE MONEY ──
+          if (isMomo) ...[
+            Row(
               children: [
-                Icon(
-                  Icons.phone_iphone_rounded,
-                  size: 22,
-                  color: isPhoneValid ? _kOrange : const Color(0xFF94a3b8),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    initialValue: _momoPhone,
-                    onChanged: (v) {
-                      final clean = _normalizeGhanaPhone(v);
-                      _momoPhone = clean;
-                      final detected = _detectNetworkFromPhone(clean);
-                      if (detected.isNotEmpty) {
-                        _momoNetwork = detected;
-                      } else if (clean.length < 3) {
-                        _momoNetwork = '';
-                      }
-                      setState(() {});
-                    },
-                    keyboardType: TextInputType.phone,
-                    maxLength: 10,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    style: GoogleFonts.outfit(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 2.0,
-                      color: const Color(0xFF1e293b),
-                    ),
-                    decoration: InputDecoration(
-                      hintText: '024XXXXXXX (10 digits)',
-                      hintStyle: GoogleFonts.outfit(
-                        color: const Color(0xFF94a3b8),
-                        fontSize: 17,
-                        letterSpacing: 1.0,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      counterText: "",
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
+                Text(
+                  'MOBILE MONEY NUMBER',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                    color: const Color(0xFF64748b),
+                    letterSpacing: 0.6,
                   ),
                 ),
+                const Spacer(),
+                if (_momoNetwork.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _kOrange.withAlpha(20),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _kOrange.withAlpha(90),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          size: 13,
+                          color: _kOrange,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          _carrierName(_momoNetwork),
+                          style: GoogleFonts.outfit(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.bold,
+                            color: _kOrange,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
-          ),
-          const SizedBox(height: 8),
+            const SizedBox(height: 8),
 
-          // Micro Helper Text
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(
-              _momoPhone.isEmpty
-                  ? 'Enter your 10-digit mobile number (MTN, Telecel, or AT).'
-                  : (_momoNetwork.isEmpty
-                      ? 'Type full 10 digits to auto-fill network carrier.'
-                      : '✓ ${_carrierName(_momoNetwork)} (Push prompt ready)'),
-              style: GoogleFonts.inter(
-                fontSize: 13.5,
-                color: _momoNetwork.isNotEmpty
-                    ? _kOrange
-                    : const Color(0xFF64748b),
-                fontWeight: _momoNetwork.isNotEmpty
-                    ? FontWeight.w600
-                    : FontWeight.normal,
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-
-          // Instant Push Notification Info Card
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFF8FAFC),
-                  Color(0xFFF1F5F9),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isPhoneValid
+                      ? _kOrange
+                      : (_momoPhone.isNotEmpty
+                          ? const Color(0xFF94a3b8)
+                          : const Color(0xFFcbd5e1)),
+                  width: isPhoneValid ? 2.0 : 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: isPhoneValid
+                        ? _kOrange.withAlpha(20)
+                        : Colors.black.withAlpha(4),
+                    blurRadius: isPhoneValid ? 10 : 4,
+                    offset: const Offset(0, 2),
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.phone_iphone_rounded,
+                    size: 22,
+                    color: isPhoneValid ? _kOrange : const Color(0xFF94a3b8),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: _momoPhone,
+                      onChanged: (v) {
+                        final clean = _normalizeGhanaPhone(v);
+                        _momoPhone = clean;
+                        final detected = _detectNetworkFromPhone(clean);
+                        if (detected.isNotEmpty) {
+                          _momoNetwork = detected;
+                        } else if (clean.length < 3) {
+                          _momoNetwork = '';
+                        }
+                        setState(() {});
+                      },
+                      keyboardType: TextInputType.phone,
+                      maxLength: 10,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      style: GoogleFonts.outfit(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 2.0,
+                        color: const Color(0xFF1e293b),
+                      ),
+                      decoration: InputDecoration(
+                        hintText: '024XXXXXXX (10 digits)',
+                        hintStyle: GoogleFonts.outfit(
+                          color: const Color(0xFF94a3b8),
+                          fontSize: 17,
+                          letterSpacing: 1.0,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        counterText: "",
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(7),
-                  decoration: BoxDecoration(
-                    color: _kOrange.withAlpha(20),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.touch_app_rounded,
-                    size: 18,
-                    color: _kOrange,
-                  ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                _momoPhone.isEmpty
+                    ? 'Enter your 10-digit mobile number (MTN, Telecel, or AT).'
+                    : (_momoNetwork.isEmpty
+                        ? 'Type full 10 digits to auto-fill network carrier.'
+                        : '✓ ${_carrierName(_momoNetwork)} (Push prompt ready)'),
+                style: GoogleFonts.inter(
+                  fontSize: 13.5,
+                  color: _momoNetwork.isNotEmpty
+                      ? _kOrange
+                      : const Color(0xFF64748b),
+                  fontWeight: _momoNetwork.isNotEmpty
+                      ? FontWeight.w600
+                      : FontWeight.normal,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              ),
+            ),
+            const SizedBox(height: 18),
+
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFFF8FAFC),
+                    Color(0xFFF1F5F9),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: _kOrange.withAlpha(20),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.touch_app_rounded,
+                      size: 18,
+                      color: _kOrange,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Direct USSD Push Authorization',
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14.5,
+                            color: const Color(0xFF0f172a),
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          'A PIN authorization prompt will appear on your phone screen automatically once you proceed.',
+                          style: GoogleFonts.inter(
+                            fontSize: 13.5,
+                            color: const Color(0xFF475569),
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // ── CHANNEL B: BANK TRANSFER / DIRECT DEPOSIT ──
+          if (isBank) ...[
+            Builder(
+              builder: (ctx) {
+                final banks = _getBankList(bank);
+                final selectedIdx = (_selectedBankIndex >= 0 && _selectedBankIndex < banks.length) ? _selectedBankIndex : 0;
+                final curBank = banks[selectedIdx];
+                final bName = (curBank['bankName'] ?? curBank['bank_name'] ?? 'Bank Transfer').toString();
+                final aName = (curBank['accountName'] ?? curBank['account_name'] ?? 'Customs Brokers Association of Ghana (CUBAG)').toString();
+                final aNum = (curBank['accountNumber'] ?? curBank['account_number'] ?? '').toString();
+                final bBranch = (curBank['branch'] ?? curBank['branch_name'] ?? '').toString();
+                final sCode = (curBank['sortCode'] ?? curBank['sort_code'] ?? '').toString();
+                final swCode = (curBank['swiftCode'] ?? curBank['swift_code'] ?? '').toString();
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (banks.length > 1) ...[
                       Text(
-                        'Direct USSD Push Authorization',
+                        'SELECT SETTLEMENT BANK ACCOUNT',
                         style: GoogleFonts.outfit(
+                          fontSize: 11,
                           fontWeight: FontWeight.w800,
-                          fontSize: 14.5,
-                          color: const Color(0xFF0f172a),
+                          color: const Color(0xFF64748b),
+                          letterSpacing: 0.5,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 8),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: List.generate(banks.length, (idx) {
+                            final b = banks[idx];
+                            final name = (b['bankName'] ?? b['bank_name'] ?? 'Account ${idx + 1}').toString();
+                            final isCur = idx == selectedIdx;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: InkWell(
+                                onTap: () => setState(() => _selectedBankIndex = idx),
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: isCur ? const Color(0xFF24140D) : const Color(0xFFf8fafc),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: isCur ? _kOrange : const Color(0xFFcbd5e1),
+                                      width: isCur ? 1.5 : 1.0,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.account_balance_rounded,
+                                        size: 14,
+                                        color: isCur ? _kOrange : const Color(0xFF475569),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        name,
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: isCur ? Colors.white : const Color(0xFF334155),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+
+                    // Bank Account Details Card (Rich Dark Brown with Orange Accents)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFF1A0F0A),
+                            Color(0xFF2E1A11),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: _kOrange.withAlpha(50),
+                          width: 1.2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF1A0F0A).withAlpha(50),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: _kOrange.withAlpha(35),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.account_balance_rounded,
+                                  color: _kOrange,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'OFFICIAL CUBAG BANK SETTLEMENT ACCOUNT',
+                                      style: GoogleFonts.outfit(
+                                        color: const Color(0xFFd4b8aa),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    Text(
+                                      bName,
+                                      style: GoogleFonts.outfit(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(color: Color(0xFF4A2A1E), height: 22),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'ACCOUNT NUMBER',
+                                    style: GoogleFonts.outfit(
+                                      color: const Color(0xFFd4b8aa),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  SelectableText(
+                                    aNum.isNotEmpty ? aNum : 'N/A',
+                                    style: GoogleFonts.outfit(
+                                      color: _kOrange,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (aNum.isNotEmpty)
+                                IconButton(
+                                  tooltip: 'Copy Account Number',
+                                  icon: const Icon(Icons.copy_rounded, color: Colors.white70, size: 20),
+                                  onPressed: () {
+                                    Clipboard.setData(ClipboardData(text: aNum));
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Bank account number copied to clipboard!'),
+                                        duration: Duration(seconds: 2),
+                                        backgroundColor: _kGreen,
+                                      ),
+                                    );
+                                  },
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Account Name: $aName'
+                                  '${bBranch.isNotEmpty ? '\nBranch: $bBranch' : ''}'
+                                  '${sCode.isNotEmpty ? ' (Sort: $sCode)' : ''}'
+                                  '${swCode.isNotEmpty ? ' | Swift: $swCode' : ''}',
+                                  style: GoogleFonts.inter(
+                                    color: const Color(0xFFe2d5ce),
+                                    fontSize: 13,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 18),
+
+            // Deposit Slip Upload Dropzone
+            Text(
+              'UPLOAD DEPOSIT SLIP / TRANSFER RECEIPT',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+                color: const Color(0xFF64748b),
+                letterSpacing: 0.6,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            if (_uploadingReceipt)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFf8fafc),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFcbd5e1)),
+                ),
+                child: Column(
+                  children: [
+                    const CircularProgressIndicator(color: _kOrange),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Uploading deposit slip to secure storage...',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF334155),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else if (hasReceipt)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFf0fdf4),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF86efac), width: 1.5),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFdcfce7),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check_circle_rounded,
+                        color: _kGreen,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _receiptFileName ?? 'Bank Deposit Slip',
+                            style: GoogleFonts.outfit(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF14532d),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Deposit receipt attached & ready for review',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: const Color(0xFF166534),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _pickAndUploadBankReceipt,
+                      icon: const Icon(Icons.refresh_rounded, size: 16),
+                      label: const Text('Replace'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF15803d),
+                        side: const BorderSide(color: Color(0xFF86efac)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              InkWell(
+                onTap: _pickAndUploadBankReceipt,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFfdfaf8),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _kOrange.withAlpha(120),
+                      width: 1.5,
+                      style: BorderStyle.solid,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _kOrange.withAlpha(20),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.cloud_upload_rounded,
+                          color: _kOrange,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       Text(
-                        'A PIN authorization prompt will appear on your phone screen automatically once you proceed.',
+                        'Click to Upload Bank Slip / Transfer Screenshot',
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1A0F0A),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Supports JPG, PNG, PDF receipts from bank teller or online banking',
                         style: GoogleFonts.inter(
                           fontSize: 13.5,
-                          color: const Color(0xFF475569),
-                          height: 1.35,
+                          color: const Color(0xFF64748b),
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
+              ),
+          ],
+
           const SizedBox(height: 24),
 
           // Action Buttons
@@ -3025,9 +4127,11 @@ class _PaymentsPageState extends State<PaymentsPage>
                       : () => setState(() => _step = 4),
                   icon: const Icon(Icons.arrow_forward_rounded, size: 18),
                   label: Text(
-                    _momoNetwork.isNotEmpty
-                        ? 'Continue with ${_carrierName(_momoNetwork)}'
-                        : 'Review Payment Summary',
+                    isBank
+                        ? (hasReceipt ? 'Continue to Invoice Review' : 'Upload Receipt to Continue')
+                        : (_momoNetwork.isNotEmpty
+                            ? 'Continue with ${_carrierName(_momoNetwork)}'
+                            : 'Review Payment Summary'),
                     style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -3086,9 +4190,18 @@ class _PaymentsPageState extends State<PaymentsPage>
     }
 
     if (_step == 4) {
-      final methodLabel = _momoNetwork.isNotEmpty
-          ? 'MOBILE MONEY (${_momoNetwork.toUpperCase()})'
-          : 'MOBILE MONEY';
+      final isBank = _method == 'bank';
+      final banks = _getBankList(bank);
+      final selectedIdx = (_selectedBankIndex >= 0 && _selectedBankIndex < banks.length) ? _selectedBankIndex : 0;
+      final curBank = banks[selectedIdx];
+      final bName = (curBank['bankName'] ?? curBank['bank_name'] ?? 'Bank Transfer').toString();
+      final aNum = (curBank['accountNumber'] ?? curBank['account_number'] ?? '').toString();
+
+      final methodLabel = isBank
+          ? 'BANK TRANSFER'
+          : (_momoNetwork.isNotEmpty
+              ? 'MOBILE MONEY (${_momoNetwork.toUpperCase()})'
+              : 'MOBILE MONEY');
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3120,7 +4233,9 @@ class _PaymentsPageState extends State<PaymentsPage>
                   ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [_kOrange, const Color(0xFFea580c)],
+                      colors: isBank
+                          ? [const Color(0xFF1A0F0A), const Color(0xFF2E1A11)]
+                          : [_kOrange, const Color(0xFFea580c)],
                     ),
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(14),
@@ -3141,20 +4256,38 @@ class _PaymentsPageState extends State<PaymentsPage>
                     'label': 'Payment Category',
                     'value': _reason,
                     'highlight': false,
+                    'isAttachment': false,
                   },
                   {
                     'label': 'Selected Method',
                     'value': methodLabel,
                     'highlight': false,
+                    'isAttachment': false,
                   },
+                  if (isBank) ...[
+                    {
+                      'label': 'Settlement Bank',
+                      'value': aNum.isNotEmpty ? '$bName\n(Acc: $aNum)' : bName,
+                      'highlight': false,
+                      'isAttachment': false,
+                    },
+                    {
+                      'label': 'Attached Deposit Slip',
+                      'value': _receiptFileName ?? 'Deposit Slip Uploaded',
+                      'highlight': false,
+                      'isAttachment': true,
+                    },
+                  ],
                   {
                     'label': 'Total Payable Amount',
                     'value':
                         'GH₵ ${double.tryParse(_amountCtrl.text)?.toStringAsFixed(2) ?? _amountCtrl.text}',
                     'highlight': true,
+                    'isAttachment': false,
                   },
                 ].map((row) {
                   final isHighlight = row['highlight'] as bool;
+                  final isAttachment = row['isAttachment'] == true;
                   return Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -3170,30 +4303,79 @@ class _PaymentsPageState extends State<PaymentsPage>
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          row['label']! as String,
-                          style: TextStyle(
-                            color: isHighlight
-                                ? const Color(0xFF475569)
-                                : Colors.grey.shade500,
-                            fontWeight: isHighlight
-                                ? FontWeight.bold
-                                : FontWeight.w500,
-                            fontSize: 15,
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 135),
+                          child: Text(
+                            row['label']! as String,
+                            style: TextStyle(
+                              color: isHighlight
+                                  ? const Color(0xFF475569)
+                                  : Colors.grey.shade600,
+                              fontWeight: isHighlight
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                              fontSize: 14.5,
+                            ),
                           ),
                         ),
-                        Text(
-                          row['value']! as String,
-                          style: GoogleFonts.outfit(
-                            fontWeight: isHighlight
-                                ? FontWeight.w900
-                                : FontWeight.w700,
-                            color: isHighlight
-                                ? _kOrange
-                                : const Color(0xFF281710),
-                            fontSize: isHighlight ? 20 : 15.5,
-                          ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: isAttachment
+                              ? Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF281710).withAlpha(8),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: const Color(0xFFcbd5e1),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.attach_file_rounded,
+                                          size: 14,
+                                          color: _kOrange,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Text(
+                                            row['value']! as String,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.outfit(
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xFF281710),
+                                              fontSize: 13.5,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              : Text(
+                                  row['value']! as String,
+                                  textAlign: TextAlign.right,
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: isHighlight
+                                        ? FontWeight.w900
+                                        : FontWeight.w700,
+                                    color: isHighlight
+                                        ? _kOrange
+                                        : const Color(0xFF281710),
+                                    fontSize: isHighlight ? 20 : 15,
+                                    height: 1.3,
+                                  ),
+                                ),
                         ),
                       ],
                     ),
@@ -3220,9 +4402,9 @@ class _PaymentsPageState extends State<PaymentsPage>
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: _loading ? null : _submitPayment,
+                  onPressed: (_loading || _submittingPayment) ? null : _submitPayment,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primary,
+                    backgroundColor: _kOrange,
                     foregroundColor: Colors.white,
                     minimumSize: const Size(0, 50),
                     shape: RoundedRectangleBorder(
@@ -3230,7 +4412,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     ),
                     elevation: 0,
                   ),
-                  child: _loading
+                  child: (_loading || _submittingPayment)
                       ? const SizedBox(
                           width: 20,
                           height: 20,
@@ -3240,9 +4422,11 @@ class _PaymentsPageState extends State<PaymentsPage>
                           ),
                         )
                       : Text(
-                          _method == 'momo'
-                              ? 'Initiate Mobile Payment'
-                              : 'Confirm & Submit Payment',
+                          isBank
+                              ? 'Submit Deposit Slip for Confirmation'
+                              : (_method == 'momo'
+                                  ? 'Initiate Mobile Payment'
+                                  : 'Confirm & Submit Payment'),
                           style: GoogleFonts.outfit(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -3258,6 +4442,212 @@ class _PaymentsPageState extends State<PaymentsPage>
     }
 
     if (_step == 5) {
+      if (_method == 'bank') {
+        final banks = _getBankList(bank);
+        final selectedIdx = (_selectedBankIndex >= 0 && _selectedBankIndex < banks.length) ? _selectedBankIndex : 0;
+        final curBank = banks[selectedIdx];
+        final bName = (curBank['bankName'] ?? curBank['bank_name'] ?? 'Bank Transfer').toString();
+
+        return Column(
+          children: [
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1A0F0A), Color(0xFF2E1A11)],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF1A0F0A).withAlpha(50),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.mark_email_read_rounded,
+                color: _kOrange,
+                size: 38,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Deposit Slip Submitted',
+              style: GoogleFonts.outfit(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF1A0F0A),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your bank deposit receipt has been recorded and submitted to CUBAG Administration for review and confirmation.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                color: const Color(0xFF64748b),
+                fontSize: 15,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Summary Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFe2e8f0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(4),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Amount Submitted:', style: GoogleFonts.inter(color: const Color(0xFF64748b), fontSize: 14)),
+                      Text(
+                        'GH₵ ${_amountCtrl.text}',
+                        style: GoogleFonts.outfit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: _kOrange,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Category:', style: GoogleFonts.inter(color: const Color(0xFF64748b), fontSize: 14)),
+                      Text(_reason, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Channel:', style: GoogleFonts.inter(color: const Color(0xFF64748b), fontSize: 14)),
+                      Text('Bank Transfer ($bName)', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 14)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Verification Status:', style: GoogleFonts.inter(color: const Color(0xFF64748b), fontSize: 14)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFf59e0b).withAlpha(25),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFf59e0b).withAlpha(80)),
+                        ),
+                        child: Text(
+                          'RECEIVED',
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                            color: const Color(0xFFd97706),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFf0fdf4),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF86efac)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified_user_rounded, color: _kGreen, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'As soon as an administrator confirms your deposit slip, your dues/license will be marked PAID and you will receive your official receipt.',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: const Color(0xFF166534),
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: () => context.go('/payment-history'),
+                icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                label: Text(
+                  'View Payment History',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _kOrange,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Builder(
+              builder: (ctx) {
+                final state = GoRouterState.of(ctx);
+                final redirectUrl = state.uri.queryParameters['redirect'];
+                final isCourses = redirectUrl != null && (redirectUrl.contains('course') || redirectUrl.contains('cti'));
+                return TextButton(
+                  onPressed: () {
+                    if (redirectUrl != null && redirectUrl.isNotEmpty) {
+                      context.go(redirectUrl);
+                    } else {
+                      context.go('/dashboard');
+                    }
+                  },
+                  child: Text(
+                    isCourses ? 'Return to CTI Courses' : 'Return to Member Dashboard',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: const Color(0xFF64748b),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      }
+
       final remaining = (_pollMax - _pollAttempt) * 5;
       final progressVal = _pollMax > 0 ? _pollAttempt / _pollMax : 0.0;
 
@@ -3475,52 +4865,6 @@ class _PaymentsPageState extends State<PaymentsPage>
 
     // This block should never execute because all states are handled above.
     return const SizedBox.shrink();
-  }
-
-  Widget _methodCard(String id, IconData icon, String label, Color primary) {
-    final selected = _method == id;
-    return GestureDetector(
-      onTap: () => setState(() => _method = id),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: selected ? primary : const Color(0xFFe2e8f0),
-            width: selected ? 2.5 : 1.5,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          color: selected ? primary.withAlpha(12) : Colors.white,
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: primary.withAlpha(15),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 28,
-              color: selected ? primary : const Color(0xFF94a3b8),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: GoogleFonts.outfit(
-                fontWeight: FontWeight.w800,
-                color: selected ? primary : const Color(0xFF475569),
-                fontSize: 15,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   String _carrierName(String net) {

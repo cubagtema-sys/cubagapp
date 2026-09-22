@@ -11,8 +11,10 @@ from flask_cors import cross_origin
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from config.db import get_db
 from socket_instance import socketio
-from utils import admin_required, sub_admin_required, log_backend_error, log_admin_action
+from utils import admin_required, sub_admin_required, log_backend_error, log_admin_action, emit_to_member
 from config.cache import cache
+from config.rate_limit import rate_limit
+from config.payment_validation import validate_member_payment_amount, get_cti_course_amount
 
 payments_bp = Blueprint('payments', __name__)
 logger = logging.getLogger(__name__)
@@ -34,8 +36,78 @@ if not WHITSUNPAY_CALLBACK_URL:
         'Payment webhooks will not be received until this is configured.'
     )
 
+# ─── Supabase Configuration ──────────────────────────────────────────────────
+SUPABASE_URL    = os.getenv('SUPABASE_URL', '').strip().strip('\'"')
+SUPABASE_KEY    = os.getenv('SUPABASE_SERVICE_KEY', '').strip().strip('\'"')
+SUPABASE_BUCKET = os.getenv('SUPABASE_BUCKET', 'uploads').strip().strip('\'"')
+
+try:
+    from file_storage import save_file as _save_file
+except ImportError:
+    _save_file = None
+
 # Full versioned API base — e.g. https://developer.whitsun.dev/api/v1
 _WP_API = f'{WHITSUNPAY_BASE_URL}/api/v1'
+
+
+@payments_bp.route('/upload-receipt', methods=['POST', 'OPTIONS'])
+@jwt_required()
+def upload_payment_receipt():
+    if request.method == 'OPTIONS':
+        return '', 200
+    """Uploads a bank deposit slip / receipt copy to Supabase and returns public URL."""
+    try:
+        file = request.files.get('receipt') or request.files.get('file') or request.files.get('image')
+        if not file or not file.filename:
+            return jsonify({'message': 'No receipt file provided'}), 400
+
+        allowed_exts = {'png', 'jpg', 'jpeg', 'webp', 'pdf', 'heic', 'heif'}
+        ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+        if ext not in allowed_exts:
+            return jsonify({'message': 'Allowed file types: JPG, PNG, WEBP, PDF'}), 400
+
+        file.seek(0, 2)
+        size_mb = file.tell() / (1024 * 1024)
+        file.seek(0)
+        if size_mb > 15:
+            return jsonify({'message': 'File too large. Maximum 15MB.'}), 413
+
+        file_bytes = file.read()
+        content_type = file.content_type or ('application/pdf' if ext == 'pdf' else 'image/jpeg')
+
+        # Use centralized storage (Supabase → permanent local absolute path)
+        if _save_file:
+            public_url = _save_file(
+                file_bytes,
+                original_filename=file.filename,
+                subfolder='receipts',
+                prefix='receipt_',
+                content_type=content_type,
+            )
+        else:
+            # Inline fallback: absolute path so files survive restarts
+            import uuid as _uuid
+            backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            upload_dir = os.path.join(backend_root, 'uploads', 'receipts')
+            os.makedirs(upload_dir, exist_ok=True)
+            local_filename = f"receipt_{_uuid.uuid4().hex}.{ext}"
+            abs_path = os.path.join(upload_dir, local_filename)
+            with open(abs_path, 'wb') as f:
+                f.write(file_bytes)
+            # Mirror to static so Flask can serve it
+            static_dir = os.path.join(backend_root, 'static', 'uploads', 'receipts')
+            os.makedirs(static_dir, exist_ok=True)
+            try:
+                with open(os.path.join(static_dir, local_filename), 'wb') as f:
+                    f.write(file_bytes)
+            except Exception:
+                pass
+            public_url = f"/static/uploads/receipts/{local_filename}"
+
+        return jsonify({'receipt_url': public_url, 'url': public_url, 'message': 'Receipt uploaded successfully'}), 200
+    except Exception as e:
+        logger.exception("[Upload Receipt Error] %s", e)
+        return jsonify({'message': str(e)}), 500
 
 
 def _whitsunpay_headers():
@@ -87,6 +159,7 @@ def test_gateway_connectivity():
 # ─── POST /payments/public/initiate-momo — Public MoMo Prompt for CTI Course Enrollment ───
 @payments_bp.route('/public/initiate-momo', methods=['POST', 'OPTIONS'])
 @cross_origin()
+@rate_limit('public_momo', max_requests=8, window_seconds=300)
 def public_initiate_momo():
     """Public endpoint: Dispatches mobile money authorization prompt for guest course enrollment."""
     if request.method == 'OPTIONS':
@@ -97,7 +170,6 @@ def public_initiate_momo():
     phone        = (data.get('phone') or '').strip()
     email        = (data.get('email') or '').strip()
     course_name  = (data.get('course_name') or 'CTI Professional Course').strip()
-    amount_str   = str(data.get('amount') or '1500').replace('GHS', '').replace(',', '').strip()
     network      = (data.get('network') or 'MTN').strip()
     service_type = (data.get('service_type') or 'cti_training').strip()
 
@@ -105,11 +177,14 @@ def public_initiate_momo():
         return jsonify({'message': 'Phone number is required'}), 400
 
     try:
-        amount = float(amount_str)
-        if amount <= 0:
-            amount = 1500.0
-    except Exception:
-        amount = 1500.0
+        conn_fees = get_db()
+        try:
+            with conn_fees.cursor() as cursor:
+                amount = get_cti_course_amount(cursor, course_name)
+        finally:
+            conn_fees.close()
+    except Exception as e:
+        return jsonify({'message': str(e)}), 400
 
     # International phone format: 233XXXXXXXXX
     clean_phone = ''.join(filter(str.isdigit, phone))
@@ -365,14 +440,49 @@ def create_payment():
             if not member:
                 return jsonify({'message': 'Member not found'}), 404
 
+            desc_lower = description.lower() if description else ''
+            is_renewal_payment = 'renewal' in desc_lower or ('license' in desc_lower and 'new' not in desc_lower and 'package' not in desc_lower and 'entrance' not in desc_lower)
+
             meta = data.get('meta') or {}
-            comp_app_id = meta.get('compliance_application_id') or data.get('compliance_application_id')
+            comp_app_id = meta.get('compliance_application_id') or data.get('compliance_application_id') or data.get('application_id')
+            is_installment = bool(data.get('is_installment', False))
+            installment_number = int(data.get('installment_number', 1))
+
+            server_amount, amount_err = validate_member_payment_amount(
+                cursor, member_id, description, amount, comp_app_id, is_installment
+            )
+            if amount_err:
+                return jsonify({'message': amount_err}), 400
+            if server_amount is not None:
+                amount = float(server_amount)
+
+            if not comp_app_id and (is_renewal_payment or is_installment):
+                cursor.execute("""
+                    SELECT id, payment_amount, amount_paid, allow_installments, min_installment_amount
+                    FROM compliance_applications
+                    WHERE member_id = %s AND type = 'renewal' AND status NOT IN ('approved', 'payment_confirmed', 'completed')
+                    ORDER BY id DESC LIMIT 1
+                """, (member_id,))
+                auto_app = cursor.fetchone()
+                if auto_app:
+                    comp_app_id = auto_app['id']
+
+            if comp_app_id:
+                cursor.execute("SELECT id, payment_amount, amount_paid, allow_installments, min_installment_amount FROM compliance_applications WHERE id = %s", (comp_app_id,))
+                c_app = cursor.fetchone()
+                if c_app and is_installment:
+                    if not c_app.get('allow_installments', True):
+                        return jsonify({'message': 'Installment payments are not permitted for this bill. Please settle the remaining balance in full.'}), 400
+                    min_inst = float(c_app.get('min_installment_amount') or 0.0)
+                    if min_inst > 0 and amount < (min_inst - 0.01):
+                        return jsonify({'message': f'Amount is below the required minimum installment of GHS {min_inst:,.2f}'}), 400
+                    rem_bal = max(0.0, float(c_app.get('payment_amount') or 0.0) - float(c_app.get('amount_paid') or 0.0))
+                    if rem_bal > 0 and amount > (rem_bal + 0.01):
+                        return jsonify({'message': f'Amount exceeds the remaining balance due of GHS {rem_bal:,.2f}'}), 400
 
             # ── Active License Guard ──────────────────────────────────────────
             # If this is an annual renewal/license payment (not a new member package or compliance app),
             # allow payment if the member's license is within 30 days of expiry or expired.
-            desc_lower = description.lower() if description else ''
-            is_renewal_payment = 'renewal' in desc_lower or ('license' in desc_lower and 'new' not in desc_lower and 'package' not in desc_lower and 'entrance' not in desc_lower)
             if not comp_app_id and is_renewal_payment:
                 cursor.execute(
                     "SELECT status, license_expiry_date FROM members WHERE id = %s",
@@ -399,22 +509,60 @@ def create_payment():
 
             # ── Duplicate Prevention Logic ────────────────────────────────────
             # 1. Check if an already COMPLETED / PAID payment exists for this exact description & member
-            cursor.execute("""
-                SELECT id FROM payments
-                WHERE member_id = %s AND description = %s AND LOWER(status) IN ('completed', 'successful', 'paid', 'success')
-                LIMIT 1
-            """, (member_id, description))
-            already_paid = cursor.fetchone()
+            if not is_installment:
+                cursor.execute("""
+                    SELECT id FROM payments
+                    WHERE member_id = %s AND description = %s AND LOWER(status) IN ('completed', 'successful', 'paid', 'success')
+                    LIMIT 1
+                """, (member_id, description))
+                already_paid = cursor.fetchone()
 
-            if already_paid:
-                return jsonify({
-                    'message': f'Payment for "{description}" has already been completed and confirmed. Duplicate payment is not required.',
-                    'payment_id': already_paid['id'],
-                    'error_code': 'PAYMENT_ALREADY_COMPLETED'
-                }), 200
+                if already_paid:
+                    return jsonify({
+                        'message': f'Payment for "{description}" has already been completed and confirmed. Duplicate payment is not required.',
+                        'payment_id': already_paid['id'],
+                        'error_code': 'PAYMENT_ALREADY_COMPLETED'
+                    }), 200
 
-            # 2. Check if a pending transaction already exists for this description.
-            # If created within the last 15s, return existing pending record without sending a 2nd MoMo prompt.
+            # 2. Check if a bank deposit slip for this description is ALREADY pending review
+            if method == 'bank':
+                cursor.execute("""
+                    SELECT id, payment_ref, receipt_url, created_at FROM payments
+                    WHERE member_id = %s AND description = %s AND LOWER(status) = 'pending' AND (receipt_url IS NOT NULL AND receipt_url != '')
+                    ORDER BY id DESC LIMIT 1
+                """, (member_id, description))
+                existing_slip = cursor.fetchone()
+                if existing_slip:
+                    logger.info("[Payments] Member %s duplicate bank slip caught for %s (id: %s)", member_id, description, existing_slip['id'])
+                    # Mark any renewal bill tasks as completed so popups stop immediately
+                    cursor.execute("""
+                        UPDATE tasks
+                        SET done = true
+                        WHERE member_id = %s AND (
+                            LOWER(title) LIKE '%%renewal%%' OR LOWER(title) LIKE '%%bill%%' OR LOWER(title) LIKE '%%dues%%'
+                        )
+                    """, (member_id,))
+                    cursor.execute("""
+                        UPDATE compliance_applications
+                        SET status = 'payment_submitted', updated_at = NOW()
+                        WHERE member_id = %s AND status NOT IN ('payment_confirmed', 'approved', 'completed', 'paid')
+                    """, (member_id,))
+                    conn.commit()
+                    try:
+                        from socket_instance import socketio
+                        emit_to_member(socketio, member_id, 'tasks_updated', {})
+                    except Exception:
+                        pass
+                    return jsonify({
+                        'message': f'A deposit slip for "{description}" has already been received and is under review by CUBAG Administration.',
+                        'payment_id': existing_slip['id'],
+                        'transaction_ref': existing_slip.get('payment_ref'),
+                        'receipt_url': existing_slip.get('receipt_url'),
+                        'status': 'pending',
+                        'error_code': 'PAYMENT_ALREADY_SUBMITTED'
+                    }), 200
+
+            # 3. Check if a pending transaction already exists for this description (MoMo debounce within 15s)
             cursor.execute("""
                 SELECT id, payment_ref, created_at FROM payments
                 WHERE member_id = %s AND description = %s AND LOWER(status) = 'pending'
@@ -443,9 +591,9 @@ def create_payment():
             if existing_pending:
                 payment_id = existing_pending['id']
                 cursor.execute("""
-                    UPDATE payments SET amount = %s, payment_ref = %s, created_at = NOW()
+                    UPDATE payments SET amount = %s, payment_ref = %s, application_id = %s, is_installment = %s, installment_number = %s, created_at = NOW()
                     WHERE id = %s
-                """, (amount, payment_ref, payment_id))
+                """, (amount, payment_ref, comp_app_id, is_installment, installment_number, payment_id))
             else:
                 # Check for a stale 'failed' record for the same description and reset it
                 cursor.execute("""
@@ -457,18 +605,33 @@ def create_payment():
                 if stale_failed:
                     payment_id = stale_failed['id']
                     cursor.execute("""
-                        UPDATE payments SET status = 'pending', amount = %s, payment_ref = %s, created_at = NOW()
+                        UPDATE payments SET status = 'pending', amount = %s, payment_ref = %s, application_id = %s, is_installment = %s, installment_number = %s, created_at = NOW()
                         WHERE id = %s
-                    """, (amount, payment_ref, payment_id))
+                    """, (amount, payment_ref, comp_app_id, is_installment, installment_number, payment_id))
                     logger.info(f"[Payments] Reset stale failed payment {payment_id} to pending for member {member_id}")
                 else:
                     # Initialize New Record
                     cursor.execute("""
-                        INSERT INTO payments (member_id, amount, description, status, payment_ref)
-                        VALUES (%s, %s, %s, 'pending', %s)
+                        INSERT INTO payments (member_id, amount, description, status, payment_ref, application_id, is_installment, installment_number)
+                        VALUES (%s, %s, %s, 'pending', %s, %s, %s, %s)
                         RETURNING id
-                    """, (member_id, amount, description, payment_ref))
+                    """, (member_id, amount, description, payment_ref, comp_app_id, is_installment, installment_number))
                     payment_id = cursor.fetchone()['id']
+
+            desc_lower = description.lower() if description else ''
+            if 'renewal' in desc_lower or 'dues' in desc_lower or 'annual' in desc_lower or 'bill' in desc_lower:
+                cursor.execute("""
+                    UPDATE tasks
+                    SET done = true
+                    WHERE member_id = %s AND (
+                        LOWER(title) LIKE '%%renewal%%' OR LOWER(title) LIKE '%%bill%%' OR LOWER(title) LIKE '%%dues%%'
+                    )
+                """, (member_id,))
+                cursor.execute("""
+                    UPDATE compliance_applications
+                    SET status = 'payment_submitted', updated_at = NOW()
+                    WHERE member_id = %s AND status NOT IN ('payment_confirmed', 'approved', 'completed', 'paid')
+                """, (member_id,))
 
             conn.commit()
 
@@ -502,7 +665,9 @@ def create_payment():
                 if comp_app_id:
                     cursor.execute("""
                         UPDATE compliance_applications
-                        SET payment_ref = %s, payment_amount = %s, updated_at = NOW()
+                        SET payment_ref = COALESCE(payment_ref, %s),
+                            payment_amount = COALESCE(payment_amount, %s),
+                            updated_at = NOW()
                         WHERE id = %s
                     """, (tx_ref, amount, comp_app_id))
                 conn.commit()
@@ -592,11 +757,96 @@ def create_payment():
             }), 200
 
 
-        # ── 4. Handle Bank Transfer / Other ──
+        # ── 4. Handle Bank Transfer / Wire Deposit ──
+        receipt_url = data.get('receipt_url') or ''
+        bank_name = data.get('bank_name') or 'GCB Bank Limited'
+        account_name = data.get('account_name') or 'Customs Brokers Association of Ghana (CUBAG)'
+        account_number = data.get('account_number') or ''
+        notes = data.get('notes') or ''
+        custom_ref = data.get('payment_ref') or f"BNK-{payment_id}-{uuid.uuid4().hex[:6].upper()}"
+
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                UPDATE payments
+                SET payment_method = 'bank',
+                    payment_ref = %s,
+                    receipt_url = %s,
+                    bank_name = %s,
+                    account_name = %s,
+                    account_number = %s,
+                    notes = %s,
+                    application_id = %s,
+                    is_installment = %s,
+                    installment_number = %s,
+                    status = 'pending',
+                    created_at = NOW()
+                WHERE id = %s
+            """, (custom_ref, receipt_url or None, bank_name, account_name, account_number, notes or None, comp_app_id, is_installment, installment_number, payment_id))
+
+            desc_lower = description.lower() if description else ''
+            is_renewal = any(k in desc_lower for k in ('renewal', 'annual dues', 'license', 'bill', 'dues'))
+            if comp_app_id or is_renewal:
+                cursor.execute("""
+                    UPDATE compliance_applications
+                    SET payment_ref = COALESCE(payment_ref, %s),
+                        payment_amount = COALESCE(payment_amount, %s),
+                        status = 'payment_submitted',
+                        updated_at = NOW()
+                    WHERE member_id = %s AND (id = %s OR status IN ('payment_pending', 'vetted', 'approved', 'submitted', 'payment_submitted', 'awaiting_payment', 'partially_paid'))
+                    RETURNING id
+                """, (custom_ref, amount, member_id, comp_app_id or 0))
+                ret_app = cursor.fetchone()
+                target_app_id = ret_app['id'] if ret_app else comp_app_id
+                if target_app_id and receipt_url:
+                    fname = receipt_url.split('/')[-1]
+                    if not is_installment:
+                        cursor.execute("""
+                            DELETE FROM compliance_documents
+                            WHERE application_id = %s AND requirement = 'bank_deposit_slip'
+                        """, (target_app_id,))
+                    doc_lbl = f"Bank Deposit Receipt ({bank_name}) - Part Payment #{installment_number}" if is_installment else f"Bank Deposit Receipt Slip ({bank_name})"
+                    cursor.execute("""
+                        INSERT INTO compliance_documents
+                        (application_id, requirement, label, file_url, file_name, status, admin_note, uploaded_at)
+                        VALUES (%s, 'bank_deposit_slip', %s, %s, %s, 'pending', %s, NOW())
+                    """, (target_app_id, doc_lbl, receipt_url, fname, f"Ref: {custom_ref} | GH₵ {amount:.2f}"))
+
+            # Mark any renewal bill / annual dues tasks as completed so dashboard popup stops immediately
+            cursor.execute("""
+                UPDATE tasks
+                SET done = true
+                WHERE member_id = %s AND (
+                    LOWER(title) LIKE '%%renewal%%' OR LOWER(title) LIKE '%%bill%%' OR LOWER(title) LIKE '%%dues%%'
+                )
+            """, (member_id,))
+
+            conn.commit()
+
+        # Notify admins of bank payment verification request
+        try:
+            from utils import send_push_to_all
+            send_push_to_all(
+                title="New Bank Payment Submitted 🏦",
+                body=f"{member.get('name', 'Member')} uploaded a bank deposit receipt for {description} (GH₵ {amount:.2f}). Awaiting admin verification.",
+                data={'screen': 'admin_payments', 'payment_id': str(payment_id)}
+            )
+        except Exception as push_err:
+            logger.warning(f"[Push] Admin alert error: {push_err}")
+
+        try:
+            emit_to_member(socketio, member_id, 'tasks_updated', {})
+            emit_to_member(socketio, member_id, 'payments_updated', {'payment_id': payment_id, 'status': 'pending'})
+        except Exception:
+            pass
+
         return jsonify({
             'payment_id': payment_id,
+            'transaction_ref': custom_ref,
             'status': 'pending',
-            'message': 'Bank transfer record saved. Awaiting verification.'
+            'payment_method': 'bank',
+            'receipt_url': receipt_url,
+            'message': 'Bank transfer deposit slip submitted. Awaiting admin verification.',
+            'display_text': 'Bank payment received. An administrator will verify the receipt and mark it as PAID.'
         }), 201
 
     except Exception as e:
@@ -637,16 +887,30 @@ def verify_payment_code():
     data = request.get_json() or {}
     payment_id = data.get('payment_id')
     tx_ref = str(data.get('whitsun_ref', data.get('transaction_ref', ''))).strip()
+    member_id = get_jwt_identity()
 
     if not tx_ref:
         return jsonify({'message': 'Transaction reference is required', 'error': True}), 400
 
-    client_verified = bool(data.get('client_verified', False))
-    client_tx_id = str(data.get('client_tx_id', '')).strip()
-    if client_verified and payment_id:
-        logger.info(f"[Payments] Payment {payment_id} (ref {tx_ref}) client-verified as SUCCESSFUL (txId: {client_tx_id})")
-        _mark_payment_as_paid(payment_id)
-        return jsonify({'message': 'Payment confirmed! 🎉', 'status': 'success'}), 200
+    if not payment_id:
+        return jsonify({'message': 'Payment id is required', 'error': True}), 400
+
+    # Ownership: only the payer can poll, and the ref must match the stored payment.
+    own_conn = get_db()
+    try:
+        with own_conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, member_id, payment_ref, status FROM payments WHERE id = %s",
+                (payment_id,),
+            )
+            owned = cursor.fetchone()
+            if not owned or str(owned['member_id']) != str(member_id):
+                return jsonify({'message': 'Unauthorised', 'error': True}), 403
+            stored_ref = str(owned.get('payment_ref') or '')
+            if stored_ref and stored_ref != tx_ref:
+                return jsonify({'message': 'Transaction reference mismatch', 'error': True}), 403
+    finally:
+        own_conn.close()
 
     # ── Local Database Check First ──
     # If the webhook already received the terminal state callback and updated the DB,
@@ -771,11 +1035,19 @@ def verify_payment_manually(reference):
             headers=_whitsunpay_headers(),
             timeout=15
         )
+        if wp_res.status_code in (401, 403):
+            logger.warning(f"[WhitsunPay] {wp_res.status_code} on status check for {reference} — treating as pending")
+            return jsonify({'message': 'Waiting for MoMo prompt. Please approve on your phone.', 'status': 'pending'}), 200
+
+        if wp_res.status_code >= 400:
+            logger.warning(f"[WhitsunPay] {wp_res.status_code} status check error for {reference} — treating as pending")
+            return jsonify({'message': 'Waiting for payment confirmation. Please approve the MoMo prompt.', 'status': 'pending'}), 200
+
         try:
             wp_data = wp_res.json()
         except Exception:
             logger.error(f"[WhitsunPay] Non-JSON response in manual verify: {wp_res.text[:300]}")
-            return jsonify({'message': 'WhitsunPay returned an invalid response.', 'status': 'error'}), 200
+            return jsonify({'message': 'Waiting for payment confirmation. Please approve the MoMo prompt.', 'status': 'pending'}), 200
 
         wp_status = str(wp_data.get('status', 'pending')).lower()
 
@@ -808,19 +1080,21 @@ def _mark_payment_as_failed(payment_id):
     finally:
         conn.close()
 
-def _mark_payment_as_paid(payment_id):
+def _mark_payment_as_paid(payment_id, force=False):
     if not payment_id: return
     conn = get_db()
     try:
         with conn.cursor() as cursor:
             # Check if already paid to avoid double processing
-            cursor.execute("SELECT status, member_id, description, amount, payment_ref FROM payments WHERE id = %s", (payment_id,))
+            cursor.execute("SELECT status, member_id, description, amount, payment_ref, application_id, is_installment FROM payments WHERE id = %s", (payment_id,))
             p = cursor.fetchone()
-            if not p or str(p['status']).lower() == 'paid':
+            if not p:
+                return
+            if not force and str(p.get('status', '')).lower() == 'paid':
                 return
 
             member_id = p['member_id']
-            description = p['description']
+            description = p.get('description') or ''
 
             cursor.execute(
                 "UPDATE payments SET status = 'paid', paid_at = NOW() WHERE id = %s",
@@ -867,8 +1141,96 @@ def _mark_payment_as_paid(payment_id):
             if not license_number or str(license_number).lower() in ('pending', 'none', 'n/a', ''):
                 license_number = f"CUBAG-LIC-{now.year}-{member_id:04d}"
 
-            if 'renewal' in desc_lower or 'annual' in desc_lower or ('license' in desc_lower and 'new' not in desc_lower and 'package' not in desc_lower and 'entrance' not in desc_lower):
-                # Fetch current license info to check remaining unexpired days
+            is_renewal_payment = any(k in desc_lower for k in ('renewal', 'annual dues', 'dues', 'annual renewal', 'license renewal')) and 'new' not in desc_lower and 'package' not in desc_lower and 'entrance' not in desc_lower and 'registration' not in desc_lower
+            target_app_id = p.get('application_id')
+            app_row = None
+            if target_app_id:
+                cursor.execute("SELECT id, member_id, type, payment_amount, amount_paid, status FROM compliance_applications WHERE id = %s", (target_app_id,))
+                app_row = cursor.fetchone()
+            if not app_row and is_renewal_payment:
+                cursor.execute("""
+                    SELECT id, member_id, type, payment_amount, amount_paid, status FROM compliance_applications
+                    WHERE member_id = %s AND type = 'renewal' AND status NOT IN ('approved', 'completed')
+                    ORDER BY id DESC LIMIT 1
+                """, (member_id,))
+                app_row = cursor.fetchone()
+
+            if app_row:
+                app_id_found = app_row['id']
+                cursor.execute("UPDATE payments SET application_id = %s WHERE id = %s", (app_id_found, payment_id))
+
+                cursor.execute("""
+                    SELECT COALESCE(SUM(amount), 0) as total_confirmed
+                    FROM payments
+                    WHERE (application_id = %s OR (member_id = %s AND (description ILIKE '%%renewal%%' OR description ILIKE '%%dues%%' OR description ILIKE '%%annual%%')))
+                      AND LOWER(status) IN ('paid', 'completed', 'success', 'successful')
+                """, (app_id_found, member_id))
+                tot_conf = float(cursor.fetchone()['total_confirmed'])
+
+                bill_amount = float(app_row.get('payment_amount') or 0.0)
+                is_full = (bill_amount > 0 and (bill_amount - tot_conf) <= 0.01) or (bill_amount == 0 and tot_conf > 0)
+
+                if is_full:
+                    final_paid = bill_amount if bill_amount > 0 else tot_conf
+                    cursor.execute("""
+                        UPDATE compliance_applications
+                        SET status = 'payment_confirmed', amount_paid = %s, payment_confirmed_at = NOW(), updated_at = NOW()
+                        WHERE id = %s
+                    """, (final_paid, app_id_found))
+
+                    cursor.execute("""
+                        UPDATE tasks SET done = true
+                        WHERE member_id = %s AND (
+                            LOWER(title) LIKE '%%renewal%%' OR LOWER(title) LIKE '%%bill%%' OR LOWER(title) LIKE '%%dues%%'
+                        )
+                    """, (member_id,))
+
+                    current_expiry = member_row.get('license_expiry_date') if member_row else None
+                    if isinstance(current_expiry, str):
+                        try:
+                            current_expiry = datetime.datetime.strptime(current_expiry, '%Y-%m-%d').date()
+                        except Exception:
+                            current_expiry = None
+
+                    if current_expiry and current_expiry > now.date():
+                        new_expiry_date = current_expiry + datetime.timedelta(days=365)
+                        start_date = current_expiry
+                    else:
+                        new_expiry_date = now.date() + datetime.timedelta(days=365)
+                        start_date = now.date()
+
+                    expiry_date_str = new_expiry_date.strftime("%d %b %Y")
+
+                    cursor.execute("""
+                        UPDATE members
+                        SET status = 'active',
+                            good_standing = TRUE,
+                            package_fee_paid = TRUE,
+                            license_number = %s,
+                            license_expiry_date = %s
+                        WHERE id = %s
+                    """, (license_number, new_expiry_date, member_id))
+
+                    cursor.execute("""
+                        INSERT INTO license_history (member_id, license_number, start_date, expiry_date, duration_label)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (member_id, license_number, start_date, new_expiry_date, '1 Year (Cumulative Renewal)'))
+                    license_issued = True
+                else:
+                    # Partial Payment
+                    cursor.execute("""
+                        UPDATE compliance_applications
+                        SET status = 'partially_paid', amount_paid = %s, updated_at = NOW()
+                        WHERE id = %s
+                    """, (tot_conf, app_id_found))
+
+                    cursor.execute("""
+                        UPDATE members
+                        SET good_standing = TRUE
+                        WHERE id = %s
+                    """, (member_id,))
+
+            elif is_renewal_payment:
                 current_expiry = member_row.get('license_expiry_date') if member_row else None
                 if isinstance(current_expiry, str):
                     try:
@@ -876,8 +1238,6 @@ def _mark_payment_as_paid(payment_id):
                     except Exception:
                         current_expiry = None
 
-                # Cumulative rollover: If current license has days remaining (> today), add 365 days to existing expiry.
-                # If already expired (<= today) or None, add 365 days from today.
                 if current_expiry and current_expiry > now.date():
                     new_expiry_date = current_expiry + datetime.timedelta(days=365)
                     start_date = current_expiry
@@ -897,7 +1257,6 @@ def _mark_payment_as_paid(payment_id):
                     WHERE id = %s
                 """, (license_number, new_expiry_date, member_id))
 
-                # Log to history
                 cursor.execute("""
                     INSERT INTO license_history (member_id, license_number, start_date, expiry_date, duration_label)
                     VALUES (%s, %s, %s, %s, %s)
@@ -923,8 +1282,19 @@ def _mark_payment_as_paid(payment_id):
                         WHERE id = %s
                     """, (license_number, member_id))
 
-            conn.commit()
-            cache.delete(f'me_{member_id}')
+            if 'renewal' in desc_lower or 'annual' in desc_lower or 'dues' in desc_lower or 'license' in desc_lower:
+                if not app_row or is_full:
+                    cursor.execute("""
+                        UPDATE tasks
+                        SET done = true
+                        WHERE member_id = %s AND (
+                            LOWER(title) LIKE '%%renewal%%' OR LOWER(title) LIKE '%%bill%%' OR LOWER(title) LIKE '%%dues%%'
+                        )
+                    """, (member_id,))
+            try:
+                cache.delete(f'me_{member_id}')
+            except Exception:
+                pass
 
             # ── FIX #1: Compliance application confirmation ──────────────────
             # If this payment's payment_ref matches a compliance application in
@@ -1043,11 +1413,11 @@ def _mark_payment_as_paid(payment_id):
                 _send_receipt_email(row['email'], row['name'], row['amount'], row['description'], payment_id, custom_msg)
 
             try:
-                from config.socket import socketio
-                socketio.emit('payment_approved', {'member_id': member_id, 'payment_id': payment_id, 'status': 'paid'})
-                socketio.emit('member_updated', {'member_id': member_id, 'status': 'active'})
-                socketio.emit('fees_updated', {'member_id': member_id})
-                socketio.emit('tasks_updated', {'member_id': member_id})
+                emit_to_member(socketio, member_id, 'payment_approved', {'payment_id': payment_id, 'status': 'paid'})
+                emit_to_member(socketio, member_id, 'member_updated', {'status': 'active'})
+                emit_to_member(socketio, member_id, 'fees_updated', {})
+                emit_to_member(socketio, member_id, 'tasks_updated', {})
+                emit_to_member(socketio, member_id, 'courses_updated', {})
             except Exception as socket_err:
                 logger.debug("[Socket payment_approved] %s", socket_err)
     finally:
@@ -1060,21 +1430,23 @@ def whitsunpay_webhook():
     sig  = request.headers.get('X-Whitsun-Signature', '')
     body = request.get_data()
 
-    # BUG-C01 fix: when the secret is configured, enforce HMAC verification.
-    # When it's NOT set, log a warning and continue processing — refusing all
-    # webhooks when the env var is absent permanently blocks all auto-payments.
+    # Fail closed in production: unsigned webhooks must not mark payments paid.
     if WHITSUNPAY_WEBHOOK_SECRET:
         expected = 'sha256=' + hmac.new(
             WHITSUNPAY_WEBHOOK_SECRET.encode(), body, hashlib.sha256
         ).hexdigest()
-        if not hmac.compare_digest(sig, expected):
+        if not hmac.compare_digest(sig or '', expected):
             logger.warning('[Webhook] Signature mismatch — rejecting call')
             return jsonify({'message': 'Invalid signature'}), 401
     else:
-        logger.warning(
-            '[Webhook] WHITSUNPAY_WEBHOOK_SECRET not set — processing webhook '
-            'WITHOUT signature verification. Set this env var to secure webhooks.'
-        )
+        if os.getenv('FLASK_DEBUG', 'false').lower() == 'true':
+            logger.warning(
+                '[Webhook] WHITSUNPAY_WEBHOOK_SECRET not set — debug mode only, '
+                'processing without signature verification.'
+            )
+        else:
+            logger.error('[Webhook] WHITSUNPAY_WEBHOOK_SECRET is not set — refusing webhook')
+            return jsonify({'message': 'Webhook secret not configured'}), 503
 
     event     = request.get_json() or {}
     tx_ref    = event.get('transactionReference', '')
@@ -1099,7 +1471,7 @@ def whitsunpay_webhook():
                                     calculate_and_update_member_rating(m_id, cursor2)
                                     conn.commit()
                                     # Emit real-time Socket.IO notification to client for instant UI update
-                                    socketio.emit('payment_approved', {'member_id': m_id, 'payment_id': row['id'], 'status': 'paid'})
+                                    emit_to_member(socketio, m_id, 'payment_approved', {'payment_id': row['id'], 'status': 'paid'})
                                     logger.info(f"[Webhook] Emitted payment_approved event for member {m_id}, payment {row['id']}")
                         except Exception as e:
                             logger.error(f"[Webhook Rating Update] {e}")
@@ -1110,7 +1482,7 @@ def whitsunpay_webhook():
                                 cursor2.execute("SELECT member_id FROM payments WHERE id = %s", (row['id'],))
                                 m_row = cursor2.fetchone()
                                 if m_row:
-                                    socketio.emit('payment_failed', {'member_id': m_row['member_id'], 'payment_id': row['id'], 'status': 'failed'})
+                                    emit_to_member(socketio, m_row['member_id'], 'payment_failed', {'payment_id': row['id'], 'status': 'failed'})
                         except Exception as e:
                             logger.error(f"[Webhook Failed Emit] {e}")
         finally:
@@ -1298,10 +1670,11 @@ def get_all_payments_admin():
     page = int(request.args.get('page', 1))
     limit = int(request.args.get('limit', 20))
     search = request.args.get('search', '').lower()
+    member_id = request.args.get('member_id')
     status = request.args.get('status', 'all').lower()
 
-    # 20-second cache keyed by page+status+search
-    cache_key = f'admin_payments_{status}_{search}_p{page}_l{limit}'
+    # 20-second cache keyed by page+status+search+member_id
+    cache_key = f'admin_payments_{status}_{search}_m{member_id}_p{page}_l{limit}'
     cached = cache.get(cache_key)
     if cached is not None:
         return jsonify(cached), 200
@@ -1312,6 +1685,9 @@ def get_all_payments_admin():
 
         where_clauses = []
         params = []
+        if member_id:
+            where_clauses.append("p.member_id = %s")
+            params.append(member_id)
         if search:
             where_clauses.append("(LOWER(m.name) LIKE %s OR LOWER(p.description) LIKE %s OR LOWER(COALESCE(p.payment_ref, '')) LIKE %s OR LOWER(COALESCE(p.momo_tx_id, '')) LIKE %s)")
             params.extend([f"%{search}%", f"%{search}%", f"%{search}%", f"%{search}%"])
@@ -1345,7 +1721,10 @@ def get_all_payments_admin():
             # Get paginated data
             data_query = f"""
                 SELECT p.id as id, p.id as tx_id, p.amount, p.description, p.status,
-                       p.payment_ref, p.momo_tx_id, p.created_at, m.name as member_name,
+                       p.payment_ref, p.momo_tx_id, p.created_at, p.paid_at,
+                       COALESCE(p.payment_method, 'momo') as payment_method,
+                       p.receipt_url, p.bank_name, p.account_name, p.account_number, p.notes,
+                       p.verified_at, m.name as member_name, m.email as member_email, m.phone as member_phone,
                        COALESCE(NULLIF(p.momo_tx_id, ''), NULLIF(p.payment_ref, ''), CONCAT('TXN-', LPAD(p.id::text, 6, '0'))) as ref_code,
                        COALESCE(NULLIF(p.momo_tx_id, ''), p.payment_ref) as transaction_ref
                 FROM payments p
@@ -1379,7 +1758,7 @@ def get_all_payments_admin():
                     COALESCE(SUM(CASE WHEN LOWER(status) IN ('paid', 'success', 'completed') AND (LOWER(description) LIKE '%registration%' OR LOWER(description) LIKE '%entrance%' OR LOWER(description) LIKE '%new member%' OR LOWER(description) LIKE '%onboarding%' OR LOWER(description) LIKE '%dossier%') THEN amount ELSE 0 END), 0) as new_membership_revenue,
                     COALESCE(SUM(CASE WHEN LOWER(status) IN ('paid', 'success', 'completed') AND (LOWER(description) LIKE '%course%' OR LOWER(description) LIKE '%cti%' OR LOWER(description) LIKE '%training%' OR LOWER(description) LIKE '%enroll%') THEN amount ELSE 0 END), 0) as course_revenue,
                     COALESCE(SUM(CASE WHEN LOWER(status) = 'pending' THEN amount ELSE 0 END), 0) as pending_revenue,
-                    COALESCE(SUM(CASE WHEN LOWER(status) IN ('failed', 'overdue') THEN amount ELSE 0 END), 0) as failed_revenue
+                    COALESCE(SUM(CASE WHEN LOWER(status) IN ('failed', 'overdue', 'rejected') THEN amount ELSE 0 END), 0) as failed_revenue
                 FROM payments 
             """)
             stats = cursor.fetchone() or {}
@@ -1424,6 +1803,47 @@ def get_all_payments_admin():
         conn.close()
 
 
+# ─── GET /payments/member/<member_id> ────────────────────────────────────────
+@payments_bp.route('/member/<int:member_id>', methods=['GET'])
+@jwt_required()
+def get_member_payments(member_id):
+    caller_id = get_jwt_identity()
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT role FROM members WHERE id = %s", (caller_id,))
+            caller = cursor.fetchone()
+            is_admin = caller and caller.get('role') in ('admin', 'sub_admin', 'super_admin')
+            if not is_admin and str(caller_id) != str(member_id):
+                return jsonify({'message': 'Unauthorized'}), 403
+
+            cursor.execute("""
+                SELECT p.id, p.id as tx_id, p.amount, p.description, p.status,
+                       COALESCE(p.payment_method, 'momo') as payment_method,
+                       p.payment_ref, p.receipt_url, p.bank_name, p.account_name,
+                       p.account_number, p.notes, p.created_at, p.paid_at, p.verified_at,
+                       m.name as member_name, m.email as member_email,
+                       COALESCE(NULLIF(p.momo_tx_id, ''), NULLIF(p.payment_ref, ''), CONCAT('TXN-', LPAD(p.id::text, 6, '0'))) as ref_code
+                FROM payments p
+                LEFT JOIN members m ON p.member_id = m.id
+                WHERE p.member_id = %s
+                ORDER BY p.created_at DESC
+            """, (member_id,))
+            rows = cursor.fetchall()
+            payments = []
+            for r in rows:
+                item = dict(r)
+                if item.get('created_at'):
+                    item['date'] = item['created_at'].isoformat() if hasattr(item['created_at'], 'isoformat') else str(item['created_at'])
+                payments.append(item)
+            return jsonify({'payments': payments}), 200
+    except Exception as e:
+        logger.exception("[Member Payments Error] %s", e)
+        return jsonify({'message': str(e)}), 500
+    finally:
+        conn.close()
+
+
 # ─── POST /payments/admin/mark-paid/<id> ─────────────────────────────────────
 @payments_bp.route('/admin/mark-paid/<int:payment_id>', methods=['POST'])
 @sub_admin_required('payments')
@@ -1432,27 +1852,164 @@ def admin_mark_paid(payment_id):
     try:
         conn = get_db()
         with conn.cursor() as cursor:
-            # Get data for audit log
             cursor.execute("""
-                SELECT p.member_id, p.amount, m.name
+                UPDATE payments
+                SET verified_by = %s, verified_at = NOW(), status = 'paid', paid_at = NOW()
+                WHERE id = %s
+            """, (admin_id, payment_id))
+
+            # Also mark associated bank deposit slip in compliance_documents as approved
+            cursor.execute("""
+                UPDATE compliance_documents
+                SET status = 'approved', reviewed_at = NOW(), reviewed_by = %s
+                WHERE requirement = 'bank_deposit_slip'
+                  AND (
+                      application_id IN (
+                          SELECT id FROM compliance_applications
+                          WHERE (payment_ref IS NOT NULL AND payment_ref = (SELECT payment_ref FROM payments WHERE id = %s))
+                             OR member_id = (SELECT member_id FROM payments WHERE id = %s)
+                      )
+                      OR file_url = (SELECT receipt_url FROM payments WHERE id = %s)
+                      OR (SELECT receipt_url FROM payments WHERE id = %s) LIKE '%%' || file_name || '%%'
+                  )
+            """, (admin_id, payment_id, payment_id, payment_id, payment_id))
+
+            cursor.execute("""
+                SELECT p.member_id, p.amount, p.description, p.payment_method, m.name, m.email, m.fcm_token
                 FROM payments p LEFT JOIN members m ON p.member_id = m.id
                 WHERE p.id = %s
             """, (payment_id,))
             row = cursor.fetchone()
-        conn.close()
+            conn.commit()
 
-        # Use unified helper
-        _mark_payment_as_paid(payment_id)
+        # Use unified helper to update membership/license/compliance records
+        _mark_payment_as_paid(payment_id, force=True)
 
         if row:
             # Real-time WebSocket emission
-            socketio.emit('payment_approved', {'member_id': row['member_id'], 'payment_id': payment_id})
-            # Audit log
-            log_admin_action(admin_id, 'Marked payment as paid', 'payment', payment_id, row.get('name'), f'Amount: {row.get("amount")}')
+            try:
+                emit_to_member(socketio, row['member_id'], 'payment_approved', {'payment_id': payment_id, 'status': 'paid'})
+                emit_to_member(socketio, row['member_id'], 'payments_updated', {'payment_id': payment_id, 'status': 'paid'})
+                emit_to_member(socketio, row['member_id'], 'member_updated', {})
+                emit_to_member(socketio, row['member_id'], 'tasks_updated', {})
+                emit_to_member(socketio, row['member_id'], 'compliance_updated', {})
+            except Exception:
+                pass
 
-        return jsonify({'message': 'Payment marked as paid'}), 200
+            # Push notification to member
+            if row.get('fcm_token'):
+                try:
+                    from utils import send_push_notification
+                    send_push_notification(
+                        row['fcm_token'],
+                        title="Payment Confirmed & Approved ✅",
+                        body=f"Your payment of GH₵ {float(row['amount']):.2f} for {row.get('description', 'Dues')} has been approved.",
+                        data={'screen': 'payments', 'payment_id': str(payment_id), 'status': 'paid'}
+                    )
+                except Exception as ex:
+                    logger.warning(f"[Push] Payment approval push failed: {ex}")
+
+            # Send official executive email receipt
+            if row.get('email'):
+                try:
+                    _send_receipt_email(row['email'], row.get('name', 'Valued Member'), row.get('description', 'CUBAG Dues & Fees'), float(row['amount']))
+                except Exception as em_err:
+                    logger.warning(f"[Receipt Email] Error: {em_err}")
+
+            # Audit log
+            log_admin_action(
+                admin_id,
+                'Approved & Marked Payment as Paid',
+                target_type='payment',
+                target_id=payment_id,
+                target_name=row.get('name'),
+                details={'amount': float(row['amount']), 'description': row.get('description'), 'method': row.get('payment_method', 'bank')}
+            )
+
+        return jsonify({'message': 'Payment approved and marked as PAID successfully'}), 200
     except Exception as e:
+        logger.exception("[Admin Mark Paid Error] %s", e)
         return jsonify({'message': str(e)}), 500
+    finally:
+        if 'conn' in locals() and conn:
+            conn.close()
+
+
+# ─── POST /payments/admin/reject/<id> ────────────────────────────────────────
+@payments_bp.route('/admin/reject/<int:payment_id>', methods=['POST'])
+@sub_admin_required('payments')
+def admin_reject_payment(payment_id):
+    admin_id = get_jwt_identity()
+    data = request.get_json() or {}
+    reason = (data.get('reason') or 'Bank deposit receipt verification failed').strip()
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                UPDATE payments
+                SET status = 'rejected', notes = %s, verified_by = %s, verified_at = NOW()
+                WHERE id = %s
+            """, (reason, admin_id, payment_id))
+
+            # Also mark associated bank deposit slip in compliance_documents as rejected
+            cursor.execute("""
+                UPDATE compliance_documents
+                SET status = 'rejected', admin_note = %s, reviewed_at = NOW(), reviewed_by = %s
+                WHERE requirement = 'bank_deposit_slip'
+                  AND (
+                      application_id IN (
+                          SELECT id FROM compliance_applications
+                          WHERE (payment_ref IS NOT NULL AND payment_ref = (SELECT payment_ref FROM payments WHERE id = %s))
+                             OR member_id = (SELECT member_id FROM payments WHERE id = %s)
+                      )
+                      OR file_url = (SELECT receipt_url FROM payments WHERE id = %s)
+                      OR (SELECT receipt_url FROM payments WHERE id = %s) LIKE '%%' || file_name || '%%'
+                  )
+            """, (reason, admin_id, payment_id, payment_id, payment_id, payment_id))
+
+            cursor.execute("""
+                SELECT p.member_id, p.amount, p.description, m.name, m.email, m.fcm_token
+                FROM payments p LEFT JOIN members m ON p.member_id = m.id
+                WHERE p.id = %s
+            """, (payment_id,))
+            row = cursor.fetchone()
+            conn.commit()
+
+        if row:
+            try:
+                emit_to_member(socketio, row['member_id'], 'payments_updated', {'payment_id': payment_id, 'status': 'rejected'})
+                emit_to_member(socketio, row['member_id'], 'compliance_updated', {})
+            except Exception:
+                pass
+
+            if row.get('fcm_token'):
+                try:
+                    from utils import send_push_notification
+                    send_push_notification(
+                        row['fcm_token'],
+                        title="Payment Receipt Rejected ⚠️",
+                        body=f"Your deposit slip for {row.get('description', 'Payment')} was not approved: {reason}",
+                        data={'screen': 'payments', 'payment_id': str(payment_id), 'status': 'rejected'}
+                    )
+                except Exception:
+                    pass
+
+            log_admin_action(
+                admin_id,
+                'Rejected Payment Receipt',
+                target_type='payment',
+                target_id=payment_id,
+                target_name=row.get('name'),
+                details={'reason': reason, 'amount': float(row['amount'])}
+            )
+
+        return jsonify({'message': 'Payment marked as rejected'}), 200
+    except Exception as e:
+        logger.exception("[Admin Reject Payment Error] %s", e)
+        return jsonify({'message': str(e)}), 500
+    finally:
+        conn.close()
 
 
 # ─── POST /payments/admin/approve-license/<id> ───────────────────────────────
@@ -1460,7 +2017,6 @@ def admin_mark_paid(payment_id):
 @sub_admin_required('payments')
 def admin_approve_license(payment_id):
     try:
-        # Use unified helper
         _mark_payment_as_paid(payment_id)
         return jsonify({'message': 'License approved and payment confirmed'}), 200
     except Exception as e:

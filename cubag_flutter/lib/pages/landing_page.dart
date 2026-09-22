@@ -173,8 +173,8 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     SocketService().on('gallery_updated', _onRealtimeGallery);
     SocketService().on('surveys_updated', _onRealtimeSurveys);
 
-    // Silent background auto-sync polling every 20 seconds
-    _backgroundSyncTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+    // Silent background auto-sync polling every 60 seconds
+    _backgroundSyncTimer = Timer.periodic(const Duration(seconds: 60), (_) {
       if (mounted) {
         _fetchAllLandingData();
       }
@@ -265,7 +265,9 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
   }
 
   Future<void> _fetchPublicSurveys() async {
-    setState(() => _loadingSurveys = true);
+    if (_publicSurveys.isEmpty) {
+      setState(() => _loadingSurveys = true);
+    }
     try {
       final res = await ApiService().getPublic('surveys/public/active');
       if (res is Map && res['items'] is List) {
@@ -490,7 +492,9 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
   }
 
   Future<void> _fetchNews() async {
-    setState(() => _loadingNews = true);
+    if (_newsArticles.isEmpty) {
+      setState(() => _loadingNews = true);
+    }
     try {
       final res = await ApiService().getPublic('news/public/feed');
       if (res is Map && res['items'] is List) {
@@ -499,11 +503,13 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
         setState(() => _newsArticles = res);
       }
     } catch (_) {}
-    if (mounted) setState(() => _loadingNews = false);
+    if (mounted && _loadingNews) setState(() => _loadingNews = false);
   }
 
   Future<void> _fetchBulletins() async {
-    setState(() => _loadingBulletins = true);
+    if (_portBulletins.isEmpty) {
+      setState(() => _loadingBulletins = true);
+    }
     try {
       final res = await ApiService().getPublic('news/public/bulletins');
       if (res is Map && res['items'] is List) {
@@ -512,11 +518,13 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
         setState(() => _portBulletins = res);
       }
     } catch (_) {}
-    if (mounted) setState(() => _loadingBulletins = false);
+    if (mounted && _loadingBulletins) setState(() => _loadingBulletins = false);
   }
 
   Future<void> _fetchEvents() async {
-    setState(() => _loadingEvents = true);
+    if (_eventsList.isEmpty && _meetingsList.isEmpty) {
+      setState(() => _loadingEvents = true);
+    }
     try {
       final res = await ApiService().getPublic('events/public');
       if (res is Map && res['items'] is List) {
@@ -580,11 +588,13 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
         });
       }
     } catch (_) {}
-    if (mounted) setState(() => _loadingEvents = false);
+    if (mounted && _loadingEvents) setState(() => _loadingEvents = false);
   }
 
   Future<void> _fetchCourses() async {
-    setState(() => _loadingCourses = true);
+    if (_coursesList.isEmpty) {
+      setState(() => _loadingCourses = true);
+    }
     try {
       final res = await ApiService().getPublic('events/public/courses');
       if (res is Map && res['items'] is List) {
@@ -593,11 +603,13 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
         setState(() => _coursesList = res);
       }
     } catch (_) {}
-    if (mounted) setState(() => _loadingCourses = false);
+    if (mounted && _loadingCourses) setState(() => _loadingCourses = false);
   }
 
   Future<void> _fetchGallery() async {
-    setState(() => _loadingGallery = true);
+    if (_galleryList.isEmpty) {
+      setState(() => _loadingGallery = true);
+    }
     try {
       final res = await ApiService().getPublic('events/public/gallery');
       if (res is Map && res['items'] is List) {
@@ -607,8 +619,10 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
       }
     } catch (_) {}
     if (mounted) {
-      setState(() => _loadingGallery = false);
-      _startGalleryAutoScroll();
+      if (_loadingGallery) setState(() => _loadingGallery = false);
+      if (_galleryAutoTimer == null || !_galleryAutoTimer!.isActive) {
+        _startGalleryAutoScroll();
+      }
     }
   }
 
@@ -696,7 +710,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     // Listen to ThemeService so entire landing page re-renders dynamically
     Provider.of<ThemeService>(context);
     final size = MediaQuery.of(context).size;
-    final isMobile = size.width < 950;
+    final isMobile = size.width < 1100;
 
     return Scaffold(
       backgroundColor: _kBg,
@@ -763,8 +777,8 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
       height: headerHeight,
       padding: EdgeInsets.only(
         top: topPadding > 0 ? topPadding + 4 : 0,
-        left: isMobile ? 16 : 24,
-        right: isMobile ? 16 : 24,
+        left: (isMobile ? 16 : 24) + MediaQuery.of(context).padding.left,
+        right: (isMobile ? 16 : 24) + MediaQuery.of(context).padding.right,
       ),
       decoration: BoxDecoration(
         color: _scrolled
@@ -1530,9 +1544,49 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
   );
 
   // ──────────────────────────────────────────────────────────────────────────
+  // ──────────────────────────────────────────────────────────────────────────
   // ② QUICK SERVICES SECTION
   // ──────────────────────────────────────────────────────────────────────────
   Widget _buildQuickServicesSection(bool isMobile) {
+    final services = [
+      (
+        title: 'Find A Licensed Broker (Clearing Agent/Forwarder)',
+        subtitle: 'Search verified brokers',
+        icon: Icons.manage_search_rounded,
+        onTap: () => _scrollTo(_directoryKey),
+      ),
+      (
+        title: 'Community Polls & Surveys',
+        subtitle: 'Vote & voice your opinion',
+        icon: Icons.how_to_vote_outlined,
+        onTap: () => _scrollTo(_surveysKey),
+      ),
+      (
+        title: 'Register A Course',
+        subtitle: 'Professional CTI training',
+        icon: Icons.school_outlined,
+        onTap: () => context.go('/guest-services/cti_training'),
+      ),
+      (
+        title: 'Complaints & Tracking',
+        subtitle: 'Lodge & track grievance',
+        icon: Icons.report_problem_outlined,
+        onTap: () => _scrollTo(_complaintsKey),
+      ),
+      (
+        title: 'Become a Member',
+        subtitle: 'Join the association',
+        icon: Icons.person_add_outlined,
+        onTap: () => context.go('/register'),
+      ),
+      (
+        title: 'Renew Membership',
+        subtitle: 'Extend your membership',
+        icon: Icons.autorenew_rounded,
+        onTap: () => context.go('/login'),
+      ),
+    ];
+
     return Container(
       key: _servicesKey,
       color: _kCream,
@@ -1571,111 +1625,70 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               ),
               const SizedBox(height: 28),
 
-              // Mobile: Vertical step-by-step horizontal cards for elderly accessibility | Desktop: 6-across row
-              if (isMobile)
-                Column(
-                  children: [
-                    _serviceCard(
-                      'Find A Licensed Broker (Clearing Agent/Forwarder)',
-                      'Search verified brokers',
-                      Icons.manage_search_rounded,
-                      () => _scrollTo(_directoryKey),
-                    ),
-                    const SizedBox(height: 12),
-                    _serviceCard(
-                      'Community Polls & Surveys',
-                      'Vote & voice your opinion',
-                      Icons.how_to_vote_outlined,
-                      () => _scrollTo(_surveysKey),
-                    ),
-                    const SizedBox(height: 12),
-                    _serviceCard(
-                      'Register A Course',
-                      'Professional CTI training',
-                      Icons.school_outlined,
-                      () => context.go('/guest-services/cti_training'),
-                    ),
-                    const SizedBox(height: 12),
-                    _serviceCard(
-                      'Complaints & Tracking',
-                      'Lodge & track grievance',
-                      Icons.report_problem_outlined,
-                      () => _scrollTo(_complaintsKey),
-                    ),
-                    const SizedBox(height: 12),
-                    _serviceCard(
-                      'Become a Member',
-                      'Join the association',
-                      Icons.person_add_outlined,
-                      () => context.go('/register'),
-                    ),
-                    const SizedBox(height: 12),
-                    _serviceCard(
-                      'Renew Membership',
-                      'Extend your membership',
-                      Icons.autorenew_rounded,
-                      () => context.go('/login'),
-                    ),
-                  ],
-                )
-              else
-                Row(
-                  children: [
-                    Expanded(
-                      child: _serviceCard(
-                        'Find A Broker',
-                        'Search verified brokers',
-                        Icons.manage_search_rounded,
-                        () => _scrollTo(_directoryKey),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth;
+                  // Phone: 1 per line (< 650px)
+                  // Tablet Mode (650px - 1100px): 2 on a line (horizontal cards, 2 per row)
+                  // Desktop (>= 1100px): 3 on a line (2 rows of 3)
+                  final int cols = width < 650 ? 1 : (width < 1100 ? 2 : 3);
+
+                  if (cols == 1) {
+                    return Column(
+                      children: [
+                        for (int i = 0; i < services.length; i++) ...[
+                          if (i > 0) const SizedBox(height: 12),
+                          _serviceCard(
+                            services[i].title,
+                            services[i].subtitle,
+                            services[i].icon,
+                            services[i].onTap,
+                          ),
+                        ],
+                      ],
+                    );
+                  }
+
+                  // Multi-column row layout (2 on a line for tablet, 3 on a line for wide desktop)
+                  final List<Widget> rows = [];
+                  for (int i = 0; i < services.length; i += cols) {
+                    final rowItems = services.sublist(
+                      i,
+                      (i + cols > services.length) ? services.length : i + cols,
+                    );
+                    rows.add(
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (int j = 0; j < rowItems.length; j++) ...[
+                              if (j > 0) const SizedBox(width: 16),
+                              Expanded(
+                                child: _serviceCard(
+                                  rowItems[j].title,
+                                  rowItems[j].subtitle,
+                                  rowItems[j].icon,
+                                  rowItems[j].onTap,
+                                ),
+                              ),
+                            ],
+                            // If row is not full, fill remaining columns with spacers
+                            for (int k = 0; k < (cols - rowItems.length); k++) ...[
+                              const SizedBox(width: 16),
+                              const Expanded(child: SizedBox()),
+                            ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: _serviceCard(
-                        'Public Polls',
-                        'Voice opinion & vote',
-                        Icons.how_to_vote_outlined,
-                        () => _scrollTo(_surveysKey),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: _serviceCard(
-                        'Register A Course',
-                        'Professional CTI training',
-                        Icons.school_outlined,
-                        () => context.go('/guest-services/cti_training'),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: _serviceCard(
-                        'Complaints & Tracking',
-                        'Lodge & track grievance',
-                        Icons.report_problem_outlined,
-                        () => _scrollTo(_complaintsKey),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: _serviceCard(
-                        'Become a Member',
-                        'Join the association',
-                        Icons.person_add_outlined,
-                        () => context.go('/register'),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: _serviceCard(
-                        'Renew Membership',
-                        'Extend your membership',
-                        Icons.autorenew_rounded,
-                        () => context.go('/login'),
-                      ),
-                    ),
-                  ],
-                ),
+                    );
+                    if (i + cols < services.length) {
+                      rows.add(const SizedBox(height: 16));
+                    }
+                  }
+
+                  return Column(children: rows);
+                },
+              ),
             ],
           ),
         ),
@@ -1703,7 +1716,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
           ),
           child: Row(
             children: [
-              // Large senior-friendly icon container — 56px box, 26px icon
+              // Senior-friendly icon container — 56px box, 26px icon
               Container(
                 width: 56,
                 height: 56,
@@ -1718,20 +1731,25 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       title,
                       style: _outfit(
-                        fontSize: 17,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: _kText,
                         height: 1.25,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 5),
                     Text(
                       subtitle,
-                      style: _inter(fontSize: 14.5, color: _kMuted),
+                      style: _inter(fontSize: 13.5, color: _kMuted),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -1739,7 +1757,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                         Text(
                           'Get started',
                           style: _outfit(
-                            fontSize: 14.5,
+                            fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: _kAccent,
                           ),
@@ -1859,7 +1877,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
   }
 
   Widget _buildPortNewsCards({Key? key}) {
-    if (_loadingBulletins) {
+    if (_loadingBulletins && _portBulletins.isEmpty) {
       return Center(
         key: const ValueKey('loading_bulletins'),
         child: Padding(
@@ -1923,7 +1941,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
   }
 
   Widget _buildIndustryNewsCards({Key? key}) {
-    if (_loadingNews) {
+    if (_loadingNews && _newsArticles.isEmpty) {
       return Center(
         key: const ValueKey('loading_news'),
         child: Padding(
@@ -2473,7 +2491,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
 
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
-                child: _loadingEvents
+                child: (_loadingEvents && _eventsList.isEmpty && _meetingsList.isEmpty)
                     ? Center(
                         key: const ValueKey('loading_events'),
                         child: Padding(
@@ -2818,7 +2836,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               ),
               const SizedBox(height: 28),
 
-              if (_loadingCourses)
+              if (_loadingCourses && _coursesList.isEmpty)
                 Center(
                   child: Padding(
                     padding: EdgeInsets.all(32),
@@ -4734,7 +4752,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               ),
               const SizedBox(height: 24),
 
-              if (_loadingGallery)
+              if (_loadingGallery && _galleryList.isEmpty)
                 Center(
                   child: Padding(
                     padding: EdgeInsets.all(32),

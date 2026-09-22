@@ -69,6 +69,14 @@ class StubSessionStorage implements SessionStorage {
   String? getStringSync(String key) => _memCache[key];
 
   @override
+  void setStringSync(String key, String value) {
+    _memCache[key] = value;
+    _getPrefs().then((prefs) {
+      prefs.setString(key, value);
+    }).catchError((_) {});
+  }
+
+  @override
   List<String>? getStringListSync(String key) => _memListCache[key];
 
   @override

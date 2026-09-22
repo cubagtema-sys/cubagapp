@@ -42,6 +42,14 @@ class WebSessionStorage implements SessionStorage {
   String? getStringSync(String key) => _memCache[key];
 
   @override
+  void setStringSync(String key, String value) {
+    _memCache[key] = value;
+    try {
+      html.window.sessionStorage[key] = value;
+    } catch (_) {}
+  }
+
+  @override
   List<String>? getStringListSync(String key) => _memListCache[key];
 
   @override

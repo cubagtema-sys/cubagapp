@@ -14,12 +14,15 @@ class ApiService {
 
   late Dio _dio;
 
-  // ── Production API base URL ──────────────────────────────────────────────
-  // Change this string when the backend domain changes.
-  static const String _productionApiUrl =
-      'https://cubag-backend.onrender.com/api/v1';
-
   static String get _base {
+    // ── 0. Saved custom API URL (set dynamically by user) ───────────────────
+    try {
+      final customUrl = SessionStorage.instance.getStringSync('custom_api_url');
+      if (customUrl != null && customUrl.trim().isNotEmpty) {
+        return customUrl.trim();
+      }
+    } catch (_) {}
+
     // ── 1. Build-time override (highest priority) ───────────────────────────
     // Pass --dart-define=API_URL=https://... to override everything.
     const overrideUrl = String.fromEnvironment('API_URL');
@@ -41,18 +44,65 @@ class ApiService {
       return '$scheme://$host$portStr/api/v1';
     }
 
-    // ── 4. Android — connects to host machine (localhost:5005) on emulator ─
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:5005/api/v1';
-    }
-
-    // ── 5. iOS — physical device / simulator connects to host machine IP ─
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+    // ── 4. Android & iOS — connects to host machine IP on local Wi-Fi / physical devices ─
+    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
       return 'http://192.168.4.127:5005/api/v1';
     }
 
-    // ── 6. macOS / Windows / Linux ─────────────────────────────────────────
+    // ── 5. macOS / Windows / Linux ─────────────────────────────────────────
     return 'http://127.0.0.1:5005/api/v1';
+  }
+
+  static String get activeHost {
+    try {
+      final uri = Uri.parse(_instance._dio.options.baseUrl);
+      final portStr = uri.hasPort ? ':${uri.port}' : '';
+      if (uri.host.isNotEmpty && uri.host != '10.0.2.2' && uri.host != '127.0.0.1' && uri.host != 'localhost') {
+        return '${uri.host}$portStr';
+      }
+    } catch (_) {}
+    return '192.168.4.127:5005';
+  }
+
+  /// Updates the active baseUrl at runtime and saves it to local storage.
+  static Future<void> updateBaseUrl(String newUrl) async {
+    String clean = newUrl.trim();
+    if (clean.isEmpty) return;
+    if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+      clean = 'http://$clean';
+    }
+    if (!clean.endsWith('/')) clean = '$clean/';
+    if (!clean.contains('/api/v1/')) {
+      clean = '${clean}api/v1/';
+    }
+    _instance._dio.options.baseUrl = clean;
+    await SessionStorage.instance.setString('custom_api_url', clean);
+    debugPrint('[ApiService] Updated active baseUrl to $clean');
+  }
+
+  /// Tests connectivity to a given server URL or the current active baseUrl.
+  static Future<bool> testConnection([String? testUrl]) async {
+    try {
+      String base = (testUrl != null && testUrl.trim().isNotEmpty)
+          ? testUrl.trim()
+          : baseUrl;
+      if (!base.startsWith('http://') && !base.startsWith('https://')) {
+        base = 'http://$base';
+      }
+      final rootUrl = base.replaceFirst(RegExp(r'/api/v1/?$'), '').replaceAll(RegExp(r'/+$'), '');
+      final pingUrl = '$rootUrl/api/ping';
+      final dio = Dio(
+        BaseOptions(
+          connectTimeout: const Duration(seconds: 4),
+          receiveTimeout: const Duration(seconds: 4),
+        ),
+      );
+      final res = await dio.get(pingUrl);
+      return res.statusCode == 200;
+    } catch (e) {
+      debugPrint('[ApiService] testConnection error: $e');
+      return false;
+    }
   }
 
   static String get _normalizedBase {
@@ -62,26 +112,30 @@ class ApiService {
     return url;
   }
 
-  static String get baseUrl => _normalizedBase;
-  String get instanceBaseUrl => _normalizedBase;
+  static String get baseUrl {
+    try {
+      final cur = _instance._dio.options.baseUrl;
+      if (cur.isNotEmpty) return cur;
+    } catch (_) {}
+    return _normalizedBase;
+  }
+  String get instanceBaseUrl => _dio.options.baseUrl;
 
   /// Resolves relative image paths and converts localhost/127.0.0.1 URLs
-  /// to 10.0.2.2 on Android native builds and Mac LAN IP on iOS.
+  /// to active host on physical devices.
   static String resolveImageUrl(String? rawUrl) {
     if (rawUrl == null || rawUrl.trim().isEmpty) return '';
     String url = rawUrl.trim();
+    final currentHost = activeHost;
+
     if (url.startsWith('http://') || url.startsWith('https://')) {
-      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-        if (url.contains('localhost:5005')) {
-          url = url.replaceFirst('localhost:5005', '10.0.2.2:5005');
-        } else if (url.contains('127.0.0.1:5005')) {
-          url = url.replaceFirst('127.0.0.1:5005', '10.0.2.2:5005');
-        }
-      } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-        if (url.contains('localhost:5005')) {
-          url = url.replaceFirst('localhost:5005', '192.168.4.127:5005');
-        } else if (url.contains('127.0.0.1:5005')) {
-          url = url.replaceFirst('127.0.0.1:5005', '192.168.4.127:5005');
+      for (final h in [
+        'localhost:5005',
+        '127.0.0.1:5005',
+        '10.0.2.2:5005',
+      ]) {
+        if (url.contains(h)) {
+          url = url.replaceFirst(h, currentHost);
         }
       }
       return url;
@@ -133,7 +187,7 @@ class ApiService {
             return handler.next(error);
           }
 
-          // Automatic Retry Logic & Host Fallback for Network Drops / Emulators
+          // Automatic Retry Logic for Network Drops
           if (error.type == DioExceptionType.connectionTimeout ||
               error.type == DioExceptionType.connectionError ||
               error.type == DioExceptionType.receiveTimeout ||
@@ -142,59 +196,9 @@ class ApiService {
             int retryCount = requestOptions.extra['retryCount'] ?? 0;
 
             if (retryCount < 2) {
-              // Max 2 retries
               requestOptions.extra['retryCount'] = retryCount + 1;
-
-              // On Android emulator, swap between 10.0.2.2:5005 and 127.0.0.1:5005 if connection failed
-              if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-                final currentUri = requestOptions.uri.toString();
-                if (currentUri.contains('10.0.2.2:5005')) {
-                  requestOptions.path = requestOptions.path.replaceFirst(
-                    '10.0.2.2:5005',
-                    '127.0.0.1:5005',
-                  );
-                  if (requestOptions.baseUrl.contains('10.0.2.2:5005')) {
-                    requestOptions.baseUrl = requestOptions.baseUrl
-                        .replaceFirst('10.0.2.2:5005', '127.0.0.1:5005');
-                  }
-                } else if (currentUri.contains('127.0.0.1:5005')) {
-                  requestOptions.path = requestOptions.path.replaceFirst(
-                    '127.0.0.1:5005',
-                    '10.0.2.2:5005',
-                  );
-                  if (requestOptions.baseUrl.contains('127.0.0.1:5005')) {
-                    requestOptions.baseUrl = requestOptions.baseUrl
-                        .replaceFirst('127.0.0.1:5005', '10.0.2.2:5005');
-                  }
-                }
-              }
-
-              // On iOS, swap between 192.168.4.127:5005 and 127.0.0.1:5005 if connection failed
-              if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-                final currentUri = requestOptions.uri.toString();
-                if (currentUri.contains('192.168.4.127:5005')) {
-                  requestOptions.path = requestOptions.path.replaceFirst(
-                    '192.168.4.127:5005',
-                    '127.0.0.1:5005',
-                  );
-                  if (requestOptions.baseUrl.contains('192.168.4.127:5005')) {
-                    requestOptions.baseUrl = requestOptions.baseUrl
-                        .replaceFirst('192.168.4.127:5005', '127.0.0.1:5005');
-                  }
-                } else if (currentUri.contains('127.0.0.1:5005')) {
-                  requestOptions.path = requestOptions.path.replaceFirst(
-                    '127.0.0.1:5005',
-                    '192.168.4.127:5005',
-                  );
-                  if (requestOptions.baseUrl.contains('127.0.0.1:5005')) {
-                    requestOptions.baseUrl = requestOptions.baseUrl
-                        .replaceFirst('127.0.0.1:5005', '192.168.4.127:5005');
-                  }
-                }
-              }
-
               await Future.delayed(
-                Duration(milliseconds: 500 * (retryCount + 1)),
+                Duration(milliseconds: 600 * (retryCount + 1)),
               );
               try {
                 final response = await _dio.fetch(requestOptions);

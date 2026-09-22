@@ -42,6 +42,26 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
+    final cachedName = SessionStorage.instance.getStringSync('cubag_name');
+    if (cachedName != null && cachedName.isNotEmpty) {
+      final isPkgPaid = SessionStorage.instance.getStringSync('cubag_package_fee_paid') == 'true';
+      final isGood = SessionStorage.instance.getStringSync('cubag_good_standing') == 'true' || isPkgPaid;
+      final isRegPaid = SessionStorage.instance.getStringSync('cubag_registration_fee_paid') == 'true';
+      _user = {
+        'name': cachedName,
+        'role': SessionStorage.instance.getStringSync('cubag_role') ?? '',
+        'license_expiry_date': SessionStorage.instance.getStringSync('cubag_expiry'),
+        'status': SessionStorage.instance.getStringSync('cubag_status') ?? 'pending',
+        'license_number': SessionStorage.instance.getStringSync('cubag_license_number'),
+        'membership_number': SessionStorage.instance.getStringSync('cubag_membership_number'),
+        'package_fee_paid': isPkgPaid,
+        'good_standing': isGood,
+        'is_good_standing': isGood,
+        'registration_fee_paid': isRegPaid,
+        'id': int.tryParse(SessionStorage.instance.getStringSync('cubag_id') ?? ''),
+      };
+      _loading = false;
+    }
     _loadInstantCache();
     SocketService().on('member_updated', _onLiveUpdate);
     SocketService().on('member_approved', _onLiveUpdate);
@@ -57,7 +77,20 @@ class _DashboardPageState extends State<DashboardPage> {
   void _onRenewalBillReceived(dynamic data) {
     if (!mounted) return;
     _onLiveUpdate(null);
+    final submitted = SessionStorage.instance.getStringSync('cubag_renewal_submitted');
+    if (submitted == 'true') return;
+    if (_user['renewal_payment_submitted'] == true ||
+        _user['compliance_app_status'] == 'payment_submitted' ||
+        _user['compliance_app_status'] == 'approved' ||
+        _user['compliance_app_status'] == 'completed') {
+      return;
+    }
     if (data is Map) {
+      final taskId = data['id']?.toString() ?? '';
+      if (taskId.isNotEmpty) {
+        final dismissed = SessionStorage.instance.getStringSync('cubag_bill_dismissed_$taskId');
+        if (dismissed == 'true') return;
+      }
       _showRenewalBillPopup(Map<String, dynamic>.from(data));
     }
   }
@@ -194,6 +227,12 @@ class _DashboardPageState extends State<DashboardPage> {
             (data['package_fee_paid'] == true).toString(),
           );
         }
+        if (data['renewal_payment_submitted'] == true ||
+            data['compliance_app_status'] == 'payment_submitted' ||
+            data['compliance_app_status'] == 'approved' ||
+            data['compliance_app_status'] == 'completed') {
+          SessionStorage.instance.setStringSync('cubag_renewal_submitted', 'true');
+        }
         if (data['good_standing'] != null || data['is_good_standing'] != null) {
           final isG = data['good_standing'] == true || data['is_good_standing'] == true;
           SessionStorage.instance.setString(
@@ -224,16 +263,33 @@ class _DashboardPageState extends State<DashboardPage> {
           _tasks = taskList;
           _loadingTasks = false;
         });
-        _checkRenewalBillAlert(taskList);
+        // ONLY check renewal bill alert when fresh network data lands (isCached == false)
+        // so that stale offline cache never pops up an old bill on app launch!
+        if (!isCached) {
+          _checkRenewalBillAlert(taskList);
+        }
       }
     });
   }
 
   void _checkRenewalBillAlert(List<dynamic> tasks) {
     if (!mounted) return;
+    // Suppress immediately if renewal payment was submitted or is under review
+    final submitted = SessionStorage.instance.getStringSync('cubag_renewal_submitted');
+    if (submitted == 'true') return;
+    if (_user['renewal_payment_submitted'] == true ||
+        _user['compliance_app_status'] == 'payment_submitted' ||
+        _user['compliance_app_status'] == 'approved' ||
+        _user['compliance_app_status'] == 'completed') {
+      return;
+    }
+
     for (final t in tasks) {
       if (t is Map && t['system_type'] == 'renewal_bill' && t['done'] != true) {
         final taskId = t['id']?.toString() ?? '';
+        final dismissed = SessionStorage.instance.getStringSync('cubag_bill_dismissed_$taskId');
+        if (dismissed == 'true') continue;
+
         if (_lastShownBillId != taskId) {
           _lastShownBillId = taskId;
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -336,7 +392,13 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                       ),
                       IconButton(
-                        onPressed: () => Navigator.of(dialogCtx).pop(),
+                        onPressed: () {
+                          final bId = billData['id']?.toString() ?? '';
+                          if (bId.isNotEmpty) {
+                            SessionStorage.instance.setStringSync('cubag_bill_dismissed_$bId', 'true');
+                          }
+                          Navigator.of(dialogCtx).pop();
+                        },
                         icon: Icon(Icons.close_rounded, color: subTextColor, size: 20),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
@@ -446,6 +508,10 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                       ),
                       onPressed: () {
+                        final bId = billData['id']?.toString() ?? '';
+                        if (bId.isNotEmpty) {
+                          SessionStorage.instance.setStringSync('cubag_bill_dismissed_$bId', 'true');
+                        }
                         Navigator.of(dialogCtx).pop();
                         context.go('/payments?fee=Annual%20Renewal%20Dues&amount=$amtStr');
                       },
@@ -496,7 +562,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
 
   Future<void> _fetchSurveys() async {
-    setState(() => _loadingSurveys = true);
+    if (_surveys.isEmpty) {
+      setState(() => _loadingSurveys = true);
+    }
     await ApiService().fetchDataWithCache('/surveys', (
       data,
       isCached, {
@@ -510,6 +578,18 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     });
     if (mounted) setState(() => _loadingSurveys = false);
+  }
+
+  bool _isSurveyActive(dynamic s) {
+    if (s is! Map) return false;
+    final activeVal = s['active'];
+    final isActive = activeVal == true || activeVal == 1 || activeVal == 'true' || activeVal == null;
+    if (!isActive) return false;
+    final deadlineStr = s['deadline'] ?? s['expiry'];
+    if (deadlineStr == null || deadlineStr.toString().isEmpty) return true;
+    final d = DateTime.tryParse(deadlineStr.toString());
+    if (d == null) return true;
+    return DateTime(d.year, d.month, d.day, 23, 59, 59).isAfter(DateTime.now());
   }
 
   Future<void> _fetchForex() async {
@@ -915,7 +995,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           ),
           Divider(height: 1, color: dividerColor),
-          if (_loadingTasks)
+          if (_loadingTasks && _tasks.isEmpty)
             const Column(
               children: [
                 Padding(
@@ -982,68 +1062,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           task['due_date'].toString(),
                         )?.isBefore(DateTime.now()) ==
                         true;
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 6,
-                  ),
-                  leading: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: overdue
-                          ? (isDark
-                                ? Colors.red.shade900.withAlpha(60)
-                                : Colors.red.shade50)
-                          : itemBg,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.description_outlined,
-                      color: overdue
-                          ? (isDark ? Colors.red.shade300 : Colors.red.shade600)
-                          : subTextColor,
-                      size: 18,
-                    ),
-                  ),
-                  title: Text(
-                    task['title'] ?? '',
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                      color: textColor,
-                    ),
-                  ),
-                  subtitle: Text(
-                    overdue
-                        ? '⚠ Overdue: ${task['due_date']}'
-                        : 'Due: ${task['due_date'] ?? 'No deadline'}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: overdue
-                          ? (isDark ? Colors.red.shade300 : Colors.red.shade600)
-                          : subTextColor,
-                    ),
-                  ),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _kOrange.withAlpha(20),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      task['action_label']?.toString() ?? 'Action Required',
-                      style: GoogleFonts.outfit(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: _kOrange,
-                      ),
-                    ),
-                  ),
+                return InkWell(
                   onTap: () async {
                     final router = GoRouter.of(context);
                     final rawUrl = task['action_url']?.toString().trim();
@@ -1072,6 +1091,123 @@ class _DashboardPageState extends State<DashboardPage> {
                     if (!mounted) return;
                     router.go('/tasks');
                   },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: overdue
+                                ? (isDark
+                                      ? Colors.red.shade900.withAlpha(60)
+                                      : Colors.red.shade50)
+                                : itemBg,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            overdue
+                                ? Icons.warning_amber_rounded
+                                : Icons.receipt_long_outlined,
+                            color: overdue
+                                ? (isDark
+                                      ? Colors.red.shade300
+                                      : Colors.red.shade600)
+                                : _kOrange,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                task['title'] ?? '',
+                                style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                  color: textColor,
+                                  height: 1.3,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.access_time_rounded,
+                                    size: 13,
+                                    color: overdue
+                                        ? (isDark
+                                              ? Colors.red.shade300
+                                              : Colors.red.shade600)
+                                        : subTextColor,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    overdue
+                                        ? 'Overdue: ${task['due_date']}'
+                                        : 'Due: ${task['due_date'] ?? 'No deadline'}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: overdue
+                                          ? (isDark
+                                                ? Colors.red.shade300
+                                                : Colors.red.shade600)
+                                          : subTextColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (task['action_label'] != null &&
+                                  task['action_label'].toString().isNotEmpty) ...[
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _kOrange.withAlpha(25),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: _kOrange.withAlpha(70),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        task['action_label'].toString(),
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: _kOrange,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      const Icon(
+                                        Icons.arrow_forward_rounded,
+                                        size: 13,
+                                        color: _kOrange,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 );
               },
             ),
@@ -1384,6 +1520,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildActiveSurveysSection(Color primary) {
+    final activeSurveys = _surveys.where(_isSurveyActive).toList();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
     final borderColor = isDark
@@ -1434,7 +1571,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Active Surveys & Elections${_surveys.isNotEmpty ? ' (${_surveys.length})' : ''}',
+                    'Active Surveys & Elections${activeSurveys.isNotEmpty ? ' (${activeSurveys.length})' : ''}',
                     style: GoogleFonts.outfit(
                       fontWeight: FontWeight.w800,
                       fontSize: 18,
@@ -1471,7 +1608,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ],
             )
-          else if (_surveys.isEmpty)
+          else if (activeSurveys.isEmpty)
             Padding(
               padding: const EdgeInsets.all(24),
               child: Center(
@@ -1509,11 +1646,11 @@ class _DashboardPageState extends State<DashboardPage> {
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: _surveys.take(3).length,
+              itemCount: activeSurveys.take(3).length,
               separatorBuilder: (context, i) =>
                   Divider(height: 1, color: dividerColor),
               itemBuilder: (context, i) {
-                final s = _surveys[i];
+                final s = activeSurveys[i];
                 final type = (s['type'] ?? 'Survey').toString().toUpperCase();
                 final title = s['title']?.toString() ?? 'Community Survey';
                 final deadline = s['deadline']?.toString();

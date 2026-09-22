@@ -12,4 +12,5 @@ else
 fi
 
 echo "[Info] Starting CUBAG Backend Server..."
-python3 server.py
+source venv/bin/activate
+exec python3 server.py

@@ -1,9 +1,13 @@
 import json
+import logging
+import datetime
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from config.db import get_db
 from utils import admin_required, log_admin_action, sub_admin_required
 from config.cache import cache
+
+logger = logging.getLogger(__name__)
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -262,7 +266,8 @@ def get_audit_log():
             cursor.execute(f"""
                 SELECT a.id, a.admin_id, a.action, a.target_type, a.target_id, a.target_name, a.details,
                        COALESCE(a.ip_address, '127.0.0.1') as ip_address, a.created_at,
-                       m.name as admin_name, m.email as admin_email, m.role as admin_role
+                       m.name as admin_name, m.name as actor_name, m.email as admin_email,
+                       m.role as admin_role, m.role as actor_role
                 FROM audit_log a
                 LEFT JOIN members m ON a.admin_id = m.id
                 {where}
@@ -274,22 +279,22 @@ def get_audit_log():
                 if hasattr(l.get('created_at'), 'isoformat'):
                     l['created_at'] = l['created_at'].isoformat()
 
-            # Filter options — cached for 5 minutes to avoid heavy table scans on every page request
+            # Filter options
             filter_opts = cache.get('audit_log_filter_options')
             if filter_opts is None:
                 cursor.execute("SELECT DISTINCT target_type FROM audit_log WHERE target_type IS NOT NULL ORDER BY target_type")
                 target_types = [r['target_type'] for r in cursor.fetchall()]
 
                 cursor.execute("""
-                    SELECT DISTINCT a.admin_id as id, m.name, m.role
-                    FROM audit_log a
-                    JOIN members m ON a.admin_id = m.id
-                    WHERE a.admin_id IS NOT NULL
+                    SELECT DISTINCT m.id, m.name, m.role, m.email
+                    FROM members m
+                    WHERE m.role IN ('admin', 'super_admin', 'sub_admin', 'staff')
+                       OR m.id IN (SELECT DISTINCT admin_id FROM audit_log WHERE admin_id IS NOT NULL)
                     ORDER BY m.name
                 """)
-                actors = [{'id': r['id'], 'name': r['name'] or 'Unknown', 'role': r['role'] or 'admin'} for r in cursor.fetchall()]
+                actors = [{'id': r['id'], 'name': r['name'] or r['email'] or f"User #{r['id']}", 'role': r['role'] or 'sub_admin'} for r in cursor.fetchall()]
                 filter_opts = {'target_types': target_types, 'actors': actors}
-                cache.set('audit_log_filter_options', filter_opts, timeout=300)
+                cache.set('audit_log_filter_options', filter_opts, timeout=60)
 
             result = {
                 'logs': logs,
@@ -355,48 +360,24 @@ def get_admin_fees():
                 {'id': 'new_cf_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Clearing & Forwarding Component Tariff', 'amount': '500.00', 'frequency': 'One-Time', 'description': 'Customs broker and forwarder clearance operations tariff'},
                 {'id': 'new_consolidation_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Consolidation Component Tariff', 'amount': '600.00', 'frequency': 'One-Time', 'description': 'Cargo consolidation operations tariff'},
 
-                # Section 2: Renewal Summaries (is_summary: True)
-                {'id': 'renewal_sme_without_consolidation', 'section': 'renewal', 'is_summary': True, 'label': 'Annual Renewal Dues - SMEs (Without Consolidation)', 'amount': '2170.00', 'frequency': 'Annual', 'description': 'Sub 120 + Welfare 300 + Admin 200 + Legal 100 + AGM 500 + Bond 350 + CTI 600 = Total GHS 2,170.00'},
-                {'id': 'renewal_large_corporate_without_consolidation', 'section': 'renewal', 'is_summary': True, 'label': 'Annual Renewal Dues - Large Corporate (Without Consolidation)', 'amount': '4795.00', 'frequency': 'Annual', 'description': 'Sub 1545 + Welfare 400 + Admin 300 + Legal 500 + AGM 500 + Bond 350 + CTI 1200 = Total GHS 4,795.00'},
-                {'id': 'renewal_sme_with_consolidation', 'section': 'renewal', 'is_summary': True, 'label': 'Annual Renewal Dues - SMEs (With Consolidation)', 'amount': '3456.00', 'frequency': 'Annual', 'description': 'Base 2,170 + Consolidation 1,286 = Total GHS 3,456.00'},
-                {'id': 'renewal_large_corporate_with_consolidation', 'section': 'renewal', 'is_summary': True, 'label': 'Annual Renewal Dues - Large Corporate (With Consolidation)', 'amount': '6081.00', 'frequency': 'Annual', 'description': 'Base 4,795 + Consolidation 1,286 = Total GHS 6,081.00'},
-
-                # Section 2: Renewal Isolated Breakdown Items (is_summary: False)
-                {'id': 'renewal_sub_sme', 'section': 'renewal', 'is_summary': False, 'label': 'Subscription Fee - SMEs', 'amount': '120.00', 'frequency': 'Annual', 'description': 'Annual Subscription portion for SMEs'},
-                {'id': 'renewal_sub_large', 'section': 'renewal', 'is_summary': False, 'label': 'Subscription Fee - Large Corporate', 'amount': '1545.00', 'frequency': 'Annual', 'description': 'Annual Subscription portion for Large Corporate'},
-                {'id': 'renewal_welfare_sme', 'section': 'renewal', 'is_summary': False, 'label': 'Welfare Dues - SMEs', 'amount': '300.00', 'frequency': 'Annual', 'description': 'Welfare dues portion for SMEs'},
-                {'id': 'renewal_welfare_large', 'section': 'renewal', 'is_summary': False, 'label': 'Welfare Dues - Large Corporate', 'amount': '400.00', 'frequency': 'Annual', 'description': 'Welfare dues portion for Large Corporates'},
-                {'id': 'renewal_consolidation', 'section': 'renewal', 'is_summary': False, 'label': 'Consolidation Fee - Large Corporate & SMEs', 'amount': '1286.00', 'frequency': 'Annual', 'description': 'Consolidation operational category tariff'},
-                {'id': 'renewal_admin_sme', 'section': 'renewal', 'is_summary': False, 'label': 'Administrative Fee - SMEs', 'amount': '200.00', 'frequency': 'Annual', 'description': 'Admin fee portion for SMEs'},
-                {'id': 'renewal_admin_large', 'section': 'renewal', 'is_summary': False, 'label': 'Administrative Fee - Large Corporate', 'amount': '300.00', 'frequency': 'Annual', 'description': 'Admin fee portion for Large Corporate'},
-                {'id': 'renewal_legal_sme', 'section': 'renewal', 'is_summary': False, 'label': 'Legal & Audit Fee - SMEs', 'amount': '100.00', 'frequency': 'Annual', 'description': 'Legal & Audit portion for SMEs'},
-                {'id': 'renewal_legal_large', 'section': 'renewal', 'is_summary': False, 'label': 'Legal & Audit Fee - Large Corporate', 'amount': '500.00', 'frequency': 'Annual', 'description': 'Legal & Audit portion for Large Corporate'},
-                {'id': 'renewal_agm', 'section': 'renewal', 'is_summary': False, 'label': 'AGM Levy', 'amount': '500.00', 'frequency': 'Annual', 'description': 'Annual General Meeting Levy'},
-                {'id': 'renewal_bond', 'section': 'renewal', 'is_summary': False, 'label': 'Customs Bond Fee (SIC)', 'amount': '350.00', 'frequency': 'Annual', 'description': 'SIC Customs Bond Fee'},
-                {'id': 'renewal_cti_sme', 'section': 'renewal', 'is_summary': False, 'label': 'CTI Training - SMEs', 'amount': '600.00', 'frequency': 'Annual', 'description': 'CTI Training portion for SMEs'},
-                {'id': 'renewal_cti_large', 'section': 'renewal', 'is_summary': False, 'label': 'CTI Training - Large Corporate', 'amount': '1200.00', 'frequency': 'Annual', 'description': 'CTI Training portion for Large Corporate'},
-
                 # Section 3: Associate Membership Breakdown Items
                 {'id': 'associate_reg_form_fee', 'section': 'associate', 'is_summary': False, 'label': 'Registration Fee – Associate', 'amount': '0.00', 'frequency': 'One-Time', 'description': 'Mandatory initial onboarding registration fee for Associate members.'},
-                {'id': 'associate_sub_fee', 'section': 'associate', 'is_summary': False, 'label': 'Subscription Fee – Associate', 'amount': '0.00', 'frequency': 'Annual', 'description': 'Annual base subscription fee for Associate members (Renewed).'},
-                {'id': 'associate_vetting_fee', 'section': 'associate', 'is_summary': False, 'label': 'Vetting Fee – Associate', 'amount': '0.00', 'frequency': 'Annual', 'description': 'Annual document vetting fee for Associate members (Renewed).'},
-                {'id': 'associate_district_fee', 'section': 'associate', 'is_summary': False, 'label': 'District – Associate', 'amount': '0.00', 'frequency': 'Annual', 'description': 'Annual district chapter dues for Associate members (Renewed).'},
-                {'id': 'associate_welfare_dues', 'section': 'associate', 'is_summary': False, 'label': 'Welfare Dues – Associate', 'amount': '0.00', 'frequency': 'Annual', 'description': 'Annual welfare fund dues for Associate members (Renewed).'},
-                {'id': 'associate_legal_audit_fee', 'section': 'associate', 'is_summary': False, 'label': 'Legal & Audit Fee – Associate', 'amount': '0.00', 'frequency': 'Annual', 'description': 'Annual legal representation & audit retainer for Associate members (Renewed).'},
-                {'id': 'associate_agm_levy', 'section': 'associate', 'is_summary': False, 'label': 'AGM Levy – Associate', 'amount': '0.00', 'frequency': 'Annual', 'description': 'Annual General Meeting logistics levy for Associate members (Renewed).'},
+                {'id': 'associate_sub_fee', 'section': 'associate', 'is_summary': False, 'label': 'Subscription Fee – Associate', 'amount': '0.00', 'frequency': 'One-Time', 'description': 'Base subscription fee for Associate onboarding.'},
+                {'id': 'associate_vetting_fee', 'section': 'associate', 'is_summary': False, 'label': 'Vetting Fee – Associate', 'amount': '0.00', 'frequency': 'One-Time', 'description': 'Document vetting fee for Associate members.'},
+                {'id': 'associate_district_fee', 'section': 'associate', 'is_summary': False, 'label': 'District – Associate', 'amount': '0.00', 'frequency': 'One-Time', 'description': 'District chapter onboarding dues for Associate members.'},
 
                 # Section 4: Licentiate Membership Breakdown Items
                 {'id': 'licentiate_reg_form_fee', 'section': 'licentiate', 'is_summary': False, 'label': 'Registration Fee – Licentiate', 'amount': '0.00', 'frequency': 'One-Time', 'description': 'Mandatory initial onboarding registration fee for Licentiate members.'},
-                {'id': 'licentiate_sub_fee', 'section': 'licentiate', 'is_summary': False, 'label': 'Subscription Fee – Licentiate', 'amount': '0.00', 'frequency': 'Annual', 'description': 'Annual base subscription fee for Licentiate members (Renewed).'},
-                {'id': 'licentiate_vetting_fee', 'section': 'licentiate', 'is_summary': False, 'label': 'Vetting Fee – Licentiate', 'amount': '0.00', 'frequency': 'Annual', 'description': 'Annual document vetting fee for Licentiate members (Renewed).'},
-                {'id': 'licentiate_district_fee', 'section': 'licentiate', 'is_summary': False, 'label': 'District – Licentiate', 'amount': '0.00', 'frequency': 'Annual', 'description': 'Annual district chapter dues for Licentiate members (Renewed).'},
-                {'id': 'licentiate_welfare_dues', 'section': 'licentiate', 'is_summary': False, 'label': 'Welfare Dues – Licentiate', 'amount': '0.00', 'frequency': 'Annual', 'description': 'Annual welfare fund dues for Licentiate members (Renewed).'},
-                {'id': 'licentiate_legal_audit_fee', 'section': 'licentiate', 'is_summary': False, 'label': 'Legal & Audit Fee – Licentiate', 'amount': '0.00', 'frequency': 'Annual', 'description': 'Annual legal representation & audit retainer for Licentiate members (Renewed).'},
-                {'id': 'licentiate_agm_levy', 'section': 'licentiate', 'is_summary': False, 'label': 'AGM Levy – Licentiate', 'amount': '0.00', 'frequency': 'Annual', 'description': 'Annual General Meeting logistics levy for Licentiate members (Renewed).'},
+                {'id': 'licentiate_sub_fee', 'section': 'licentiate', 'is_summary': False, 'label': 'Subscription Fee – Licentiate', 'amount': '0.00', 'frequency': 'One-Time', 'description': 'Base subscription fee for Licentiate onboarding.'},
+                {'id': 'licentiate_vetting_fee', 'section': 'licentiate', 'is_summary': False, 'label': 'Vetting Fee – Licentiate', 'amount': '0.00', 'frequency': 'One-Time', 'description': 'Document vetting fee for Licentiate members.'},
+                {'id': 'licentiate_district_fee', 'section': 'licentiate', 'is_summary': False, 'label': 'District – Licentiate', 'amount': '0.00', 'frequency': 'One-Time', 'description': 'District chapter onboarding dues for Licentiate members.'},
             ]
 
             if fees is None:
                 fees = default_items
+            else:
+                # Filter out legacy renewal items from saved fees
+                fees = [f for f in fees if f.get('section') != 'renewal' and not str(f.get('id', '')).startswith('renewal_')]
 
             return jsonify(fees), 200
     except Exception as e:
@@ -600,7 +581,7 @@ def approve_member_application(member_id):
             cache.clear()
 
             try:
-                from config.socket import socketio
+                from socket_instance import socketio
                 socketio.emit('member_updated', {'member_id': member_id, 'status': 'active', 'good_standing': True})
                 socketio.emit('member_approved', {'member_id': member_id, 'status': 'active', 'good_standing': True})
                 socketio.emit('tasks_updated', {'member_id': member_id})

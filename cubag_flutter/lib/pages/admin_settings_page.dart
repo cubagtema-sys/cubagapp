@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../services/api_service.dart';
-import '../services/theme_service.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10b981);
@@ -264,25 +262,24 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
       scrollable: true,
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 880),
+          constraints: const BoxConstraints(maxWidth: 860),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header Title & Subtitle ─────────────────────────────────────
               AdminHeader(
                 title: 'System & Platform Settings',
                 subtitle:
-                    'Configure admin credentials, profile security, and compliance scoring rules.',
+                    'Manage admin credentials, profile security, and compliance scoring rules.',
                 actions: [
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
+                      horizontal: 14,
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: kAdminOrange.withAlpha(25),
+                      color: kAdminOrange.withAlpha(20),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: kAdminOrange.withAlpha(80)),
+                      border: Border.all(color: kAdminOrange.withAlpha(60)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -292,13 +289,14 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                           color: kAdminOrange,
                           size: 16,
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
                         Text(
-                          'Super Admin Access',
+                          (_user['role']?.toString() ?? 'ADMIN').toUpperCase(),
                           style: GoogleFonts.outfit(
                             color: kAdminOrange,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ],
@@ -306,9 +304,9 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
 
-              // ── Navigation Tabs ─────────────────────────────────────────────
+              // Segmented Tab bar
               Container(
                 decoration: BoxDecoration(
                   color: cardBg,
@@ -323,11 +321,11 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                   unselectedLabelColor: subTextCol,
                   labelStyle: GoogleFonts.outfit(
                     fontWeight: FontWeight.bold,
-                    fontSize: 17,
+                    fontSize: 16,
                   ),
                   unselectedLabelStyle: GoogleFonts.outfit(
                     fontWeight: FontWeight.w600,
-                    fontSize: 17,
+                    fontSize: 16,
                   ),
                   tabs: const [
                     Tab(
@@ -336,14 +334,13 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                     ),
                     Tab(
                       icon: Icon(Icons.rule_rounded, size: 18),
-                      text: 'Compliance Rules',
+                      text: 'Compliance Scoring Rules',
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
-              // ── Tab Contents ────────────────────────────────────────────────
               if (_fetchingUser && _user.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(40),
@@ -381,9 +378,6 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 1. ACCOUNT & SECURITY TAB
-  // ─────────────────────────────────────────────────────────────────────────────
   Widget _buildAccountSecurityTab(
     Color cardBg,
     Color borderCol,
@@ -396,7 +390,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
       children: [
         // Profile Info Card
         Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             color: cardBg,
             borderRadius: BorderRadius.circular(16),
@@ -416,10 +410,10 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                     child: const Icon(
                       Icons.person_outline_rounded,
                       color: _kBlue,
-                      size: 22,
+                      size: 20,
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -427,14 +421,14 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                         'Admin Profile Overview',
                         style: GoogleFonts.outfit(
                           fontWeight: FontWeight.bold,
-                          fontSize: 20,
+                          fontSize: 18,
                           color: textCol,
                         ),
                       ),
                       Text(
-                        'Account details associated with your logged-in administrator token.',
+                        'Account details associated with your logged-in administrator session.',
                         style: GoogleFonts.inter(
-                          fontSize: 16,
+                          fontSize: 13,
                           color: subTextCol,
                         ),
                       ),
@@ -442,66 +436,122 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: _readOnlyField(
-                      'Full Name',
-                      _user['name']?.toString() ?? 'Administrator',
-                      inputBg,
-                      borderCol,
-                      textCol,
-                      subTextCol,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: _readOnlyField(
-                      'Email Address',
-                      _user['email']?.toString() ?? 'admin@cubag.org',
-                      inputBg,
-                      borderCol,
-                      textCol,
-                      subTextCol,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 18),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 500;
+                  return isWide
+                      ? Row(
+                          children: [
+                            Expanded(
+                              child: _readOnlyField(
+                                'Full Name',
+                                _user['name']?.toString() ?? 'Administrator',
+                                inputBg,
+                                borderCol,
+                                textCol,
+                                subTextCol,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: _readOnlyField(
+                                'Email Address',
+                                _user['email']?.toString() ?? 'admin@cubag.org',
+                                inputBg,
+                                borderCol,
+                                textCol,
+                                subTextCol,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            _readOnlyField(
+                              'Full Name',
+                              _user['name']?.toString() ?? 'Administrator',
+                              inputBg,
+                              borderCol,
+                              textCol,
+                              subTextCol,
+                            ),
+                            const SizedBox(height: 12),
+                            _readOnlyField(
+                              'Email Address',
+                              _user['email']?.toString() ?? 'admin@cubag.org',
+                              inputBg,
+                              borderCol,
+                              textCol,
+                              subTextCol,
+                            ),
+                          ],
+                        );
+                },
               ),
               const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: _readOnlyField(
-                      'Role / Privileges',
-                      (_user['role']?.toString() ?? 'admin').toUpperCase(),
-                      inputBg,
-                      borderCol,
-                      textCol,
-                      subTextCol,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: _readOnlyField(
-                      'Session Status',
-                      'Active & Authenticated',
-                      inputBg,
-                      borderCol,
-                      textCol,
-                      subTextCol,
-                    ),
-                  ),
-                ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 500;
+                  return isWide
+                      ? Row(
+                          children: [
+                            Expanded(
+                              child: _readOnlyField(
+                                'Role / Privileges',
+                                (_user['role']?.toString() ?? 'admin')
+                                    .toUpperCase(),
+                                inputBg,
+                                borderCol,
+                                textCol,
+                                subTextCol,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: _readOnlyField(
+                                'Session Status',
+                                'Active & Authenticated',
+                                inputBg,
+                                borderCol,
+                                textCol,
+                                subTextCol,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            _readOnlyField(
+                              'Role / Privileges',
+                              (_user['role']?.toString() ?? 'admin')
+                                  .toUpperCase(),
+                              inputBg,
+                              borderCol,
+                              textCol,
+                              subTextCol,
+                            ),
+                            const SizedBox(height: 12),
+                            _readOnlyField(
+                              'Session Status',
+                              'Active & Authenticated',
+                              inputBg,
+                              borderCol,
+                              textCol,
+                              subTextCol,
+                            ),
+                          ],
+                        );
+                },
               ),
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 18),
 
         // Password Reset Card
         Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             color: cardBg,
             borderRadius: BorderRadius.circular(16),
@@ -521,10 +571,10 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                     child: const Icon(
                       Icons.lock_reset_rounded,
                       color: _kOrange,
-                      size: 22,
+                      size: 20,
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -532,14 +582,14 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                         'Security & Password Reset',
                         style: GoogleFonts.outfit(
                           fontWeight: FontWeight.bold,
-                          fontSize: 20,
+                          fontSize: 18,
                           color: textCol,
                         ),
                       ),
                       Text(
-                        'Update your administrator portal login password regularly for security.',
+                        'Update your administrator portal login password for enhanced security.',
                         style: GoogleFonts.inter(
-                          fontSize: 16,
+                          fontSize: 13,
                           color: subTextCol,
                         ),
                       ),
@@ -547,12 +597,12 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
               if (_pwMessage.isNotEmpty) ...[
                 Container(
-                  padding: const EdgeInsets.all(14),
-                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 14),
                   decoration: BoxDecoration(
                     color: _pwSuccess
                         ? _kGreen.withAlpha(20)
@@ -571,7 +621,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                             ? Icons.check_circle_rounded
                             : Icons.error_outline_rounded,
                         color: _pwSuccess ? _kGreen : _kRed,
-                        size: 20,
+                        size: 18,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -579,8 +629,8 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                           _pwMessage,
                           style: GoogleFonts.inter(
                             color: _pwSuccess ? _kGreen : _kRed,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
                           ),
                         ),
                       ),
@@ -600,36 +650,71 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                 subTextCol,
               ),
               const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: _pwField(
-                      'New Password *',
-                      _newCtrl,
-                      _showNew,
-                      () => setState(() => _showNew = !_showNew),
-                      inputBg,
-                      borderCol,
-                      textCol,
-                      subTextCol,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: _pwField(
-                      'Confirm New Password *',
-                      _confirmCtrl,
-                      _showConfirm,
-                      () => setState(() => _showConfirm = !_showConfirm),
-                      inputBg,
-                      borderCol,
-                      textCol,
-                      subTextCol,
-                    ),
-                  ),
-                ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 500;
+                  return isWide
+                      ? Row(
+                          children: [
+                            Expanded(
+                              child: _pwField(
+                                'New Password *',
+                                _newCtrl,
+                                _showNew,
+                                () => setState(() => _showNew = !_showNew),
+                                inputBg,
+                                borderCol,
+                                textCol,
+                                subTextCol,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: _pwField(
+                                'Confirm New Password *',
+                                _confirmCtrl,
+                                _showConfirm,
+                                () => setState(
+                                  () => _showConfirm = !_showConfirm,
+                                ),
+                                inputBg,
+                                borderCol,
+                                textCol,
+                                subTextCol,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            _pwField(
+                              'New Password *',
+                              _newCtrl,
+                              _showNew,
+                              () => setState(() => _showNew = !_showNew),
+                              inputBg,
+                              borderCol,
+                              textCol,
+                              subTextCol,
+                            ),
+                            const SizedBox(height: 12),
+                            _pwField(
+                              'Confirm New Password *',
+                              _confirmCtrl,
+                              _showConfirm,
+                              () => setState(
+                                () => _showConfirm = !_showConfirm,
+                              ),
+                              inputBg,
+                              borderCol,
+                              textCol,
+                              subTextCol,
+                            ),
+                          ],
+                        );
+                },
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
               Align(
                 alignment: Alignment.centerRight,
@@ -638,12 +723,13 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                     backgroundColor: _kOrange,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 14,
+                      horizontal: 22,
+                      vertical: 12,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
+                    elevation: 0,
                   ),
                   onPressed: _changingPw ? null : _changePassword,
                   icon: _changingPw
@@ -655,12 +741,12 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                             strokeWidth: 2,
                           ),
                         )
-                      : const Icon(Icons.key_rounded, size: 18),
+                      : const Icon(Icons.key_rounded, size: 16),
                   label: Text(
-                    'Update Password',
+                    'Update',
                     style: GoogleFonts.outfit(
                       fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      fontSize: 15,
                     ),
                   ),
                 ),
@@ -672,9 +758,6 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 2. COMPLIANCE RULES TAB
-  // ─────────────────────────────────────────────────────────────────────────────
   Widget _buildComplianceRulesTab(
     Color cardBg,
     Color borderCol,
@@ -690,7 +773,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
     }
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(16),
@@ -710,10 +793,10 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                 child: const Icon(
                   Icons.rule_folder_outlined,
                   color: _kGreen,
-                  size: 22,
+                  size: 20,
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -721,24 +804,24 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                     'Compliance Scoring Weights',
                     style: GoogleFonts.outfit(
                       fontWeight: FontWeight.bold,
-                      fontSize: 20,
+                      fontSize: 18,
                       color: textCol,
                     ),
                   ),
                   Text(
-                    'Weights determine how member rating scores (0 - 100%) are calculated across activities.',
-                    style: GoogleFonts.inter(fontSize: 16, color: subTextCol),
+                    'Configure point weights used to calculate member rating scores (0 - 100%).',
+                    style: GoogleFonts.inter(fontSize: 13, color: subTextCol),
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
 
           if (_settingsMessage.isNotEmpty) ...[
             Container(
-              padding: const EdgeInsets.all(14),
-              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 14),
               decoration: BoxDecoration(
                 color: _settingsSuccess
                     ? _kGreen.withAlpha(20)
@@ -757,7 +840,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                         ? Icons.check_circle_rounded
                         : Icons.error_outline_rounded,
                     color: _settingsSuccess ? _kGreen : _kRed,
-                    size: 20,
+                    size: 18,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -765,8 +848,8 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                       _settingsMessage,
                       style: GoogleFonts.inter(
                         color: _settingsSuccess ? _kGreen : _kRed,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
                       ),
                     ),
                   ),
@@ -777,14 +860,14 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
 
           // 1. Payment Points
           Text(
-            '1. Payment & Financial Standing Points',
+            '1. Payment & Financial Standing',
             style: GoogleFonts.outfit(
               fontWeight: FontWeight.bold,
-              fontSize: 18,
+              fontSize: 16,
               color: textCol,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
@@ -800,7 +883,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
               const SizedBox(width: 14),
               Expanded(
                 child: _weightField(
-                  'Payment History & Consistency (pts)',
+                  'Payment History (pts)',
                   _payHistoryCtrl,
                   inputBg,
                   borderCol,
@@ -810,23 +893,23 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           // 2. Customs Licensing Points
           Text(
             '2. Customs Operating License Standing',
             style: GoogleFonts.outfit(
               fontWeight: FontWeight.bold,
-              fontSize: 18,
+              fontSize: 16,
               color: textCol,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
                 child: _weightField(
-                  'Active Valid Member ID (pts)',
+                  'Active Valid License (pts)',
                   _licActiveCtrl,
                   inputBg,
                   borderCol,
@@ -837,7 +920,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
               const SizedBox(width: 14),
               Expanded(
                 child: _weightField(
-                  'Expired / Inactive License (pts)',
+                  'Expired License (pts)',
                   _licInactiveCtrl,
                   inputBg,
                   borderCol,
@@ -847,23 +930,23 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           // 3. Operational Tasks & Surveys
           Text(
             '3. Association Engagements & Surveys',
             style: GoogleFonts.outfit(
               fontWeight: FontWeight.bold,
-              fontSize: 18,
+              fontSize: 16,
               color: textCol,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
                 child: _weightField(
-                  'Task Submissions & Compliance Checks',
+                  'Task & Compliance Checks (pts)',
                   _taskCtrl,
                   inputBg,
                   borderCol,
@@ -874,7 +957,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
               const SizedBox(width: 14),
               Expanded(
                 child: _weightField(
-                  'Survey & Feedback Participation',
+                  'Survey Participation (pts)',
                   _surveyCtrl,
                   inputBg,
                   borderCol,
@@ -884,23 +967,23 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           // 4. AGM Attendance
           Text(
             '4. AGM & Executive Meetings Attendance',
             style: GoogleFonts.outfit(
               fontWeight: FontWeight.bold,
-              fontSize: 18,
+              fontSize: 16,
               color: textCol,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
                 child: _weightField(
-                  'Active AGM Attended (pts)',
+                  'AGM Attended (pts)',
                   _agmActiveCtrl,
                   inputBg,
                   borderCol,
@@ -921,7 +1004,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           Align(
             alignment: Alignment.centerRight,
@@ -930,12 +1013,13 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                 backgroundColor: _kOrange,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 14,
+                  horizontal: 22,
+                  vertical: 12,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
+                elevation: 0,
               ),
               onPressed: _savingSettings ? null : _saveSettings,
               icon: _savingSettings
@@ -947,12 +1031,12 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                         strokeWidth: 2,
                       ),
                     )
-                  : const Icon(Icons.save_rounded, size: 18),
+                  : const Icon(Icons.save_rounded, size: 16),
               label: Text(
-                'Save Compliance Scoring Weights',
+                'Save Scoring Weights',
                 style: GoogleFonts.outfit(
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontSize: 15,
                 ),
               ),
             ),
@@ -962,9 +1046,6 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // REUSABLE FIELD HELPERS
-  // ─────────────────────────────────────────────────────────────────────────────
   Widget _readOnlyField(
     String label,
     String value,
@@ -979,25 +1060,25 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
         Text(
           label,
           style: GoogleFonts.outfit(
-            fontSize: 16,
+            fontSize: 13,
             fontWeight: FontWeight.bold,
             color: subTextCol,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 5),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: inputBg,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: borderCol),
           ),
           child: Text(
             value,
             style: GoogleFonts.inter(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
               color: textCol,
             ),
             overflow: TextOverflow.ellipsis,
@@ -1023,32 +1104,33 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
         Text(
           label,
           style: GoogleFonts.outfit(
-            fontSize: 16,
+            fontSize: 13,
             fontWeight: FontWeight.bold,
             color: subTextCol,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 5),
         TextField(
           controller: ctrl,
           obscureText: !show,
+          style: GoogleFonts.inter(fontSize: 14, color: textCol),
           decoration: InputDecoration(
             filled: true,
             fillColor: inputBg,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
-              vertical: 12,
+              vertical: 10,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: borderCol),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: borderCol),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: _kOrange, width: 1.5),
             ),
             suffixIcon: IconButton(
@@ -1081,32 +1163,33 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
         Text(
           label,
           style: GoogleFonts.outfit(
-            fontSize: 16,
+            fontSize: 13,
             fontWeight: FontWeight.bold,
             color: subTextCol,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 5),
         TextField(
           controller: ctrl,
           keyboardType: TextInputType.number,
+          style: GoogleFonts.inter(fontSize: 14, color: textCol),
           decoration: InputDecoration(
             filled: true,
             fillColor: inputBg,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
-              vertical: 12,
+              vertical: 10,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: borderCol),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: borderCol),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: _kOrange, width: 1.5),
             ),
           ),

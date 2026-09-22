@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
@@ -31,16 +30,21 @@ Color _statusColor(String? s) {
       return _kGreen;
     case 'rejected':
       return _kRed;
+    case 'awaiting_bill':
+      return const Color(0xFF8B5CF6); // Purple/Violet
+    case 'awaiting_payment':
+    case 'payment_pending':
+      return _kAmber;
+    case 'payment_submitted':
+      return const Color(0xFFE65100); // Warm vibrant amber/orange
+    case 'payment_confirmed':
+      return _kGreen;
     case 'revision_requested':
       return _kAmber;
     case 'under_review':
       return _kPrimary;
     case 'submitted':
       return _kAmber;
-    case 'payment_pending':
-      return _kAmber;
-    case 'payment_confirmed':
-      return _kPrimary;
     default:
       return Colors.grey;
   }
@@ -52,8 +56,13 @@ String _statusLabel(String? s) {
       return 'Draft';
     case 'submitted':
       return 'Submitted';
+    case 'awaiting_bill':
+      return 'Awaiting Bill';
+    case 'awaiting_payment':
     case 'payment_pending':
-      return 'Payment Pending';
+      return 'Awaiting Payment';
+    case 'payment_submitted':
+      return 'Payment Submitted';
     case 'payment_confirmed':
       return 'Payment Confirmed';
     case 'under_review':
@@ -65,29 +74,43 @@ String _statusLabel(String? s) {
     case 'rejected':
       return 'Rejected';
     default:
-      return s ?? '—';
+      if (s != null && s.isNotEmpty) {
+        return s
+            .split('_')
+            .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
+            .join(' ');
+      }
+      return '—';
   }
 }
 
 String _fmtDate(String? d) {
   if (d == null || d.isEmpty) return '—';
   try {
-    final dt = DateTime.parse(d);
-    final m = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${dt.day} ${m[dt.month - 1]} ${dt.year}';
+    final dt = DateTime.tryParse(d);
+    if (dt != null) {
+      final m = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      return '${dt.day} ${m[dt.month - 1]} ${dt.year}';
+    }
+    // Handle RFC 2822 / HTTP format (e.g., "Mon, 14 Sep 2026 21:01:02 GMT")
+    final rfcMatch = RegExp(r'(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})').firstMatch(d);
+    if (rfcMatch != null) {
+      return '${rfcMatch.group(1)} ${rfcMatch.group(2)} ${rfcMatch.group(3)}';
+    }
+    return d;
   } catch (_) {
     return d;
   }
@@ -607,7 +630,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
 
   Future<void> _downloadCertificate() async {
     final url =
-        '${ApiService.baseUrl}/api/v1/compliance/applications/${widget.appId}/certificate';
+        ApiService.resolveImageUrl('api/v1/compliance/applications/${widget.appId}/certificate');
     await InAppDocumentViewer.show(
       context,
       url: url,
@@ -759,7 +782,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                           status: status,
                           adminNote: _app['admin_note']?.toString(),
                         ),
-                        if (status == 'payment_pending' || (_app['payment_amount'] != null && (double.tryParse(_app['payment_amount'].toString()) ?? 0) > 0)) ...[
+                        if (!isApproved && (status == 'payment_pending' || (_app['payment_amount'] != null && (double.tryParse(_app['payment_amount'].toString()) ?? 0) > 0))) ...[
                           const SizedBox(height: 16),
                           _buildRenewalBillCard(isDark),
                         ],
@@ -871,6 +894,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
   }
 
   Widget _buildRenewalBillCard(bool isDark) {
+    final status = _app['status']?.toString() ?? '';
     final amount = double.tryParse(_app['payment_amount']?.toString() ?? '0') ?? 0.0;
     final deadline = _app['payment_deadline']?.toString() ?? 'Not specified';
     List<dynamic> breakdown = [];
@@ -959,23 +983,90 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
           ),
           const SizedBox(height: 20),
 
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kPrimary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
+          if (status == 'payment_submitted')
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE65100).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE65100).withValues(alpha: 0.3)),
               ),
-              onPressed: () {
-                context.go('/payments?fee=Annual%20Renewal%20Dues&amount=${amount.toStringAsFixed(2)}');
-              },
-              icon: const Icon(Icons.payment_rounded, size: 18),
-              label: Text('Proceed to Payment (GHS ${amount.toStringAsFixed(2)})', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.hourglass_top_rounded, color: Color(0xFFE65100), size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Payment Submitted',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15.5,
+                          color: const Color(0xFFE65100),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    'Verification in progress by Secretariat',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? const Color(0xFFFFB74D) : const Color(0xFFC2410C),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (status == 'payment_confirmed' || status == 'under_review' || status == 'approved')
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Payment Confirmed ✓',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15.5,
+                      color: const Color(0xFF10B981),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _kPrimary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                onPressed: () {
+                  context.go('/payments?fee=Annual%20Renewal%20Dues&amount=${amount.toStringAsFixed(2)}');
+                },
+                icon: const Icon(Icons.payment_rounded, size: 18),
+                label: Text('Proceed to Payment (GHS ${amount.toStringAsFixed(2)})', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -992,7 +1083,7 @@ class _StatusViewPage extends StatelessWidget {
 
   Future<void> _downloadCertificate(BuildContext context) async {
     final url =
-        '${ApiService.baseUrl}/api/v1/compliance/applications/$appId/certificate';
+        ApiService.resolveImageUrl('api/v1/compliance/applications/$appId/certificate');
     await InAppDocumentViewer.show(
       context,
       url: url,
@@ -1264,74 +1355,127 @@ class _ApplicationCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: isDark ? _kCardDark : Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: status == 'revision_requested'
                 ? _kAmber.withValues(alpha: 0.5)
                 : (isDark ? _kBorderDark : const Color(0xFFe2e8f0)),
             width: status == 'revision_requested' ? 2 : 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              width: 42,
-              height: 42,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.13),
-                borderRadius: BorderRadius.circular(10),
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 type == 'renewal'
-                    ? Icons.refresh_rounded
-                    : Icons.assignment_outlined,
+                    ? Icons.autorenew_rounded
+                    : Icons.badge_outlined,
                 color: color,
-                size: 20,
+                size: 22,
               ),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    typeLabel,
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: isDark ? Colors.white : _kTextDark,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          typeLabel,
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16.5,
+                            color: isDark ? Colors.white : _kTextDark,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${_fmtDate(app['created_at']?.toString())} • Docs: $uploaded/$total',
-                    style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${_fmtDate(app['created_at']?.toString())} • Docs: $uploaded/$total',
+                          style: GoogleFonts.inter(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: color.withValues(alpha: 0.28), width: 1),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              status == 'approved'
+                                  ? Icons.check_circle_rounded
+                                  : status == 'payment_submitted'
+                                      ? Icons.hourglass_top_rounded
+                                      : status == 'payment_confirmed'
+                                          ? Icons.verified_rounded
+                                          : status == 'revision_requested'
+                                              ? Icons.edit_note_rounded
+                                              : status == 'rejected'
+                                                  ? Icons.cancel_rounded
+                                                  : Icons.circle,
+                              size: status == 'payment_submitted' ? 12 : 8,
+                              color: color,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _statusLabel(status),
+                              style: GoogleFonts.outfit(
+                                color: color,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                _statusLabel(status),
-                style: GoogleFonts.outfit(
-                  color: color,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
             const SizedBox(width: 6),
-            Icon(Icons.chevron_right_rounded, color: Colors.grey, size: 20),
+            const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8), size: 20),
           ],
         ),
       ),
@@ -1360,6 +1504,12 @@ class _StatusBanner extends StatelessWidget {
       case 'payment_pending':
         icon = Icons.payment_outlined;
         message = 'Payment is being processed.';
+        break;
+      case 'payment_submitted':
+        icon = Icons.receipt_long_rounded;
+        message =
+            adminNote ??
+            'Payment receipt submitted successfully. Awaiting Secretariat verification.';
         break;
       case 'payment_confirmed':
         icon = Icons.verified_outlined;

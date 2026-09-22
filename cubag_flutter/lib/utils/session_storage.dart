@@ -6,6 +6,7 @@ abstract class SessionStorage {
 
   Future<void> init();
   String? getStringSync(String key);
+  void setStringSync(String key, String value);
   List<String>? getStringListSync(String key);
 
   Future<void> setString(String key, String value);

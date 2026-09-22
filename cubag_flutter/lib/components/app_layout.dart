@@ -80,20 +80,18 @@ class _AppLayoutState extends State<AppLayout> {
   }
 
   Future<void> _loadUserPhoto() async {
-    // Skip the API call if photo is already cached
-    final auth = Provider.of<AuthService>(context, listen: false);
-    if (auth.userPhotoUrl != null && auth.userPhotoUrl!.isNotEmpty) return;
     try {
       final res = await ApiService().get('/auth/me');
       if (res.statusCode == 200 && mounted) {
         final rawPhoto = res.data['profile_photo']?.toString();
-        final photoUrl = ApiService.resolveImageUrl(rawPhoto);
-        if (photoUrl.isNotEmpty) {
-          // ignore: use_build_context_synchronously
-          await Provider.of<AuthService>(
-            context,
-            listen: false,
-          ).updatePhoto(photoUrl);
+        if (rawPhoto != null && rawPhoto.isNotEmpty) {
+          final photoUrl = ApiService.resolveImageUrl(rawPhoto);
+          if (photoUrl.isNotEmpty && mounted) {
+            final auth = Provider.of<AuthService>(context, listen: false);
+            if (auth.userPhotoUrl != photoUrl) {
+              await auth.updatePhoto(photoUrl);
+            }
+          }
         }
       }
     } catch (e, st) {
@@ -155,7 +153,7 @@ class _AppLayoutState extends State<AppLayout> {
                   builder: (context, auth, _) =>
                       _buildProfileMenu(context, auth, isSmall, isDark: true),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12 + MediaQuery.of(context).padding.right),
               ],
             ),
       bottomNavigationBar: isDesktop
@@ -170,15 +168,27 @@ class _AppLayoutState extends State<AppLayout> {
                     children: [
                       _buildDesktopHeader(context, authService),
                       Expanded(
-                        child: widget.scrollable
-                            ? SingleChildScrollView(
-                                padding: const EdgeInsets.all(20),
-                                child: widget.child,
-                              )
-                            : Padding(
-                                padding: const EdgeInsets.all(20),
-                                child: widget.child,
-                              ),
+                        child: SelectionArea(
+                          child: widget.scrollable
+                              ? SingleChildScrollView(
+                                  padding: EdgeInsets.only(
+                                    left: 20,
+                                    right: 20,
+                                    top: 20,
+                                    bottom: 20 + MediaQuery.of(context).padding.bottom,
+                                  ),
+                                  child: widget.child,
+                                )
+                              : Padding(
+                                  padding: EdgeInsets.only(
+                                    left: 20,
+                                    right: 20,
+                                    top: 20,
+                                    bottom: 20 + MediaQuery.of(context).padding.bottom,
+                                  ),
+                                  child: widget.child,
+                                ),
+                        ),
                       ),
                     ],
                   )
@@ -196,15 +206,17 @@ class _AppLayoutState extends State<AppLayout> {
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(24),
                         ),
-                        child: widget.scrollable
-                            ? SingleChildScrollView(
-                                padding: const EdgeInsets.all(16),
-                                child: widget.child,
-                              )
-                            : Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: widget.child,
-                              ),
+                        child: SelectionArea(
+                          child: widget.scrollable
+                              ? SingleChildScrollView(
+                                  padding: const EdgeInsets.all(16),
+                                  child: widget.child,
+                                )
+                              : Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: widget.child,
+                                ),
+                        ),
                       ),
                     ),
                   ),
@@ -466,7 +478,7 @@ class _AppLayoutState extends State<AppLayout> {
     bool isSmall, {
     bool isDark = false,
   }) {
-    final photoUrl = authService.userPhotoUrl;
+    final photoUrl = ApiService.resolveImageUrl(authService.userPhotoUrl);
     final primary = Theme.of(context).primaryColor;
     final borderColor = isDark ? Colors.white30 : const Color(0xFFe2e8f0);
     final isThemeDark = Theme.of(context).brightness == Brightness.dark;
@@ -489,7 +501,7 @@ class _AppLayoutState extends State<AppLayout> {
           width: isSmall ? 28 : 32,
           height: isSmall ? 28 : 32,
           child: ClipOval(
-            child: (photoUrl != null && photoUrl.isNotEmpty)
+            child: photoUrl.isNotEmpty
                 ? CachedNetworkImage(
                     imageUrl: photoUrl,
                     width: isSmall ? 28 : 32,
@@ -559,7 +571,7 @@ class _AppLayoutState extends State<AppLayout> {
                     width: 40,
                     height: 40,
                     child: ClipOval(
-                      child: (photoUrl != null && photoUrl.isNotEmpty)
+                      child: photoUrl.isNotEmpty
                           ? CachedNetworkImage(
                               imageUrl: photoUrl,
                               width: 40,
@@ -792,10 +804,16 @@ class _AppLayoutState extends State<AppLayout> {
     final iconColor = isThemeDark
         ? const Color(0xFFC8ADA0)
         : const Color(0xFF64748b);
+    final topPadding = MediaQuery.of(context).padding.top;
+    final rightPadding = MediaQuery.of(context).padding.right;
 
     return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      height: 64 + topPadding,
+      padding: EdgeInsets.only(
+        top: topPadding,
+        left: 16,
+        right: 16 + rightPadding,
+      ),
       decoration: BoxDecoration(
         color: headerBg,
         border: Border(bottom: BorderSide(color: borderThemeColor, width: 1.5)),
@@ -952,6 +970,8 @@ class _AppLayoutState extends State<AppLayout> {
     final textColor = isDark
         ? const Color(0xFFFFF8F3)
         : const Color(0xFF2B211D);
+    final topPadding = MediaQuery.of(context).padding.top;
+    final leftPadding = MediaQuery.of(context).padding.left;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -965,8 +985,12 @@ class _AppLayoutState extends State<AppLayout> {
         children: [
           // Sidebar Header
           Container(
-            height: 64,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            height: 64 + topPadding,
+            padding: EdgeInsets.only(
+              top: topPadding,
+              left: 16 + leftPadding,
+              right: 16,
+            ),
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(color: borderThemeColor, width: 1.5),
@@ -1064,11 +1088,18 @@ class _AppLayoutState extends State<AppLayout> {
         : const Color(0xFFf1f5f9);
     final textColor = isDark ? Colors.white : const Color(0xFF1A0F0A);
     final subTextColor = isDark ? Colors.white70 : const Color(0xFF64748b);
-    final photoUrl = authService.userPhotoUrl;
+    final photoUrl = ApiService.resolveImageUrl(authService.userPhotoUrl);
     final primary = Theme.of(context).primaryColor;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final leftPadding = MediaQuery.of(context).padding.left;
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      padding: EdgeInsets.only(
+        top: 16,
+        bottom: 16 + bottomPadding,
+        left: 12 + leftPadding,
+        right: 12,
+      ),
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: borderThemeColor, width: 1.5)),
       ),
@@ -1088,7 +1119,7 @@ class _AppLayoutState extends State<AppLayout> {
                       width: 36,
                       height: 36,
                       child: ClipOval(
-                        child: (photoUrl != null && photoUrl.isNotEmpty)
+                        child: photoUrl.isNotEmpty
                             ? CachedNetworkImage(
                                 imageUrl: photoUrl,
                                 width: 36,
@@ -1146,7 +1177,7 @@ class _AppLayoutState extends State<AppLayout> {
                     width: 32,
                     height: 32,
                     child: ClipOval(
-                      child: (photoUrl != null && photoUrl.isNotEmpty)
+                      child: photoUrl.isNotEmpty
                           ? CachedNetworkImage(
                               imageUrl: photoUrl,
                               width: 32,

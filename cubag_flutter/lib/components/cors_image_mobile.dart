@@ -11,12 +11,12 @@ Widget buildCorsImage(
   Widget? errorWidget,
 }) {
   final resolvedUrl = ApiService.resolveImageUrl(url);
-  final int targetWidth = (width != null && width.isFinite && width > 0)
+  final int? targetWidth = (width != null && width.isFinite && width > 0)
       ? (width * 2).toInt()
-      : 1000;
-  final int targetHeight = (height != null && height.isFinite && height > 0)
+      : null;
+  final int? targetHeight = (height != null && height.isFinite && height > 0)
       ? (height * 2).toInt()
-      : 1000;
+      : null;
   return CachedNetworkImage(
     imageUrl: resolvedUrl,
     width: width,
@@ -26,7 +26,13 @@ Widget buildCorsImage(
     memCacheHeight: targetHeight,
     placeholder: placeholder != null ? (context, url) => placeholder : null,
     errorWidget: errorWidget != null
-        ? (context, url, error) => errorWidget
+        ? (context, url, error) => Image.network(
+            resolvedUrl,
+            width: width,
+            height: height,
+            fit: fit,
+            errorBuilder: (_, _, _) => errorWidget,
+          )
         : null,
   );
 }

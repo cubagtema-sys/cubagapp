@@ -315,9 +315,11 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
             // ── Top Public Navbar ───────────────────────────────────────────
             Container(
               color: Colors.white,
-              padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 16 : 48,
-                vertical: 16,
+              padding: EdgeInsets.only(
+                top: 16 + MediaQuery.of(context).padding.top,
+                bottom: 16,
+                left: (isMobile ? 16 : 48) + MediaQuery.of(context).padding.left,
+                right: (isMobile ? 16 : 48) + MediaQuery.of(context).padding.right,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

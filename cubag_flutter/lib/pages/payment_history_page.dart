@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../components/app_layout.dart';
 import '../components/app_logo.dart';
+import '../components/in_app_document_viewer.dart';
 import '../components/shimmer_loader.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
@@ -158,16 +159,27 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     final titleCol = isDark ? Colors.white : _kBrown;
     final mutedCol = isDark ? Colors.white70 : _kMuted;
 
+    final receiptUrl = payment['receipt_url']?.toString();
+    final momoTxId = payment['momo_tx_id']?.toString();
+    final paymentMethod = payment['payment_method']?.toString() ??
+        payment['channel']?.toString() ??
+        payment['network']?.toString();
+    final payerPhone = payment['phone']?.toString() ?? payment['payer_phone']?.toString();
+    final adminNote = payment['admin_note']?.toString();
+
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         backgroundColor: dialogBg,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 500),
+          constraints: BoxConstraints(
+            maxWidth: 520,
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
+          ),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(28),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -288,12 +300,15 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        'GH₵ ${_fmt(amount)}',
-                        style: GoogleFonts.outfit(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w900,
-                          color: isDark ? _kOrange : _kBrown,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'GH₵ ${_fmt(amount)}',
+                          style: GoogleFonts.outfit(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w900,
+                            color: isDark ? _kOrange : _kBrown,
+                          ),
                         ),
                       ),
                     ],
@@ -310,24 +325,44 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                   context: context,
                   isDark: isDark,
                 ),
+                if (momoTxId != null && momoTxId.isNotEmpty)
+                  _receiptRow(
+                    'MoMo / Txn ID',
+                    momoTxId,
+                    isMono: true,
+                    canCopy: true,
+                    context: context,
+                    isDark: isDark,
+                  ),
                 _receiptRow('Date & Time', dateStr, isDark: isDark),
                 _receiptRow('Payment Purpose', desc, isDark: isDark),
                 _receiptRow(
                   'Member Name',
-                  auth.userName ?? 'Registered Broker',
+                  payment['member_name']?.toString() ?? auth.userName ?? 'Registered Broker',
                   isDark: isDark,
                 ),
-                if (auth.userCompany != null && auth.userCompany!.isNotEmpty)
+                if ((payment['member_company']?.toString() ?? auth.userCompany)?.isNotEmpty ?? false)
                   _receiptRow(
                     'Agency / Company',
-                    auth.userCompany!,
+                    payment['member_company']?.toString() ?? auth.userCompany!,
                     isDark: isDark,
                   ),
-                if (auth.licenseNumber != null &&
-                    auth.licenseNumber!.isNotEmpty)
+                if ((payment['license_number']?.toString() ?? auth.licenseNumber)?.isNotEmpty ?? false)
                   _receiptRow(
-                    'Member ID #',
-                    auth.licenseNumber!,
+                    'Member ID / License',
+                    payment['license_number']?.toString() ?? auth.licenseNumber!,
+                    isDark: isDark,
+                  ),
+                if (paymentMethod != null && paymentMethod.isNotEmpty)
+                  _receiptRow(
+                    'Payment Method',
+                    paymentMethod.toUpperCase(),
+                    isDark: isDark,
+                  ),
+                if (payerPhone != null && payerPhone.isNotEmpty)
+                  _receiptRow(
+                    'Payer Phone / Acct',
+                    payerPhone,
                     isDark: isDark,
                   ),
                 _receiptRow(
@@ -335,6 +370,42 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                   'WhitsunPay / CUBAG Secure Portal',
                   isDark: isDark,
                 ),
+                if (adminNote != null && adminNote.isNotEmpty)
+                  _receiptRow(
+                    'Admin Notes',
+                    adminNote,
+                    isDark: isDark,
+                  ),
+
+                if (receiptUrl != null && receiptUrl.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        InAppDocumentViewer.show(
+                          context,
+                          url: receiptUrl,
+                          title: 'Payment Proof / Bank Slip',
+                          subtitle: 'Ref: $ref',
+                        );
+                      },
+                      icon: const Icon(Icons.attachment_rounded, size: 16),
+                      label: const Text('View Attached Receipt Proof'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: isDark ? _kOrange : _kBrown,
+                        side: BorderSide(
+                          color: isDark ? _kOrange : _kBrown,
+                          width: 1.2,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
 
                 const SizedBox(height: 20),
                 Divider(color: borderCol, thickness: 1),
@@ -367,15 +438,15 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                             style: GoogleFonts.outfit(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: _kText,
+                              color: isDark ? Colors.white : _kText,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             'Scan QR code to verify validity with CUBAG Treasury Services.',
                             style: GoogleFonts.inter(
-                              fontSize: 13,
-                              color: _kMuted,
+                              fontSize: 12.5,
+                              color: isDark ? Colors.white60 : _kMuted,
                               height: 1.3,
                             ),
                           ),
@@ -409,8 +480,11 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                         icon: const Icon(Icons.copy_rounded, size: 16),
                         label: const Text('Copy Details'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: _kBrown,
-                          side: const BorderSide(color: _kBrown, width: 1.5),
+                          foregroundColor: isDark ? _kOrange : _kBrown,
+                          side: BorderSide(
+                            color: isDark ? _kOrange : _kBrown,
+                            width: 1.5,
+                          ),
                           minimumSize: const Size(0, 48),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -461,29 +535,40 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     BuildContext? context,
     bool isDark = false,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+    if (value.trim().isEmpty) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? const Color(0xFF382218) : const Color(0xFFF1F5F9),
+            width: 1,
+          ),
+        ),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 130,
+            width: 120,
             child: Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 14,
+                fontSize: 13,
                 color: isDark ? Colors.white70 : _kMuted,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
+          const SizedBox(width: 8),
           Expanded(
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Text(
+                  child: SelectableText(
                     value,
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.outfit(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: isDark ? Colors.white : _kText,
@@ -491,19 +576,21 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                           ? [const FontFeature.tabularFigures()]
                           : null,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 if (canCopy && context != null)
                   InkWell(
                     onTap: () {
                       Clipboard.setData(ClipboardData(text: value));
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text('Copied $value')));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Copied $value'),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
                     },
                     child: Padding(
-                      padding: const EdgeInsets.only(left: 4),
+                      padding: const EdgeInsets.only(left: 6, top: 1),
                       child: Icon(
                         Icons.copy_rounded,
                         size: 14,
@@ -753,7 +840,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                 crossAxisCount: isDesktop ? 4 : (isTablet ? 2 : 2),
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: isDesktop ? 2.0 : (isTablet ? 2.2 : 1.6),
+                childAspectRatio: isDesktop ? 1.9 : (isTablet ? 1.6 : 1.35),
                 children: [
                   _kpiCard(
                     icon: Icons.verified_rounded,
@@ -1372,59 +1459,71 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     bool isDark = false,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF281710) : _kWhite,
         border: Border.all(color: isDark ? const Color(0xFF4D2D20) : _kBorder),
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(4),
-            blurRadius: 10,
+            color: Colors.black.withAlpha(isDark ? 20 : 6),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withAlpha(40), width: 1),
+                ),
+                child: Text(
                   label,
                   style: GoogleFonts.inter(
-                    fontSize: 11.5,
-                    color: isDark ? Colors.white70 : _kMuted,
+                    fontSize: 10.5,
+                    color: color,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.5,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
-                Text(
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
                   value,
                   style: GoogleFonts.outfit(
-                    fontSize: 19,
+                    fontSize: 21,
                     fontWeight: FontWeight.w900,
                     color: isDark ? Colors.white : _kText,
+                    letterSpacing: -0.5,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
+              ),
             ),
           ),
         ],

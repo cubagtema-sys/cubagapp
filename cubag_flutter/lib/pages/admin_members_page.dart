@@ -1054,6 +1054,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           ),
         ),
         const SizedBox(height: 14),
+        _buildMemberPaymentProofSection(m, primary, isDark, cardBg, borderColor, textColor, subTextColor),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -1807,6 +1808,339 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMemberPaymentProofSection(
+    Map<String, dynamic> m,
+    Color primary,
+    bool isDark,
+    Color cardBg,
+    Color borderColor,
+    Color textColor,
+    Color subTextColor,
+  ) {
+    final rawReceipt = m['receipt_url']?.toString() ?? '';
+    final hasReceipt = rawReceipt.trim().isNotEmpty;
+    final payRef = m['payment_ref']?.toString() ?? '';
+    final hasPayRef = payRef.trim().isNotEmpty && payRef != 'None';
+
+    if (!hasReceipt && !hasPayRef) {
+      return const SizedBox.shrink();
+    }
+
+    final receiptUrl = hasReceipt
+        ? (rawReceipt.startsWith('http')
+            ? rawReceipt
+            : '${ApiService.baseUrl.replaceAll(RegExp(r'/api/?$'), '')}${rawReceipt.startsWith('/') ? '' : '/'}$rawReceipt')
+        : '';
+    final amount = double.tryParse(m['payment_amount']?.toString() ?? '0') ?? 0.0;
+    final status = m['payment_status']?.toString().toLowerCase() ?? 'pending';
+    final isPaid = status == 'paid' || status == 'success' || status == 'completed';
+    final bankName = m['bank_name']?.toString() ?? 'Bank Deposit';
+    final paymentId = m['payment_id'];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A0F0A) : Colors.grey.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isPaid ? const Color(0xFF10B981).withValues(alpha: 0.4) : const Color(0xFFFF5000).withValues(alpha: 0.4),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: (isPaid ? const Color(0xFF10B981) : const Color(0xFFFF5000)).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.receipt_long_rounded,
+                  color: isPaid ? const Color(0xFF10B981) : const Color(0xFFFF5000),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ATTACHED BANK DEPOSIT SLIP',
+                      style: GoogleFonts.outfit(
+                        fontSize: 13.5,
+                        color: subTextColor,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    Text(
+                      'Proof of payment submitted by member',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: (isPaid ? const Color(0xFF10B981) : const Color(0xFFF59E0B)).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: (isPaid ? const Color(0xFF10B981) : const Color(0xFFF59E0B)).withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Text(
+                  isPaid ? 'PAID' : 'PENDING REVIEW',
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: isPaid ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Divider(height: 1),
+          const SizedBox(height: 14),
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (hasReceipt)
+                GestureDetector(
+                  onTap: () => _showDepositSlipModal(context, receiptUrl, payRef, m['name']?.toString() ?? 'Member', amount),
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: borderColor),
+                      color: isDark ? const Color(0xFF281710) : const Color(0xFFF8FAFC),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        CachedNetworkImage(
+                          imageUrl: receiptUrl,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, _, _) => const Icon(Icons.broken_image, size: 24, color: Colors.grey),
+                        ),
+                        Container(
+                          color: Colors.black26,
+                          child: const Center(
+                            child: Icon(Icons.zoom_in, color: Colors.white, size: 22),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.account_balance_rounded, color: Color(0xFFFF5000), size: 26),
+                ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (amount > 0) ...[
+                      Text(
+                        'GH₵ ${amount.toStringAsFixed(2)}',
+                        style: GoogleFonts.outfit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: isPaid ? const Color(0xFF10B981) : primary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                    ],
+                    Text(
+                      'Ref: $payRef',
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: textColor,
+                      ),
+                    ),
+                    Text(
+                      bankName,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    if (m['notes'] != null && m['notes'].toString().isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Note: ${m['notes']}',
+                        style: GoogleFonts.inter(
+                          fontSize: 11.5,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          if (!isPaid && paymentId != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => _confirmMemberPayment(paymentId),
+                  icon: const Icon(Icons.check_circle_rounded, size: 14),
+                  label: const Text('Verify & Confirm Payment'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF10B981),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    textStyle: GoogleFonts.outfit(fontSize: 12.5, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (hasReceipt)
+                  OutlinedButton.icon(
+                    onPressed: () => _showDepositSlipModal(context, receiptUrl, payRef, m['name']?.toString() ?? 'Member', amount),
+                    icon: const Icon(Icons.visibility_rounded, size: 14),
+                    label: const Text('View Slip'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      textStyle: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+              ],
+            ),
+          ] else if (hasReceipt) ...[
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: () => _showDepositSlipModal(context, receiptUrl, payRef, m['name']?.toString() ?? 'Member', amount),
+              child: Text(
+                'View Attached Deposit Slip Image →',
+                style: GoogleFonts.outfit(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: primary,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmMemberPayment(dynamic paymentId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm Bank Deposit'),
+        content: const Text('Are you sure you want to verify and confirm this member\'s bank deposit?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      final res = await ApiService().post('/payments/admin/mark-paid/$paymentId');
+      if (!mounted) return;
+      if (res.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Payment confirmed successfully!'), backgroundColor: Color(0xFF10B981)),
+        );
+        if (_selected != null) {
+          setState(() {
+            _selected!['payment_status'] = 'paid';
+          });
+        }
+        _fetch(refresh: true);
+      }
+    } catch (e, st) {
+      AppLogger.error('admin_members_confirm_payment', e, st);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error confirming payment.'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  void _showDepositSlipModal(BuildContext context, String fullUrl, String payRef, String memberName, double amount) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 800,
+          height: 600,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.account_balance_rounded, color: Color(0xFFFF5000), size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Deposit Slip · $memberName · Ref: $payRef',
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const Divider(),
+              Expanded(
+                child: InteractiveViewer(
+                  child: CachedNetworkImage(
+                    imageUrl: fullUrl,
+                    fit: BoxFit.contain,
+                    placeholder: (_, _) => const Center(child: CircularProgressIndicator(color: Color(0xFFFF5000))),
+                    errorWidget: (_, _, _) => const Center(child: Text('Failed to load deposit slip image.')),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

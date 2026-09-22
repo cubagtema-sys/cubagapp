@@ -16,13 +16,14 @@ Improvements:
 import os
 import uuid
 import logging
+import requests
 import resend
 from datetime import datetime
 from flask import Blueprint, jsonify, request, Response
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from config.db import get_db
 from config.cache import cache
-from utils import sub_admin_required, send_push_notification
+from utils import sub_admin_required, send_push_notification, log_admin_action
 
 logger = logging.getLogger(__name__)
 compliance_bp = Blueprint('compliance', __name__)
@@ -31,6 +32,11 @@ compliance_bp = Blueprint('compliance', __name__)
 SUPABASE_URL    = os.getenv('SUPABASE_URL', '').strip().strip('\'"')
 SUPABASE_KEY    = os.getenv('SUPABASE_SERVICE_KEY', '').strip().strip('\'"')
 SUPABASE_BUCKET = os.getenv('SUPABASE_BUCKET', 'uploads').strip().strip('\'"')
+
+try:
+    from file_storage import save_file as _save_file
+except ImportError:
+    _save_file = None
 
 ALLOWED_EXT = {'pdf', 'png', 'jpg', 'jpeg'}
 MAX_MB      = 15
@@ -82,8 +88,12 @@ APPLICATION_TYPES = {
 }
 
 # Statuses that indicate an application is still active (block new application of same type)
-# NOTE: 'approved' is intentionally excluded so members can start a new renewal cycle.
-ACTIVE_STATUSES = ('draft', 'submitted', 'payment_pending', 'payment_confirmed', 'under_review', 'revision_requested')
+# NOTE: 'approved' and 'rejected' are intentionally excluded so members can start a new renewal cycle.
+ACTIVE_STATUSES = (
+    'draft', 'submitted', 'under_review', 'awaiting_bill',
+    'payment_pending', 'awaiting_payment', 'partially_paid', 'payment_submitted',
+    'payment_confirmed', 'revision_requested'
+)
 
 
 # ── DB helpers ────────────────────────────────────────────────────────────────
@@ -106,7 +116,21 @@ def _ensure_tables(cursor):
     table_exists = cursor.fetchone() is not None
 
     if table_exists:
-        # Table already exists — skip all DDL, mark as verified
+        try:
+            cursor.execute("ALTER TABLE compliance_applications ADD COLUMN IF NOT EXISTS payment_deadline DATE")
+            cursor.execute("ALTER TABLE compliance_applications ADD COLUMN IF NOT EXISTS fee_breakdown TEXT")
+            cursor.execute("ALTER TABLE compliance_applications ADD COLUMN IF NOT EXISTS payment_amount NUMERIC(10,2)")
+            cursor.execute("ALTER TABLE compliance_applications ADD COLUMN IF NOT EXISTS bill_title TEXT")
+            cursor.execute("ALTER TABLE compliance_applications ADD COLUMN IF NOT EXISTS amount_paid NUMERIC(10,2) DEFAULT 0.00")
+            cursor.execute("ALTER TABLE compliance_applications ADD COLUMN IF NOT EXISTS allow_installments BOOLEAN DEFAULT TRUE")
+            cursor.execute("ALTER TABLE compliance_applications ADD COLUMN IF NOT EXISTS min_installment_amount NUMERIC(10,2) DEFAULT 0.00")
+            cursor.execute("ALTER TABLE compliance_documents ADD COLUMN IF NOT EXISTS admin_note TEXT")
+            cursor.execute("ALTER TABLE compliance_documents ADD COLUMN IF NOT EXISTS auto_filled BOOLEAN NOT NULL DEFAULT FALSE")
+            cursor.execute("ALTER TABLE compliance_documents ADD COLUMN IF NOT EXISTS source_uploaded_at TIMESTAMP")
+            if hasattr(cursor, 'connection') and cursor.connection:
+                cursor.connection.commit()
+        except Exception:
+            pass
         _schema_verified = True
         return
 
@@ -162,6 +186,10 @@ def _ensure_tables(cursor):
             ON compliance_applications (member_id, type)
             WHERE status IN ('draft', 'submitted', 'payment_pending', 'payment_confirmed', 'under_review', 'revision_requested')
         """)
+        cursor.execute("ALTER TABLE members ADD COLUMN IF NOT EXISTS renewal_fee_amount NUMERIC(10,2)")
+        cursor.execute("ALTER TABLE members ADD COLUMN IF NOT EXISTS renewal_fee_breakdown TEXT")
+        cursor.execute("ALTER TABLE members ADD COLUMN IF NOT EXISTS renewal_fee_title TEXT")
+        cursor.execute("ALTER TABLE compliance_applications ADD COLUMN IF NOT EXISTS bill_title TEXT")
         if hasattr(cursor, 'connection') and cursor.connection:
             cursor.connection.commit()
         _schema_verified = True
@@ -182,7 +210,7 @@ def _overlap_for_type(app_type):
     return APPLICATION_TYPES.get(app_type, {}).get('overlap', {})
 
 
-def _build_doc_list(app_id, app_type, cursor):
+def _build_doc_list(app_id, app_type, cursor, is_admin=False):
     """Return merged requirement list with upload status for a given application."""
     cursor.execute("SELECT * FROM compliance_documents WHERE application_id = %s", (app_id,))
     rows = cursor.fetchall()
@@ -203,6 +231,81 @@ def _build_doc_list(app_id, app_type, cursor):
             'admin_note':         doc['admin_note']           if doc else None,
             'uploaded_at':        str(doc['uploaded_at'])     if doc and doc.get('uploaded_at') else None,
         })
+
+    # Include Bank Deposit Slip in the statutory documents list ONLY for admin review
+    if is_admin:
+        deposit_doc = uploaded_map.get('bank_deposit_slip')
+        if deposit_doc and deposit_doc.get('file_url'):
+            doc_status = deposit_doc.get('status') or 'pending'
+            cursor.execute("""
+                SELECT p.id, p.payment_ref, p.bank_name, p.status, p.amount, p.notes
+                FROM payments p
+                WHERE (p.receipt_url IS NOT NULL AND (p.receipt_url = %s OR p.receipt_url LIKE %s))
+                   OR (p.application_id = %s)
+                   OR (p.payment_ref IS NOT NULL AND p.payment_ref = (SELECT payment_ref FROM compliance_applications WHERE id = %s))
+                   OR (p.member_id = (SELECT member_id FROM compliance_applications WHERE id = %s) AND (p.description ILIKE '%%renewal%%' OR p.description ILIKE '%%compliance%%' OR p.description ILIKE '%%dues%%'))
+                ORDER BY p.id DESC LIMIT 1
+            """, (deposit_doc['file_url'], f"%{deposit_doc.get('file_name', '')}%", app_id, app_id, app_id))
+            p_match = cursor.fetchone()
+            payment_id = None
+            bank_label = deposit_doc.get('label') or 'Bank Deposit Receipt Slip'
+            if p_match:
+                payment_id = p_match['id']
+                if p_match['status'] == 'paid':
+                    doc_status = 'approved'
+                elif p_match['status'] == 'rejected':
+                    doc_status = 'rejected'
+                b_name = p_match.get('bank_name') or 'GCB Bank Limited'
+                amt_str = f" · GH₵ {float(p_match['amount']):.2f}" if p_match.get('amount') is not None else ""
+                bank_label = f"Bank Deposit Receipt Slip ({b_name}){amt_str}"
+
+            result.append({
+                'key':                'bank_deposit_slip',
+                'label':              bank_label,
+                'uploaded':           True,
+                'auto_filled':        False,
+                'source_uploaded_at': None,
+                'id':                 deposit_doc['id'],
+                'file_url':           deposit_doc['file_url'],
+                'file_name':          deposit_doc.get('file_name') or deposit_doc['file_url'].split('/')[-1],
+                'status':             doc_status,
+                'admin_note':         deposit_doc.get('admin_note') or (f"Ref: {p_match['payment_ref']}" if p_match and p_match.get('payment_ref') else None),
+                'uploaded_at':        str(deposit_doc['uploaded_at']) if deposit_doc.get('uploaded_at') else None,
+                'is_payment_receipt': True,
+                'payment_id':         payment_id,
+            })
+        else:
+            cursor.execute("""
+                SELECT p.id, p.payment_ref, p.receipt_url, p.bank_name, p.status, p.created_at, p.amount, p.notes
+                FROM payments p
+                JOIN compliance_applications ca ON (
+                    (ca.payment_ref IS NOT NULL AND ca.payment_ref = p.payment_ref)
+                    OR (ca.member_id = p.member_id AND (p.description ILIKE '%%renewal%%' OR p.description ILIKE '%%compliance%%' OR p.description ILIKE '%%dues%%'))
+                )
+                WHERE ca.id = %s AND p.receipt_url IS NOT NULL AND p.receipt_url != ''
+                ORDER BY p.created_at DESC
+                LIMIT 1
+            """, (app_id,))
+            p_row = cursor.fetchone()
+            if p_row:
+                file_name = p_row['receipt_url'].split('/')[-1]
+                bank_name = p_row.get('bank_name') or 'GCB Bank Limited'
+                amt_str = f" · GH₵ {float(p_row['amount']):.2f}" if p_row.get('amount') is not None else ""
+                result.append({
+                    'key':                'bank_deposit_slip',
+                    'label':              f"Bank Deposit Receipt Slip ({bank_name}){amt_str}",
+                    'uploaded':           True,
+                    'auto_filled':        False,
+                    'source_uploaded_at': None,
+                    'id':                 p_row['id'],
+                    'file_url':           p_row['receipt_url'],
+                    'file_name':          file_name,
+                    'status':             'approved' if p_row['status'] == 'paid' else 'pending',
+                    'admin_note':         f"Ref: {p_row['payment_ref']}" + (f" | {p_row['notes']}" if p_row.get('notes') else ""),
+                    'uploaded_at':        str(p_row['created_at']) if p_row.get('created_at') else None,
+                    'is_payment_receipt': True,
+                    'payment_id':         p_row['id'],
+                })
     return result
 
 
@@ -262,7 +365,14 @@ def my_applications():
                 ORDER BY ca.created_at DESC
             """, (member_id,))
             apps = cursor.fetchall()
-        return jsonify({'applications': [dict(a) for a in apps]}), 200
+            apps_list = []
+            for a in apps:
+                d = dict(a)
+                p_amt = float(d.get('payment_amount') or 0.0)
+                amt_pd = float(d.get('amount_paid') or 0.0)
+                d['balance_due'] = max(0.0, p_amt - amt_pd)
+                apps_list.append(d)
+        return jsonify({'applications': apps_list}), 200
     except Exception as e:
         logger.exception('[Compliance] my_applications error')
         return jsonify({'message': str(e)}), 500
@@ -384,7 +494,31 @@ def get_application(app_id):
             if not app:
                 return jsonify({'message': 'Application not found'}), 404
             docs = _build_doc_list(app_id, app['type'], cursor)
-        return jsonify({'application': dict(app), 'documents': docs}), 200
+
+            cursor.execute("""
+                SELECT p.id, p.id as tx_id, p.amount, p.description, p.status,
+                       COALESCE(p.payment_method, 'bank') as payment_method,
+                       p.payment_ref, p.receipt_url, p.bank_name, p.account_name,
+                       p.account_number, p.notes, p.created_at, p.paid_at, p.verified_at,
+                       p.is_installment, p.installment_number
+                FROM payments p
+                WHERE p.application_id = %s
+                   OR (p.member_id = %s AND (p.description ILIKE '%%renewal%%' OR p.description ILIKE '%%compliance%%' OR p.description ILIKE '%%dues%%'))
+                ORDER BY p.created_at ASC
+            """, (app_id, member_id))
+            all_payments = [dict(r) for r in cursor.fetchall()]
+            for p_rec in all_payments:
+                if p_rec.get('created_at'):
+                    p_rec['date'] = p_rec['created_at'].isoformat()
+
+            app_dict = dict(app)
+            confirmed_paid = sum(float(p['amount']) for p in all_payments if str(p.get('status', '')).lower() in ('paid', 'completed', 'success', 'successful'))
+            app_dict['amount_paid'] = confirmed_paid if confirmed_paid > 0 else float(app.get('amount_paid') or 0.0)
+            tot_amt = float(app.get('payment_amount') or 0.0)
+            app_dict['balance_due'] = max(0.0, tot_amt - app_dict['amount_paid'])
+            app_dict['installments'] = all_payments
+
+        return jsonify({'application': app_dict, 'documents': docs, 'installments': all_payments}), 200
     except Exception as e:
         logger.exception('[Compliance] get_application error')
         return jsonify({'message': str(e)}), 500
@@ -429,8 +563,15 @@ def sign_upload(app_id):
         return jsonify({'message': 'Only PDF, PNG, JPG, JPEG allowed'}), 400
     if size > MAX_MB * 1024 * 1024:
         return jsonify({'message': f'File too large. Max {MAX_MB}MB.'}), 413
-    if not SUPABASE_URL or not SUPABASE_KEY:
-        return jsonify({'message': 'Cloud storage not configured'}), 500
+    # NOTE: sign-upload is only used when Supabase is available.
+    # When Supabase is unreachable, clients should use the direct /upload endpoint instead.
+    from file_storage import supabase_available
+    if not supabase_available():
+        # Tell the client to fall back to direct multipart upload
+        return jsonify({
+            'fallback': True,
+            'message': 'Cloud storage unavailable. Use direct /upload endpoint.',
+        }), 200
 
     safe_name  = f"compliance/{member_id}/{app_id}/{requirement}_{uuid.uuid4().hex}.{ext}"
     public_url = f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{safe_name}"
@@ -471,32 +612,31 @@ def upload_compliance_document(app_id):
     file_bytes = file.read()
     content_type = file.content_type or ('application/pdf' if ext == 'pdf' else 'image/jpeg')
 
-    public_url = None
-    if SUPABASE_URL and SUPABASE_KEY:
-        safe_name = f"compliance/{member_id}/{app_id}/{requirement}_{uuid.uuid4().hex}.{ext}"
-        storage_url = f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{safe_name}"
-        headers = {
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": content_type,
-            "x-upsert": "true",
-        }
-        try:
-            resp = requests.post(storage_url, data=file_bytes, headers=headers, timeout=10)
-            if resp.status_code in (200, 201):
-                public_url = f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{safe_name}"
-            else:
-                logger.warning(f"[Compliance] Supabase returned {resp.status_code}: {resp.text}")
-        except Exception as e:
-            logger.warning(f"[Compliance] Supabase upload failed: {e}")
-
-    if not public_url:
-        upload_dir = os.path.join(os.getcwd(), 'static', 'uploads', 'compliance_docs', str(app_id))
+    # ── Upload to persistent storage ────────────────────────────────────────────
+    if _save_file:
+        public_url = _save_file(
+            file_bytes,
+            original_filename=file.filename,
+            subfolder=f'compliance_docs/{app_id}',
+            prefix=f'{requirement}_',
+            content_type=content_type,
+        )
+    else:
+        # Inline fallback: absolute persistent paths
+        backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        upload_dir = os.path.join(backend_root, 'uploads', 'compliance_docs', str(app_id))
         os.makedirs(upload_dir, exist_ok=True)
         local_filename = f"{requirement}_{uuid.uuid4().hex[:8]}.{ext}"
-        local_path = os.path.join(upload_dir, local_filename)
-        with open(local_path, 'wb') as f:
+        with open(os.path.join(upload_dir, local_filename), 'wb') as f:
             f.write(file_bytes)
+        # Mirror to static
+        static_dir = os.path.join(backend_root, 'static', 'uploads', 'compliance_docs', str(app_id))
+        os.makedirs(static_dir, exist_ok=True)
+        try:
+            with open(os.path.join(static_dir, local_filename), 'wb') as f:
+                f.write(file_bytes)
+        except Exception:
+            pass
         public_url = f"/static/uploads/compliance_docs/{app_id}/{local_filename}"
 
     conn = get_db()
@@ -850,129 +990,552 @@ def store_payment_ref(app_id):
         conn.close()
 
 
+import base64
+import math
+
+def _get_logo_base64():
+    for p in [
+        os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'static', 'logo.jpeg')),
+        os.path.abspath(os.path.join('static', 'logo.jpeg')),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'dist', 'logo.jpeg')),
+    ]:
+        if os.path.exists(p):
+            try:
+                with open(p, 'rb') as f:
+                    return f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode('utf-8')}"
+            except Exception:
+                pass
+    return ""
+
+
 @compliance_bp.route('/applications/<int:app_id>/certificate', methods=['GET'])
 def get_certificate(app_id):
     """
-    FIX #6: Returns an HTML approval certificate.
-    Authentication via ?token=<jwt> query param so launchUrl() works without
-    Authorization headers (standard browser navigation strips custom headers).
+    Returns the official CUBAG Certificate of Licensure & Standing.
+    Supports ?format=pdf to seamlessly redirect to the vector PDF stream.
+    Authentication accepts ?token=<jwt> query parameter or Authorization Bearer header.
     """
-    from flask_jwt_extended import decode_token
+    from flask_jwt_extended import decode_token, verify_jwt_in_request, get_jwt_identity
     token = request.args.get('token', '').strip()
-    if not token:
-        return jsonify({'message': 'token query parameter is required'}), 401
-    try:
-        decoded   = decode_token(token)
-        member_id = int(decoded.get('sub', 0))
-    except Exception:
-        return jsonify({'message': 'Invalid or expired token'}), 401
+    member_id = None
+    is_admin = False
+
+    if token:
+        try:
+            decoded = decode_token(token)
+            member_id = int(decoded.get('sub', 0))
+            is_admin = decoded.get('role') in ('admin', 'sub_admin', 'super_admin')
+        except Exception:
+            pass
+
+    if not member_id:
+        try:
+            verify_jwt_in_request(optional=True)
+            ident = get_jwt_identity()
+            if ident:
+                member_id = int(ident)
+        except Exception:
+            pass
 
     conn = get_db()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT ca.*, m.name AS member_name, m.email AS member_email,
-                       m.company AS member_company, m.license_number
-                FROM compliance_applications ca
-                JOIN members m ON m.id = ca.member_id
-                WHERE ca.id = %s AND ca.member_id = %s AND ca.status = 'approved'
-            """, (app_id, member_id))
+            if is_admin or not member_id:
+                cursor.execute("""
+                    SELECT ca.*, m.name AS member_name, m.email AS member_email,
+                           m.company AS member_company, m.license_number, m.port_of_operation,
+                           m.member_type, m.member_scale, m.license_expiry_date
+                    FROM compliance_applications ca
+                    JOIN members m ON m.id = ca.member_id
+                    WHERE ca.id = %s
+                """, (app_id,))
+            else:
+                cursor.execute("""
+                    SELECT ca.*, m.name AS member_name, m.email AS member_email,
+                           m.company AS member_company, m.license_number, m.port_of_operation,
+                           m.member_type, m.member_scale, m.license_expiry_date
+                    FROM compliance_applications ca
+                    JOIN members m ON m.id = ca.member_id
+                    WHERE ca.id = %s AND ca.member_id = %s
+                """, (app_id, member_id))
             app = cursor.fetchone()
             if not app:
-                return jsonify({'message': 'Approved application not found'}), 404
+                return jsonify({'message': 'Certificate record not found'}), 404
+
+            # If user requested PDF format directly, redirect to PDF generator
+            if request.args.get('format') == 'pdf':
+                from flask import redirect
+                return redirect(f"/api/v1/members/{app['member_id']}/certificate-pdf")
 
     except Exception as e:
+        logger.exception(f"[Certificate] Failed fetching cert: {e}")
         return jsonify({'message': str(e)}), 500
     finally:
         conn.close()
 
-    type_label  = 'License Renewal' if app['type'] == 'renewal' else 'Member ID Application'
-    issued_date = datetime.now().strftime('%d %B %Y')
-    reviewed_at = ''
-    if app.get('reviewed_at'):
-        try:
-            reviewed_at = datetime.fromisoformat(str(app['reviewed_at'])).strftime('%d %B %Y')
-        except Exception:
-            reviewed_at = str(app['reviewed_at'])
+    # Format fields to exact executive standards
+    company_name = (app.get('member_company') or app.get('member_name') or 'HART LOGISTICS').strip().upper()
+    rep_name = (app.get('member_name') or '').strip().upper()
+    
+    raw_scale = app.get('member_scale') or app.get('member_type') or 'Individual Broker'
+    scale_lower = raw_scale.lower()
+    if 'broker' not in scale_lower:
+        type_display = f"{raw_scale.title()} Broker"
+    else:
+        type_display = raw_scale.title()
+
+    lic_num = app.get('license_number')
+    if not lic_num or str(lic_num).lower() in ('pending', 'none', 'n/a', ''):
+        year = datetime.now().year
+        lic_num = f"CUBAG-LIC-{year}-{app['member_id']:04d}"
+
+    port_txt = app.get('port_of_operation') or 'KIA Air Cargo'
+
+    expiry = app.get('license_expiry_date')
+    if expiry:
+        if isinstance(expiry, str):
+            try:
+                expiry_date_str = datetime.fromisoformat(expiry).strftime('%d %B %Y')
+            except Exception:
+                expiry_date_str = expiry
+        else:
+            expiry_date_str = expiry.strftime('%d %B %Y')
+    else:
+        from datetime import timedelta
+        expiry_date_str = (datetime.now() + timedelta(days=365)).strftime('%d %B %Y')
+
+    logo_b64 = _get_logo_base64()
+    pdf_download_url = f"/api/v1/members/{app['member_id']}/certificate-pdf"
+
+    # Precompute 36-point starburst polygon coordinates for official seal
+    starburst_pts = []
+    cx, cy = 50.0, 50.0
+    r_out, r_in = 46.0, 39.5
+    for i in range(72):
+        angle = i * math.pi / 36.0 - math.pi / 2.0
+        r = r_out if i % 2 == 0 else r_in
+        x = cx + r * math.cos(angle)
+        y = cy + r * math.sin(angle)
+        starburst_pts.append(f"{x:.2f},{y:.2f}")
+    starburst_str = " ".join(starburst_pts)
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>CUBAG Compliance Certificate — {app['member_company'] or app['member_name']}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CUBAG Certificate of Licensure & Standing — {company_name}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&display=swap');
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  body {{ font-family: 'Outfit', sans-serif; background: #f8fafc; display: flex; justify-content: center; padding: 40px 20px; }}
-  .cert {{ background: #fff; border: 2px solid #0f62fe; border-radius: 20px; max-width: 760px; width: 100%; padding: 50px 60px; position: relative; }}
-  .cert::before {{ content: ''; position: absolute; inset: 10px; border: 1px solid #0f62fe44; border-radius: 14px; pointer-events: none; }}
-  .logo {{ text-align: center; margin-bottom: 8px; }}
-  .logo-title {{ font-size: 28px; font-weight: 900; color: #0f62fe; letter-spacing: -1px; }}
-  .logo-sub {{ font-size: 13px; color: #64748b; margin-top: 2px; }}
-  .divider {{ height: 2px; background: linear-gradient(90deg, transparent, #0f62fe, transparent); margin: 24px 0; }}
-  .cert-title {{ text-align: center; font-size: 22px; font-weight: 700; color: #0a0f1e; margin-bottom: 6px; }}
-  .cert-subtitle {{ text-align: center; font-size: 14px; color: #64748b; margin-bottom: 32px; }}
-  .awarded-to {{ text-align: center; font-size: 14px; color: #64748b; margin-bottom: 6px; }}
-  .member-name {{ text-align: center; font-size: 30px; font-weight: 900; color: #0f62fe; margin-bottom: 4px; }}
-  .member-company {{ text-align: center; font-size: 16px; color: #475569; margin-bottom: 32px; }}
-  .details {{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }}
-  .detail-box {{ background: #f8fafc; border-radius: 10px; padding: 14px 18px; border: 1px solid #e2e8f0; }}
-  .detail-label {{ font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }}
-  .detail-value {{ font-size: 14px; font-weight: 600; color: #0a0f1e; }}
-  .approved-badge {{ text-align: center; background: #d1fae5; border: 1px solid #10b981; border-radius: 50px; padding: 10px 24px; display: inline-block; margin: 0 auto 32px; }}
-  .approved-badge-text {{ color: #059669; font-weight: 800; font-size: 14px; letter-spacing: 0.5px; }}
-  .center {{ text-align: center; }}
-  .note {{ text-align: center; font-size: 12px; color: #94a3b8; margin-top: 24px; }}
-  .seal {{ font-size: 64px; line-height: 1; }}
-  @media print {{ body {{ background: #fff; padding: 0; }} .cert {{ border-radius: 0; border: none; box-shadow: none; }} }}
+  body {{
+    background: #e2e8f0;
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #0f172a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 12px;
+    min-height: 100vh;
+  }}
+  .toolbar {{
+    max-width: 980px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 0 4px;
+  }}
+  .brand-badge {{
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }}
+  .brand-badge-dot {{
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #16a34a;
+  }}
+  .btn-actions {{
+    display: flex;
+    gap: 10px;
+  }}
+  .btn-action {{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }}
+  .btn-print {{
+    background: #0f172a;
+    color: #ffffff;
+    border: none;
+  }}
+  .btn-print:hover {{
+    background: #1e293b;
+  }}
+  .btn-pdf {{
+    background: #ea580c;
+    color: #ffffff;
+    border: none;
+  }}
+  .btn-pdf:hover {{
+    background: #c2410c;
+  }}
+  .cert-wrapper {{
+    width: 100%;
+    max-width: 980px;
+    background: #ffffff;
+    box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.2), 0 4px 12px rgba(0,0,0,0.06);
+    border-radius: 4px;
+    overflow: hidden;
+  }}
+  .cert-card {{
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1.414 / 1;
+    background: #fdfdfc;
+    padding: 28px 36px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: center;
+    border: 3px solid #ea580c;
+    outline: 1.5px solid #d4af37;
+    outline-offset: -7px;
+  }}
+  /* Corner concentric ring accents */
+  .rivet {{
+    position: absolute;
+    width: 13px;
+    height: 13px;
+    border: 1.5px solid #d4af37;
+    border-radius: 50%;
+    pointer-events: none;
+  }}
+  .rivet::after {{
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 5px;
+    height: 5px;
+    border: 1px solid #d4af37;
+    border-radius: 50%;
+  }}
+  .rivet-tl {{ top: 12px; left: 12px; }}
+  .rivet-tr {{ top: 12px; right: 12px; }}
+  .rivet-bl {{ bottom: 12px; left: 12px; }}
+  .rivet-br {{ bottom: 12px; right: 12px; }}
+
+  .watermark {{
+    position: absolute;
+    top: 48%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-12deg);
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 140px;
+    color: rgba(212, 175, 55, 0.04);
+    letter-spacing: 4px;
+    user-select: none;
+    pointer-events: none;
+  }}
+  .cert-header {{
+    position: relative;
+    z-index: 2;
+  }}
+  .logo-img {{
+    width: 62px;
+    height: 62px;
+    object-fit: contain;
+    margin: 0 auto 3px;
+    display: block;
+  }}
+  .brand-title {{
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 32px;
+    color: #ea580c;
+    letter-spacing: 1px;
+    line-height: 1.1;
+  }}
+  .brand-subtitle {{
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 10.5px;
+    color: #1e3a8a;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    margin-top: 3px;
+  }}
+  .header-divider {{
+    width: 280px;
+    height: 1px;
+    background: #cbd5e1;
+    margin: 6px auto 12px;
+  }}
+  .main-cert-title {{
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 21px;
+    color: #0f172a;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }}
+  .certify-intro {{
+    font-family: 'Georgia', serif;
+    font-style: italic;
+    font-size: 13.5px;
+    color: #64748b;
+    margin-bottom: 5px;
+  }}
+  .recipient-name {{
+    font-family: 'Outfit', sans-serif;
+    font-weight: 900;
+    font-size: 26px;
+    color: #0f172a;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }}
+  .rep-by {{
+    font-family: 'Georgia', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 8px;
+  }}
+  .rep-by strong {{
+    font-style: normal;
+    font-family: 'Outfit', sans-serif;
+    color: #475569;
+  }}
+  .status-statement {{
+    font-family: 'Outfit', sans-serif;
+    font-size: 12.5px;
+    color: #1e293b;
+    margin-bottom: 10px;
+  }}
+  .pill-container {{
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 7px 22px;
+    display: inline-block;
+    font-size: 11px;
+    color: #1e293b;
+    margin-bottom: 8px;
+  }}
+  .pill-container strong {{
+    font-weight: 700;
+    color: #0f172a;
+  }}
+  .validity-line {{
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 16px;
+  }}
+  .cert-footer {{
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: flex-end;
+    padding: 0 16px 6px;
+    position: relative;
+    z-index: 2;
+  }}
+  .sig-col {{
+    text-align: center;
+  }}
+  .sig-script {{
+    font-family: 'Great Vibes', cursive;
+    font-size: 26px;
+    color: #1e3a8a;
+    border-bottom: 1.5px solid #1e3a8a;
+    padding-bottom: 2px;
+    display: inline-block;
+    min-width: 150px;
+    margin-bottom: 4px;
+  }}
+  .sig-role {{
+    font-weight: 800;
+    font-size: 11.5px;
+    color: #0f172a;
+  }}
+  .sig-dept {{
+    font-size: 9px;
+    color: #64748b;
+  }}
+  .seal-col {{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 16px;
+  }}
+  .official-seal {{
+    width: 82px;
+    height: 82px;
+    display: block;
+  }}
+
+  @media print {{
+    body {{
+      background: #ffffff !important;
+      padding: 0 !important;
+    }}
+    .toolbar {{
+      display: none !important;
+    }}
+    .cert-wrapper {{
+      box-shadow: none !important;
+      max-width: 100% !important;
+      border-radius: 0 !important;
+    }}
+    .cert-card {{
+      outline-offset: -5px;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }}
+    @page {{
+      size: A4 landscape;
+      margin: 0;
+    }}
+  }}
+  @media (max-width: 768px) {{
+    .cert-card {{
+      padding: 16px 12px;
+    }}
+    .brand-title {{ font-size: 24px; }}
+    .main-cert-title {{ font-size: 16px; }}
+    .recipient-name {{ font-size: 19px; }}
+    .cert-footer {{ padding: 0; }}
+    .sig-script {{ font-size: 20px; min-width: 100px; }}
+    .official-seal {{ width: 62px; height: 62px; }}
+  }}
 </style>
 </head>
 <body>
-<div class="cert">
-  <div class="logo">
-    <div class="logo-title">CUBAG</div>
-    <div class="logo-sub">Customs Brokers and Freight Forwarders Association of Ghana</div>
+
+<div class="toolbar no-print">
+  <div class="brand-badge">
+    <div class="brand-badge-dot"></div>
+    Official Licensed & Active Certificate
   </div>
-  <div class="divider"></div>
-  <div class="cert-title">Certificate of Compliance</div>
-  <div class="cert-subtitle">{type_label}</div>
-  <div class="awarded-to">This is to certify that</div>
-  <div class="member-name">{app['member_name']}</div>
-  <div class="member-company">{app['member_company'] or ''}</div>
-  <div class="center">
-    <div class="approved-badge">
-      <div class="approved-badge-text">✓ APPROVED</div>
-    </div>
-  </div>
-  <div class="details">
-    <div class="detail-box">
-      <div class="detail-label">Application Type</div>
-      <div class="detail-value">{type_label}</div>
-    </div>
-    <div class="detail-box">
-      <div class="detail-label">Application Reference</div>
-      <div class="detail-value">CUBAG-COMP-{app_id:05d}</div>
-    </div>
-    <div class="detail-box">
-      <div class="detail-label">Date Approved</div>
-      <div class="detail-value">{reviewed_at or issued_date}</div>
-    </div>
-    <div class="detail-box">
-      <div class="detail-label">Certificate Issued</div>
-      <div class="detail-value">{issued_date}</div>
-    </div>
-    {f'<div class="detail-box"><div class="detail-label">License Number</div><div class="detail-value">{app["license_number"]}</div></div>' if app.get("license_number") else ''}
-    <div class="detail-box">
-      <div class="detail-label">Member Email</div>
-      <div class="detail-value">{app['member_email']}</div>
-    </div>
-  </div>
-  <div class="center seal">🏛️</div>
-  <div class="note">
-    This certificate was electronically issued by the CUBAG Compliance Management System.<br>
-    Ref: CUBAG-COMP-{app_id:05d} | Issued: {issued_date}
+  <div class="btn-actions">
+    <button class="btn-action btn-print" onclick="window.print()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+      Print Certificate
+    </button>
+    <a class="btn-action btn-pdf" href="{pdf_download_url}" target="_blank">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Download Vector PDF
+    </a>
   </div>
 </div>
+
+<div class="cert-wrapper">
+  <div class="cert-card">
+    <!-- Corner Rivets -->
+    <div class="rivet rivet-tl"></div>
+    <div class="rivet rivet-tr"></div>
+    <div class="rivet rivet-bl"></div>
+    <div class="rivet rivet-br"></div>
+
+    <!-- Watermark -->
+    <div class="watermark">cubag</div>
+
+    <!-- Header -->
+    <div class="cert-header">
+      {f'<img class="logo-img" src="{logo_b64}" alt="CUBAG Logo" />' if logo_b64 else ''}
+      <div class="brand-title">CUBAG</div>
+      <div class="brand-subtitle">CUSTOMS BROKERS ASSOCIATION OF GHANA</div>
+      <div class="header-divider"></div>
+
+      <!-- Main Title -->
+      <div class="main-cert-title">CERTIFICATE OF LICENSURE &amp; STANDING</div>
+
+      <!-- Certify Preamble -->
+      <div class="certify-intro">This is to officially certify that</div>
+
+      <!-- Recipient -->
+      <div class="recipient-name">{company_name}</div>
+
+      <!-- Represented By -->
+      <div class="rep-by">represented by &nbsp;<strong>{rep_name}</strong></div>
+
+      <!-- Standing statement -->
+      <div class="status-statement">
+        is a duly registered, licensed, and active {type_display} of CUBAG
+      </div>
+
+      <!-- Pill Container -->
+      <div>
+        <div class="pill-container">
+          License No: <strong>{lic_num}</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Port of Operation: <strong>{port_txt}</strong>
+        </div>
+      </div>
+
+      <!-- Validity Line -->
+      <div class="validity-line">Valid Until: {expiry_date_str}</div>
+    </div>
+
+    <!-- Signatures & Seal -->
+    <div class="cert-footer">
+      <!-- President -->
+      <div class="sig-col">
+        <div class="sig-script">Alhaji A. R. Busia</div>
+        <div class="sig-role">President</div>
+        <div class="sig-dept">CUBAG Executive Council</div>
+      </div>
+
+      <!-- Seal -->
+      <div class="seal-col">
+        <svg class="official-seal" viewBox="0 0 100 100">
+          <defs>
+            <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#f59e0b" />
+              <stop offset="50%" stop-color="#d97706" />
+              <stop offset="100%" stop-color="#b45309" />
+            </linearGradient>
+            <filter id="sealShadow">
+              <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#000" flood-opacity="0.25"/>
+            </filter>
+          </defs>
+          <polygon points="{starburst_str}" fill="url(#goldGrad)" stroke="#b45309" stroke-width="0.8" filter="url(#sealShadow)"/>
+          <circle cx="50" cy="50" r="28" fill="#d97706" stroke="#fbbf24" stroke-width="0.8"/>
+          <circle cx="50" cy="50" r="25" fill="#f59e0b"/>
+          <circle cx="50" cy="50" r="23.5" fill="none" stroke="#d97706" stroke-width="0.5" stroke-dasharray="1.5 1"/>
+          <text x="50" y="47.5" text-anchor="middle" font-family="'Outfit', sans-serif" font-weight="900" font-size="7.5" fill="#ffffff" letter-spacing="0.8">OFFICIAL</text>
+          <text x="50" y="58" text-anchor="middle" font-family="'Outfit', sans-serif" font-weight="900" font-size="7.5" fill="#ffffff" letter-spacing="0.8">SEAL</text>
+        </svg>
+      </div>
+
+      <!-- Secretary General -->
+      <div class="sig-col">
+        <div class="sig-script">Kwame E. Mensah</div>
+        <div class="sig-role">Secretary General</div>
+        <div class="sig-dept">CUBAG Executive Secretariat</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>"""
 
@@ -1157,8 +1720,36 @@ def admin_get_application(app_id):
             app = cursor.fetchone()
             if not app:
                 return jsonify({'message': 'Application not found'}), 404
-            docs = _build_doc_list(app_id, app['type'], cursor)
-        return jsonify({'application': dict(app), 'documents': docs}), 200
+            docs = _build_doc_list(app_id, app['type'], cursor, is_admin=True)
+
+            # Also fetch all linked payments / installments
+            cursor.execute("""
+                SELECT p.id, p.id as tx_id, p.amount, p.description, p.status,
+                       COALESCE(p.payment_method, 'bank') as payment_method,
+                       p.payment_ref, p.receipt_url, p.bank_name, p.account_name,
+                       p.account_number, p.notes, p.created_at, p.paid_at, p.verified_at,
+                       p.is_installment, p.installment_number
+                FROM payments p
+                WHERE p.application_id = %s
+                   OR (p.payment_ref IS NOT NULL AND p.payment_ref = %s)
+                   OR (p.member_id = %s AND (p.description ILIKE '%%renewal%%' OR p.description ILIKE '%%compliance%%' OR p.description ILIKE '%%dues%%'))
+                ORDER BY p.created_at ASC
+            """, (app_id, app.get('payment_ref'), app.get('member_id')))
+            all_payments = [dict(r) for r in cursor.fetchall()]
+            for p_rec in all_payments:
+                if p_rec.get('created_at'):
+                    p_rec['date'] = p_rec['created_at'].isoformat()
+            payment_record = all_payments[-1] if all_payments else None
+            pay_dict = payment_record
+
+            app_dict = dict(app)
+            confirmed_paid = sum(float(p['amount']) for p in all_payments if str(p.get('status', '')).lower() in ('paid', 'completed', 'success', 'successful'))
+            app_dict['amount_paid'] = confirmed_paid if confirmed_paid > 0 else float(app.get('amount_paid') or 0.0)
+            tot_amt = float(app.get('payment_amount') or 0.0)
+            app_dict['balance_due'] = max(0.0, tot_amt - app_dict['amount_paid'])
+            app_dict['installments'] = all_payments
+
+        return jsonify({'application': app_dict, 'documents': docs, 'payment': pay_dict, 'installments': all_payments}), 200
     except Exception as e:
         logger.exception('[Compliance] admin_get_application error')
         return jsonify({'message': str(e)}), 500
@@ -1169,7 +1760,7 @@ def admin_get_application(app_id):
 @compliance_bp.route('/admin/applications/<int:app_id>/doc/<int:doc_id>/status', methods=['PUT'])
 @sub_admin_required('members')
 def admin_update_doc_status(app_id, doc_id):
-    """Approve or reject a single document."""
+    """Approve or reject a single document. If all docs are approved, auto-transition application to awaiting_bill."""
     admin_id = get_jwt_identity()
     data     = request.get_json() or {}
     status   = data.get('status', '').strip()
@@ -1184,7 +1775,93 @@ def admin_update_doc_status(app_id, doc_id):
                 SET status = %s, admin_note = %s, reviewed_at = NOW(), reviewed_by = %s
                 WHERE id = %s AND application_id = %s
             """, (status, note or None, admin_id, doc_id, app_id))
+
+            # If this document is a bank deposit slip, also sync the corresponding payment record
+            post_mark_pay_id = None
+            cursor.execute("SELECT requirement, file_url, file_name FROM compliance_documents WHERE id = %s", (doc_id,))
+            doc_meta = cursor.fetchone()
+            if doc_meta and doc_meta.get('requirement') == 'bank_deposit_slip':
+                cursor.execute("SELECT member_id, payment_ref FROM compliance_applications WHERE id = %s", (app_id,))
+                app_meta = cursor.fetchone()
+                app_pref = app_meta.get('payment_ref') if app_meta else None
+                app_mid = app_meta.get('member_id') if app_meta else None
+                doc_url = doc_meta.get('file_url') or ''
+                doc_name = doc_meta.get('file_name') or ''
+
+                cursor.execute("""
+                    SELECT id FROM payments
+                    WHERE (
+                        (%s IS NOT NULL AND %s != '' AND payment_ref = %s)
+                        OR (%s != '' AND receipt_url IS NOT NULL AND (receipt_url = %s OR receipt_url LIKE %s))
+                        OR (application_id = %s)
+                        OR (%s IS NOT NULL AND member_id = %s AND payment_method = 'bank_deposit')
+                    )
+                    ORDER BY id DESC LIMIT 1
+                """, (app_pref, app_pref, app_pref, doc_url, doc_url, f"%{doc_name}%", app_id, app_mid, app_mid))
+                matched_pay = cursor.fetchone()
+                if matched_pay:
+                    pay_id = matched_pay['id']
+                    if status == 'approved':
+                        cursor.execute("""
+                            UPDATE payments
+                            SET verified_by = %s, verified_at = NOW(), status = 'paid', paid_at = NOW()
+                            WHERE id = %s
+                        """, (admin_id, pay_id))
+                        if app_mid:
+                            cursor.execute("""
+                                UPDATE members 
+                                SET package_fee_paid = TRUE, good_standing = TRUE 
+                                WHERE id = %s
+                            """, (app_mid,))
+                        post_mark_pay_id = pay_id
+                    elif status == 'rejected':
+                        cursor.execute("""
+                            UPDATE payments
+                            SET verified_by = %s, verified_at = NOW(), status = 'rejected', notes = %s
+                            WHERE id = %s
+                        """, (admin_id, note or 'Bank deposit receipt rejected by admin', pay_id))
+
+            # Check if all documents for this application are now approved
+            cursor.execute("""
+                SELECT COUNT(*) AS total_docs,
+                       COUNT(*) FILTER (WHERE status = 'approved') AS approved_docs,
+                       COUNT(*) FILTER (WHERE status = 'rejected') AS rejected_docs,
+                       COUNT(*) FILTER (WHERE status = 'pending') AS pending_docs
+                FROM compliance_documents
+                WHERE application_id = %s
+            """, (app_id,))
+            doc_counts = cursor.fetchone()
+
+            cursor.execute("SELECT status, payment_amount, member_id FROM compliance_applications WHERE id = %s", (app_id,))
+            current_app = cursor.fetchone()
+
+            if doc_counts and doc_counts['total_docs'] > 0 and doc_counts['total_docs'] == doc_counts['approved_docs']:
+                # All documents approved! If bill already issued -> awaiting_payment; otherwise -> awaiting_bill
+                new_app_status = 'awaiting_payment' if current_app and current_app.get('payment_amount') else 'awaiting_bill'
+                cursor.execute("""
+                    UPDATE compliance_applications
+                    SET status = %s, updated_at = NOW()
+                    WHERE id = %s AND status NOT IN ('approved', 'rejected')
+                """, (new_app_status, app_id))
+
             conn.commit()
+            log_admin_action(admin_id, f'Compliance Doc {status.capitalize()}', target_type='compliance_document', target_id=doc_id, details={'application_id': app_id, 'status': status, 'note': note})
+
+            if post_mark_pay_id:
+                try:
+                    from routes.payments import _mark_payment_as_paid
+                    _mark_payment_as_paid(post_mark_pay_id)
+                except Exception as p_ex:
+                    logger.warning(f"[Compliance Doc Status] _mark_payment_as_paid failed: {p_ex}")
+
+            try:
+                from socket_instance import socketio
+                socketio.emit('compliance_updated', {'application_id': app_id, 'doc_id': doc_id, 'doc_status': status})
+                if current_app:
+                    socketio.emit('tasks_updated', {'member_id': current_app['member_id']})
+            except Exception:
+                pass
+
         return jsonify({'message': f'Document {status}'}), 200
     except Exception as e:
         return jsonify({'message': str(e)}), 500
@@ -1224,6 +1901,7 @@ def admin_request_revision(app_id):
                 WHERE id = %s
             """, (note or None, admin_id, app_id))
             conn.commit()
+            log_admin_action(admin_id, 'Compliance Revision Requested', target_type='compliance_application', target_id=app_id, details={'note': note})
 
             type_label = 'License Renewal' if app['type'] == 'renewal' else 'Member ID Application'
             fcm_token, email, name = app.get('fcm_token'), app.get('email', ''), app.get('name', '')
@@ -1264,6 +1942,9 @@ def admin_set_application_bill(app_id):
     data = request.get_json() or {}
     fee_breakdown = data.get('fee_breakdown')
     payment_deadline = data.get('payment_deadline')
+    bill_title = str(data.get('bill_title') or '').strip()
+    if not bill_title:
+        bill_title = 'Annual Renewal Dues'
 
     if not fee_breakdown or not isinstance(fee_breakdown, list):
         return jsonify({'message': 'fee_breakdown list is required'}), 400
@@ -1280,12 +1961,25 @@ def admin_set_application_bill(app_id):
         except (TypeError, ValueError):
             return jsonify({'message': 'Invalid fee amount in breakdown'}), 400
 
+    allow_installments = data.get('allow_installments', True)
+    if isinstance(allow_installments, str):
+        allow_installments = allow_installments.lower() in ('true', '1', 'yes')
+    else:
+        allow_installments = bool(allow_installments)
+
+    try:
+        min_installment_amount = float(str(data.get('min_installment_amount', 0.0)).replace(',', ''))
+        if min_installment_amount < 0:
+            min_installment_amount = 0.0
+    except (TypeError, ValueError):
+        min_installment_amount = 0.0
+
     conn = get_db()
     try:
         with conn.cursor() as cursor:
             _ensure_tables(cursor)
             cursor.execute("""
-                SELECT ca.id, ca.member_id, m.email, m.name, m.fcm_token
+                SELECT ca.id, ca.member_id, ca.status, ca.amount_paid, m.email, m.name, m.fcm_token
                 FROM compliance_applications ca
                 JOIN members m ON m.id = ca.member_id
                 WHERE ca.id = %s
@@ -1302,16 +1996,44 @@ def admin_set_application_bill(app_id):
                 SET payment_amount = %s,
                     payment_deadline = %s,
                     fee_breakdown = %s,
-                    status = 'payment_pending',
+                    bill_title = %s,
+                    allow_installments = %s,
+                    min_installment_amount = %s,
+                    status = CASE 
+                        WHEN status IN ('approved', 'payment_confirmed') THEN status 
+                        WHEN COALESCE(amount_paid, 0) > 0 AND COALESCE(amount_paid, 0) < %s THEN 'partially_paid'
+                        ELSE 'awaiting_payment' 
+                    END,
                     updated_at = NOW()
                 WHERE id = %s
-            """, (total_amount, payment_deadline, breakdown_json, app_id))
+            """, (total_amount, payment_deadline, breakdown_json, bill_title, allow_installments, min_installment_amount, total_amount, app_id))
 
-            if hasattr(cursor, 'connection') and cursor.connection:
-                cursor.connection.commit()
+            # Sync renewal fee to member profile so /payments and membership services get the exact bill
+            cursor.execute("""
+                UPDATE members
+                SET renewal_fee_amount = %s,
+                    renewal_fee_breakdown = %s,
+                    renewal_fee_title = %s
+                WHERE id = %s
+            """, (total_amount, breakdown_json, bill_title, app['member_id']))
+
+            conn.commit()
+            cache.delete(f'me_{app["member_id"]}')
+            log_admin_action(admin_id, 'Issued Compliance Bill', target_type='compliance_application', target_id=app_id, details={'amount': total_amount, 'deadline': payment_deadline})
 
             member_email = app.get('email')
             member_name = app.get('name', 'Member')
+            fcm_token = app.get('fcm_token')
+
+            # Send Push Notification
+            if fcm_token:
+                send_push_notification(
+                    fcm_token,
+                    title='New Renewal Bill Issued 💳',
+                    body=f'An official renewal bill of GHS {total_amount:,.2f} has been issued. Payment deadline: {payment_deadline}.',
+                    data={'screen': 'compliance', 'type': 'payment', 'route': '/payments?fee=Annual%20Renewal%20Dues'}
+                )
+
             if member_email:
                 body_html = f"""
                 <div style="font-family:Arial,sans-serif;padding:20px;color:#333;">
@@ -1326,7 +2048,7 @@ def admin_set_application_bill(app_id):
                 _send_compliance_email(member_email, member_name, 'New Renewal Bill Issued - CUBAG', body_html)
 
             try:
-                from extensions import socketio
+                from socket_instance import socketio
                 socketio.emit('renewal_bill_issued', {
                     'member_id': app['member_id'],
                     'app_id': app_id,
@@ -1334,8 +2056,14 @@ def admin_set_application_bill(app_id):
                     'deadline': payment_deadline,
                     'fee_breakdown': fee_breakdown
                 })
+                socketio.emit('compliance_updated', {
+                    'application_id': app_id,
+                    'status': 'awaiting_payment',
+                    'member_id': app['member_id']
+                })
                 socketio.emit('tasks_updated', {'member_id': app['member_id']})
                 socketio.emit('member_updated', {'member_id': app['member_id']})
+                socketio.emit('fees_updated', {'member_id': app['member_id']})
             except Exception:
                 pass
 
@@ -1387,14 +2115,27 @@ def admin_approve_application(app_id):
 
             # ── Issue License & Activate Member ──
             mid = app['member_id']
-            cursor.execute("SELECT license_number FROM members WHERE id = %s", (mid,))
+            cursor.execute("SELECT license_number, license_expiry_date FROM members WHERE id = %s", (mid,))
             m_row = cursor.fetchone()
             from datetime import datetime, timedelta
             year = datetime.now().year
             lic_num = m_row['license_number'] if m_row and m_row.get('license_number') and \
                 str(m_row['license_number']).lower() not in ('none', 'pending', 'n/a', '') \
                 else f"CUBAG-LIC-{year}-{mid:04d}"
-            expiry = (datetime.now() + timedelta(days=365)).date()
+            
+            cur_expiry = m_row.get('license_expiry_date') if m_row else None
+            if isinstance(cur_expiry, str):
+                try:
+                    cur_expiry = datetime.strptime(cur_expiry, '%Y-%m-%d').date()
+                except Exception:
+                    cur_expiry = None
+            today = datetime.now().date()
+            if cur_expiry and cur_expiry > today and app.get('type') == 'renewal':
+                expiry = cur_expiry + timedelta(days=365)
+                start_date = cur_expiry
+            else:
+                expiry = today + timedelta(days=365)
+                start_date = today
 
             cursor.execute("""
                 UPDATE members
@@ -1404,15 +2145,16 @@ def admin_approve_application(app_id):
 
             cursor.execute("""
                 INSERT INTO license_history (member_id, license_number, start_date, expiry_date, duration_label)
-                VALUES (%s, %s, CURRENT_DATE, %s, '1 Year')
+                VALUES (%s, %s, %s, %s, %s)
                 ON CONFLICT DO NOTHING
-            """, (mid, lic_num, expiry))
+            """, (mid, lic_num, start_date, expiry, '1 Year (Cumulative Renewal)' if app.get('type') == 'renewal' else '1 Year'))
 
             try:
                 cache.delete(f'me_{mid}')
             except Exception:
                 pass
             conn.commit()
+            log_admin_action(admin_id, 'Approved Compliance Application', target_type='compliance_application', target_id=app_id, details={'type': app.get('type'), 'license_number': lic_num, 'note': note})
 
             type_label = 'License Renewal' if app['type'] == 'renewal' else 'Member ID Application'
             fcm_token, email, name = app.get('fcm_token'), app.get('email', ''), app.get('name', '')
@@ -1476,6 +2218,7 @@ def admin_reject_application(app_id):
                 WHERE id = %s
             """, (note or None, admin_id, app_id))
             conn.commit()
+            log_admin_action(admin_id, 'Rejected Compliance Application', target_type='compliance_application', target_id=app_id, details={'type': app.get('type'), 'note': note})
 
             type_label = 'License Renewal' if app['type'] == 'renewal' else 'Member ID Application'
             fcm_token, email, name = app.get('fcm_token'), app.get('email', ''), app.get('name', '')

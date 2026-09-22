@@ -28,7 +28,7 @@ import logging
 import sys
 import time
 from flask import g
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, send_file
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, get_jwt_identity, verify_jwt_in_request
 from dotenv import load_dotenv
@@ -224,10 +224,19 @@ def require_admin_role_for_admin_api():
         return None
 
     try:
-        from flask_jwt_extended import get_jwt
         verify_jwt_in_request()
-        claims = get_jwt()
-        role = claims.get('role')
+        member_id = get_jwt_identity()
+        if not member_id:
+            return jsonify({'message': 'Missing or invalid authorization token'}), 401
+
+        conn = get_db()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT role FROM members WHERE id = %s", (member_id,))
+                row = cursor.fetchone()
+                role = (row.get('role') if row else None) or ''
+        finally:
+            conn.close()
 
         if role not in ('admin', 'sub_admin', 'super_admin'):
             return jsonify({'message': 'Admin access required'}), 403
@@ -287,8 +296,9 @@ def enforce_account_status():
                 'message': 'Your account is inactive. Please contact the CUBAG Secretariat.'
             }), 403
 
-    except Exception:
-        pass  # Don't block requests if the status check itself fails
+    except Exception as e:
+        logger.error('[enforce_account_status] Status check failed: %s', e)
+        return jsonify({'message': 'Unable to verify account status. Please try again.'}), 503
 
     return None
 
@@ -320,7 +330,50 @@ def _log_request_time(response):
 
 # Initialize SocketIO
 from socket_instance import socketio
+from flask_socketio import join_room
 socketio.init_app(app)
+
+
+@socketio.on('connect')
+def _socket_connect(auth):
+    """Authenticate the socket and join member-scoped rooms for private events."""
+    from flask import request as flask_request
+    from flask_jwt_extended import decode_token
+
+    token = None
+    if isinstance(auth, dict):
+        token = auth.get('token')
+    if not token:
+        token = flask_request.args.get('token')
+    if not token:
+        hdr = flask_request.headers.get('Authorization', '')
+        if hdr.lower().startswith('bearer '):
+            token = hdr[7:].strip()
+    if not token:
+        return False
+
+    try:
+        decoded = decode_token(token)
+        member_id = decoded.get('sub')
+        if member_id:
+            join_room(f'member_{member_id}')
+            try:
+                conn = get_db()
+                try:
+                    with conn.cursor() as cursor:
+                        cursor.execute("SELECT role FROM members WHERE id = %s", (member_id,))
+                        row = cursor.fetchone()
+                        role = (row.get('role') if row else '') or ''
+                finally:
+                    conn.close()
+            except Exception:
+                role = decoded.get('role') or ''
+            if role in ('admin', 'sub_admin', 'super_admin'):
+                join_room('admins')
+    except Exception as e:
+        logger.debug('[Socket] connect auth failed: %s', e)
+        return False
+    return True
 
 # Initialize Background Workers (Beta)
 try:
@@ -452,6 +505,30 @@ def serve_logo():
     static_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'static'))
     return send_from_directory(static_dir, 'logo.jpeg')
 
+_SENSITIVE_UPLOAD_PREFIXES = (
+    'receipts/', 'compliance/', 'documents/', 'member_documents/', 'private/', 'bank/',
+)
+
+
+def _upload_path_is_sensitive(filename: str) -> bool:
+    normalized = os.path.normpath(filename).replace('\\', '/').lstrip('/')
+    if '..' in normalized.split('/'):
+        return True
+    return any(normalized.startswith(p) for p in _SENSITIVE_UPLOAD_PREFIXES)
+
+
+def _require_jwt_for_sensitive_upload(filename: str):
+    if not _upload_path_is_sensitive(filename):
+        return None
+    try:
+        verify_jwt_in_request()
+        if not get_jwt_identity():
+            return jsonify({'message': 'Authentication required to access this file'}), 401
+    except Exception:
+        return jsonify({'message': 'Authentication required to access this file'}), 401
+    return None
+
+
 @app.route('/static/uploads/<path:filename>')
 @app.route('/uploads/<path:filename>')
 @app.route('/api/v1/static/uploads/<path:filename>')
@@ -459,15 +536,22 @@ def serve_logo():
 @app.route('/api/v1/uploads/<path:filename>')
 @app.route('/api/uploads/<path:filename>')
 def serve_uploads(filename):
+    auth_block = _require_jwt_for_sensitive_upload(filename)
+    if auth_block is not None:
+        return auth_block
+    _backend = os.path.dirname(os.path.abspath(__file__))
     for base in [
-        os.path.join(os.path.dirname(__file__), 'static', 'uploads'),
-        os.path.join(os.path.dirname(__file__), 'uploads'),
-        os.path.join(os.getcwd(), 'static', 'uploads'),
+        os.path.join(_backend, 'uploads'),          # permanent store (checked first)
+        os.path.join(_backend, 'static', 'uploads'),# static mirror
         os.path.join(os.getcwd(), 'uploads'),
+        os.path.join(os.getcwd(), 'static', 'uploads'),
     ]:
         target = os.path.join(base, filename)
         if os.path.isfile(target):
-            return send_from_directory(base, filename)
+            resp = send_from_directory(base, filename)
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            resp.headers['Cache-Control'] = 'public, max-age=86400'
+            return resp
     return jsonify({'message': 'File not found'}), 404
 
 @app.route('/api/analytics/telemetry', methods=['POST', 'OPTIONS'])
@@ -518,15 +602,52 @@ def serve_flutter_bootstrap():
     return resp
 
 
+@app.route('/static/uploads/<path:filename>')
+@app.route('/uploads/<path:filename>')
+def serve_uploaded_file(filename):
+    auth_block = _require_jwt_for_sensitive_upload(filename)
+    if auth_block is not None:
+        return auth_block
+    backend_root = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        os.path.join(backend_root, 'static', 'uploads', filename),
+        os.path.join(backend_root, 'uploads', filename),
+        os.path.join(backend_root, 'dist', 'uploads', filename),
+    ]
+    for p in candidates:
+        if os.path.isfile(p):
+            resp = send_file(p)
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            resp.headers['Cache-Control'] = 'public, max-age=3600'
+            return resp
+
+    ext = os.path.splitext(filename)[1].lower()
+    if ext in ('.jpg', '.jpeg', '.png', '.webp', '.gif'):
+        placeholder_path = os.path.join(backend_root, 'static', 'uploads', 'doc_placeholder.png')
+        if os.path.isfile(placeholder_path):
+            resp = send_file(placeholder_path, mimetype='image/png')
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            resp.headers['Cache-Control'] = 'no-cache'
+            return resp
+    return jsonify({'error': 'File not found', 'path': filename}), 404
+
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_spa(path):
+    ext = os.path.splitext(path)[1].lower()
+    is_static_asset = ext in ('.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico', '.woff', '.woff2', '.ttf', '.json', '.pdf')
+    is_upload_path = path.startswith('static/uploads/') or path.startswith('uploads/')
+
     # Check if the requested path is a real file (like an image or JS)
     if app.static_folder:
         full_path = os.path.join(app.static_folder, path)
         resp = None
         if path and os.path.isfile(full_path):
             resp = send_from_directory(app.static_folder, path, conditional=False)
+        elif is_static_asset or is_upload_path:
+            # Never return HTML for missing static assets or upload files
+            return jsonify({'error': 'File not found', 'path': path}), 404
         else:
             # Otherwise, always serve index.html to let Flutter web router handle the URL
             index_path = os.path.join(app.static_folder, 'index.html')

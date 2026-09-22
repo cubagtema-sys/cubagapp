@@ -10,32 +10,26 @@ import '../utils/app_logger.dart';
 
 const _kOrange = Color(0xFFFF5000);
 
-// Mirror the exact same 6 feed sources from React
 const _feedSources = [
   {
-    'url': 'https://gcaptain.com/feed/',
     'source': 'gCaptain',
     'color': 0xFFFF5000,
   },
   {
-    'url': 'https://www.hellenicshippingnews.com/feed/',
     'source': 'Hellenic Shipping',
-    'color': 0xFF1a6b3c,
+    'color': 0xFF10b981,
   },
   {
-    'url': 'https://splash247.com/feed/',
     'source': 'Splash247',
-    'color': 0xFF0066cc,
+    'color': 0xFF0284c7,
   },
   {
-    'url': 'https://www.ship-technology.com/feed/',
     'source': 'Ship Technology',
-    'color': 0xFFc0392b,
+    'color': 0xFFe11d48,
   },
   {
-    'url': 'https://www.freightwaves.com/news/feed',
     'source': 'FreightWaves',
-    'color': 0xFF003580,
+    'color': 0xFF6366f1,
   },
 ];
 
@@ -149,14 +143,15 @@ class _State extends State<AdminIntelligencePage> {
                 const Icon(
                   Icons.check_circle_rounded,
                   color: Colors.white,
-                  size: 20,
+                  size: 18,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Live currency rates updated successfully across user portal!',
+                  'Customs FX rates saved & published successfully!',
                   style: GoogleFonts.outfit(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
+                    fontSize: 13.5,
                   ),
                 ),
               ],
@@ -175,7 +170,7 @@ class _State extends State<AdminIntelligencePage> {
           SnackBar(
             content: Text(
               'Failed to update currency rates: $e',
-              style: GoogleFonts.outfit(color: Colors.white),
+              style: GoogleFonts.outfit(color: Colors.white, fontSize: 13),
             ),
             backgroundColor: const Color(0xFFef4444),
             behavior: SnackBarBehavior.floating,
@@ -208,7 +203,6 @@ class _State extends State<AdminIntelligencePage> {
             final thumbnail = item['thumbnail']?.toString() ?? '';
             final colorHexStr = item['sourceColor']?.toString() ?? '#3b82f6';
 
-            // Parse color
             Color color;
             try {
               final cleanHex = colorHexStr.replaceAll('#', '');
@@ -236,7 +230,6 @@ class _State extends State<AdminIntelligencePage> {
             _lastUpdated = TimeOfDay.now().format(context);
           });
 
-          // Auto-retry once if result was only mock/empty data (server cache warming up)
           if (!isRetry && parsed.length <= 2) {
             await Future.delayed(const Duration(seconds: 4));
             if (mounted) _load(isRetry: true);
@@ -252,7 +245,6 @@ class _State extends State<AdminIntelligencePage> {
       setState(() {
         _loading = false;
       });
-      // Auto-retry once after brief delay if network failed
       if (!isRetry) {
         await Future.delayed(const Duration(seconds: 4));
         if (mounted) _load(isRetry: true);
@@ -296,43 +288,43 @@ class _State extends State<AdminIntelligencePage> {
         : const Color(0xFF1A0F0A);
     final subTextColor = isDark
         ? const Color(0xFF94a3b8)
-        : const Color(0xFF475569);
+        : const Color(0xFF64748b);
 
     return AppLayout(
       title: 'Intelligence Hub',
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 820),
+        constraints: const BoxConstraints(maxWidth: 1000),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Page Header
             AdminHeader(
               title: 'Maritime Intelligence Hub',
               subtitle:
-                  'Live global maritime news syndication, port traffic telemetry, and daily customs FX conversion rates.',
+                  'Global maritime news feeds, port telemetry, and daily customs FX rates.',
               actions: [
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kAdminOrange,
-                    foregroundColor: Colors.white,
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: isDark ? Colors.white : const Color(0xFF334155),
+                    side: BorderSide(color: borderColor),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                      horizontal: 14,
+                      vertical: 10,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    elevation: 0,
                   ),
                   onPressed: () {
                     _load();
                     _loadIntelligence();
                   },
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  icon: const Icon(Icons.refresh_rounded, size: 16),
                   label: Text(
-                    'Refresh Feeds',
+                    'Refresh All',
                     style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
                     ),
                   ),
                 ),
@@ -340,112 +332,88 @@ class _State extends State<AdminIntelligencePage> {
             ),
             const SizedBox(height: 18),
 
-            // Status Banner
+            // Connected sources pill bar
             Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF1A0F0A).withValues(alpha: 0.4)
-                    : const Color(0xFFf0fdf4),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(
-                    0xFF10b981,
-                  ).withValues(alpha: isDark ? 0.3 : 0.4),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                    ? const Color(0xFF1A0F0A).withValues(alpha: 0.5)
+                    : const Color(0xFFf8fafc),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: borderColor),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.anchor_rounded,
-                        color: Color(0xFF10b981),
-                        size: 22,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Maritime Intelligence Active',
-                        style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                          color: const Color(0xFF10b981),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'The Intelligence Hub is directly connected to 5 maritime and customs news networks — '
-                    'gCaptain, Hellenic Shipping News, Splash247, Ship Technology, and FreightWaves. '
-                    'Live data is pulled 24/7 for all CUBAG members.',
-                    style: GoogleFonts.outfit(
-                      fontSize: 17,
-                      color: isDark
-                          ? const Color(0xFF94a3b8)
-                          : const Color(0xFF281710).withValues(alpha: 0.8),
-                      height: 1.5,
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF10b981),
+                      shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _feedSources.map((s) {
-                      final color = Color(s['color'] as int);
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(
-                            color: color.withValues(alpha: 0.2),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: color,
-                                shape: BoxShape.circle,
+                  const SizedBox(width: 8),
+                  Text(
+                    'Connected Feeds:',
+                    style: GoogleFonts.outfit(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white70 : const Color(0xFF475569),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _feedSources.map((s) {
+                          final color = Color(s['color'] as int);
+                          return Container(
+                            margin: const EdgeInsets.only(right: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: color.withValues(alpha: 0.2),
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              (s['source'] as String).toUpperCase(),
-                              style: GoogleFonts.outfit(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: color,
-                                letterSpacing: 0.6,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 5,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  s['source'] as String,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: color,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
+                          );
+                        }).toList(),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 18),
 
-            // Manual Currency Rates Management Section
+            // Forex Currency Rates Card
             _buildForexManagerCard(
               isDark,
               cardBg,
@@ -455,76 +423,85 @@ class _State extends State<AdminIntelligencePage> {
             ),
             const SizedBox(height: 24),
 
-            // Feed header
+            // News Feed Section Header
             Row(
               children: [
                 const Icon(
                   Icons.directions_boat_filled_rounded,
                   color: _kOrange,
-                  size: 20,
+                  size: 18,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Live Maritime Feed',
                   style: GoogleFonts.outfit(
                     fontWeight: FontWeight.bold,
-                    fontSize: 20,
+                    fontSize: 16.5,
                     color: textColor,
                   ),
                 ),
+                if (_articles.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: _kOrange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${_articles.length}',
+                      style: GoogleFonts.outfit(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: _kOrange,
+                      ),
+                    ),
+                  ),
+                ],
                 if (_lastUpdated.isNotEmpty) ...[
                   const SizedBox(width: 8),
                   Text(
                     '• updated $_lastUpdated',
                     style: GoogleFonts.outfit(
-                      fontSize: 16,
+                      fontSize: 12.5,
                       color: subTextColor,
-                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
                 const Spacer(),
                 if (!_loading)
-                  Container(
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF281710)
-                          : Colors.grey.shade100,
-                      border: Border.all(color: borderColor),
-                      shape: BoxShape.circle,
+                  IconButton(
+                    iconSize: 18,
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Refresh news',
+                    icon: Icon(
+                      Icons.refresh_rounded,
+                      color: subTextColor,
                     ),
-                    child: IconButton(
-                      tooltip: 'Refresh feeds',
-                      icon: Icon(
-                        Icons.refresh,
-                        size: 16,
-                        color: isDark ? Colors.white70 : Colors.black87,
-                      ),
-                      onPressed: _load,
-                    ),
+                    onPressed: _load,
                   ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
-            // Feed content
+            // Feed List or Loaders
             if (_loading)
               Column(
                 children: List.generate(
                   4,
                   (index) => Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: cardBg,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: borderColor),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SkeletonLoader(width: 90, height: 90, borderRadius: 12),
-                        const SizedBox(width: 16),
+                        SkeletonLoader(width: 72, height: 72, borderRadius: 8),
+                        const SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -532,29 +509,18 @@ class _State extends State<AdminIntelligencePage> {
                               Row(
                                 children: [
                                   SkeletonLoader(
-                                    width: 80,
-                                    height: 18,
-                                    borderRadius: 6,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  SkeletonLoader(width: 60, height: 12),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              SkeletonLoader(height: 16),
-                              const SizedBox(height: 6),
-                              SkeletonLoader(width: 180, height: 16),
-                              const SizedBox(height: 12),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  SkeletonLoader(
-                                    width: 100,
+                                    width: 70,
                                     height: 14,
                                     borderRadius: 4,
                                   ),
+                                  const SizedBox(width: 8),
+                                  SkeletonLoader(width: 50, height: 10),
                                 ],
                               ),
+                              const SizedBox(height: 8),
+                              SkeletonLoader(height: 14),
+                              const SizedBox(height: 5),
+                              SkeletonLoader(width: 160, height: 14),
                             ],
                           ),
                         ),
@@ -566,30 +532,21 @@ class _State extends State<AdminIntelligencePage> {
             else if (_articles.isEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(
-                  vertical: 48,
-                  horizontal: 24,
+                  vertical: 36,
+                  horizontal: 20,
                 ),
                 decoration: BoxDecoration(
                   color: cardBg,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: borderColor),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(
-                        alpha: isDark ? 0.15 : 0.02,
-                      ),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
                 ),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 56,
-                        height: 56,
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
                           color: isDark
                               ? const Color(0xFF4D2D20)
@@ -599,45 +556,46 @@ class _State extends State<AdminIntelligencePage> {
                         child: Icon(
                           Icons.wifi_off_rounded,
                           color: subTextColor,
-                          size: 28,
+                          size: 22,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Text(
-                        'Feed temporarily unavailable.',
+                        'News feed temporarily unavailable',
                         style: GoogleFonts.outfit(
                           color: textColor,
                           fontWeight: FontWeight.bold,
-                          fontSize: 19,
+                          fontSize: 15,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Text(
-                        'The server may still be warming up.',
+                        'Unable to connect to live syndication endpoints.',
                         style: GoogleFonts.outfit(
                           color: subTextColor,
-                          fontSize: 17,
+                          fontSize: 13,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       ElevatedButton.icon(
                         onPressed: _load,
-                        icon: const Icon(Icons.refresh, size: 16),
+                        icon: const Icon(Icons.refresh, size: 14),
                         label: Text(
                           'Try Again',
                           style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _kOrange,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
+                            horizontal: 18,
+                            vertical: 9,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           elevation: 0,
                         ),
@@ -675,187 +633,159 @@ class _State extends State<AdminIntelligencePage> {
     Color textColor,
     Color subTextColor,
   ) {
-    return InkWell(
-      onTap: () async {
-        if (a.link.isNotEmpty) {
-          final uri = Uri.parse(a.link);
-          if (await canLaunchUrl(uri)) {
-            launchUrl(uri, mode: LaunchMode.externalApplication);
-          }
-        }
-      },
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderColor),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Premium Image Container
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: a.thumbnail.isNotEmpty
-                  ? CorsImageWidget(
-                      url: a.thumbnail,
-                      width: 90,
-                      height: 90,
-                      fit: BoxFit.cover,
-                      placeholder: Container(
-                        width: 90,
-                        height: 90,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: isDark
-                                ? [
-                                    const Color(0xFF281710),
-                                    const Color(0xFF4D2D20),
-                                  ]
-                                : [Colors.grey.shade100, Colors.grey.shade200],
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () async {
+            if (a.link.isNotEmpty) {
+              final uri = Uri.parse(a.link);
+              if (await canLaunchUrl(uri)) {
+                launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            }
+          },
+          borderRadius: BorderRadius.circular(12),
+          hoverColor: _kOrange.withValues(alpha: 0.03),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Thumbnail
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: a.thumbnail.isNotEmpty
+                      ? CorsImageWidget(
+                          url: a.thumbnail,
+                          width: 76,
+                          height: 76,
+                          fit: BoxFit.cover,
+                          placeholder: Container(
+                            width: 76,
+                            height: 76,
+                            color: isDark
+                                ? const Color(0xFF381F15)
+                                : const Color(0xFFf1f5f9),
+                            child: const Center(
+                              child: SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: _kOrange,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                        child: const Center(
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: _kOrange,
+                          errorWidget: Container(
+                            width: 76,
+                            height: 76,
+                            color: isDark
+                                ? const Color(0xFF381F15)
+                                : const Color(0xFFf1f5f9),
+                            child: Icon(
+                              Icons.newspaper_rounded,
+                              color: subTextColor.withValues(alpha: 0.5),
+                              size: 20,
+                            ),
+                          ),
+                        )
+                      : Container(
+                          width: 76,
+                          height: 76,
+                          color: isDark
+                              ? const Color(0xFF381F15)
+                              : const Color(0xFFf1f5f9),
+                          child: Center(
+                            child: Icon(
+                              Icons.article_outlined,
+                              color: a.sourceColor.withValues(alpha: 0.7),
+                              size: 24,
                             ),
                           ),
                         ),
-                      ),
-                      errorWidget: Container(
-                        width: 90,
-                        height: 90,
-                        color: isDark
-                            ? const Color(0xFF4D2D20)
-                            : const Color(0xFFf1f5f9),
-                        child: Icon(
-                          Icons.image_not_supported_outlined,
-                          color: subTextColor.withValues(alpha: 0.6),
-                          size: 22,
-                        ),
-                      ),
-                    )
-                  : Container(
-                      width: 90,
-                      height: 90,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: isDark
-                              ? [
-                                  const Color(0xFF281710),
-                                  const Color(0xFF4D2D20),
-                                ]
-                              : [Colors.grey.shade50, Colors.grey.shade100],
-                        ),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.article_outlined,
-                          color: a.sourceColor.withValues(alpha: 0.6),
-                          size: 28,
-                        ),
-                      ),
-                    ),
-            ),
-            const SizedBox(width: 16),
+                ),
+                const SizedBox(width: 14),
 
-            // Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Source badge + date
-                  Row(
+                // Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: a.sourceColor.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: a.sourceColor.withValues(alpha: 0.2),
-                          ),
-                        ),
-                        child: Text(
-                          a.source.toUpperCase(),
-                          style: GoogleFonts.outfit(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: a.sourceColor,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                      if (a.pubDate.isNotEmpty) ...[
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _formatDate(a.pubDate),
-                            style: GoogleFonts.outfit(
-                              fontSize: 16,
-                              color: subTextColor,
-                              fontWeight: FontWeight.w500,
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            decoration: BoxDecoration(
+                              color: a.sourceColor.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: a.sourceColor.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Text(
+                              a.source,
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: a.sourceColor,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    a.title,
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 19,
-                      color: textColor,
-                      height: 1.35,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
+                          if (a.pubDate.isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              _formatDate(a.pubDate),
+                              style: GoogleFonts.outfit(
+                                fontSize: 12,
+                                color: subTextColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                          const Spacer(),
+                          Icon(
+                            Icons.arrow_outward_rounded,
+                            size: 13,
+                            color: subTextColor.withValues(alpha: 0.7),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
                       Text(
-                        'Read full article',
+                        a.title,
                         style: GoogleFonts.outfit(
-                          fontSize: 16,
-                          color: _kOrange,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14.5,
+                          color: textColor,
+                          height: 1.3,
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(
-                        Icons.arrow_outward_rounded,
-                        size: 14,
-                        color: _kOrange,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -870,56 +800,55 @@ class _State extends State<AdminIntelligencePage> {
   ) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor, width: 1.5),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
                   color: const Color(0xFF3b82f6).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
                   Icons.currency_exchange_rounded,
                   color: Color(0xFF3b82f6),
-                  size: 22,
+                  size: 18,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Official Currency Exchange Rates',
+                      'Official Customs FX Rates (GHS)',
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                        fontSize: 15,
                         color: textColor,
                       ),
                     ),
-                    const SizedBox(height: 2),
                     Text(
-                      'Set official exchange rates against Ghana Cedi (GHS). The rates configured here are automatically published across the member portal and dashboard.',
+                      'Exchange rates published live to member portal & dashboard calculations.',
                       style: GoogleFonts.outfit(
-                        fontSize: 16.5,
+                        fontSize: 12,
                         color: subTextColor,
-                        height: 1.3,
                       ),
                     ),
                   ],
@@ -927,8 +856,8 @@ class _State extends State<AdminIntelligencePage> {
               ),
               if (_forexLoading)
                 const SizedBox(
-                  width: 20,
-                  height: 20,
+                  width: 16,
+                  height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     color: Color(0xFF3b82f6),
@@ -936,9 +865,10 @@ class _State extends State<AdminIntelligencePage> {
                 )
               else
                 IconButton(
+                  iconSize: 16,
+                  visualDensity: VisualDensity.compact,
                   icon: Icon(
                     Icons.refresh_rounded,
-                    size: 18,
                     color: subTextColor,
                   ),
                   tooltip: 'Reload rates',
@@ -946,50 +876,62 @@ class _State extends State<AdminIntelligencePage> {
                 ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
+
           if (_forexLoading)
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
+              padding: EdgeInsets.symmetric(vertical: 16),
               child: Center(
-                child: CircularProgressIndicator(color: Color(0xFF3b82f6)),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xFF3b82f6),
+                  ),
+                ),
               ),
             )
           else ...[
             LayoutBuilder(
               builder: (context, constraints) {
-                final isWide = constraints.maxWidth > 600;
+                final isWide = constraints.maxWidth > 550;
                 return GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   crossAxisCount: isWide ? 4 : 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: isWide ? 1.7 : 2.2,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: isWide ? 2.1 : 2.2,
                   children: [
                     _buildCurrencyInput(
-                      'USD (\$)',
-                      'US Dollar / GHS',
+                      '\$',
+                      'USD',
+                      'US Dollar',
                       _usdCtrl,
                       const Color(0xFF3b82f6),
                       isDark,
                     ),
                     _buildCurrencyInput(
-                      'EUR (€)',
-                      'Euro / GHS',
+                      '€',
+                      'EUR',
+                      'Euro',
                       _eurCtrl,
                       const Color(0xFF10b981),
                       isDark,
                     ),
                     _buildCurrencyInput(
-                      'GBP (£)',
-                      'British Pound / GHS',
+                      '£',
+                      'GBP',
+                      'British Pound',
                       _gbpCtrl,
                       const Color(0xFF8b5cf6),
                       isDark,
                     ),
                     _buildCurrencyInput(
-                      'CNY (¥)',
-                      'Chinese Yuan / GHS',
+                      '¥',
+                      'CNY',
+                      'Chinese Yuan',
                       _cnyCtrl,
                       const Color(0xFFf59e0b),
                       isDark,
@@ -998,7 +940,7 @@ class _State extends State<AdminIntelligencePage> {
                 );
               },
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -1006,30 +948,30 @@ class _State extends State<AdminIntelligencePage> {
                   onPressed: _forexSaving ? null : _saveForex,
                   icon: _forexSaving
                       ? const SizedBox(
-                          width: 16,
-                          height: 16,
+                          width: 14,
+                          height: 14,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             color: Colors.white,
                           ),
                         )
-                      : const Icon(Icons.save_rounded, size: 18),
+                      : const Icon(Icons.check_rounded, size: 16),
                   label: Text(
-                    _forexSaving ? 'Saving Rates...' : 'Save Forex Rates',
+                    _forexSaving ? 'Saving...' : 'Save Rates',
                     style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF3b82f6),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 14,
+                      horizontal: 18,
+                      vertical: 10,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     elevation: 0,
                   ),
@@ -1044,19 +986,22 @@ class _State extends State<AdminIntelligencePage> {
 
   Widget _buildCurrencyInput(
     String symbol,
-    String label,
+    String code,
+    String name,
     TextEditingController ctrl,
     Color color,
     bool isDark,
   ) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: isDark
             ? const Color(0xFF1A0F0A).withValues(alpha: 0.5)
             : const Color(0xFFf8fafc),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 1.2),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: color.withValues(alpha: 0.25),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1065,32 +1010,28 @@ class _State extends State<AdminIntelligencePage> {
           Row(
             children: [
               Container(
-                width: 24,
-                height: 24,
+                width: 20,
+                height: 20,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
+                  color: color.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  symbol
-                      .split(' ')
-                      .last
-                      .replaceAll('(', '')
-                      .replaceAll(')', ''),
+                  symbol,
                   style: GoogleFonts.outfit(
                     color: color,
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 11,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Text(
-                symbol.split(' ').first,
+                code,
                 style: GoogleFonts.outfit(
                   fontWeight: FontWeight.bold,
-                  fontSize: 17,
+                  fontSize: 13,
                   color: color,
                 ),
               ),
@@ -1098,50 +1039,53 @@ class _State extends State<AdminIntelligencePage> {
               Text(
                 'GHS',
                 style: GoogleFonts.outfit(
-                  fontSize: 14,
-                  color: isDark ? Colors.white54 : Colors.black54,
+                  fontSize: 11,
+                  color: isDark ? Colors.white54 : const Color(0xFF64748b),
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: ctrl,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            style: GoogleFonts.outfit(
-              fontWeight: FontWeight.w900,
-              fontSize: 20,
-              color: isDark ? Colors.white : const Color(0xFF281710),
-            ),
-            decoration: InputDecoration(
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 8,
+          const SizedBox(height: 6),
+          SizedBox(
+            height: 32,
+            child: TextField(
+              controller: ctrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.bold,
+                fontSize: 14.5,
+                color: isDark ? Colors.white : const Color(0xFF1A0F0A),
               ),
-              hintText: '0.00',
-              filled: true,
-              fillColor: isDark ? const Color(0xFF281710) : Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: isDark
-                      ? const Color(0xFF4D2D20)
-                      : const Color(0xFFcbd5e1),
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 6,
                 ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(
-                  color: isDark
-                      ? const Color(0xFF4D2D20)
-                      : const Color(0xFFcbd5e1),
+                hintText: '0.00',
+                filled: true,
+                fillColor: isDark ? const Color(0xFF281710) : Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: BorderSide(
+                    color: isDark
+                        ? const Color(0xFF4D2D20)
+                        : const Color(0xFFcbd5e1),
+                  ),
                 ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: color, width: 1.5),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: BorderSide(
+                    color: isDark
+                        ? const Color(0xFF4D2D20)
+                        : const Color(0xFFcbd5e1),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: BorderSide(color: color, width: 1.2),
+                ),
               ),
             ),
           ),
@@ -1154,15 +1098,12 @@ class _State extends State<AdminIntelligencePage> {
 // Simple HTTP date fallback
 class HttpDate {
   static DateTime parse(String httpDate) {
-    // RFC 2822: Mon, 02 Jun 2025 10:30:00 GMT
-    // Strip day-of-week prefix and timezone suffix, then inject T between date and time
     try {
       final clean = httpDate
           .replaceFirst(RegExp(r'^[A-Za-z]+, '), '')
           .replaceFirst(RegExp(r' \+?\d{4}$'), '')
           .replaceFirst(RegExp(r' [A-Z]{2,4}$'), '')
           .trim();
-      // e.g. "02 Jun 2025 10:30:00" -> split into date+time parts
       final parts = clean.split(' ');
       if (parts.length >= 4) {
         final months = {

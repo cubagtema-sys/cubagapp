@@ -1165,8 +1165,10 @@ def enroll_in_course(course_id):
             fee_str = str(course.get('fee', '0')).replace('GHS', '').replace(',', '').strip()
             try:
                 amount = float(fee_str)
+                if amount <= 0:
+                    return jsonify({'message': 'Course fee is not properly configured in database'}), 400
             except ValueError:
-                amount = 1500.0
+                return jsonify({'message': 'Course fee is not properly configured in database'}), 400
 
             # 4. Insert enrollment
             cursor.execute("""
@@ -1346,7 +1348,7 @@ def get_admin_guest_enrollments():
                     COALESCE(gp.email, gr.email) as email,
                     COALESCE(gr.company, 'Guest Student / Applicant') as company,
                     COALESCE(gp.course_name, gr.course_name, 'CTI Professional Course') as course_title,
-                    COALESCE(gp.amount, 1500.0) as amount,
+                    COALESCE(gp.amount, 0.0) as amount,
                     COALESCE(gp.network, 'Mobile Money') as payment_network,
                     COALESCE(gp.status, gr.status, 'paid') as status,
                     COALESCE(gp.created_at, gr.created_at) as created_at,

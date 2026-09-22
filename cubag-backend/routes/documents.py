@@ -7,7 +7,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from config.db import get_db
 from config.cache import cache
-from utils import sub_admin_required
+from utils import sub_admin_required, log_admin_action
 
 logger = logging.getLogger(__name__)
 documents_bp = Blueprint('documents', __name__)
@@ -16,6 +16,11 @@ documents_bp = Blueprint('documents', __name__)
 SUPABASE_URL    = os.getenv('SUPABASE_URL', '').strip().strip('\'"')
 SUPABASE_KEY    = os.getenv('SUPABASE_SERVICE_KEY', '').strip().strip('\'"')
 SUPABASE_BUCKET = os.getenv('SUPABASE_BUCKET', 'uploads').strip().strip('\'"')
+
+try:
+    from file_storage import save_file as _save_file
+except ImportError:
+    _save_file = None
 
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg'}
 MAX_SIZE_MB = 15
@@ -345,35 +350,32 @@ def upload_document():
     file_bytes = file.read()
     content_type = file.content_type or ('application/pdf' if ext == 'pdf' else 'image/jpeg')
 
-    # ── Upload to Supabase with local fallback ──
-    public_url = None
-    if SUPABASE_URL and SUPABASE_KEY:
-        safe_name = f"member_docs/{member_id}/{requirement}_{uuid.uuid4().hex}.{ext}"
-        storage_url = f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{safe_name}"
-        headers = {
-            "apikey":        SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type":  content_type,
-            "x-upsert":      "true",
-        }
-        try:
-            resp = requests.post(storage_url, data=file_bytes, headers=headers, timeout=10)
-            if resp.status_code in (200, 201):
-                public_url = f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{safe_name}"
-            else:
-                logger.warning("[Documents] Supabase returned status %s: %s", resp.status_code, resp.text)
-        except Exception as e:
-            logger.warning("[Documents] Supabase upload error/timeout: %s", e)
-
-    # ── Fallback to local static storage if Supabase failed or unconfigured ──
-    if not public_url:
-        import os
-        upload_dir = os.path.join(os.getcwd(), 'static', 'uploads', 'member_docs', str(member_id))
+    # ── Upload to persistent storage ────────────────────────────────────────────
+    if _save_file:
+        public_url = _save_file(
+            file_bytes,
+            original_filename=file.filename,
+            subfolder=f'member_docs/{member_id}',
+            prefix=f'{requirement}_',
+            content_type=content_type,
+        )
+    else:
+        # Inline fallback with absolute persistent path
+        backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        upload_dir = os.path.join(backend_root, 'uploads', 'member_docs', str(member_id))
         os.makedirs(upload_dir, exist_ok=True)
         local_filename = f"{requirement}_{uuid.uuid4().hex[:8]}.{ext}"
-        local_path = os.path.join(upload_dir, local_filename)
-        with open(local_path, 'wb') as f:
+        abs_path = os.path.join(upload_dir, local_filename)
+        with open(abs_path, 'wb') as f:
             f.write(file_bytes)
+        # Mirror to static
+        static_dir = os.path.join(backend_root, 'static', 'uploads', 'member_docs', str(member_id))
+        os.makedirs(static_dir, exist_ok=True)
+        try:
+            with open(os.path.join(static_dir, local_filename), 'wb') as f:
+                f.write(file_bytes)
+        except Exception:
+            pass
         public_url = f"/static/uploads/member_docs/{member_id}/{local_filename}"
 
     # ── Save / update DB record ──
@@ -818,6 +820,7 @@ def admin_review_doc(doc_id):
             
             conn.commit()
             cache.delete(f'me_{mid}')
+            log_admin_action(admin_id, f'Document {status.capitalize()}', target_type='member_document', target_id=doc_id, details={'member_id': mid, 'status': status, 'admin_note': admin_note})
             try:
                 from socket_instance import socketio
                 socketio.emit('member_documents_updated', {'member_id': mid, 'doc_id': doc_id, 'status': status})
@@ -858,6 +861,7 @@ def admin_approve_all(member_id):
 
             cache.delete(f'me_{member_id}')
             conn.commit()
+            log_admin_action(admin_id, 'Approved All Member Documents', target_type='member', target_id=member_id, details={'action': 'approve_all'})
             try:
                 from socket_instance import socketio
                 socketio.emit('member_documents_updated', {'member_id': member_id, 'status': 'approved'})
@@ -943,6 +947,7 @@ def admin_create_requirement():
             """, (key, label, description or None, member_type, app_type, is_required, display_order))
             new_req = cursor.fetchone()
             conn.commit()
+            log_admin_action(get_jwt_identity(), f'Created Document Requirement: {label}', target_type='document_requirement', target_id=new_req['id'], details=dict(new_req))
 
             try:
                 from socket_instance import socketio
@@ -997,6 +1002,7 @@ def admin_update_requirement(req_id):
             """, (new_label, new_desc or None, new_mtype, new_atype, new_required, new_order, new_active, req_id))
             updated = cursor.fetchone()
             conn.commit()
+            log_admin_action(get_jwt_identity(), f'Updated Document Requirement: {new_label}', target_type='document_requirement', target_id=req_id, details=dict(updated))
 
             try:
                 from socket_instance import socketio
@@ -1023,6 +1029,7 @@ def admin_delete_requirement(req_id):
             _ensure_table(cursor)
             cursor.execute("UPDATE document_requirements SET deleted_at = NOW(), is_active = FALSE WHERE id = %s", (req_id,))
             conn.commit()
+            log_admin_action(get_jwt_identity(), f'Deleted Document Requirement #{req_id}', target_type='document_requirement', target_id=req_id)
 
             try:
                 from socket_instance import socketio

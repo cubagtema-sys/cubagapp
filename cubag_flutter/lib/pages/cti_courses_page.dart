@@ -9,6 +9,7 @@ import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
 
 import '../services/socket_service.dart';
+import 'package:go_router/go_router.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10B981);
@@ -37,6 +38,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
   String? _selectedMode;
 
   Timer? _debounce;
+  bool _failedDialogShowing = false;
 
   @override
   void initState() {
@@ -49,6 +51,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
     });
     _fetchCourses();
     SocketService().on('courses_updated', _onRealtimeCoursesUpdate);
+    SocketService().on('payment_approved', _onRealtimePaymentApproved);
   }
 
   void _onRealtimeCoursesUpdate(dynamic _) {
@@ -57,6 +60,13 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
       if (_tabController.index == 1) {
         _fetchMyEnrollments();
       }
+    }
+  }
+
+  void _onRealtimePaymentApproved(dynamic _) {
+    if (mounted) {
+      _fetchCourses();
+      _fetchMyEnrollments();
     }
   }
 
@@ -72,6 +82,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
   @override
   void dispose() {
     SocketService().off('courses_updated', _onRealtimeCoursesUpdate);
+    SocketService().off('payment_approved', _onRealtimePaymentApproved);
     _debounce?.cancel();
     _searchCtrl.dispose();
     _tabController.dispose();
@@ -202,7 +213,19 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
     final cleanFeeNum = double.tryParse(feeStr.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
     final isFreeCourse = cleanFeeNum == 0.0;
 
-    String paymentMethod = 'momo';
+    if (!isFreeCourse) {
+      final feeParam = Uri.encodeComponent('CTI Course: $title');
+      final amtParam = cleanFeeNum.toStringAsFixed(2);
+      context.push('/payments?fee=$feeParam&amount=$amtParam&redirect=/cti-courses').then((_) {
+        if (mounted) {
+          _fetchCourses();
+          _fetchMyEnrollments();
+        }
+      });
+      return;
+    }
+
+    String paymentMethod = 'free';
     String phone = '';
     String detectedNetwork = '';
     bool isSubmitting = false;
@@ -416,9 +439,11 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
     required double amount,
   }) {
     int pollAttempt = 0;
-    const int maxPollAttempts = 24;
+    const int maxPollAttempts = 60; // 60 × 4s = 240s (4 minutes)
     Timer? pollTimer;
     bool isCompleted = false;
+    bool isChecking = false;
+    String statusMessage = 'Waiting for mobile money prompt...';
 
     showDialog(
       context: context,
@@ -426,15 +451,14 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
       builder: (dlgCtx) => StatefulBuilder(
         builder: (context, setDlgState) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
-          final cardBg = isDark ? const Color(0xFF1A0F0A) : Colors.white;
+          final cardBg = isDark ? const Color(0xFF1E1B18) : Colors.white;
           final textCol = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
+          final mutedCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
-          pollTimer ??= Timer.periodic(const Duration(milliseconds: 2500), (t) async {
-            if (isCompleted || !mounted) {
-              t.cancel();
-              return;
-            }
-            pollAttempt++;
+          Future<void> checkStatus({bool isManual = false}) async {
+            if (isCompleted || !mounted || isChecking) return;
+            isChecking = true;
+            if (dlgCtx.mounted) setDlgState(() {});
 
             try {
               dynamic statusRes;
@@ -448,7 +472,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                 final status = (statusRes.data['status']?.toString() ?? '').toLowerCase();
                 if (status == 'paid' || status == 'success' || status == 'completed') {
                   isCompleted = true;
-                  t.cancel();
+                  pollTimer?.cancel();
                   try {
                     await _api.post('events/courses/${course['id']}/enroll', data: {
                       'payment_method': 'momo',
@@ -465,45 +489,175 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                   return;
                 } else if (status == 'failed' || status == 'declined' || status == 'cancelled') {
                   isCompleted = true;
-                  t.cancel();
+                  pollTimer?.cancel();
                   if (dlgCtx.mounted) Navigator.pop(dlgCtx);
                   if (mounted) _showPaymentFailedDialog('Payment was declined or cancelled.');
                   return;
                 }
               }
-            } catch (_) {}
+              if (isManual && dlgCtx.mounted) {
+                statusMessage = 'Still awaiting authorization. Enter your PIN on phone and check again.';
+              }
+            } catch (_) {
+              if (isManual && dlgCtx.mounted) {
+                statusMessage = 'Checking gateway status... Please ensure your phone is connected.';
+              }
+            } finally {
+              isChecking = false;
+              if (dlgCtx.mounted) setDlgState(() {});
+            }
+          }
+
+          pollTimer ??= Timer.periodic(const Duration(seconds: 4), (t) async {
+            if (isCompleted || !mounted) {
+              t.cancel();
+              return;
+            }
+            pollAttempt++;
 
             if (pollAttempt >= maxPollAttempts) {
-              isCompleted = true;
               t.cancel();
-              if (dlgCtx.mounted) Navigator.pop(dlgCtx);
-              if (mounted) _showPaymentFailedDialog('Payment verification timed out.');
-            } else {
-              setDlgState(() {});
+              if (dlgCtx.mounted) {
+                setDlgState(() {
+                  statusMessage = 'Telco prompt may take 2-3 minutes. If authorized on your phone, click Check Status below.';
+                });
+              }
+              return;
             }
+
+            await checkStatus(isManual: false);
           });
+
+          // USSD tip per network
+          String ussdTip = 'MTN: Dial *170# ➔ Option 6 (My Wallet) ➔ Option 3 (My Approvals) if prompt does not appear.';
+          final netUpper = network.toUpperCase();
+          if (netUpper.contains('VODA') || netUpper.contains('TELECEL')) {
+            ussdTip = 'Telecel: Dial *110# ➔ Option 4 (Make Payment) ➔ Approvals to authorize.';
+          } else if (netUpper.contains('AIRTEL') || netUpper.contains('TIGO') || netUpper.contains('AT')) {
+            ussdTip = 'AT Money: Dial *110# ➔ Approvals to authorize.';
+          }
+
+          final isTimedOut = pollAttempt >= maxPollAttempts;
 
           return AlertDialog(
             backgroundColor: cardBg,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            contentPadding: const EdgeInsets.fromLTRB(22, 24, 22, 16),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const CircularProgressIndicator(color: _kOrange),
-                const SizedBox(height: 16),
-                Text('Approve MoMo Payment', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w900, color: textCol)),
+                if (!isTimedOut) ...[
+                  const SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: CircularProgressIndicator(strokeWidth: 3.5, color: _kOrange),
+                  ),
+                  const SizedBox(height: 18),
+                ] else ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _kOrange.withAlpha(25),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.timer_outlined, size: 36, color: _kOrange),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                Text(
+                  isTimedOut ? 'Awaiting Authorization' : 'Authorize MoMo Payment',
+                  style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w900, color: textCol),
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 8),
-                Text('Check your phone ($phone) and enter your PIN to complete enrolment.', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 13.5, color: const Color(0xFF64748B))),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _kOrange.withAlpha(20),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'GH₵ ${amount.toStringAsFixed(2)}  •  $network  •  $phone',
+                    style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w700, color: _kOrange),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Check your phone and enter your Mobile Money PIN to approve the enrollment fee.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(fontSize: 13, color: mutedCol, height: 1.45),
+                ),
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF2A231C) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF3E332A) : const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.info_outline_rounded, size: 16, color: _kOrange),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          ussdTip,
+                          style: GoogleFonts.inter(fontSize: 11.5, color: mutedCol, height: 1.35),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (statusMessage.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    statusMessage,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(fontSize: 12, color: _kOrange, fontWeight: FontWeight.w500),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _kOrange,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    onPressed: isChecking ? null : () => checkStatus(isManual: true),
+                    child: isChecking
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : Text(
+                            'Check Status Now',
+                            style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                  ),
+                ),
               ],
             ),
             actions: [
-              TextButton(
-                onPressed: () {
-                  isCompleted = true;
-                  pollTimer?.cancel();
-                  Navigator.pop(dlgCtx);
-                },
-                child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+              Center(
+                child: TextButton(
+                  onPressed: () {
+                    isCompleted = true;
+                    pollTimer?.cancel();
+                    Navigator.pop(dlgCtx);
+                  },
+                  child: Text(
+                    'Cancel Payment',
+                    style: GoogleFonts.inter(fontSize: 13, color: mutedCol, fontWeight: FontWeight.w600),
+                  ),
+                ),
               ),
             ],
           );
@@ -513,6 +667,9 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
   }
 
   void _showPaymentFailedDialog(String reason) {
+    if (_failedDialogShowing || !mounted) return;
+    _failedDialogShowing = true;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -527,7 +684,9 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
           ),
         ],
       ),
-    );
+    ).then((_) {
+      _failedDialogShowing = false;
+    });
   }
 
   void _showEnrollmentSuccessModal(Map<String, dynamic> course, dynamic resData) {

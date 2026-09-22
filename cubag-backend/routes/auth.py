@@ -10,6 +10,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import cross_origin
 from config.db import get_db
 from config.cache import cache
+from config.rate_limit import rate_limit
 from utils import admin_required
 import requests as http_req
 
@@ -63,8 +64,11 @@ def _send_email(to_email: str, subject: str, body_text: str, body_html: str = No
             if body_html:
                 msg.attach(MIMEText(body_html, 'html'))
                 
-            server = smtplib.SMTP(smtp_host, smtp_port)
-            server.starttls()
+            if smtp_port == 465 or os.getenv('SMTP_SECURE', '').lower() == 'true':
+                server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=10)
+            else:
+                server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
+                server.starttls()
             if smtp_pass:
                 server.login(sender_email, smtp_pass)
             server.sendmail(sender_email, to_email, msg.as_string())
@@ -125,6 +129,7 @@ def send_verification_email(to_email, token):
     return _send_email(to_email, subject, body_text, body_html)
 
 @auth_bp.route('/send-otp', methods=['POST'])
+@rate_limit('send_otp', max_requests=5, window_seconds=300)
 def send_otp():
     data  = request.get_json() or {}
     email = (data.get('email') or '').strip().lower()
@@ -172,6 +177,7 @@ def send_otp():
         conn.close()
 
 @auth_bp.route('/verify-email', methods=['POST'])
+@rate_limit('verify_otp', max_requests=10, window_seconds=300)
 def verify_email():
     data = request.get_json() or {}
     email = (data.get('email') or '').strip().lower()
@@ -182,17 +188,20 @@ def verify_email():
     conn = get_db()
     try:
         with conn.cursor() as cursor:
-            # Check code is valid AND was created within the last 15 minutes
             cursor.execute("""
                 SELECT * FROM otp_codes
                 WHERE LOWER(email) = LOWER(%s) AND code = %s
+                  AND type = 'email_verification'
                   AND created_at > NOW() - INTERVAL '15 minutes'
             """, (email, token))
             if not cursor.fetchone():
                 return jsonify({'message': 'Invalid or expired verification code'}), 400
 
-            # Delete the OTP code so it can't be reused
             cursor.execute("DELETE FROM otp_codes WHERE LOWER(email) = LOWER(%s)", (email,))
+            cursor.execute(
+                "INSERT INTO otp_codes (email, code, type) VALUES (%s, %s, 'email_verified')",
+                (email, token)
+            )
             conn.commit()
             return jsonify({'message': 'Email verified successfully.'}), 200
     finally:
@@ -206,6 +215,7 @@ def verify_otp_alias():
 
 # BUG-F32 fix: resend-otp route (skips 'already registered' guard)
 @auth_bp.route('/resend-otp', methods=['POST'])
+@rate_limit('resend_otp', max_requests=5, window_seconds=300)
 def resend_otp():
     data  = request.get_json() or {}
     email = (data.get('email') or '').strip().lower()
@@ -237,8 +247,9 @@ def resend_otp():
         conn.close()
 
 @auth_bp.route('/register', methods=['POST'])
+@rate_limit('register', max_requests=8, window_seconds=600)
 def register():
-    data = request.get_json()
+    data = request.get_json() or {}
     # licenseNumber and agencyCode are now OPTIONAL
     required = ['name', 'email', 'phone', 'company', 'location', 'digitalAddress', 'tin', 'memberType', 'portOfOperation', 'password']
     for field in required:
@@ -249,6 +260,19 @@ def register():
     try:
         with conn.cursor() as cursor:
             email = (data.get('email') or '').strip().lower()
+            otp = (data.get('otp') or data.get('email_otp') or data.get('token') or '').strip()
+            if not otp:
+                return jsonify({'message': 'Please verify your email with the OTP before registering.'}), 400
+
+            cursor.execute("""
+                SELECT id FROM otp_codes
+                WHERE LOWER(email) = LOWER(%s) AND code = %s
+                  AND type = 'email_verified'
+                  AND created_at > NOW() - INTERVAL '30 minutes'
+            """, (email, otp))
+            if not cursor.fetchone():
+                return jsonify({'message': 'Email is not verified or the verification code has expired. Please request a new code.'}), 400
+
             cursor.execute("SELECT id FROM members WHERE LOWER(email) = LOWER(%s)", (email,))
             if cursor.fetchone():
                 return jsonify({'message': 'Email already registered'}), 409
@@ -278,6 +302,7 @@ def register():
                 data.get('portOfOperation'), data['memberType'], member_scale, fee_category, consolidation_scope, pw_hash
             ))
             new_id = cursor.fetchone()['id']
+            cursor.execute("DELETE FROM otp_codes WHERE LOWER(email) = LOWER(%s)", (email,))
             conn.commit()
 
             token = create_access_token(
@@ -318,6 +343,7 @@ def register():
 
 
 @auth_bp.route('/login', methods=['POST'])
+@rate_limit('login', max_requests=12, window_seconds=300)
 def login():
     data = request.get_json(silent=True) or {}
     identifier = (data.get('email') or data.get('identifier') or data.get('memberId') or '').strip()
@@ -767,6 +793,8 @@ def get_me():
 
             # Return fresh data
             result = dict(member)
+            result.pop('password_hash', None)
+            result.pop('fcm_token', None)
             result['compliance_score'] = rating_data['compliance_score']
             result['star_rating'] = rating_data['star_rating']
             result['manual_review_score'] = rating_data['manual_review_score']
@@ -791,11 +819,153 @@ def get_me():
                 result['license_number'] = mem_no
                 result['company_scale'] = result.get('member_scale') or 'sme'
                 result['fee_category'] = result.get('fee_category') or 'cf_only'
-                renewal_info = get_member_renewal_breakdown(result.get('member_scale'), result.get('fee_category'), cursor, result.get('member_type'))
-                result['renewal_details'] = renewal_info
-                result['renewal_fee_amount'] = renewal_info['renewal_fee_amount']
-                result['renewal_fee_title'] = renewal_info['renewal_fee_title']
-                result['renewal_fee_breakdown'] = renewal_info['renewal_fee_breakdown']
+
+                # Check if there is a custom profile-specific bill issued by Admin in Compliance Centre or saved on member profile
+                cursor.execute("""
+                    SELECT id, type, status, payment_amount, payment_deadline, fee_breakdown, bill_title, admin_note
+                    FROM compliance_applications
+                    WHERE member_id = %s AND type = 'renewal'
+                    ORDER BY (fee_breakdown IS NOT NULL AND fee_breakdown != '[]' AND fee_breakdown != 'null') DESC, updated_at DESC LIMIT 1
+                """, (member_id,))
+                latest_comp_app = cursor.fetchone()
+                if not latest_comp_app:
+                    cursor.execute("""
+                        SELECT id, type, status, payment_amount, payment_deadline, fee_breakdown, bill_title, admin_note
+                        FROM compliance_applications
+                        WHERE member_id = %s
+                        ORDER BY updated_at DESC LIMIT 1
+                    """, (member_id,))
+                    latest_comp_app = cursor.fetchone()
+
+                import json
+                has_custom_bill = False
+                custom_fb = None
+                custom_title = None
+                custom_amt = None
+
+                # 1. Inspect compliance_applications
+                if latest_comp_app and latest_comp_app.get('fee_breakdown'):
+                    raw_fb = latest_comp_app['fee_breakdown']
+                    if isinstance(raw_fb, str):
+                        try:
+                            raw_fb = json.loads(raw_fb)
+                        except Exception:
+                            raw_fb = []
+                    if isinstance(raw_fb, list) and len(raw_fb) > 0:
+                        custom_fb = raw_fb
+                        custom_title = latest_comp_app.get('bill_title')
+                        if latest_comp_app.get('payment_amount') is not None:
+                            try:
+                                custom_amt = float(latest_comp_app['payment_amount'])
+                            except (TypeError, ValueError):
+                                pass
+
+                # 2. Inspect members table if not found on application
+                if not custom_fb and result.get('renewal_fee_breakdown'):
+                    raw_m_fb = result['renewal_fee_breakdown']
+                    if isinstance(raw_m_fb, str):
+                        try:
+                            raw_m_fb = json.loads(raw_m_fb)
+                        except Exception:
+                            raw_m_fb = []
+                    if isinstance(raw_m_fb, list) and len(raw_m_fb) > 0:
+                        custom_fb = raw_m_fb
+                        custom_title = result.get('renewal_fee_title')
+                        if result.get('renewal_fee_amount') is not None:
+                            try:
+                                custom_amt = float(result['renewal_fee_amount'])
+                            except (TypeError, ValueError):
+                                pass
+
+                # 3. If no breakdown list is present, but an application has an explicit payment_amount
+                if not custom_fb and latest_comp_app and latest_comp_app.get('payment_amount') is not None:
+                    try:
+                        p_amt = float(latest_comp_app['payment_amount'])
+                        if p_amt > 0:
+                            custom_amt = p_amt
+                            custom_title = latest_comp_app.get('bill_title') or result.get('renewal_fee_title') or 'Annual Renewal Dues'
+                            custom_fb = [{'label': custom_title, 'amount': f'{p_amt:.2f}'}]
+                    except (TypeError, ValueError):
+                        pass
+
+                if custom_fb:
+                    if custom_amt is None or custom_amt <= 0:
+                        custom_amt = sum(float(str(x.get('amount', 0)).replace(',', '')) for x in custom_fb)
+                    bill_lbl = custom_title or result.get('renewal_fee_title') or 'Annual Renewal Dues'
+                    result['renewal_fee_breakdown'] = custom_fb
+                    result['renewal_fee_amount'] = custom_amt
+                    result['renewal_fee_title'] = bill_lbl
+                    if latest_comp_app:
+                        result['compliance_app_id'] = latest_comp_app['id']
+                        result['compliance_app_status'] = latest_comp_app['status']
+                        result['payment_deadline'] = str(latest_comp_app.get('payment_deadline') or '')
+                    result['renewal_details'] = {
+                        'renewal_fee_amount': custom_amt,
+                        'renewal_fee_title': bill_lbl,
+                        'renewal_fee_breakdown': custom_fb
+                    }
+                    has_custom_bill = True
+
+                if not has_custom_bill:
+                    renewal_info = get_member_renewal_breakdown(result.get('member_scale'), result.get('fee_category'), cursor, result.get('member_type'))
+                    result['renewal_details'] = renewal_info
+                    result['renewal_fee_amount'] = renewal_info['renewal_fee_amount']
+                    result['renewal_fee_title'] = renewal_info['renewal_fee_title']
+                    result['renewal_fee_breakdown'] = renewal_info['renewal_fee_breakdown']
+
+                # Calculate installment financials and retrieve any linked payments
+                app_target_id = latest_comp_app['id'] if latest_comp_app else 0
+                cursor.execute("""
+                    SELECT id, amount, status, payment_method, receipt_url, description, is_installment, installment_number, created_at, paid_at
+                    FROM payments
+                    WHERE (application_id = %s OR (member_id = %s AND (LOWER(description) LIKE '%%renewal%%' OR LOWER(description) LIKE '%%annual dues%%')))
+                      AND LOWER(status) IN ('paid', 'completed', 'success', 'successful', 'pending', 'submitted', 'processing')
+                    ORDER BY created_at ASC
+                """, (app_target_id, member_id))
+                renewal_installments = [dict(r) for r in cursor.fetchall()]
+                for inst in renewal_installments:
+                    if inst.get('created_at'):
+                        inst['date'] = inst['created_at'].isoformat()
+                    if inst.get('paid_at'):
+                        inst['paid_at'] = inst['paid_at'].isoformat()
+
+                confirmed_paid = sum(float(p['amount']) for p in renewal_installments if str(p.get('status', '')).lower() in ('paid', 'completed', 'success', 'successful'))
+                comp_amt_paid = float(latest_comp_app.get('amount_paid') or 0.0) if latest_comp_app else 0.0
+                actual_paid = confirmed_paid if confirmed_paid > 0 else comp_amt_paid
+                total_billed = float(result.get('renewal_fee_amount') or 0.0)
+                bal_due = max(0.0, total_billed - actual_paid)
+                is_part_paid = (actual_paid > 0.01 and bal_due > 0.01)
+
+                result['renewal_amount_paid'] = actual_paid
+                result['renewal_balance_due'] = bal_due
+                result['renewal_allow_installments'] = bool(latest_comp_app.get('allow_installments', True)) if latest_comp_app else True
+                result['renewal_min_installment_amount'] = float(latest_comp_app.get('min_installment_amount') or 0.0) if latest_comp_app else 0.0
+                result['renewal_is_partially_paid'] = is_part_paid
+                result['renewal_installments'] = renewal_installments
+
+                # Check if member has an active or completed renewal payment
+                cursor.execute("""
+                    SELECT id, amount, status, payment_method, receipt_url, description FROM payments
+                    WHERE member_id = %s
+                      AND LOWER(status) IN ('pending', 'paid', 'completed', 'success', 'successful', 'processing', 'submitted')
+                      AND (
+                          LOWER(description) LIKE '%%renewal%%'
+                          OR LOWER(description) LIKE '%%annual dues%%'
+                          OR LOWER(description) LIKE '%%license renewal%%'
+                      )
+                    ORDER BY id DESC LIMIT 1
+                """, (member_id,))
+                renewal_pay_row = cursor.fetchone()
+                result['renewal_payment_submitted'] = bool(renewal_pay_row)
+                result['renewal_payment_status'] = renewal_pay_row['status'] if renewal_pay_row else None
+                if renewal_pay_row and latest_comp_app and latest_comp_app.get('status') == 'payment_pending':
+                    cursor.execute("""
+                        UPDATE compliance_applications
+                        SET status = 'payment_submitted', updated_at = NOW()
+                        WHERE id = %s
+                    """, (latest_comp_app['id'],))
+                    conn.commit()
+                    result['compliance_app_status'] = 'payment_submitted'
 
                 # Check if registration fee and package fee were already paid
                 cursor.execute("""
@@ -884,6 +1054,8 @@ def get_me():
                 )
                 result['permissions'] = [r['permission_key'] for r in cursor.fetchall()]
 
+            result.pop('password_hash', None)
+            result.pop('fcm_token', None)
             # Store in cache — 60 second TTL per member
             cache.set(cache_key, result, timeout=60)
             return jsonify(result), 200
@@ -964,14 +1136,26 @@ def upload_photo():
         except Exception as e:
             logger.warning(f"[upload-photo] Request to Supabase failed: {e}")
 
-    # Fallback to local static storage if Supabase failed or unconfigured
+    # Fallback to local persistent storage if Supabase failed or unconfigured
     if not public_url:
-        upload_dir = os.path.join(os.getcwd(), 'static', 'uploads', 'avatars')
-        os.makedirs(upload_dir, exist_ok=True)
         local_filename = safe_name
-        local_path = os.path.join(upload_dir, local_filename)
-        with open(local_path, 'wb') as f:
+        # 1. Permanent storage outside web build directories
+        backend_dir = os.path.dirname(os.path.dirname(__file__))
+        perm_dir = os.path.join(backend_dir, 'uploads', 'avatars')
+        os.makedirs(perm_dir, exist_ok=True)
+        with open(os.path.join(perm_dir, local_filename), 'wb') as f:
             f.write(file_bytes)
+
+        # 2. Also mirror to static and dist so static file handlers find it
+        for folder in ['static', 'dist']:
+            sub_dir = os.path.join(backend_dir, folder, 'uploads', 'avatars')
+            os.makedirs(sub_dir, exist_ok=True)
+            try:
+                with open(os.path.join(sub_dir, local_filename), 'wb') as f:
+                    f.write(file_bytes)
+            except Exception:
+                pass
+
         public_url = f"/static/uploads/avatars/{local_filename}"
 
     # Save URL to DB
@@ -980,6 +1164,9 @@ def upload_photo():
         with conn.cursor() as cursor:
             cursor.execute("UPDATE members SET profile_photo = %s WHERE id = %s", (public_url, member_id))
             conn.commit()
+
+        # Invalidate profile cache so fresh photo is always returned immediately
+        cache.delete(f'me_{member_id}')
 
         try:
             from socket_instance import socketio
@@ -1048,7 +1235,8 @@ def change_password():
         conn.close()
 
 
-@auth_bp.route('/update-fcm-token', methods=['POST', 'OPTIONS'])
+@auth_bp.route('/update-fcm-token', methods=['POST', 'PUT', 'OPTIONS'])
+@auth_bp.route('/fcm-token', methods=['POST', 'PUT', 'OPTIONS'])
 def update_fcm_token():
     if request.method == 'OPTIONS':
         return jsonify({'ok': True}), 200
@@ -1061,7 +1249,7 @@ def update_fcm_token():
         return jsonify({'message': 'Authentication required'}), 401
 
     data = request.get_json() or {}
-    token = data.get('token')
+    token = data.get('fcm_token') or data.get('token')
 
     if not token:
         return jsonify({'message': 'Token is required'}), 400
@@ -1142,6 +1330,7 @@ def send_reset_email(to_email, token):
 
 
 @auth_bp.route('/forgot-password', methods=['POST', 'OPTIONS'])
+@rate_limit('forgot_password', max_requests=5, window_seconds=300)
 def forgot_password():
     if request.method == 'OPTIONS':
         return jsonify({'ok': True}), 200
@@ -1184,6 +1373,7 @@ def forgot_password():
 
 
 @auth_bp.route('/reset-password', methods=['POST', 'OPTIONS'])
+@rate_limit('reset_password', max_requests=8, window_seconds=300)
 def reset_password():
     if request.method == 'OPTIONS':
         return jsonify({'ok': True}), 200

@@ -607,7 +607,7 @@ class _SplashPageState extends State<SplashPage>
                   TextButton(
                     onPressed: () async {
                       await AuthService().logout();
-                      if (mounted) context.go('/');
+                      if (context.mounted) context.go('/');
                     },
                     child: Text(
                       'Sign in with another account',

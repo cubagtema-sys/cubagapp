@@ -50,12 +50,13 @@ class PushNotificationService {
         },
       );
 
-      // Create the Android notification channel
-      await _localNotifications
+      // Create the Android notification channel and request Android 13+ permissions
+      final androidPlugin = _localNotifications
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
-          >()
-          ?.createNotificationChannel(_channel);
+          >();
+      await androidPlugin?.createNotificationChannel(_channel);
+      await androidPlugin?.requestNotificationsPermission();
 
       // ── Request FCM permissions ─────────────────────────────────────────────
       final settings = await _messaging.requestPermission(

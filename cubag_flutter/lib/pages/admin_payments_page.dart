@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../services/api_service.dart';
@@ -135,9 +136,20 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     );
   }
 
+  String _resolveReceiptUrl(String url) {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    final base = ApiService.baseUrl.replaceAll(RegExp(r'/api/?$'), '');
+    if (url.startsWith('/')) {
+      return '$base$url';
+    }
+    return '$base/$url';
+  }
+
   Future<void> _markPaid(dynamic id) async {
     setState(() => _actionLoading = true);
-    final index = _transactions.indexWhere((t) => t['tx_id'] == id);
+    final index = _transactions.indexWhere((t) => (t['tx_id'] ?? t['id']) == id);
     if (index != -1) {
       setState(() {
         _transactions[index]['status'] = 'paid';
@@ -160,7 +172,195 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     if (mounted) setState(() => _actionLoading = false);
   }
 
-  void _showConfirmDialog(dynamic txId, double amount, String memberName) {
+  Future<void> _rejectPayment(dynamic id, {String? reason}) async {
+    setState(() => _actionLoading = true);
+    try {
+      final res = await ApiService().post('/payments/admin/reject/$id', data: {
+        'reason': reason ?? 'Deposit slip rejected or invalid',
+      });
+      if (res.statusCode == 200) {
+        _showToast('Payment marked as rejected.');
+        _fetch(refresh: true);
+      }
+    } catch (e, st) {
+      AppLogger.error('admin_payments_reject', e, st);
+      _showToast('Network error while rejecting payment.', isError: true);
+    }
+    if (mounted) setState(() => _actionLoading = false);
+  }
+
+  void _showReceiptDialog(
+    String receiptUrl,
+    String memberName,
+    double amount,
+    String date, {
+    dynamic txId,
+    bool isPending = false,
+  }) {
+    final fullUrl = _resolveReceiptUrl(receiptUrl);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? _kCardBg : Colors.white;
+    final textColor = isDark ? const Color(0xFFf8fafc) : const Color(0xFF1A0F0A);
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: cardBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+        contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+        actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _kOrange.withAlpha(25),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.account_balance_rounded,
+                color: _kOrange,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Bank Deposit Receipt Slip',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: textColor,
+                    ),
+                  ),
+                  Text(
+                    '$memberName · GH₵ ${amount.toStringAsFixed(2)}',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: const Color(0xFF64748b),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.open_in_new_rounded, size: 20),
+              tooltip: 'Open in new tab',
+              onPressed: () => launchUrl(Uri.parse(fullUrl), mode: LaunchMode.externalApplication),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 580,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                constraints: const BoxConstraints(maxHeight: 440),
+                decoration: BoxDecoration(
+                  color: Colors.black.withAlpha(8),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFcbd5e1)),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: InteractiveViewer(
+                    minScale: 0.8,
+                    maxScale: 4.0,
+                    child: Image.network(
+                      fullUrl,
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          height: 280,
+                          alignment: Alignment.center,
+                          child: const CircularProgressIndicator(strokeWidth: 2.5),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 200,
+                          padding: const EdgeInsets.all(20),
+                          alignment: Alignment.center,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.broken_image_rounded, size: 40, color: Color(0xFF94a3b8)),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Unable to load receipt image directly.\nClick "Open in new tab" above.',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748b)),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Pinch / scroll to zoom into receipt details',
+                style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF94a3b8)),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          if (isPending && txId != null) ...[
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _rejectPayment(txId);
+              },
+              icon: const Icon(Icons.cancel_outlined, size: 16, color: _kRed),
+              label: const Text('Reject Slip', style: TextStyle(color: _kRed, fontWeight: FontWeight.bold)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: _kRed),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _markPaid(txId);
+              },
+              icon: const Icon(Icons.check_circle_rounded, size: 16),
+              label: const Text('Confirm & Mark Paid'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kGreen,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ],
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showConfirmDialog(
+    dynamic txId,
+    double amount,
+    String memberName, {
+    String? receiptUrl,
+    String? method,
+    String? notes,
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? _kCardBg : Colors.white;
     final textColor = isDark
@@ -169,6 +369,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     final subTextColor = isDark
         ? const Color(0xFF94a3b8)
         : const Color(0xFF475569);
+    final hasReceipt = receiptUrl != null && receiptUrl.isNotEmpty && receiptUrl != 'null';
 
     showDialog(
       context: context,
@@ -177,87 +378,131 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
         backgroundColor: cardBg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         contentPadding: const EdgeInsets.all(24),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: _kGreen.withAlpha(30),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_circle_rounded,
-                color: _kGreen,
-                size: 28,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Confirm Payment',
-              style: GoogleFonts.outfit(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-                color: textColor,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Mark GHS ${amount.toStringAsFixed(2)} from $memberName as PAID / RECEIVED?\nThis updates the member standing to good standing.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(color: subTextColor, fontSize: 15),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(ctx).pop(),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 46),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      'Cancel',
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                      ),
-                    ),
-                  ),
+        content: SizedBox(
+          width: 480,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: _kGreen.withAlpha(30),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _actionLoading
-                        ? null
-                        : () {
-                            Navigator.of(ctx).pop();
-                            _markPaid(txId);
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _kGreen,
-                      elevation: 0,
-                      minimumSize: const Size(0, 46),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: _kGreen,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Confirm & Mark Paid',
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: textColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Mark GHS ${amount.toStringAsFixed(2)} from $memberName as PAID / RECEIVED?\nThis automatically activates member standing and generates their official receipt.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(color: subTextColor, fontSize: 14.5, height: 1.4),
+              ),
+              if (hasReceipt) ...[
+                const SizedBox(height: 16),
+                InkWell(
+                  onTap: () => _showReceiptDialog(receiptUrl, memberName, amount, '', txId: txId, isPending: true),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF24140D).withAlpha(12),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _kOrange.withAlpha(60)),
                     ),
-                    child: Text(
-                      'Approve',
-                      style: GoogleFonts.outfit(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.receipt_rounded, color: _kOrange, size: 22),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Bank Deposit Slip Attached',
+                                style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: const Color(0xFF1A0F0A),
+                                ),
+                              ),
+                              Text(
+                                'Click to inspect full deposit receipt image',
+                                style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748b)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.zoom_in_rounded, color: _kOrange, size: 18),
+                      ],
                     ),
                   ),
                 ),
               ],
-            ),
-          ],
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 46),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _actionLoading
+                          ? null
+                          : () {
+                              Navigator.of(ctx).pop();
+                              _markPaid(txId);
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kGreen,
+                        elevation: 0,
+                        minimumSize: const Size(0, 46),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Approve & Mark Paid',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -280,6 +525,11 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     final inputBg = isDark
         ? const Color(0xFF1A0F0A).withAlpha(120)
         : const Color(0xFFf8fafc);
+
+    final paymentMethod = (tx['payment_method'] ?? 'momo').toString();
+    final isBank = paymentMethod.toLowerCase() == 'bank' || paymentMethod.toLowerCase() == 'bank_transfer';
+    final receiptUrl = tx['receipt_url']?.toString();
+    final hasReceipt = receiptUrl != null && receiptUrl.isNotEmpty && receiptUrl != 'null';
 
     showDialog(
       context: context,
@@ -312,7 +562,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
           ],
         ),
         content: SizedBox(
-          width: 520,
+          width: 540,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -394,14 +644,35 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                 ),
                 const SizedBox(height: 10),
                 _detailField(
-                  'Payment Reference / Channel',
-                  tx['payment_ref']?.toString() ??
-                      'Mobile Money / Instant Pay',
+                  'Payment Channel / Method',
+                  isBank ? 'Bank Transfer (GCB Bank Limited)' : 'Mobile Money / Instant Pay',
                   inputBg,
                   borderColor,
                   textColor,
                   subTextColor,
                 ),
+                if (tx['payment_ref'] != null && tx['payment_ref'].toString().isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  _detailField(
+                    'Reference / Slip No.',
+                    tx['payment_ref'].toString(),
+                    inputBg,
+                    borderColor,
+                    textColor,
+                    subTextColor,
+                  ),
+                ],
+                if (tx['notes'] != null && tx['notes'].toString().isNotEmpty && tx['notes'] != 'null') ...[
+                  const SizedBox(height: 10),
+                  _detailField(
+                    'Depositor Notes',
+                    tx['notes'].toString(),
+                    inputBg,
+                    borderColor,
+                    textColor,
+                    subTextColor,
+                  ),
+                ],
                 const SizedBox(height: 10),
                 _detailField(
                   'Description / Fee Type',
@@ -420,6 +691,55 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                   textColor,
                   subTextColor,
                 ),
+                if (hasReceipt) ...[
+                  const SizedBox(height: 14),
+                  InkWell(
+                    onTap: () => _showReceiptDialog(
+                      receiptUrl,
+                      tx['member_name']?.toString() ?? '',
+                      amount,
+                      tx['date']?.toString() ?? '',
+                      txId: tx['tx_id'] ?? tx['id'],
+                      isPending: status == 'pending',
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF24140D).withAlpha(12),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _kOrange.withAlpha(60)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.attachment_rounded, color: _kOrange, size: 22),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Attached Deposit Slip / Transfer Receipt',
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: const Color(0xFF1A0F0A),
+                                  ),
+                                ),
+                                Text(
+                                  'Click to preview high-resolution receipt',
+                                  style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748b)),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.arrow_forward_ios_rounded, color: _kOrange, size: 14),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -437,9 +757,12 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
               onPressed: () {
                 Navigator.of(ctx).pop();
                 _showConfirmDialog(
-                  tx['tx_id'],
+                  tx['tx_id'] ?? tx['id'],
                   amount,
                   tx['member_name']?.toString() ?? '',
+                  receiptUrl: receiptUrl,
+                  method: paymentMethod,
+                  notes: tx['notes']?.toString(),
                 );
               },
               icon: const Icon(Icons.check_circle_outline_rounded, size: 16),
@@ -691,6 +1014,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                           columns: const [
                             DataColumn(label: Text('TRANSACTION REF')),
                             DataColumn(label: Text('MEMBER / COMPANY')),
+                            DataColumn(label: Text('CHANNEL / METHOD')),
                             DataColumn(label: Text('AMOUNT (GHS)')),
                             DataColumn(label: Text('DESCRIPTION / PURPOSE')),
                             DataColumn(label: Text('DATE')),
@@ -725,6 +1049,11 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                 tx['date']?.toString() ??
                                 tx['created_at']?.toString() ??
                                 '—';
+
+                            final method = (tx['payment_method'] ?? 'momo').toString().toLowerCase();
+                            final isBank = method == 'bank' || method == 'bank_transfer' || method == 'wire';
+                            final receiptUrl = tx['receipt_url']?.toString();
+                            final hasReceipt = receiptUrl != null && receiptUrl.isNotEmpty && receiptUrl != 'null';
 
                             return DataRow(
                               cells: [
@@ -794,7 +1123,104 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                   ),
                                 ),
 
-                                // 3. Amount
+                                // 3. Channel / Method (with Bank / Receipt Pill)
+                                DataCell(
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isBank
+                                              ? const Color(0xFF0284c7).withAlpha(20)
+                                              : _kOrange.withAlpha(20),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(
+                                            color: isBank
+                                                ? const Color(0xFF0284c7).withAlpha(60)
+                                                : _kOrange.withAlpha(60),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              isBank
+                                                  ? Icons.account_balance_rounded
+                                                  : Icons.phone_android_rounded,
+                                              size: 13,
+                                              color: isBank
+                                                  ? const Color(0xFF0284c7)
+                                                  : _kOrange,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              isBank ? 'BANK' : 'MOMO',
+                                              style: GoogleFonts.outfit(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w800,
+                                                color: isBank
+                                                    ? const Color(0xFF0284c7)
+                                                    : _kOrange,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      if (hasReceipt) ...[
+                                        const SizedBox(width: 6),
+                                        InkWell(
+                                          onTap: () => _showReceiptDialog(
+                                            receiptUrl,
+                                            memberName,
+                                            amount,
+                                            date,
+                                            txId: tx['tx_id'] ?? tx['id'],
+                                            isPending: status == 'pending',
+                                          ),
+                                          borderRadius: BorderRadius.circular(6),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF10b981).withAlpha(20),
+                                              borderRadius: BorderRadius.circular(6),
+                                              border: Border.all(
+                                                color: const Color(0xFF10b981).withAlpha(80),
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(
+                                                  Icons.image_outlined,
+                                                  size: 13,
+                                                  color: _kGreen,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  'View Slip',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: _kGreen,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+
+                                // 4. Amount
                                 DataCell(
                                   Text(
                                     'GHS ${amount.toStringAsFixed(2)}',
@@ -806,14 +1232,14 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                   ),
                                 ),
 
-                                // 4. Description
+                                // 5. Description
                                 DataCell(
                                   Container(
                                     constraints: BoxConstraints(
                                       minWidth: 160,
                                       maxWidth: constraints.maxWidth > 900
-                                          ? constraints.maxWidth * 0.25
-                                          : 240,
+                                          ? constraints.maxWidth * 0.22
+                                          : 220,
                                     ),
                                     child: Text(
                                       desc,
@@ -827,7 +1253,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                   ),
                                 ),
 
-                                // 5. Date
+                                // 6. Date
                                 DataCell(
                                   Text(
                                     date.split('T').first,
@@ -839,7 +1265,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                   ),
                                 ),
 
-                                // 6. Status Badge
+                                // 7. Status Badge
                                 DataCell(
                                   Container(
                                     padding: const EdgeInsets.symmetric(
@@ -864,7 +1290,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                   ),
                                 ),
 
-                                // 7. Action Buttons
+                                // 8. Action Buttons
                                 DataCell(
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -886,12 +1312,40 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                           onPressed: _actionLoading
                                               ? null
                                               : () => _showConfirmDialog(
-                                                  tx['tx_id'],
+                                                  tx['tx_id'] ?? tx['id'],
                                                   amount,
                                                   memberName,
+                                                  receiptUrl: receiptUrl,
+                                                  method: method,
+                                                  notes: tx['notes']?.toString(),
                                                 ),
                                           child: const Text(
                                             'Approve',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        OutlinedButton(
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: _kRed,
+                                            side: const BorderSide(color: _kRed),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 6,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                          onPressed: _actionLoading
+                                              ? null
+                                              : () => _rejectPayment(tx['tx_id'] ?? tx['id']),
+                                          child: const Text(
+                                            'Reject',
                                             style: TextStyle(
                                               fontSize: 13,
                                               fontWeight: FontWeight.bold,

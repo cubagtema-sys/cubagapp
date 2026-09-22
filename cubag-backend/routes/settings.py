@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, request
+from flask_jwt_extended import verify_jwt_in_request
 from config.db import get_db
 import json
 from utils import admin_required, sub_admin_required
@@ -6,8 +7,20 @@ from config.cache import cache
 
 settings_bp = Blueprint('settings', __name__)
 
+_PUBLIC_SETTING_KEYS = {
+    'cubag_fees_v2',
+    'cubag_payment_settings_v2',
+}
+
+
 @settings_bp.route('/<key>', methods=['GET'])
 def get_setting(key):
+    if key not in _PUBLIC_SETTING_KEYS:
+        try:
+            verify_jwt_in_request()
+        except Exception:
+            return jsonify({'message': 'Authentication required'}), 401
+
     conn = get_db()
     try:
         with conn.cursor() as cursor:

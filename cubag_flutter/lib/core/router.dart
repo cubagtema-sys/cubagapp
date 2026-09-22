@@ -659,6 +659,16 @@ final GoRouter appRouter = GoRouter(
               path: '/admin/compliance',
               pageBuilder: (c, s) =>
                   const NoTransitionPage(child: AdminCompliancePage()),
+              routes: [
+                GoRoute(
+                  path: ':appId',
+                  pageBuilder: (c, s) => NoTransitionPage(
+                    child: AdminComplianceDetailPage(
+                      appId: int.tryParse(s.pathParameters['appId'] ?? '0') ?? 0,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

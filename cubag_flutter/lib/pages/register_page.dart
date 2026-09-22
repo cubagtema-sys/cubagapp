@@ -279,6 +279,8 @@ class _RegisterPageState extends State<RegisterPage> {
           'companyScale': isCorporate ? (_form['companyScale'] ?? 'sme') : null,
           'feeCategory': isCorporate ? (_form['feeCategory'] ?? 'cf_only') : null,
           'password': _pwCtrl.text,
+          'otp': _otpCtrl.text.trim(),
+          'email_otp': _otpCtrl.text.trim(),
         },
       );
       if (!mounted) return;

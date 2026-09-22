@@ -44,6 +44,12 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
   String _renewalTitle = 'Annual Renewal Dues';
   String _renewalTotal = '2170.00';
   Map<String, dynamic>? _renewalApp;
+  double _renewalAmountPaid = 0.0;
+  double _renewalBalanceDue = 0.0;
+  bool _allowInstallments = true;
+  double _minInstallmentAmount = 0.0;
+  bool _isPartiallyPaid = false;
+  List<dynamic> _installments = [];
 
   @override
   void initState() {
@@ -94,14 +100,28 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
         _memberInfo = data;
 
         final rawRenBreakdown = data['renewal_fee_breakdown'];
-        if (rawRenBreakdown is List) {
+        if (rawRenBreakdown is List && rawRenBreakdown.isNotEmpty) {
           _renewalBreakdown = rawRenBreakdown
               .map((x) => Map<String, dynamic>.from(x as Map))
               .toList();
         }
-        _renewalTitle =
-            data['renewal_fee_title']?.toString() ?? 'Annual Renewal Dues';
-        _renewalTotal = data['renewal_fee_amount']?.toString() ?? '2170.00';
+        if (data['renewal_fee_title'] != null && data['renewal_fee_title'].toString().isNotEmpty) {
+          _renewalTitle = data['renewal_fee_title'].toString();
+        }
+        if (data['renewal_fee_amount'] != null) {
+          final amt = double.tryParse(data['renewal_fee_amount'].toString());
+          if (amt != null && amt > 0) {
+            _renewalTotal = amt.toStringAsFixed(2);
+          }
+        }
+        _renewalAmountPaid = double.tryParse(data['renewal_amount_paid']?.toString() ?? '0') ?? 0.0;
+        _renewalBalanceDue = double.tryParse(data['renewal_balance_due']?.toString() ?? '') ??
+            (double.tryParse(_renewalTotal) != null ? (double.parse(_renewalTotal) - _renewalAmountPaid).clamp(0.0, double.infinity) : 0.0);
+        _allowInstallments = data['renewal_allow_installments'] != false;
+        _minInstallmentAmount = double.tryParse(data['renewal_min_installment_amount']?.toString() ?? '0') ?? 0.0;
+        _isPartiallyPaid = data['renewal_is_partially_paid'] == true;
+        _installments = ApiService.ensureList(data['renewal_installments']);
+
         _isPackageFeePaid = data['package_fee_paid'] == true;
         _isRegFeePaid = data['registration_fee_paid'] == true ||
             data['registration_paid'] == true ||
@@ -111,26 +131,58 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
       if (mounted && appRes != null && appRes.data is Map) {
         final apps = appRes.data['applications'];
         if (apps is List) {
+          Map<String, dynamic>? candidate;
           for (final a in apps) {
             if (a is Map && a['type'] == 'renewal') {
-              _renewalApp = Map<String, dynamic>.from(a);
-              final pAmt = double.tryParse(_renewalApp!['payment_amount']?.toString() ?? '');
-              if (pAmt != null && pAmt > 0) {
-                _renewalTotal = pAmt.toStringAsFixed(2);
+              final m = Map<String, dynamic>.from(a);
+              final status = m['status']?.toString().toLowerCase();
+              final pAmt = double.tryParse(m['payment_amount']?.toString() ?? '');
+              if (candidate == null) {
+                candidate = m;
+              } else if (candidate['status'] == 'draft' && status != 'draft') {
+                candidate = m;
+              } else if ((pAmt != null && pAmt > 0) &&
+                  (double.tryParse(candidate['payment_amount']?.toString() ?? '') ?? 0) <= 0) {
+                candidate = m;
               }
-              if (_renewalApp!['fee_breakdown'] != null) {
-                try {
-                  final rawBd = _renewalApp!['fee_breakdown'] is String
-                      ? jsonDecode(_renewalApp!['fee_breakdown'])
-                      : _renewalApp!['fee_breakdown'];
-                  if (rawBd is List) {
-                    _renewalBreakdown = rawBd
-                        .map((x) => Map<String, dynamic>.from(x as Map))
-                        .toList();
-                  }
-                } catch (_) {}
-              }
-              break;
+            }
+          }
+
+          if (candidate != null) {
+            _renewalApp = candidate;
+            final pAmt = double.tryParse(_renewalApp!['payment_amount']?.toString() ?? '');
+            if (pAmt != null && pAmt > 0) {
+              _renewalTotal = pAmt.toStringAsFixed(2);
+            }
+            if (_renewalApp!['amount_paid'] != null) {
+              _renewalAmountPaid = double.tryParse(_renewalApp!['amount_paid']?.toString() ?? '0') ?? _renewalAmountPaid;
+            }
+            if (_renewalApp!['allow_installments'] != null) {
+              _allowInstallments = _renewalApp!['allow_installments'] == true || _renewalApp!['allow_installments'].toString().toLowerCase() == 'true';
+            }
+            if (_renewalApp!['min_installment_amount'] != null) {
+              _minInstallmentAmount = double.tryParse(_renewalApp!['min_installment_amount']?.toString() ?? '0') ?? _minInstallmentAmount;
+            }
+            final curTot = double.tryParse(_renewalTotal) ?? 0.0;
+            _renewalBalanceDue = (curTot - _renewalAmountPaid).clamp(0.0, double.infinity);
+            if (_renewalApp!['status'] == 'partially_paid' || (_renewalAmountPaid > 0.01 && _renewalBalanceDue > 0.01)) {
+              _isPartiallyPaid = true;
+            }
+
+            if (_renewalApp!['bill_title'] != null && _renewalApp!['bill_title'].toString().trim().isNotEmpty) {
+              _renewalTitle = _renewalApp!['bill_title'].toString().trim();
+            }
+            if (_renewalApp!['fee_breakdown'] != null) {
+              try {
+                final rawBd = _renewalApp!['fee_breakdown'] is String
+                    ? jsonDecode(_renewalApp!['fee_breakdown'])
+                    : _renewalApp!['fee_breakdown'];
+                if (rawBd is List && rawBd.isNotEmpty) {
+                  _renewalBreakdown = rawBd
+                      .map((x) => Map<String, dynamic>.from(x as Map))
+                      .toList();
+                }
+              } catch (_) {}
             }
           }
         }
@@ -156,6 +208,32 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
           _packageBreakdown = rawPkgBreakdown
               .map((x) => Map<String, dynamic>.from(x as Map))
               .toList();
+        }
+      }
+
+      // Reconcile breakdown line items with total renewal amount.
+      // If there is an amount discrepancy (e.g. hardcoded 1.00 tariff vs 25.00 bill issued by admin),
+      // rebuild the line items to match the actual billed amount so member sees exact bill.
+      final curTotalAmt = double.tryParse(_renewalTotal) ?? 0.0;
+      if (curTotalAmt > 0) {
+        double itemsSum = 0.0;
+        for (final item in _renewalBreakdown) {
+          final a = double.tryParse(item['amount']?.toString().replaceAll(',', '') ?? '0') ?? 0.0;
+          itemsSum += a;
+        }
+        if ((itemsSum - curTotalAmt).abs() > 0.01) {
+          final itemLabel = _renewalTitle.isNotEmpty &&
+                  !_renewalTitle.toLowerCase().contains('licentiate') &&
+                  !_renewalTitle.toLowerCase().contains('associate')
+              ? _renewalTitle
+              : 'Annual Renewal Dues';
+          _renewalBreakdown = [
+            {'label': itemLabel, 'amount': curTotalAmt.toStringAsFixed(2)}
+          ];
+          if (_renewalTitle.toLowerCase().contains('licentiate') ||
+              _renewalTitle.toLowerCase().contains('associate')) {
+            _renewalTitle = 'Annual Renewal Dues';
+          }
         }
       }
     } catch (_) {}
@@ -211,18 +289,30 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
     final rawExpiry = _memberInfo['license_expiry_date']?.toString();
     final expiry = (rawExpiry == null || rawExpiry == 'None' || rawExpiry == 'null' || rawExpiry.isEmpty) ? null : rawExpiry;
     final daysLeft = expiry != null ? DateTime.tryParse(expiry)?.difference(DateTime.now()).inDays : null;
-    final bool isRenewalPaid = _memberInfo['is_renewal_paid'] == true || _memberInfo['renewal_paid'] == true;
-    final bool isRenewalDueSoon = !isRenewalPaid && daysLeft != null && daysLeft <= 30 && daysLeft >= 0;
-    final bool isRenewalExpired = !isRenewalPaid && daysLeft != null && daysLeft < 0;
-
     final String renewalStatus = _renewalApp?['status']?.toString().toLowerCase() ?? '';
-    final double? renewalBillAmt = _renewalApp != null
+    final bool isRenewalPaid = _memberInfo['is_renewal_paid'] == true ||
+        _memberInfo['renewal_paid'] == true ||
+        renewalStatus == 'approved' ||
+        renewalStatus == 'payment_confirmed';
+    final bool isRenewalSubmitted = _memberInfo['renewal_payment_submitted'] == true ||
+        renewalStatus == 'payment_submitted';
+    final bool isBillPaid = isRenewalPaid || isRenewalSubmitted;
+    final bool isRenewalDueSoon = !isBillPaid && daysLeft != null && daysLeft <= 30 && daysLeft >= 0;
+    final bool isRenewalExpired = !isBillPaid && daysLeft != null && daysLeft < 0;
+
+    final double? renewalBillAmt = (_renewalApp != null && _renewalApp!['payment_amount'] != null)
         ? double.tryParse(_renewalApp!['payment_amount']?.toString() ?? '')
-        : null;
-    final bool hasCalculatedRenewalBill = !isRenewalPaid &&
-        _renewalApp != null &&
-        ((renewalBillAmt != null && renewalBillAmt > 0) || renewalStatus == 'payment_pending');
-    final bool showRenewalFigures = isRenewalPaid || hasCalculatedRenewalBill;
+        : double.tryParse(_memberInfo['renewal_fee_amount']?.toString() ?? '');
+    final bool hasCalculatedRenewalBill = 
+        (_renewalApp != null &&
+        ((renewalBillAmt != null && renewalBillAmt > 0) ||
+         _renewalBreakdown.isNotEmpty ||
+         renewalStatus == 'awaiting_payment' ||
+         renewalStatus == 'payment_pending' ||
+         renewalStatus == 'payment_submitted')) ||
+        (_renewalBreakdown.isNotEmpty) ||
+        (renewalBillAmt != null && renewalBillAmt > 0);
+    final bool showRenewalFigures = isBillPaid || hasCalculatedRenewalBill;
     final bool isUnderReview = renewalStatus == 'submitted' || renewalStatus == 'under_review';
     final bool isRevision = renewalStatus == 'revision_requested';
 
@@ -885,7 +975,10 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                             Expanded(
                               child: Text(
                                 showRenewalFigures
-                                    ? '3. ANNUAL RENEWAL DUES: ${_renewalTitle.toUpperCase()}'
+                                    ? (_renewalTitle.trim().isNotEmpty &&
+                                            !_renewalTitle.toLowerCase().contains('annual renewal dues')
+                                        ? '3. ANNUAL RENEWAL DUES: ${_renewalTitle.toUpperCase()}'
+                                        : '3. ANNUAL RENEWAL DUES')
                                     : '3. ANNUAL RENEWAL DUES',
                                 style: GoogleFonts.outfit(
                                   fontSize: 16,
@@ -904,37 +997,41 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               decoration: BoxDecoration(
                                 color: isRenewalPaid
                                     ? const Color(0xFF10b981).withAlpha(25)
-                                    : (hasCalculatedRenewalBill
+                                    : (_isPartiallyPaid
                                         ? const Color(0xFFF59E0B).withAlpha(25)
-                                        : (isUnderReview
+                                        : (hasCalculatedRenewalBill
                                             ? const Color(0xFFF59E0B).withAlpha(25)
-                                            : (isRevision || isRenewalExpired
-                                                ? const Color(0xFFEF4444).withAlpha(25)
-                                                : (isRenewalDueSoon
-                                                    ? const Color(0xFFF59E0B).withAlpha(25)
-                                                    : _kOrange.withAlpha(25))))),
+                                            : (isUnderReview
+                                                ? const Color(0xFFF59E0B).withAlpha(25)
+                                                : (isRevision || isRenewalExpired
+                                                    ? const Color(0xFFEF4444).withAlpha(25)
+                                                    : (isRenewalDueSoon
+                                                        ? const Color(0xFFF59E0B).withAlpha(25)
+                                                        : _kOrange.withAlpha(25)))))),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 isRenewalPaid
                                     ? 'PAID & ACTIVE'
-                                    : (hasCalculatedRenewalBill
-                                        ? 'OFFICIAL BILL ISSUED'
-                                        : (isUnderReview
-                                            ? 'UNDER VETTING'
-                                            : (isRevision
-                                                ? 'REVISION REQUIRED'
-                                                : (isRenewalExpired
-                                                    ? 'RENEWAL OVERDUE'
-                                                    : (isRenewalDueSoon
-                                                        ? 'DUE IN $daysLeft DAYS'
-                                                        : 'ASSESSMENT PENDING'))))),
+                                    : (_isPartiallyPaid
+                                        ? 'PARTIALLY PAID • GHS ${_renewalBalanceDue.toStringAsFixed(2)} DUE'
+                                        : (hasCalculatedRenewalBill
+                                            ? 'OFFICIAL BILL ISSUED'
+                                            : (isUnderReview
+                                                ? 'UNDER VETTING'
+                                                : (isRevision
+                                                    ? 'REVISION REQUIRED'
+                                                    : (isRenewalExpired
+                                                        ? 'RENEWAL OVERDUE'
+                                                        : (isRenewalDueSoon
+                                                            ? 'DUE IN $daysLeft DAYS'
+                                                            : 'ASSESSMENT PENDING')))))),
                                 style: GoogleFonts.outfit(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w900,
                                   color: isRenewalPaid
                                       ? const Color(0xFF059669)
-                                      : (hasCalculatedRenewalBill || isUnderReview
+                                      : (_isPartiallyPaid || hasCalculatedRenewalBill || isUnderReview
                                           ? const Color(0xFFD97706)
                                           : (isRevision || isRenewalExpired
                                               ? const Color(0xFFDC2626)
@@ -949,7 +1046,9 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                         const SizedBox(height: 6),
                         Text(
                           showRenewalFigures
-                              ? 'Official renewal tariff breakdown mapped strictly to your registered profile.'
+                              ? (hasCalculatedRenewalBill || isBillPaid
+                                  ? 'Official renewal bill issued by the CUBAG Secretariat.'
+                                  : 'Official renewal tariff breakdown mapped strictly to your registered profile.')
                               : (isUnderReview
                                   ? 'Renewal compliance documents submitted and undergoing secretariat verification.'
                                   : (isRevision
@@ -1131,30 +1230,212 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               ),
                             ],
                           ),
-                          if (isRenewalPaid && expiry != null) ...[
+                          if (isBillPaid) ...[
                             const SizedBox(height: 14),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF10b981).withAlpha(18),
+                                color: (isRenewalPaid ? const Color(0xFF10b981) : const Color(0xFFF59E0B)).withAlpha(18),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFF10b981).withAlpha(50)),
+                                border: Border.all(color: (isRenewalPaid ? const Color(0xFF10b981) : const Color(0xFFF59E0B)).withAlpha(50)),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.check_circle_rounded, color: Color(0xFF059669), size: 18),
+                                  Icon(
+                                    isRenewalPaid ? Icons.check_circle_rounded : Icons.hourglass_top_rounded,
+                                    color: isRenewalPaid ? const Color(0xFF059669) : const Color(0xFFD97706),
+                                    size: 18,
+                                  ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      'Annual cycle active & paid • Valid until ${_formatDate(expiry)} ($daysLeft days remaining)',
+                                      isRenewalPaid
+                                          ? (expiry != null
+                                              ? 'Annual cycle active & paid • Valid until ${_formatDate(expiry)} ($daysLeft days remaining)'
+                                              : 'Annual renewal dues paid • Membership cycle active')
+                                          : 'Renewal payment submitted • Verification in progress by Secretariat',
                                       style: GoogleFonts.inter(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
-                                        color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46),
+                                        color: isRenewalPaid
+                                            ? (isDark ? const Color(0xFF34D399) : const Color(0xFF065F46))
+                                            : (isDark ? const Color(0xFFFBBF24) : const Color(0xFF92400E)),
                                       ),
                                     ),
                                   ),
                                 ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Opacity(
+                              opacity: 0.45,
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isDark ? Colors.grey.shade700 : Colors.grey.shade400,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  onPressed: null,
+                                  icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                                  label: Text(
+                                    'Pay Annual Renewal Dues',
+                                    style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ] else if (_isPartiallyPaid) ...[
+                            const SizedBox(height: 14),
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF59E0B).withAlpha(15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFFF59E0B).withAlpha(60)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.pie_chart_rounded, color: Color(0xFFD97706), size: 20),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'Installment Plan Active',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold,
+                                            color: isDark ? Colors.white : const Color(0xFF92400E),
+                                          ),
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF059669).withAlpha(20),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          'PROVISIONAL GOOD STANDING',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 9.5,
+                                            fontWeight: FontWeight.w800,
+                                            color: const Color(0xFF059669),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: LinearProgressIndicator(
+                                      value: ((double.tryParse(_renewalTotal) ?? 0) > 0)
+                                          ? (_renewalAmountPaid / (double.tryParse(_renewalTotal)!)).clamp(0.0, 1.0)
+                                          : 0.0,
+                                      minHeight: 8,
+                                      backgroundColor: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text('TOTAL BILLED', style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w600, color: subTextColor)),
+                                          const SizedBox(height: 2),
+                                          Text('GHS $_renewalTotal', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: textColor)),
+                                        ],
+                                      ),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                        children: [
+                                          Text('PAID TO DATE', style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w600, color: const Color(0xFF059669))),
+                                          const SizedBox(height: 2),
+                                          Text('GHS ${_renewalAmountPaid.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF059669))),
+                                        ],
+                                      ),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text('BALANCE DUE', style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w600, color: const Color(0xFFD97706))),
+                                          const SizedBox(height: 2),
+                                          Text('GHS ${_renewalBalanceDue.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFFD97706))),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (_installments.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              ..._installments.map((inst) {
+                                final iAmt = double.tryParse(inst['amount']?.toString() ?? '0') ?? 0.0;
+                                final iDate = inst['date']?.toString().split('T').first ?? inst['created_at']?.toString().split('T').first ?? '';
+                                final iStatus = inst['status']?.toString().toUpperCase() ?? 'CONFIRMED';
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 6),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? Colors.white.withAlpha(5) : const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF059669)),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Installment: GHS ${iAmt.toStringAsFixed(2)} ($iDate)',
+                                        style: GoogleFonts.inter(fontSize: 12, color: textColor),
+                                      ),
+                                      const Spacer(),
+                                      Text(
+                                        iStatus,
+                                        style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF059669)),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ],
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _kOrange,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  final feeName = Uri.encodeComponent(_renewalTitle);
+                                  context.go('/payments?fee=$feeName&amount=${_renewalBalanceDue.toStringAsFixed(2)}&is_installment=true&min_amount=${_minInstallmentAmount.toStringAsFixed(2)}&max_amount=${_renewalBalanceDue.toStringAsFixed(2)}&app_id=${_renewalApp?['id'] ?? ''}');
+                                },
+                                icon: const Icon(Icons.payment_rounded, size: 18),
+                                label: Text(
+                                  'Pay Next Installment / Balance (GHS ${_renewalBalanceDue.toStringAsFixed(2)})',
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
                               ),
                             ),
                           ] else if (hasCalculatedRenewalBill) ...[
@@ -1172,9 +1453,11 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      'Official renewal bill issued • Payment of GHS $_renewalTotal is due',
+                                      _allowInstallments
+                                          ? 'Official bill of GHS $_renewalTotal issued • Pay in full or in installments${_minInstallmentAmount > 0 ? " (Min: GHS ${_minInstallmentAmount.toStringAsFixed(2)})" : ""}'
+                                          : 'Official renewal bill issued • Payment of GHS $_renewalTotal is due',
                                       style: GoogleFonts.inter(
-                                        fontSize: 14,
+                                        fontSize: 13.5,
                                         fontWeight: FontWeight.w600,
                                         color: isDark ? const Color(0xFFFBBF24) : const Color(0xFF92400E),
                                       ),
@@ -1195,10 +1478,13 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
-                                onPressed: () => context.go('/payments?fee=Annual%20Renewal%20Dues&amount=$_renewalTotal'),
+                                onPressed: () {
+                                  final feeName = Uri.encodeComponent(_renewalTitle);
+                                  context.go('/payments?fee=$feeName&amount=$_renewalTotal&is_installment=$_allowInstallments&min_amount=${_minInstallmentAmount.toStringAsFixed(2)}&max_amount=$_renewalTotal&app_id=${_renewalApp?['id'] ?? ''}');
+                                },
                                 icon: const Icon(Icons.payment_rounded, size: 18),
                                 label: Text(
-                                  'Pay Annual Renewal Dues (GHS $_renewalTotal)',
+                                  _allowInstallments ? 'Pay Renewal Dues (Full or Part-Payment)' : 'Pay Annual Renewal Dues',
                                   style: GoogleFonts.outfit(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,

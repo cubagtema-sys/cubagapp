@@ -31,17 +31,14 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
   String _searchQuery = '';
   bool _loading = true;
   bool _sendingReply = false;
-  String _toastMessage = '';
-  Color _toastColor = _kGreen;
 
   int _page = 1;
-  int _perPage = 15;
+  final int _perPage = 15;
   int _total = 0;
   bool _hasMore = false;
 
   final _replyCtrl = TextEditingController();
   final _searchCtrl = TextEditingController();
-
   Timer? _debounce;
 
   @override
@@ -52,9 +49,9 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
 
   void _onSearchChanged(String v) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () {
+    _debounce = Timer(const Duration(milliseconds: 250), () {
       if (mounted) {
-        setState(() => _searchQuery = v);
+        setState(() => _searchQuery = v.trim());
       }
     });
   }
@@ -111,7 +108,6 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
             _hasMore = false;
           }
 
-          // If a ticket was selected, update its reference
           if (_selectedTicket != null) {
             final found = _tickets.firstWhere(
               (t) => t['id'].toString() == _selectedTicket!['id'].toString(),
@@ -133,7 +129,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
         data: {'status': newStatus},
       );
       if (res.statusCode == 200 || res.statusCode == 201) {
-        _showToast('Ticket status updated to ${newStatus.toUpperCase()}', _kGreen);
+        _showToast('Status updated to ${newStatus.toUpperCase()}', _kGreen);
         setState(() {
           if (_selectedTicket != null && _selectedTicket!['id'].toString() == ticketId) {
             _selectedTicket!['status'] = newStatus;
@@ -146,12 +142,11 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
         await _clearCache();
         await _fetchTickets(page: _page);
       } else {
-        final msg = res.data is Map ? res.data['message']?.toString() : null;
-        _showToast(msg ?? 'Failed to update ticket status (${res.statusCode})', _kRed);
+        _showToast('Failed to update status', _kRed);
       }
     } catch (e, st) {
       AppLogger.error('admin_tickets_page', e, st);
-      _showToast('Failed to update ticket status', _kRed);
+      _showToast('Failed to update status', _kRed);
     }
   }
 
@@ -167,7 +162,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
       });
       if (res != null) {
         _replyCtrl.clear();
-        _showToast('Reply dispatched to member successfully!', _kGreen);
+        _showToast('Reply sent successfully!', _kGreen);
         await _clearCache();
         await _fetchTickets(page: _page);
       }
@@ -182,26 +177,16 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: _kRed.withAlpha(25), borderRadius: BorderRadius.circular(10)),
-              child: const Icon(Icons.archive_outlined, color: _kRed, size: 22),
-            ),
-            const SizedBox(width: 12),
-            Text('Archive Support Ticket', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold)),
-          ],
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        title: Text('Archive Support Ticket', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
         content: Text(
-          'Move Ticket #$ticketId to the compliance archive? It will be removed from the active support inbox.',
-          style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748B), height: 1.4),
+          'Are you sure you want to archive Ticket #$ticketId?',
+          style: GoogleFonts.inter(fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: GoogleFonts.outfit(color: const Color(0xFF64748B), fontWeight: FontWeight.w600)),
+            child: Text('Cancel', style: GoogleFonts.outfit(color: _kSlate)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -209,10 +194,8 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
               backgroundColor: _kRed,
               foregroundColor: Colors.white,
               elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            child: Text('Archive Ticket', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            child: Text('Archive', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -227,13 +210,16 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
   }
 
   void _showToast(String msg, Color color) {
-    setState(() {
-      _toastMessage = msg;
-      _toastColor = color;
-    });
-    Future.delayed(const Duration(seconds: 4), () {
-      if (mounted) setState(() => _toastMessage = '');
-    });
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg, style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13)),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
   }
 
   Color _statusColor(String s) {
@@ -285,171 +271,155 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC);
     final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
     final border = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
     final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark ? Colors.white : const Color(0xFF475569);
+    final textMuted = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return AppLayout(
-      title: 'Support Tickets & Helpdesk',
+      title: 'Support Tickets',
       scrollable: true,
-      child: Container(
-        color: bg,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── TOP EXECUTIVE BANNER ─────────────────────────────────────────
-            AdminHeader(
-              title: 'Support Tickets & Helpdesk Hub',
-              subtitle: 'Track, manage, and resolve member inquiries, port clearance issues, platform questions, and regulatory compliance tickets.',
-              actions: [
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: isDark ? Colors.white : const Color(0xFF1E293B),
-                    side: BorderSide(color: border, width: 1.2),
-                    backgroundColor: cardBg,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: () {
-                    _clearCache();
-                    _fetchTickets(page: 1);
-                  },
-                  icon: const Icon(Icons.refresh_rounded, size: 17, color: _kOrange),
-                  label: Text('Refresh', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          AdminHeader(
+            title: 'Support Tickets & Helpdesk',
+            subtitle: 'Track, manage, and respond to member inquiries and compliance issues.',
+            actions: [
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: isDark ? Colors.white : const Color(0xFF334155),
+                  side: BorderSide(color: border),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            // ── KPI METRICS STRIP ───────────────────────────────────────────
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide = constraints.maxWidth > 800;
-                return isWide
-                    ? Row(
-                        children: [
-                          Expanded(child: _buildMetricCard('Total Tickets', '$_total', 'All logged cases', Icons.confirmation_number_outlined, _kIndigo, cardBg, border, textPrimary, textMuted)),
-                          const SizedBox(width: 12),
-                          Expanded(child: _buildMetricCard('Open Inbox', '$_openCount', 'Awaiting secretariat review', Icons.mark_email_unread_outlined, _kOrange, cardBg, border, textPrimary, textMuted)),
-                          const SizedBox(width: 12),
-                          Expanded(child: _buildMetricCard('In Progress', '$_pendingCount', 'Active investigations', Icons.pending_actions_rounded, _kAmber, cardBg, border, textPrimary, textMuted)),
-                          const SizedBox(width: 12),
-                          Expanded(child: _buildMetricCard('Resolved Cases', '$_resolvedCount', 'Successfully closed', Icons.check_circle_outline_rounded, _kGreen, cardBg, border, textPrimary, textMuted)),
-                        ],
-                      )
-                    : SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            SizedBox(width: 220, child: _buildMetricCard('Total Tickets', '$_total', 'All logged cases', Icons.confirmation_number_outlined, _kIndigo, cardBg, border, textPrimary, textMuted)),
-                            const SizedBox(width: 10),
-                            SizedBox(width: 220, child: _buildMetricCard('Open Inbox', '$_openCount', 'Awaiting review', Icons.mark_email_unread_outlined, _kOrange, cardBg, border, textPrimary, textMuted)),
-                            const SizedBox(width: 10),
-                            SizedBox(width: 220, child: _buildMetricCard('In Progress', '$_pendingCount', 'Active cases', Icons.pending_actions_rounded, _kAmber, cardBg, border, textPrimary, textMuted)),
-                            const SizedBox(width: 10),
-                            SizedBox(width: 220, child: _buildMetricCard('Resolved', '$_resolvedCount', 'Closed tickets', Icons.check_circle_outline_rounded, _kGreen, cardBg, border, textPrimary, textMuted)),
-                          ],
-                        ),
-                      );
-              },
-            ),
-            const SizedBox(height: 14),
-
-            // ── TOAST NOTIFICATION ──────────────────────────────────────────
-            if (_toastMessage.isNotEmpty)
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                margin: const EdgeInsets.only(bottom: 14),
-                decoration: BoxDecoration(
-                  color: _toastColor.withAlpha(20),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _toastColor.withAlpha(60)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _toastColor == _kGreen ? Icons.check_circle_rounded : Icons.info_outline_rounded,
-                      color: _toastColor,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        _toastMessage,
-                        style: GoogleFonts.outfit(color: _toastColor, fontWeight: FontWeight.bold, fontSize: 15),
-                      ),
-                    ),
-                  ],
-                ),
+                onPressed: () {
+                  _clearCache();
+                  _fetchTickets(page: 1);
+                },
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: Text('Refresh', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13)),
               ),
+            ],
+          ),
+          const SizedBox(height: 14),
 
-            // ── CONVERSATION PANEL OR TABULAR DATA TABLE ─────────────────────
-            if (_selectedTicket != null)
-              _buildConversationStudio(isDark, cardBg, border, textPrimary, textMuted)
-            else
-              _buildTableSection(isDark, cardBg, border, textPrimary, textMuted),
+          // Streamlined KPI Row
+          _buildKPIRow(isDark, cardBg, border, textPrimary, textMuted),
+          const SizedBox(height: 16),
+
+          // Active view: Conversation studio or Ticket table
+          if (_selectedTicket != null)
+            _buildConversationStudio(isDark, cardBg, border, textPrimary, textMuted)
+          else
+            _buildTableSection(isDark, cardBg, border, textPrimary, textMuted),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKPIRow(
+    bool isDark,
+    Color cardBg,
+    Color border,
+    Color textPrimary,
+    Color textMuted,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 700;
+        final cards = [
+          _buildCompactMetric('Total Cases', '$_total', Icons.confirmation_number_outlined, _kIndigo, 'all', cardBg, border, textPrimary, textMuted),
+          _buildCompactMetric('Open Inbox', '$_openCount', Icons.mark_email_unread_outlined, _kOrange, 'inbox', cardBg, border, textPrimary, textMuted),
+          _buildCompactMetric('In Progress', '$_pendingCount', Icons.pending_actions_rounded, _kAmber, 'pending', cardBg, border, textPrimary, textMuted),
+          _buildCompactMetric('Resolved', '$_resolvedCount', Icons.check_circle_outline_rounded, _kGreen, 'resolved', cardBg, border, textPrimary, textMuted),
+        ];
+
+        if (isWide) {
+          return Row(
+            children: cards.map((c) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: c))).toList(),
+          );
+        }
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: cards.map((c) => Container(width: 160, margin: const EdgeInsets.only(right: 8), child: c)).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCompactMetric(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+    String filterKey,
+    Color bg,
+    Color border,
+    Color textPrimary,
+    Color textMuted,
+  ) {
+    final isSel = _statusFilter == filterKey;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return InkWell(
+      onTap: () {
+        setState(() => _statusFilter = filterKey);
+        _fetchTickets(page: 1);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSel ? color.withValues(alpha: isDark ? 0.2 : 0.08) : bg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSel ? color : border,
+            width: isSel ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 16),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    value,
+                    style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w800, color: textPrimary),
+                  ),
+                  Text(
+                    label,
+                    style: GoogleFonts.outfit(
+                      fontSize: 11.5,
+                      fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                      color: isSel ? color : textMuted,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  // ── METRIC CARD ───────────────────────────────────────────────────────────
-  Widget _buildMetricCard(
-    String label,
-    String value,
-    String desc,
-    IconData icon,
-    Color accentColor,
-    Color bg,
-    Color border,
-    Color textCol,
-    Color subCol,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: border, width: 1.2),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(6), blurRadius: 8, offset: const Offset(0, 3)),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: accentColor.withAlpha(25),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: accentColor.withAlpha(40)),
-            ),
-            child: Icon(icon, color: accentColor, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(value, style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: textCol)),
-                const SizedBox(height: 1),
-                Text(label, style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: textCol)),
-                Text(desc, style: GoogleFonts.inter(fontSize: 12, color: subCol), maxLines: 1, overflow: TextOverflow.ellipsis),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── TABULAR VIEW & CONTROLS ───────────────────────────────────────────────
   Widget _buildTableSection(
     bool isDark,
     Color cardBg,
@@ -462,106 +432,60 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
     return Container(
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: border, width: 1.2),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: border),
         boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(isDark ? 30 : 6), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.02), blurRadius: 6, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── FILTER & SEARCH TOOLBAR ───────────────────────────────────────
+          // Filter & Search Toolbar
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.all(12),
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    // Search bar
-                    Expanded(
-                      flex: 3,
-                      child: Container(
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: border),
-                        ),
-                        child: TextField(
-                          controller: _searchCtrl,
-                          onChanged: _onSearchChanged,
-                          style: GoogleFonts.outfit(fontSize: 15, color: textPrimary),
-                          decoration: InputDecoration(
-                            hintText: 'Search Ticket #ID, subject, member name, company, or membership no...',
-                            hintStyle: GoogleFonts.inter(fontSize: 14, color: textMuted),
-                            prefixIcon: Icon(Icons.search_rounded, size: 18, color: textMuted),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 11),
-                            suffixIcon: _searchQuery.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.close_rounded, size: 16),
-                                    onPressed: () {
-                                      _searchCtrl.clear();
-                                      setState(() => _searchQuery = '');
-                                    },
-                                  )
-                                : null,
-                          ),
-                        ),
+                Expanded(
+                  child: SizedBox(
+                    height: 38,
+                    child: TextField(
+                      controller: _searchCtrl,
+                      onChanged: _onSearchChanged,
+                      style: GoogleFonts.outfit(fontSize: 13.5, color: textPrimary),
+                      decoration: InputDecoration(
+                        hintText: 'Search by ID, subject, member name, company...',
+                        hintStyle: GoogleFonts.inter(fontSize: 12.5, color: textMuted),
+                        prefixIcon: Icon(Icons.search_rounded, size: 16, color: textMuted),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange, width: 1.2)),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.close_rounded, size: 14),
+                                onPressed: () {
+                                  _searchCtrl.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              )
+                            : null,
                       ),
                     ),
-                    const SizedBox(width: 12),
-
-                    // Rows per page dropdown
-                    Container(
-                      height: 42,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: border),
-                      ),
-                      child: Row(
-                        children: [
-                          Text('Show: ', style: GoogleFonts.inter(fontSize: 14, color: textMuted)),
-                          DropdownButtonHideUnderline(
-                            child: DropdownButton<int>(
-                              value: _perPage,
-                              dropdownColor: cardBg,
-                              style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: textPrimary),
-                              items: const [
-                                DropdownMenuItem(value: 10, child: Text('10 rows')),
-                                DropdownMenuItem(value: 15, child: Text('15 rows')),
-                                DropdownMenuItem(value: 25, child: Text('25 rows')),
-                                DropdownMenuItem(value: 50, child: Text('50 rows')),
-                              ],
-                              onChanged: (val) {
-                                if (val != null && val != _perPage) {
-                                  setState(() => _perPage = val);
-                                  _fetchTickets(page: 1);
-                                }
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 12),
-
-                // Status Filter Chips
+                const SizedBox(width: 8),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildStatusFilterChip('Open Inbox', 'inbox', Icons.inbox_rounded, activeColor: _kOrange),
-                      const SizedBox(width: 8),
-                      _buildStatusFilterChip('Archived Cases', 'archived', Icons.archive_outlined, activeColor: _kSlate),
-                      const SizedBox(width: 8),
-                      _buildStatusFilterChip('All Statuses', 'all', Icons.format_list_bulleted_rounded, activeColor: _kIndigo),
+                      _buildStatusFilterChip('Inbox', 'inbox', activeColor: _kOrange),
+                      const SizedBox(width: 6),
+                      _buildStatusFilterChip('Archived', 'archived', activeColor: _kSlate),
+                      const SizedBox(width: 6),
+                      _buildStatusFilterChip('All', 'all', activeColor: _kIndigo),
                     ],
                   ),
                 ),
@@ -570,39 +494,34 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
           ),
           const Divider(height: 1),
 
-          // ── TABULAR DATA TABLE ────────────────────────────────────────────
+          // Table Content
           if (_loading)
             Padding(
-              padding: const EdgeInsets.all(20),
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: 6,
-                separatorBuilder: (_, index) => const SizedBox(height: 10),
-                itemBuilder: (_, index) => const ShimmerListTile(),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: List.generate(4, (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile())),
               ),
             )
           else if (tickets.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: _kIndigo.withAlpha(20), shape: BoxShape.circle),
-                    child: const Icon(Icons.confirmation_number_outlined, size: 36, color: _kIndigo),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: _kIndigo.withValues(alpha: 0.1), shape: BoxShape.circle),
+                    child: const Icon(Icons.inbox_rounded, size: 28, color: _kIndigo),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Text(
-                    _statusFilter == 'inbox' ? 'No active support tickets found in inbox.' : 'No archived tickets found.',
-                    style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.bold, color: textPrimary),
+                    'No tickets found in this view',
+                    style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: textPrimary),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
-                    'When members submit technical inquiries, clearance issues, or compliance questions, they will appear here in tabular view.',
-                    style: GoogleFonts.inter(fontSize: 14, color: textMuted),
-                    textAlign: TextAlign.center,
+                    'Member inquiries and helpdesk tickets will appear here.',
+                    style: GoogleFonts.inter(fontSize: 12.5, color: textMuted),
                   ),
                 ],
               ),
@@ -610,279 +529,229 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
           else
             LayoutBuilder(
               builder: (context, constraints) {
-                final tableWidth = constraints.maxWidth > 960 ? constraints.maxWidth : 960.0;
+                const minWidth = 880.0;
+                final tableWidth = constraints.maxWidth > minWidth ? constraints.maxWidth : minWidth;
                 return SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: ConstrainedBox(
                     constraints: BoxConstraints(minWidth: tableWidth),
                     child: DataTable(
-                  horizontalMargin: 20,
-                  columnSpacing: 24,
-                  headingRowColor: WidgetStateProperty.all(
-                    isDark ? const Color(0xFF4D2D20) : const Color(0xFFF8FAFC),
-                  ),
-                  headingTextStyle: GoogleFonts.outfit(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: textMuted,
-                    letterSpacing: 0.5,
-                  ),
-                  dataTextStyle: GoogleFonts.inter(
-                    fontSize: 14.5,
-                    color: textPrimary,
-                  ),
-                  columns: const [
-                    DataColumn(label: Text('TICKET REF')),
-                    DataColumn(label: Text('MEMBER & COMPANY')),
-                    DataColumn(label: Text('SUBJECT & DETAILS')),
-                    DataColumn(label: Text('STATUS')),
-                    DataColumn(label: Text('DATE LOGGED')),
-                    DataColumn(label: Text('ACTIONS')),
-                  ],
-                  rows: tickets.map((t) {
-                    final map = Map<String, dynamic>.from(t as Map);
-                    final id = map['id']?.toString() ?? '';
-                    final subject = map['subject'] as String? ?? 'No Subject';
-                    final message = map['message'] as String? ?? '';
-                    final status = map['status'] as String? ?? 'open';
-                    final memberName = map['member_name'] as String? ?? 'Unknown Member';
-                    final company = map['company'] as String? ?? '';
-                    final memNo = map['membership_number'] as String? ?? '';
-                    final date = map['date'] as String? ?? (map['created_at']?.toString().substring(0, 10) ?? '');
-                    final replies = (map['replies'] as List?)?.length ?? 0;
-                    final statusCol = _statusColor(status);
+                      horizontalMargin: 16,
+                      columnSpacing: 18,
+                      headingRowHeight: 40,
+                      dataRowMinHeight: 52,
+                      dataRowMaxHeight: 56,
+                      headingRowColor: WidgetStateProperty.all(
+                        isDark ? const Color(0xFF381F15) : const Color(0xFFF8FAFC),
+                      ),
+                      headingTextStyle: GoogleFonts.outfit(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: textMuted,
+                      ),
+                      dataTextStyle: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: textPrimary,
+                      ),
+                      columns: const [
+                        DataColumn(label: Text('ID')),
+                        DataColumn(label: Text('MEMBER & COMPANY')),
+                        DataColumn(label: Text('SUBJECT & PREVIEW')),
+                        DataColumn(label: Text('STATUS')),
+                        DataColumn(label: Text('DATE')),
+                        DataColumn(label: Text('ACTION')),
+                      ],
+                      rows: tickets.map((t) {
+                        final map = Map<String, dynamic>.from(t as Map);
+                        final id = map['id']?.toString() ?? '';
+                        final subject = map['subject'] as String? ?? 'No Subject';
+                        final message = map['message'] as String? ?? '';
+                        final status = map['status'] as String? ?? 'open';
+                        final memberName = map['member_name'] as String? ?? 'Member';
+                        final company = map['company'] as String? ?? '';
+                        final date = map['date'] as String? ?? (map['created_at']?.toString().substring(0, 10) ?? '');
+                        final replies = (map['replies'] as List?)?.length ?? 0;
+                        final statusCol = _statusColor(status);
 
-                    return DataRow(
-                      cells: [
-                        // TICKET REF
-                        DataCell(
-                          InkWell(
-                            onTap: () => setState(() => _selectedTicket = map),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: _kIndigo.withAlpha(20),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: _kIndigo.withAlpha(50)),
-                              ),
-                              child: Text(
-                                id,
-                                style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w800, color: _kIndigo),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // MEMBER & COMPANY
-                        DataCell(
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 220),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  memberName,
-                                  style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: textPrimary),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                        return DataRow(
+                          cells: [
+                            // ID
+                            DataCell(
+                              InkWell(
+                                onTap: () => setState(() => _selectedTicket = map),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: _kIndigo.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    '#$id',
+                                    style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w800, color: _kIndigo),
+                                  ),
                                 ),
-                                if (company.isNotEmpty)
-                                  Text(
-                                    company,
-                                    style: GoogleFonts.inter(fontSize: 13, color: _kOrange, fontWeight: FontWeight.w600),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                if (memNo.isNotEmpty)
-                                  Text(
-                                    memNo,
-                                    style: GoogleFonts.inter(fontSize: 12, color: textMuted),
-                                  ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ),
-
-                        // SUBJECT & DETAILS
-                        DataCell(
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 320),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Row(
+                            // Member
+                            DataCell(
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 180),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Expanded(
-                                      child: Text(
-                                        subject,
-                                        style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: textPrimary),
+                                    Text(
+                                      memberName,
+                                      style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: textPrimary),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (company.isNotEmpty)
+                                      Text(
+                                        company,
+                                        style: GoogleFonts.inter(fontSize: 11.5, color: _kOrange, fontWeight: FontWeight.w500),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                    ),
-                                    if (replies > 0)
-                                      Container(
-                                        margin: const EdgeInsets.only(left: 6),
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: _kBlue.withAlpha(20),
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(Icons.chat_bubble_outline_rounded, size: 10, color: _kBlue),
-                                            const SizedBox(width: 3),
-                                            Text('$replies', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: _kBlue)),
-                                          ],
-                                        ),
-                                      ),
                                   ],
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  message,
-                                  style: GoogleFonts.inter(fontSize: 13, color: textMuted),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        // STATUS
-                        DataCell(
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: statusCol.withAlpha(20),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: statusCol.withAlpha(60)),
-                            ),
-                            child: Text(
-                              _statusLabel(status).toUpperCase(),
-                              style: GoogleFonts.outfit(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                                color: statusCol,
-                                letterSpacing: 0.5,
                               ),
                             ),
-                          ),
-                        ),
-
-                        // DATE LOGGED
-                        DataCell(
-                          Text(
-                            date,
-                            style: GoogleFonts.inter(fontSize: 13.5, color: textMuted, fontWeight: FontWeight.w500),
-                          ),
-                        ),
-
-                        // ACTIONS
-                        DataCell(
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ElevatedButton.icon(
-                                onPressed: () => setState(() => _selectedTicket = map),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _kOrange,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                  minimumSize: Size.zero,
+                            // Subject
+                            DataCell(
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 280),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            subject,
+                                            style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        if (replies > 0)
+                                          Container(
+                                            margin: const EdgeInsets.only(left: 4),
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                            decoration: BoxDecoration(
+                                              color: _kBlue.withValues(alpha: 0.12),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Text('$replies', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: _kBlue)),
+                                          ),
+                                      ],
+                                    ),
+                                    Text(
+                                      message,
+                                      style: GoogleFonts.inter(fontSize: 11.5, color: textMuted),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
-                                icon: const Icon(Icons.forum_outlined, size: 13),
-                                label: Text('Respond', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold)),
                               ),
-                              const SizedBox(width: 6),
-                              PopupMenuButton<String>(
-                                icon: Icon(Icons.more_vert_rounded, size: 18, color: textMuted),
-                                tooltip: 'Ticket Actions',
-                                color: cardBg,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                onSelected: (action) {
-                                  if (action == 'archive') {
-                                    _confirmArchiveTicket(id);
-                                  } else {
-                                    _updateTicketStatus(id, action);
-                                  }
-                                },
-                                itemBuilder: (ctx) => [
-                                  if (status != 'open')
-                                    PopupMenuItem(value: 'open', child: Text('Mark as Open', style: GoogleFonts.outfit(fontSize: 14))),
-                                  if (status != 'pending')
-                                    PopupMenuItem(value: 'pending', child: Text('Mark as In Progress', style: GoogleFonts.outfit(fontSize: 14))),
-                                  if (status != 'resolved')
-                                    PopupMenuItem(value: 'resolved', child: Text('Mark as Resolved', style: GoogleFonts.outfit(fontSize: 14, color: _kGreen, fontWeight: FontWeight.bold))),
-                                  const PopupMenuDivider(),
-                                  if (status != 'archived')
-                                    PopupMenuItem(value: 'archive', child: Text('Archive Ticket', style: GoogleFonts.outfit(fontSize: 14, color: _kRed))),
+                            ),
+                            // Status
+                            DataCell(
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: statusCol.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: statusCol.withValues(alpha: 0.3)),
+                                ),
+                                child: Text(
+                                  _statusLabel(status).toUpperCase(),
+                                  style: GoogleFonts.outfit(fontSize: 10.5, fontWeight: FontWeight.w800, color: statusCol),
+                                ),
+                              ),
+                            ),
+                            // Date
+                            DataCell(
+                              Text(date, style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
+                            ),
+                            // Actions
+                            DataCell(
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ElevatedButton(
+                                    onPressed: () => setState(() => _selectedTicket = map),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: _kOrange,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      minimumSize: Size.zero,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                      elevation: 0,
+                                    ),
+                                    child: Text('Respond', style: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  PopupMenuButton<String>(
+                                    icon: Icon(Icons.more_vert_rounded, size: 16, color: textMuted),
+                                    color: cardBg,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    onSelected: (action) {
+                                      if (action == 'archive') {
+                                        _confirmArchiveTicket(id);
+                                      } else {
+                                        _updateTicketStatus(id, action);
+                                      }
+                                    },
+                                    itemBuilder: (ctx) => [
+                                      if (status != 'open')
+                                        PopupMenuItem(value: 'open', child: Text('Mark Open', style: GoogleFonts.outfit(fontSize: 13))),
+                                      if (status != 'pending')
+                                        PopupMenuItem(value: 'pending', child: Text('Mark In Progress', style: GoogleFonts.outfit(fontSize: 13))),
+                                      if (status != 'resolved')
+                                        PopupMenuItem(value: 'resolved', child: Text('Mark Resolved', style: GoogleFonts.outfit(fontSize: 13, color: _kGreen, fontWeight: FontWeight.bold))),
+                                      const PopupMenuDivider(),
+                                      if (status != 'archived')
+                                        PopupMenuItem(value: 'archive', child: Text('Archive', style: GoogleFonts.outfit(fontSize: 13, color: _kRed))),
+                                    ],
+                                  ),
                                 ],
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ),
-            );
-          },
-        ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                );
+              },
+            ),
 
-          // ── PAGINATION FOOTER ─────────────────────────────────────────────
+          // Pagination Footer
           const Divider(height: 1),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Showing ${_tickets.length} of $_total tickets (Page $_page)',
-                  style: GoogleFonts.inter(fontSize: 14, color: textMuted, fontWeight: FontWeight.w600),
+                  'Showing ${_tickets.length} of $_total (Page $_page)',
+                  style: GoogleFonts.inter(fontSize: 12, color: textMuted),
                 ),
                 Row(
                   children: [
-                    OutlinedButton.icon(
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left_rounded, size: 18),
                       onPressed: _page > 1 ? () => _fetchTickets(page: _page - 1) : null,
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: border),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      icon: const Icon(Icons.chevron_left_rounded, size: 16),
-                      label: Text('Prev', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold)),
+                      visualDensity: VisualDensity.compact,
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: border),
-                      ),
-                      child: Text(
-                        'Page $_page',
-                        style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: textPrimary),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
+                    Text('$_page', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right_rounded, size: 18),
                       onPressed: _hasMore ? () => _fetchTickets(page: _page + 1) : null,
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: border),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      label: Text('Next', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold)),
-                      icon: const Icon(Icons.chevron_right_rounded, size: 16),
+                      visualDensity: VisualDensity.compact,
                     ),
                   ],
                 ),
@@ -894,7 +763,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
     );
   }
 
-  Widget _buildStatusFilterChip(String label, String key, IconData icon, {Color? activeColor}) {
+  Widget _buildStatusFilterChip(String label, String key, {Color? activeColor}) {
     final isSel = _statusFilter == key;
     final color = activeColor ?? _kOrange;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -906,38 +775,29 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
           _fetchTickets(page: 1);
         }
       },
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(6),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isSel ? color.withAlpha(isDark ? 40 : 25) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          color: isSel ? color.withValues(alpha: isDark ? 0.25 : 0.12) : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(
-            color: isSel ? color : (isDark ? const Color(0xFF281710) : const Color(0xFFE2E8F0)),
-            width: isSel ? 1.5 : 1,
+            color: isSel ? color : (isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0)),
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: isSel ? color : (isDark ? Colors.white60 : const Color(0xFF64748B))),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: GoogleFonts.outfit(
-                fontSize: 13.5,
-                fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
-                color: isSel ? color : (isDark ? Colors.white70 : const Color(0xFF475569)),
-              ),
-            ),
-          ],
+        child: Text(
+          label,
+          style: GoogleFonts.outfit(
+            fontSize: 12,
+            fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+            color: isSel ? color : (isDark ? Colors.white70 : const Color(0xFF475569)),
+          ),
         ),
       ),
     );
   }
 
-  // ── CONVERSATION & REPLY STUDIO ───────────────────────────────────────────
   Widget _buildConversationStudio(
     bool isDark,
     Color cardBg,
@@ -952,325 +812,219 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
     final status = t['status'] as String? ?? 'open';
     final memberName = t['member_name'] as String? ?? 'Member';
     final company = t['company'] as String? ?? '';
-    final memNo = t['membership_number'] as String? ?? '';
     final date = t['date'] as String? ?? (t['created_at']?.toString().substring(0, 10) ?? '');
     final replies = (t['replies'] as List?) ?? [];
     final statusCol = _statusColor(status);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Navigation Header & Status Bar
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: border, width: 1.2),
-          ),
-          child: Row(
-            children: [
-              OutlinedButton.icon(
-                onPressed: () => setState(() => _selectedTicket = null),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: border),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                icon: const Icon(Icons.arrow_back_rounded, size: 16),
-                label: Text('Back to Table', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
-              ),
-              const SizedBox(width: 14),
-
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _kIndigo.withAlpha(25),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _kIndigo.withAlpha(60)),
-                ),
-                child: Text('TICKET #$id', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w900, color: _kIndigo)),
-              ),
-              const SizedBox(width: 12),
-
-              Expanded(
-                child: Text(
-                  subject,
-                  style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w800, color: textPrimary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Status Dropdown
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  color: statusCol.withAlpha(20),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: statusCol.withAlpha(60)),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: ['open', 'pending', 'resolved', 'archived'].contains(status) ? status : 'open',
-                    dropdownColor: cardBg,
-                    style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: statusCol),
-                    items: const [
-                      DropdownMenuItem(value: 'open', child: Text('STATUS: OPEN')),
-                      DropdownMenuItem(value: 'pending', child: Text('STATUS: IN PROGRESS')),
-                      DropdownMenuItem(value: 'resolved', child: Text('STATUS: RESOLVED')),
-                      DropdownMenuItem(value: 'archived', child: Text('STATUS: ARCHIVED')),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) _updateTicketStatus(id, val);
-                    },
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Studio Header
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => setState(() => _selectedTicket = null),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: border),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
+                  icon: const Icon(Icons.arrow_back_rounded, size: 14),
+                  label: Text('Back', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 12.5)),
                 ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-
-        // Member Overview Strip
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF4D2D20) : const Color(0xFFF1F5F9),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: border),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: _kOrange.withAlpha(20), shape: BoxShape.circle),
-                      child: const Icon(Icons.person_outline_rounded, size: 16, color: _kOrange),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('DIRECTOR / MEMBER', style: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.w800, color: textMuted)),
-                          Text(memberName, style: GoogleFonts.outfit(fontSize: 14.5, fontWeight: FontWeight.bold, color: textPrimary)),
-                        ],
-                      ),
-                    ),
-                  ],
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: _kIndigo.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text('#$id', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: _kIndigo)),
                 ),
-              ),
-              if (company.isNotEmpty)
+                const SizedBox(width: 8),
                 Expanded(
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: _kIndigo.withAlpha(20), shape: BoxShape.circle),
-                        child: const Icon(Icons.business_outlined, size: 16, color: _kIndigo),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('COMPANY NAME', style: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.w800, color: textMuted)),
-                            Text(company, style: GoogleFonts.outfit(fontSize: 14.5, fontWeight: FontWeight.bold, color: textPrimary)),
-                          ],
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    subject,
+                    style: GoogleFonts.outfit(fontSize: 14.5, fontWeight: FontWeight.bold, color: textPrimary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              if (memNo.isNotEmpty)
-                Expanded(
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: _kGreen.withAlpha(20), shape: BoxShape.circle),
-                        child: const Icon(Icons.badge_outlined, size: 16, color: _kGreen),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('MEMBERSHIP NO', style: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.w800, color: textMuted)),
-                            Text(memNo, style: GoogleFonts.outfit(fontSize: 14.5, fontWeight: FontWeight.bold, color: textPrimary)),
-                          ],
-                        ),
-                      ),
-                    ],
+                const SizedBox(width: 8),
+                // Status selector
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: statusCol.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: statusCol.withValues(alpha: 0.3)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: ['open', 'pending', 'resolved', 'archived'].contains(status) ? status : 'open',
+                      dropdownColor: cardBg,
+                      style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: statusCol),
+                      items: const [
+                        DropdownMenuItem(value: 'open', child: Text('OPEN')),
+                        DropdownMenuItem(value: 'pending', child: Text('IN PROGRESS')),
+                        DropdownMenuItem(value: 'resolved', child: Text('RESOLVED')),
+                        DropdownMenuItem(value: 'archived', child: Text('ARCHIVED')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) _updateTicketStatus(id, val);
+                      },
+                    ),
                   ),
                 ),
-              Expanded(
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: _kBlue.withAlpha(20), shape: BoxShape.circle),
-                      child: const Icon(Icons.calendar_today_outlined, size: 16, color: _kBlue),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('LOGGED DATE', style: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.w800, color: textMuted)),
-                          Text(date, style: GoogleFonts.outfit(fontSize: 14.5, fontWeight: FontWeight.bold, color: textPrimary)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
+          const Divider(height: 1),
 
-        // Conversation Stream
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: border, width: 1.2),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.forum_outlined, size: 18, color: _kOrange),
-                  const SizedBox(width: 8),
-                  Text('Communication Thread', style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w800, color: textPrimary)),
-                  const Spacer(),
-                  if (status != 'archived')
-                    TextButton.icon(
-                      onPressed: () => _confirmArchiveTicket(id),
-                      icon: const Icon(Icons.archive_outlined, size: 14, color: _kRed),
-                      label: Text('Archive Case', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: _kRed)),
-                    ),
+          // Member Info Strip
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            color: isDark ? const Color(0xFF1A0F0A).withValues(alpha: 0.5) : const Color(0xFFF8FAFC),
+            child: Row(
+              children: [
+                Text('From: ', style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
+                Text(memberName, style: GoogleFonts.outfit(fontSize: 12.5, fontWeight: FontWeight.bold, color: textPrimary)),
+                if (company.isNotEmpty) ...[
+                  Text(' • ', style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
+                  Text(company, style: GoogleFonts.inter(fontSize: 12, color: _kOrange, fontWeight: FontWeight.w600)),
                 ],
-              ),
-              const SizedBox(height: 14),
-              const Divider(height: 1),
-              const SizedBox(height: 16),
+                const Spacer(),
+                Text(date, style: GoogleFonts.inter(fontSize: 11.5, color: textMuted)),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
 
-              // Original Member Inquiry
-              _buildMessageBubble(
-                senderName: memberName,
-                companyTag: company.isNotEmpty ? company : 'Member',
-                message: message,
-                timestamp: date,
-                isAdmin: false,
-                isDark: isDark,
-                border: border,
-                textPrimary: textPrimary,
-                textMuted: textMuted,
-              ),
-
-              // Thread Replies
-              ...replies.map((r) {
-                final rMap = Map<String, dynamic>.from(r as Map);
-                final author = rMap['author'] as String? ?? 'Admin';
-                final rMsg = rMap['message'] as String? ?? '';
-                final rDate = rMap['date'] as String? ?? '';
-                final isAdm = author.toLowerCase().contains('admin') || author.toLowerCase().contains('secretariat');
-
-                return _buildMessageBubble(
-                  senderName: author,
-                  companyTag: isAdm ? 'CUBAG Secretariat' : 'Member',
-                  message: rMsg,
-                  timestamp: rDate,
-                  isAdmin: isAdm,
+          // Conversation Thread
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Original message bubble
+                _buildSimpleBubble(
+                  sender: memberName,
+                  tag: company.isNotEmpty ? company : 'Member',
+                  message: message,
+                  time: date,
+                  isAdmin: false,
                   isDark: isDark,
                   border: border,
                   textPrimary: textPrimary,
                   textMuted: textMuted,
-                );
-              }),
-
-              const SizedBox(height: 16),
-              const Divider(height: 1),
-              const SizedBox(height: 16),
-
-              // Secretariat Reply Composer
-              Text('DISPATCH ADMINISTRATIVE REPLY', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.5)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _replyCtrl,
-                maxLines: 4,
-                style: GoogleFonts.inter(fontSize: 15, color: textPrimary),
-                decoration: InputDecoration(
-                  hintText: 'Type your official administrative reply or clearance instructions to the member...',
-                  hintStyle: GoogleFonts.inter(fontSize: 14, color: textMuted),
-                  filled: true,
-                  fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: border)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: border)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _kOrange, width: 1.5)),
-                  contentPadding: const EdgeInsets.all(14),
                 ),
-              ),
-              const SizedBox(height: 12),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: _sendingReply
-                        ? null
-                        : () async {
-                            if (_replyCtrl.text.trim().isNotEmpty) {
-                              await _sendReply();
-                              await _updateTicketStatus(id, 'resolved');
-                            }
-                          },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: _kGreen,
-                      side: BorderSide(color: _kGreen.withAlpha(80)),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    icon: const Icon(Icons.check_circle_outline_rounded, size: 16),
-                    label: Text('Reply & Mark Resolved', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
+                // Replies
+                ...replies.map((r) {
+                  final rMap = Map<String, dynamic>.from(r as Map);
+                  final author = rMap['author'] as String? ?? 'Admin';
+                  final rMsg = rMap['message'] as String? ?? '';
+                  final rDate = rMap['date'] as String? ?? '';
+                  final isAdm = author.toLowerCase().contains('admin') || author.toLowerCase().contains('secretariat');
+
+                  return _buildSimpleBubble(
+                    sender: author,
+                    tag: isAdm ? 'Secretariat' : 'Member',
+                    message: rMsg,
+                    time: rDate,
+                    isAdmin: isAdm,
+                    isDark: isDark,
+                    border: border,
+                    textPrimary: textPrimary,
+                    textMuted: textMuted,
+                  );
+                }),
+
+                const SizedBox(height: 12),
+                const Divider(height: 1),
+                const SizedBox(height: 12),
+
+                // Reply Composer
+                Text(
+                  'REPLY TO MEMBER',
+                  style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _replyCtrl,
+                  maxLines: 3,
+                  style: GoogleFonts.inter(fontSize: 13.5, color: textPrimary),
+                  decoration: InputDecoration(
+                    hintText: 'Type administrative response or instructions...',
+                    hintStyle: GoogleFonts.inter(fontSize: 12.5, color: textMuted),
+                    filled: true,
+                    fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange, width: 1.2)),
+                    contentPadding: const EdgeInsets.all(10),
                   ),
-                  const SizedBox(width: 10),
-                  ElevatedButton.icon(
-                    onPressed: _sendingReply ? null : _sendReply,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _kOrange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                const SizedBox(height: 8),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    OutlinedButton(
+                      onPressed: _sendingReply
+                          ? null
+                          : () async {
+                              if (_replyCtrl.text.trim().isNotEmpty) {
+                                await _sendReply();
+                                await _updateTicketStatus(id, 'resolved');
+                              }
+                            },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _kGreen,
+                        side: BorderSide(color: _kGreen.withValues(alpha: 0.5)),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                      child: Text('Reply & Resolve', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
-                    icon: _sendingReply
-                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.send_rounded, size: 16),
-                    label: Text(_sendingReply ? 'Sending...' : 'Send Reply', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: _sendingReply ? null : _sendReply,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kOrange,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        elevation: 0,
+                      ),
+                      icon: _sendingReply
+                          ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.send_rounded, size: 14),
+                      label: Text(_sendingReply ? 'Sending...' : 'Send Reply', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 24),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildMessageBubble({
-    required String senderName,
-    required String companyTag,
+  Widget _buildSimpleBubble({
+    required String sender,
+    required String tag,
     required String message,
-    required String timestamp,
+    required String time,
     required bool isAdmin,
     required bool isDark,
     required Color border,
@@ -1279,81 +1033,47 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
   }) {
     final bubbleBg = isAdmin
         ? (isDark ? const Color(0xFF4D2D20) : const Color(0xFFFFF7ED))
-        : (isDark ? const Color(0xFF281710) : const Color(0xFFF1F5F9));
-    final bubbleBorder = isAdmin ? _kOrange.withAlpha(80) : border;
+        : (isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC));
+    final bubbleBorder = isAdmin ? _kOrange.withValues(alpha: 0.4) : border;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Row(
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bubbleBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: bubbleBorder),
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: isAdmin ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
-          if (!isAdmin) ...[
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(color: _kIndigo.withAlpha(25), shape: BoxShape.circle),
-              child: const Center(child: Icon(Icons.person_rounded, size: 16, color: _kIndigo)),
-            ),
-            const SizedBox(width: 10),
-          ],
-          Flexible(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 620),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: bubbleBg,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(14),
-                  topRight: const Radius.circular(14),
-                  bottomLeft: Radius.circular(isAdmin ? 14 : 3),
-                  bottomRight: Radius.circular(isAdmin ? 3 : 14),
+          Row(
+            children: [
+              Text(
+                sender,
+                style: GoogleFonts.outfit(fontSize: 12.5, fontWeight: FontWeight.bold, color: isAdmin ? _kOrange : textPrimary),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: (isAdmin ? _kOrange : _kIndigo).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
                 ),
-                border: Border.all(color: bubbleBorder, width: 1.2),
+                child: Text(
+                  tag,
+                  style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: isAdmin ? _kOrange : _kIndigo),
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        senderName,
-                        style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: isAdmin ? _kOrange : textPrimary),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                        decoration: BoxDecoration(
-                          color: (isAdmin ? _kOrange : _kIndigo).withAlpha(20),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          companyTag,
-                          style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: isAdmin ? _kOrange : _kIndigo),
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(timestamp, style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    message,
-                    style: GoogleFonts.inter(fontSize: 15, color: textPrimary, height: 1.45),
-                  ),
-                ],
-              ),
-            ),
+              const Spacer(),
+              Text(time, style: GoogleFonts.inter(fontSize: 11, color: textMuted)),
+            ],
           ),
-          if (isAdmin) ...[
-            const SizedBox(width: 10),
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(color: _kOrange.withAlpha(25), shape: BoxShape.circle),
-              child: const Center(child: Icon(Icons.admin_panel_settings_rounded, size: 16, color: _kOrange)),
-            ),
-          ],
+          const SizedBox(height: 6),
+          Text(
+            message,
+            style: GoogleFonts.inter(fontSize: 13, color: textPrimary, height: 1.4),
+          ),
         ],
       ),
     );
