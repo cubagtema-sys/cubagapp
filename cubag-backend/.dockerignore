@@ -1,0 +1,37 @@
+# Never bake secrets or the local virtualenv into the image
+.env
+.env.*
+!.env.example
+firebase-key.json
+*rebase-key.json
+~$*
+
+# Local dev artifacts
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+server.log
+*.log
+.DS_Store
+scratch/
+restart.sh
+test_conn.py
+
+# Tests are not needed at runtime
+tests/
+validate_*.py
+
+# dist/ is a redundant older copy of the web bundle; static/ is the live one
+# that server.py resolves, so keep static/ and drop dist/ (~46MB).
+dist/
+
+# Member-uploaded documents are PII and belong in Supabase Storage in prod
+# (file_storage._save_file). Do not ship local dev uploads in the image.
+uploads/
+static/uploads/
+
+# Git
+.git/
+.gitignore

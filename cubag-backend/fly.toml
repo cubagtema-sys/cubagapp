@@ -1,0 +1,48 @@
+# fly.toml for the CUBAG backend.
+# App names are GLOBALLY UNIQUE on Fly — if "cubag-api-server" is taken, change
+# it here AND in the launch form's "App name" field to match.
+app = "cubag-api-server"
+
+# Pick the region closest to your Supabase Postgres to minimise DB latency
+# (Render used frankfurt). Check your Supabase project's region and match it.
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+# Non-secret runtime config. Secrets (SECRET_KEY, JWT_SECRET_KEY, DATABASE_URL,
+# SMTP_PASS, WHITSUNPAY_*, FIREBASE_CREDENTIALS_JSON, SUPABASE_*) must be set
+# with `fly secrets set KEY=VALUE` — never committed here.
+[env]
+  PORT = "8080"
+  FLASK_ENV = "production"
+  FLASK_APP = "server.py"
+  CORS_ALLOWED_ORIGINS = "*"
+  JWT_ACCESS_TOKEN_EXPIRES = "604800"
+  SMTP_HOST = "smtp.hostinger.com"
+  SMTP_PORT = "587"
+  SMTP_SECURE = "true"
+  SMTP_USER = "support@winningedgeinvestment.com"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Keep exactly one machine always running: APScheduler jobs and in-process
+  # socket.io room state must not be duplicated across machines.
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.checks]
+    [http_service.checks.health]
+      grace_period = "15s"
+      interval = "30s"
+      method = "get"
+      path = "/api/health"
+      protocol = "http"
+      timeout = "10s"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
