@@ -61,6 +61,15 @@ dependencies:
   pdf: ^3.11.1
   printing: ^5.13.0
 
+# Use a vendored copy of add_2_calendar patched so the native iOS calendar
+# modal resolves its presenter from the active UIWindowScene. The stock 3.1.1
+# uses the deprecated UIApplication.keyWindow, which is nil under this app's
+# scene-based lifecycle, so events silently fell back to a web Google Calendar
+# link instead of being added to the iOS Calendar. See third_party/add_2_calendar.
+dependency_overrides:
+  add_2_calendar:
+    path: third_party/add_2_calendar
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

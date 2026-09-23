@@ -575,7 +575,9 @@ class _EventsPageState extends State<EventsPage> {
                             const Duration(days: 1),
                           );
                           if (rawDate != null) {
-                            startDate = DateTime.tryParse(rawDate) ?? startDate;
+                            startDate =
+                                (DateTime.tryParse(rawDate) ?? startDate)
+                                    .toLocal();
                           }
 
                           await CalendarService.addEventToCalendar(

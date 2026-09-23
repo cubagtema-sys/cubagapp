@@ -347,7 +347,10 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
         .where((m) => m['status']?.toString().toLowerCase() == 'active')
         .length;
     final pending = _members
-        .where((m) => m['status']?.toString().toLowerCase() == 'pending')
+        .where((m) {
+          final st = m['status']?.toString().toLowerCase() ?? '';
+          return st == 'pending' || st == 'pending_review';
+        })
         .length;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1576,7 +1579,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      if (m['status'] == 'pending') ...[
+                      if (m['status'] == 'pending' || m['status'] == 'pending_review') ...[
                         ElevatedButton.icon(
                           onPressed: () => context.push('/admin/compliance'),
                           icon: const Icon(Icons.verified_outlined, size: 14),

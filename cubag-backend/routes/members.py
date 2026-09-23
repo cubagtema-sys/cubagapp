@@ -395,8 +395,8 @@ def get_all_members_admin():
         offset = (page - 1) * limit
 
         where_clause = ""
-        if status_filter == 'pending':
-            where_clause = "WHERE m.status = 'pending'"
+        if status_filter in ('pending', 'pending_review'):
+            where_clause = "WHERE m.status IN ('pending', 'pending_review')"
         elif status_filter == 'active':
             where_clause = "WHERE m.status IN ('active', 'suspended')"
 

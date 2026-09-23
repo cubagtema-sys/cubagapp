@@ -235,7 +235,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final userName = context.select<AuthService, String?>((a) => a.userName);
 
     final pendingMembers = _rawMembers
-        .where((m) => m['status']?.toString().toLowerCase() == 'pending')
+        .where((m) {
+          final st = m['status']?.toString().toLowerCase() ?? '';
+          return st == 'pending' || st == 'pending_review';
+        })
         .toList();
 
     return AppLayout(

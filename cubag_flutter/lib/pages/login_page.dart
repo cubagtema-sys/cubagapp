@@ -247,11 +247,15 @@ class _LoginPageState extends State<LoginPage> {
     final available = await _bioService.isBiometricAvailable();
     final enabled = await _bioService.isBiometricEnabled();
     final creds = await _bioService.getSavedCredentials();
+    // If the user just explicitly logged out, do not auto-prompt Face ID and
+    // sign them straight back in. They can still tap the biometric button.
+    final suppressAuto = AuthService.suppressAutoBiometric;
+    if (suppressAuto) AuthService.suppressAutoBiometric = false;
     if (mounted) {
       setState(() {
         _bioAvailable = available;
       });
-      if (available && enabled && creds != null) {
+      if (!suppressAuto && available && enabled && creds != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && !_loading) {
             _handleBiometricLogin();

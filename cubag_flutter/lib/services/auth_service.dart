@@ -374,7 +374,13 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// One-shot guard: set when the user explicitly logs out so the login page
+  /// does NOT immediately re-prompt Face ID / Touch ID and sign them back in.
+  /// Consumed (reset to false) the next time the login page checks biometrics.
+  static bool suppressAutoBiometric = false;
+
   Future<void> logout() async {
+    suppressAutoBiometric = true;
     _isAuthenticated = false;
     _userRole = null;
     _userPhotoUrl = null;

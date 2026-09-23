@@ -60,7 +60,7 @@ def get_dashboard_stats():
                         SELECT
                             COUNT(id) as total,
                             COUNT(id) FILTER (WHERE LOWER(status) = 'active') as active,
-                            COUNT(id) FILTER (WHERE LOWER(status) = 'pending') as pending,
+                            COUNT(id) FILTER (WHERE LOWER(status) IN ('pending', 'pending_review')) as pending,
                             COUNT(id) FILTER (WHERE LOWER(status) = 'suspended') as suspended
                         FROM members
                     """)
