@@ -8,7 +8,7 @@ class WhitsunPayService {
 
   /// Base URL of the Cloudflare proxy worker that holds the WhitsunPay API key
   /// server-side. The client NEVER contains the key. Override at build time with:
-  ///   flutter build ... --dart-define=WHITSUN_PROXY_URL=https://cubag-whitsun-proxy.<account>.workers.dev
+  ///   flutter build ... --dart-define=WHITSUN_PROXY_URL=https://cubag-whitsun-proxy.`<account>`.workers.dev
   static const String proxyBaseUrl = String.fromEnvironment(
     'WHITSUN_PROXY_URL',
     defaultValue: 'https://cubag-whitsun-proxy.REPLACE_WITH_ACCOUNT.workers.dev',

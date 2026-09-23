@@ -116,7 +116,7 @@ class _LoginPageState extends State<LoginPage> {
                   controller: ctrl,
                   style: TextStyle(color: _kText, fontSize: 14, fontFamily: 'monospace'),
                   decoration: InputDecoration(
-                    hintText: 'http://192.168.4.127:5005/api/v1',
+                    hintText: 'https://cubag-api-server.fly.dev/api/v1',
                     filled: true,
                     fillColor: _kCream,
                     border: OutlineInputBorder(
@@ -168,19 +168,31 @@ class _LoginPageState extends State<LoginPage> {
                   runSpacing: 8,
                   children: [
                     ActionChip(
-                      label: const Text('Mac IP (192.168.4.127:5005)'),
+                      avatar: const Icon(Icons.cloud_done_rounded, size: 16),
+                      label: const Text('Production (Fly.io)'),
                       onPressed: () {
                         setDialogState(() {
-                          ctrl.text = 'http://192.168.4.127:5005/api/v1';
+                          ctrl.text = 'https://cubag-api-server.fly.dev/api/v1';
                           testResult = null;
                         });
                       },
                     ),
                     ActionChip(
+                      avatar: const Icon(Icons.computer_rounded, size: 16),
                       label: const Text('Localhost (127.0.0.1:5005)'),
                       onPressed: () {
                         setDialogState(() {
                           ctrl.text = 'http://127.0.0.1:5005/api/v1';
+                          testResult = null;
+                        });
+                      },
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.wifi_rounded, size: 16),
+                      label: const Text('LAN IP (192.168.4.127)'),
+                      onPressed: () {
+                        setDialogState(() {
+                          ctrl.text = 'http://192.168.4.127:5005/api/v1';
                           testResult = null;
                         });
                       },

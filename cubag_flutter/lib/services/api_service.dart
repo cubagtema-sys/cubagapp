@@ -19,7 +19,10 @@ class ApiService {
     try {
       final customUrl = SessionStorage.instance.getStringSync('custom_api_url');
       if (customUrl != null && customUrl.trim().isNotEmpty) {
-        return customUrl.trim();
+        // If it was pointing to an old LAN/dev IP, ignore it so it falls back to Fly.io
+        if (!customUrl.contains('192.168.') && !customUrl.contains(':5005')) {
+          return customUrl.trim();
+        }
       }
     } catch (_) {}
 
@@ -36,12 +39,15 @@ class ApiService {
       return productionUrl;
     }
 
-    // ── 3. Web — always derive from the page origin ────────────────────────
+    // ── 3. Web — derive from page origin, or fallback to Fly.io if local ───
     if (kIsWeb) {
-      final scheme = Uri.base.scheme.isNotEmpty ? Uri.base.scheme : 'http';
-      final host = Uri.base.host.isNotEmpty ? Uri.base.host : 'localhost';
-      final portStr = Uri.base.hasPort ? ':${Uri.base.port}' : '';
-      return '$scheme://$host$portStr/api/v1';
+      final host = Uri.base.host;
+      if (host.isNotEmpty && host != 'localhost' && host != '127.0.0.1') {
+        final scheme = Uri.base.scheme.isNotEmpty ? Uri.base.scheme : 'https';
+        final portStr = Uri.base.hasPort ? ':${Uri.base.port}' : '';
+        return '$scheme://$host$portStr/api/v1';
+      }
+      return _prodUrl;
     }
 
     // ── 4. Android & iOS — production backend on Fly.io ──────────────────────

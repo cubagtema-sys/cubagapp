@@ -126,7 +126,7 @@ def add_security_headers(response):
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
         "img-src 'self' data: https: http:",
         "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com",
-        "connect-src 'self' https://api.whitsun.dev https://developer.whitsun.dev https://whitsun.dev wss://*.onrender.com wss://*.railway.app https://www.gstatic.com https://fonts.gstatic.com https://fonts.googleapis.com https://cubag-api-server.onrender.com",
+        "connect-src 'self' https://api.whitsun.dev https://developer.whitsun.dev https://whitsun.dev wss://*.fly.dev https://*.fly.dev https://cubag-api-server.fly.dev wss://*.onrender.com wss://*.railway.app https://www.gstatic.com https://fonts.gstatic.com https://fonts.googleapis.com https://cubag-api-server.onrender.com",
         "frame-ancestors 'none'",
         "base-uri 'self'",
         "form-action 'self'",
