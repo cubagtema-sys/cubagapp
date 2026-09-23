@@ -2,6 +2,7 @@
 Server-side payment amount validation — never trust client-supplied amounts for catalogued fees.
 """
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +14,25 @@ _MUST_VERIFY_KEYWORDS = (
 )
 
 
+# Money columns are sometimes stored as text with a currency prefix
+# (e.g. "GHS 1", "GH₵ 1,000.00"). Strip everything but digits/./- before parsing.
+_NON_NUMERIC_RE = re.compile(r'[^0-9.\-]')
+
+
+def _to_float(value):
+    """Coerce a numeric-or-text money value to float. Raises ValueError if no number is present."""
+    if value is None:
+        raise ValueError('amount is None')
+    if isinstance(value, (int, float)):
+        return float(value)
+    cleaned = _NON_NUMERIC_RE.sub('', str(value).strip())
+    if not cleaned or cleaned in ('-', '.', '-.'):
+        raise ValueError(f'no numeric value in {value!r}')
+    return float(cleaned)
+
+
 def _close(a, b):
-    return abs(float(a) - float(b)) <= _AMOUNT_TOLERANCE
+    return abs(_to_float(a) - _to_float(b)) <= _AMOUNT_TOLERANCE
 
 
 def get_cti_course_amount(cursor, course_name: str) -> float:
@@ -35,7 +53,7 @@ def get_cti_course_amount(cursor, course_name: str) -> float:
             )
             row = cursor.fetchone()
             if row and row.get('fee') is not None:
-                return float(row['fee'])
+                return _to_float(row['fee'])
             cursor.execute(
                 """
                 SELECT fee FROM cti_courses
@@ -47,7 +65,7 @@ def get_cti_course_amount(cursor, course_name: str) -> float:
             )
             row = cursor.fetchone()
             if row and row.get('fee') is not None:
-                return float(row['fee'])
+                return _to_float(row['fee'])
         cursor.execute(
             """
             SELECT amount FROM fee_schedules
@@ -58,7 +76,7 @@ def get_cti_course_amount(cursor, course_name: str) -> float:
         )
         row = cursor.fetchone()
         if row and row.get('amount') is not None:
-            return float(row['amount'])
+            return _to_float(row['amount'])
     except Exception as e:
         logger.warning('[payment_validation] CTI amount lookup failed: %s', e)
         if isinstance(e, ValueError):
@@ -81,7 +99,7 @@ def get_hardcopy_certificate_fee(cursor) -> float:
         )
         row = cursor.fetchone()
         if row and row.get('amount') is not None:
-            return float(row['amount'])
+            return _to_float(row['amount'])
     except Exception as e:
         logger.debug('[payment_validation] certificate fee lookup: %s', e)
     return default
@@ -100,9 +118,9 @@ def _match_fee_schedule(cursor, description: str):
             if amt is None:
                 continue
             if name and name in desc:
-                return float(amt)
+                return _to_float(amt)
             if key and key in desc:
-                return float(amt)
+                return _to_float(amt)
     except Exception as e:
         logger.warning('[payment_validation] fee_schedules scan failed: %s', e)
     return None
