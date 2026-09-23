@@ -510,101 +510,197 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final dateStr = _formatDate(
       n['created_at']?.toString() ?? n['time']?.toString(),
     );
+    final label = (cat['label'] ?? 'System').toString();
 
     final cardBg = isDark
-        ? (isRead ? const Color(0xFF1A0F0A) : color.withAlpha(25))
-        : (isRead ? Colors.white : color.withAlpha(12));
+        ? (isRead ? const Color(0xFF1A0F0A) : const Color(0xFF241610))
+        : Colors.white;
     final borderColor = isDark
-        ? (isRead ? const Color(0xFF281710) : color.withAlpha(120))
-        : (isRead ? const Color(0xFFE2E8F0) : color.withAlpha(90));
+        ? (isRead ? const Color(0xFF2E1D14) : color.withAlpha(110))
+        : (isRead ? const Color(0xFFE7ECF3) : color.withAlpha(85));
+    final accentColor = isRead
+        ? (isDark ? const Color(0xFF3A2A20) : const Color(0xFFE2E8F0))
+        : color;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: borderColor,
-          width: isRead ? 1.0 : 1.5,
+    return Dismissible(
+      key: ValueKey('notif_${n['id']}'),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => _delete(n['id']),
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 22),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFef4444),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'Delete',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+            SizedBox(width: 6),
+            Icon(Icons.delete_outline_rounded, color: Colors.white, size: 20),
+          ],
         ),
       ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () => _showNotificationDetail(n),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                // Category Icon Avatar (matching skeleton tile size)
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: color.withAlpha(isDark ? 40 : 20),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(cat['icon'] as IconData, color: color, size: 20),
-                ),
-                const SizedBox(width: 12),
-                // Compact Title & Subtitle Stack
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor, width: isRead ? 1 : 1.4),
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? Colors.black26
+                  : const Color(0xFF0F172A).withAlpha(isRead ? 8 : 18),
+              blurRadius: isRead ? 6 : 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _showNotificationDetail(n),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(width: 4, color: accentColor),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              n['title']?.toString() ?? '',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.outfit(
-                                fontSize: 14,
-                                fontWeight: isRead
-                                    ? FontWeight.w600
-                                    : FontWeight.w800,
-                                color: isDark ? Colors.white : const Color(0xFF0F172A),
-                              ),
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: color.withAlpha(isDark ? 45 : 22),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              cat['icon'] as IconData,
+                              color: color,
+                              size: 21,
                             ),
                           ),
-                          if (dateStr.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              dateStr,
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: isDark ? Colors.white70 : const Color(0xFF64748B),
-                                fontWeight: FontWeight.w500,
-                              ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        n['title']?.toString() ?? '',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 15,
+                                          fontWeight: isRead
+                                              ? FontWeight.w600
+                                              : FontWeight.w800,
+                                          color: isDark
+                                              ? Colors.white
+                                              : const Color(0xFF0F172A),
+                                        ),
+                                      ),
+                                    ),
+                                    if (!isRead)
+                                      Container(
+                                        margin: const EdgeInsets.only(
+                                          left: 6,
+                                          top: 5,
+                                        ),
+                                        width: 8,
+                                        height: 8,
+                                        decoration: const BoxDecoration(
+                                          color: _kOrange,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  n['message']?.toString() ?? '',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13.5,
+                                    height: 1.35,
+                                    color: isDark
+                                        ? Colors.white70
+                                        : const Color(0xFF475569),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: color.withAlpha(isDark ? 40 : 18),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        label.toUpperCase(),
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.4,
+                                          color: color,
+                                        ),
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    if (dateStr.isNotEmpty) ...[
+                                      Icon(
+                                        Icons.schedule_rounded,
+                                        size: 13,
+                                        color: isDark
+                                            ? Colors.white38
+                                            : const Color(0xFF94a3b8),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        dateStr,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: isDark
+                                              ? Colors.white60
+                                              : const Color(0xFF94a3b8),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        n['message']?.toString() ?? '',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: 14.5,
-                          color: isDark ? Colors.white : const Color(0xFF334155),
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: isDark ? Colors.white60 : Colors.grey.shade400,
-                  size: 20,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -649,31 +745,137 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header Title
-                    Text(
-                      'Activity Feed',
-                      style: GoogleFonts.outfit(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : const Color(0xFF1A0F0A),
-                      ),
+                    // Header
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFF7A33), _kOrange],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _kOrange.withAlpha(isDark ? 60 : 45),
+                                blurRadius: 14,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.bolt_rounded,
+                            color: Colors.white,
+                            size: 26,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Activity Feed',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF1A0F0A),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Latest system alerts and personal notifications.',
+                                style: GoogleFonts.outfit(
+                                  color: isDark
+                                      ? Colors.white70
+                                      : const Color(0xFF64748b),
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Latest system alerts and personal notifications.',
-                      style: GoogleFonts.outfit(
-                        color: isDark ? Colors.white70 : const Color(0xFF64748b),
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
+                    const SizedBox(height: 18),
+
+                    // Unread summary banner
+                    if (unread > 0)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _kOrange.withAlpha(isDark ? 30 : 16),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: _kOrange.withAlpha(isDark ? 90 : 60),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.mark_email_unread_rounded,
+                              color: _kOrange,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'You have $unread unread notification${unread == 1 ? '' : 's'}',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF7A2E00),
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _markAllRead,
+                              style: TextButton.styleFrom(
+                                foregroundColor: _kOrange,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                ),
+                                minimumSize: Size.zero,
+                                tapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: const Text(
+                                'Mark all',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
 
                     // Search input
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFf1f5f9),
+                        color: isDark
+                            ? const Color(0xFF241610)
+                            : const Color(0xFFf8fafc),
                         borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF3A2A20)
+                              : const Color(0xFFe2e8f0),
+                        ),
                       ),
                       child: TextFormField(
                         controller: _searchCtrl,
@@ -717,7 +919,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       child: Row(
                         children: [
                           _buildFilterChip('all', 'All Notifications'),
-                          _buildFilterChip('unread', 'Unread Only'),
+                          _buildFilterChip(
+                            'unread',
+                            unread > 0 ? 'Unread ($unread)' : 'Unread Only',
+                          ),
                           _buildFilterChip('payment', 'Payment'),
                           _buildFilterChip('meeting', 'Meeting'),
                           _buildFilterChip('compliance', 'Compliance'),
@@ -728,43 +933,59 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Header row
+                    // Section header row
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          searchQuery.isNotEmpty
-                              ? 'SEARCH RESULTS (${filtered.length})'
-                              : 'LATEST UPDATES (${filtered.length})',
-                          style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 14,
-                            color: const Color(0xFF64748b),
-                            letterSpacing: 0.5,
+                        Expanded(
+                          child: Text(
+                            searchQuery.isNotEmpty
+                                ? 'SEARCH RESULTS (${filtered.length})'
+                                : 'LATEST UPDATES (${filtered.length})',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                              color: isDark
+                                  ? Colors.white70
+                                  : const Color(0xFF64748b),
+                              letterSpacing: 0.6,
+                            ),
                           ),
                         ),
-                        if (unread > 0)
-                          TextButton.icon(
-                            onPressed: _markAllRead,
-                            icon: const Icon(Icons.done_all_rounded, size: 16),
-                            label: const Text(
-                              'Mark All Read',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            style: TextButton.styleFrom(
-                              foregroundColor: _kOrange,
+                        if (_filter != 'all' || searchQuery.isNotEmpty)
+                          InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () => setState(() {
+                              _searchCtrl.clear();
+                              _filter = 'all';
+                            }),
+                            child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.filter_alt_off_rounded,
+                                    size: 15,
+                                    color: _kOrange,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Clear',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: _kOrange,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
 
                     // Feed Items
                     if (_loading)
@@ -784,7 +1005,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: filtered.length,
                         separatorBuilder: (ctx, i) =>
-                            const SizedBox(height: 12),
+                            const SizedBox.shrink(),
                         itemBuilder: (ctx, i) {
                           final n = filtered[i];
                           return _buildNotificationCard(n);

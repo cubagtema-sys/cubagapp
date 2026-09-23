@@ -10,7 +10,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import cross_origin
 from config.db import get_db
 from config.cache import cache
-from config.rate_limit import rate_limit
+from config.rate_limit import (
+    rate_limit,
+    otp_attempt_limited,
+    record_otp_failure,
+    clear_otp_failures,
+)
 from utils import admin_required
 import requests as http_req
 
@@ -167,6 +172,7 @@ def send_otp():
         if not send_verification_email(email, token):
             return jsonify({'message': 'Failed to send verification email. Please check your SMTP/Resend configuration, or ensure your SMTP_USER is verified.'}), 500
 
+        clear_otp_failures('email', email)
         return jsonify({'message': 'OTP sent to email.'}), 200
 
     except Exception as e:
@@ -185,6 +191,9 @@ def verify_email():
     if not email or not token:
         return jsonify({'message': 'Email and Token/OTP are required'}), 400
 
+    if otp_attempt_limited('email', email):
+        return jsonify({'message': 'Too many incorrect codes. Please request a new one.'}), 429
+
     conn = get_db()
     try:
         with conn.cursor() as cursor:
@@ -195,8 +204,10 @@ def verify_email():
                   AND created_at > NOW() - INTERVAL '15 minutes'
             """, (email, token))
             if not cursor.fetchone():
+                record_otp_failure('email', email)
                 return jsonify({'message': 'Invalid or expired verification code'}), 400
 
+            clear_otp_failures('email', email)
             cursor.execute("DELETE FROM otp_codes WHERE LOWER(email) = LOWER(%s)", (email,))
             cursor.execute(
                 "INSERT INTO otp_codes (email, code, type) VALUES (%s, %s, 'email_verified')",
@@ -238,6 +249,7 @@ def resend_otp():
         if not send_verification_email(email, token):
             return jsonify({'message': 'Failed to send verification email. Please check your SMTP/Resend configuration, or ensure your SMTP_USER is verified.'}), 500
 
+        clear_otp_failures('email', email)
         return jsonify({'message': 'New OTP sent to email.'}), 200
     except Exception as e:
         conn.rollback()
@@ -305,9 +317,11 @@ def register():
             cursor.execute("DELETE FROM otp_codes WHERE LOWER(email) = LOWER(%s)", (email,))
             conn.commit()
 
+            from datetime import timedelta
             token = create_access_token(
                 identity=str(new_id),
-                additional_claims={'role': 'member'}
+                additional_claims={'role': 'member'},
+                expires_delta=timedelta(hours=48),
             )
 
             return jsonify({
@@ -438,11 +452,14 @@ def login():
             import threading
             threading.Thread(target=_async_rating_update, args=(member_id_val,), daemon=True).start()
 
-            # Generate JWT with identity and role
+            # Generate JWT with identity and role. Admins get a shorter token.
             role = member.get('role', 'member')
+            from datetime import timedelta
+            token_ttl = timedelta(hours=8) if role in ('admin', 'sub_admin', 'super_admin') else timedelta(hours=48)
             token = create_access_token(
                 identity=str(member['id']),
-                additional_claims={'role': role}
+                additional_claims={'role': role},
+                expires_delta=token_ttl,
             )
 
             # Expiry date serialization
@@ -793,8 +810,8 @@ def get_me():
 
             # Return fresh data
             result = dict(member)
-            result.pop('password_hash', None)
-            result.pop('fcm_token', None)
+            for secret_key in ('password_hash', 'fcm_token', 'reset_token', 'otp', 'otp_code'):
+                result.pop(secret_key, None)
             result['compliance_score'] = rating_data['compliance_score']
             result['star_rating'] = rating_data['star_rating']
             result['manual_review_score'] = rating_data['manual_review_score']
@@ -1054,9 +1071,9 @@ def get_me():
                 )
                 result['permissions'] = [r['permission_key'] for r in cursor.fetchall()]
 
-            result.pop('password_hash', None)
-            result.pop('fcm_token', None)
-            # Store in cache — 60 second TTL per member
+            for secret_key in ('password_hash', 'fcm_token', 'reset_token', 'otp', 'otp_code'):
+                result.pop(secret_key, None)
+            # Store in cache — 60 second TTL per member (never cache secrets)
             cache.set(cache_key, result, timeout=60)
             return jsonify(result), 200
     finally:
@@ -1357,6 +1374,7 @@ def forgot_password():
                     (actual_email, token)
                 )
                 conn.commit()
+                clear_otp_failures('reset', actual_email)
                 # Send synchronously with 10s timeout (threads unreliable with gevent)
                 try:
                     send_reset_email(actual_email, token)
@@ -1389,6 +1407,9 @@ def reset_password():
     if len(new_password) < 8:
         return jsonify({'message': 'Password must be at least 8 characters'}), 400
 
+    if otp_attempt_limited('reset', email):
+        return jsonify({'message': 'Too many incorrect codes. Please request a new one.'}), 429
+
     conn = get_db()
     try:
         with conn.cursor() as cursor:
@@ -1403,8 +1424,10 @@ def reset_password():
             otp_record = cursor.fetchone()
 
             if not otp_record:
+                record_otp_failure('reset', email)
                 return jsonify({'message': 'Invalid or expired reset link. Please request a new one.'}), 400
 
+            clear_otp_failures('reset', email)
             # B-15 fix: update by member ID, not email string (avoids multi-row risk)
             actual_email = otp_record['email']
             cursor.execute("SELECT id FROM members WHERE LOWER(email) = LOWER(%s)", (actual_email,))

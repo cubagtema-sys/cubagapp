@@ -476,7 +476,9 @@ def init_db():
                 ADD COLUMN IF NOT EXISTS primary_port VARCHAR(100) DEFAULT 'Tema',
                 ADD COLUMN IF NOT EXISTS member_scale VARCHAR(50) DEFAULT 'sme',
                 ADD COLUMN IF NOT EXISTS fee_category VARCHAR(100) DEFAULT 'cf_only',
-                ADD COLUMN IF NOT EXISTS consolidation_scope VARCHAR(50) DEFAULT 'without_consolidation';
+                ADD COLUMN IF NOT EXISTS consolidation_scope VARCHAR(50) DEFAULT 'without_consolidation',
+                ADD COLUMN IF NOT EXISTS data_sharing_consent BOOLEAN DEFAULT TRUE,
+                ADD COLUMN IF NOT EXISTS marketing_consent BOOLEAN DEFAULT FALSE;
             """)
 
             cursor.execute("""
@@ -1010,6 +1012,20 @@ def init_db():
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_sub_admin_permissions_sub_admin ON sub_admin_permissions(sub_admin_id, permission_key)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_target_type ON audit_log(target_type)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_admin_id ON audit_log(admin_id)")
+
+            # GDPR compliance tables
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS data_deletion_requests (
+                    id SERIAL PRIMARY KEY,
+                    member_id INTEGER NOT NULL REFERENCES members(id),
+                    requested_by INTEGER NOT NULL REFERENCES members(id),
+                    status VARCHAR(20) DEFAULT 'pending',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    approved_by INTEGER REFERENCES members(id),
+                    completed_at TIMESTAMP,
+                    notes TEXT
+                )
+            """)
 
         conn.commit()
         logger.info("[OK] Database tables initialised successfully.")

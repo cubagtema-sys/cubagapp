@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import verify_jwt_in_request
+from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
 from config.db import get_db
 import json
 from utils import admin_required, sub_admin_required
@@ -12,6 +12,15 @@ _PUBLIC_SETTING_KEYS = {
     'cubag_payment_settings_v2',
 }
 
+_ADMIN_ONLY_KEY_FRAGMENTS = (
+    'password', 'secret', 'smtp', 'api_key', 'apikey', 'token', 'webhook',
+)
+
+
+def _setting_requires_admin(key: str) -> bool:
+    lowered = (key or '').lower()
+    return any(frag in lowered for frag in _ADMIN_ONLY_KEY_FRAGMENTS)
+
 
 @settings_bp.route('/<key>', methods=['GET'])
 def get_setting(key):
@@ -20,6 +29,20 @@ def get_setting(key):
             verify_jwt_in_request()
         except Exception:
             return jsonify({'message': 'Authentication required'}), 401
+        if _setting_requires_admin(key):
+            member_id = get_jwt_identity()
+            conn_role = get_db()
+            try:
+                with conn_role.cursor() as cursor:
+                    cursor.execute("SELECT role FROM members WHERE id = %s", (member_id,))
+                    row = cursor.fetchone()
+                    role = (row.get('role') if row else '') or ''
+                if role not in ('admin', 'sub_admin', 'super_admin'):
+                    return jsonify({'message': 'Admin access required'}), 403
+            except Exception:
+                return jsonify({'message': 'Admin access required'}), 403
+            finally:
+                conn_role.close()
 
     conn = get_db()
     try:

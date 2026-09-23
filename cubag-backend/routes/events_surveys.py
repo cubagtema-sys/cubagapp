@@ -1143,82 +1143,112 @@ def enroll_in_course(course_id):
     """Enroll logged-in member into a CTI course with payment."""
     member_id = get_jwt_identity()
     data = request.get_json() or {}
-    payment_method = data.get('payment_method', 'momo')
-    tx_ref = data.get('payment_ref') or f"CTI-PAY-{int(time.time())}-{member_id}"
+    payment_method = (data.get('payment_method') or 'momo').strip().lower()
+    tx_ref = (data.get('payment_ref') or '').strip()
 
     conn = get_db()
     try:
         with conn.cursor() as cursor:
-            # 1. Verify course exists
-            cursor.execute("SELECT id, title, fee, start_date, mode, duration FROM cti_courses WHERE id = %s AND deleted_at IS NULL AND is_active = TRUE", (course_id,))
-            course = cursor.fetchone()
-            if not course:
-                return jsonify({'message': 'Course not found or inactive'}), 404
+                    # 1. Verify course exists
+                    cursor.execute("SELECT id, title, fee, start_date, mode, duration FROM cti_courses WHERE id = %s AND deleted_at IS NULL AND is_active = TRUE", (course_id,))
+                    course = cursor.fetchone()
+                    if not course:
+                        return jsonify({'message': 'Course not found or inactive'}), 404
 
-            # 2. Check if already enrolled
-            cursor.execute("SELECT id, status FROM cti_course_enrollments WHERE course_id = %s AND member_id = %s", (course_id, member_id))
-            existing = cursor.fetchone()
-            if existing:
-                return jsonify({'message': 'You are already enrolled in this course', 'enrollment_id': existing['id'], 'status': existing['status']}), 200
+                    # 2. Check if already enrolled
+                    cursor.execute("SELECT id, status FROM cti_course_enrollments WHERE course_id = %s AND member_id = %s", (course_id, member_id))
+                    existing = cursor.fetchone()
+                    if existing:
+                        return jsonify({'message': 'You are already enrolled in this course', 'enrollment_id': existing['id'], 'status': existing['status']}), 200
 
-            # 3. Parse numeric fee
-            fee_str = str(course.get('fee', '0')).replace('GHS', '').replace(',', '').strip()
-            try:
-                amount = float(fee_str)
-                if amount <= 0:
-                    return jsonify({'message': 'Course fee is not properly configured in database'}), 400
-            except ValueError:
-                return jsonify({'message': 'Course fee is not properly configured in database'}), 400
+                    # 3. Parse numeric fee from the catalog — never from the client
+                    fee_str = str(course.get('fee', '0')).replace('GHS', '').replace(',', '').strip()
+                    try:
+                        amount = float(fee_str)
+                    except ValueError:
+                        return jsonify({'message': 'Course fee is not properly configured in database'}), 400
 
-            # 4. Insert enrollment
-            cursor.execute("""
-                INSERT INTO cti_course_enrollments (course_id, member_id, status, payment_method, payment_ref, amount, payment_confirmed_at)
-                VALUES (%s, %s, 'enrolled', %s, %s, %s, NOW())
-                RETURNING id, course_id, member_id, status, payment_ref, amount, created_at
-            """, (course_id, member_id, payment_method, tx_ref, amount))
-            enrollment = cursor.fetchone()
+                    if amount > 0.009:
+                        if payment_method == 'free':
+                            return jsonify({'message': 'This course requires payment before enrollment.'}), 402
+                        cursor.execute(
+                            """
+                            SELECT id FROM payments
+                            WHERE member_id = %s
+                              AND LOWER(status) IN ('paid', 'completed', 'success', 'successful')
+                              AND (
+                                    (%s <> '' AND payment_ref = %s)
+                                 OR LOWER(description) LIKE %s
+                              )
+                            LIMIT 1
+                            """,
+                            (member_id, tx_ref, tx_ref, f"%cti%{str(course.get('title') or '')[:40].lower()}%"),
+                        )
+                        paid = cursor.fetchone()
+                        if not paid:
+                            cursor.execute(
+                                """
+                                SELECT id FROM payments
+                                WHERE member_id = %s
+                                  AND LOWER(status) IN ('paid', 'completed', 'success', 'successful')
+                                  AND LOWER(description) LIKE %s
+                                LIMIT 1
+                                """,
+                                (member_id, f"%{(course.get('title') or '')[:40].lower()}%"),
+                            )
+                            paid = cursor.fetchone()
+                        if not paid:
+                            return jsonify({'message': 'Payment for this course has not been confirmed yet.'}), 402
+                    else:
+                        amount = 0.0
+                        if not tx_ref:
+                            tx_ref = f"CTI-FREE-{int(time.time())}-{member_id}"
 
-            # 5. Insert payment record
-            cursor.execute("""
-                INSERT INTO payments (member_id, amount, description, status, payment_ref, paid_at, created_at)
-                VALUES (%s, %s, %s, 'paid', %s, NOW(), NOW())
-            """, (member_id, amount, f"CTI Enrollment: {course['title']} ({course['duration']})", tx_ref))
+                    if not tx_ref:
+                        tx_ref = f"CTI-PAY-{int(time.time())}-{member_id}"
 
-            # 6. Fetch member name & send in-app notification
-            cursor.execute("SELECT name, email, fcm_token FROM members WHERE id = %s", (member_id,))
-            member = cursor.fetchone()
-            m_name = member['name'] if member else 'Member'
-            fcm_token = member['fcm_token'] if member else None
+                    # 4. Insert enrollment (do not fabricate a paid payment row)
+                    cursor.execute("""
+                        INSERT INTO cti_course_enrollments (course_id, member_id, status, payment_method, payment_ref, amount, payment_confirmed_at)
+                        VALUES (%s, %s, 'enrolled', %s, %s, %s, NOW())
+                        RETURNING id, course_id, member_id, status, payment_ref, amount, created_at
+                    """, (course_id, member_id, payment_method, tx_ref, amount))
+                    enrollment = cursor.fetchone()
 
-            notif_title = f"🎓 Enrolled: {course['title']}"
-            notif_body = f"Congratulations {m_name}! You have successfully enrolled in '{course['title']}' starting on {course['start_date']}. Your syllabus and access details have been generated."
+                    # 6. Fetch member name & send in-app notification
+                    cursor.execute("SELECT name, email, fcm_token FROM members WHERE id = %s", (member_id,))
+                    member = cursor.fetchone()
+                    m_name = member['name'] if member else 'Member'
+                    fcm_token = member['fcm_token'] if member else None
 
-            cursor.execute("""
-                INSERT INTO notifications (member_id, title, body, category, notification_type)
-                VALUES (%s, %s, %s, 'Training', 'announcement')
-            """, (member_id, notif_title, notif_body))
+                    notif_title = f"🎓 Enrolled: {course['title']}"
+                    notif_body = f"Congratulations {m_name}! You have successfully enrolled in '{course['title']}' starting on {course['start_date']}. Your syllabus and access details have been generated."
 
-            conn.commit()
+                    cursor.execute("""
+                        INSERT INTO notifications (member_id, title, body, category, notification_type)
+                        VALUES (%s, %s, %s, 'Training', 'announcement')
+                    """, (member_id, notif_title, notif_body))
 
-            # 7. Push notification
-            if fcm_token:
-                send_push_notification(fcm_token, notif_title, notif_body, data={'type': 'cti_enrolled', 'course_id': str(course_id)})
+                    conn.commit()
 
-            # 8. Email Acknowledgement & Official Receipt
-            try:
-                from routes.payments import _send_receipt_email
-                if member and member.get('email'):
-                    schedule_msg = f"<p><strong>CTI Course Schedule:</strong> Starts on <strong>{course['start_date']}</strong> ({course['duration']}) • Mode: <strong>{course['mode']}</strong>.</p>"
-                    _send_receipt_email(member['email'], m_name, amount, f"CTI Course: {course['title']} ({course['duration']})", enrollment['id'], schedule_msg)
-            except Exception as mail_err:
-                logger.warning(f"[CTI] Failed to send enrollment receipt email: {mail_err}")
+                    # 7. Push notification
+                    if fcm_token:
+                        send_push_notification(fcm_token, notif_title, notif_body, data={'type': 'cti_enrolled', 'course_id': str(course_id)})
 
-            return jsonify({
-                'message': 'Successfully enrolled in CTI course',
-                'enrollment': dict(enrollment),
-                'course': dict(course)
-            }), 201
+                    # 8. Email Acknowledgement & Official Receipt
+                    try:
+                        from routes.payments import _send_receipt_email
+                        if member and member.get('email'):
+                            schedule_msg = f"<p><strong>CTI Course Schedule:</strong> Starts on <strong>{course['start_date']}</strong> ({course['duration']}) • Mode: <strong>{course['mode']}</strong>.</p>"
+                            _send_receipt_email(member['email'], m_name, amount, f"CTI Course: {course['title']} ({course['duration']})", enrollment['id'], schedule_msg)
+                    except Exception as mail_err:
+                        logger.warning(f"[CTI] Failed to send enrollment receipt email: {mail_err}")
 
+                    return jsonify({
+                        'message': 'Successfully enrolled in CTI course',
+                        'enrollment': dict(enrollment),
+                        'course': dict(course)
+                    }), 201
     except Exception as e:
         conn.rollback()
         logger.exception("Error in enroll_in_course: %s", e)

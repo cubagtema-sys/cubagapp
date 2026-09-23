@@ -123,6 +123,23 @@ def check_upcoming_cti_courses():
     conn = get_db()
     try:
         with conn.cursor() as cursor:
+            # Archive courses that have passed their start date
+            cursor.execute("""
+                UPDATE cti_courses
+                SET is_active = FALSE, deleted_at = CURRENT_TIMESTAMP
+                WHERE is_active = TRUE 
+                  AND deleted_at IS NULL
+                  AND start_date IS NOT NULL
+                  AND start_date < %s
+                RETURNING id, title, start_date
+            """, (date.today(),))
+            archived_courses = cursor.fetchall()
+            
+            if archived_courses:
+                logger.info(f"[Jobs] Archived {len(archived_courses)} CTI courses with passed start dates")
+                for course in archived_courses:
+                    logger.info(f"[Jobs] Archived course: {course['title']} (was scheduled for {course['start_date']})")
+
             # Query active enrollments with course details and member details
             cursor.execute("""
                 SELECT e.id as enrollment_id, e.member_id, e.status as enrollment_status,
@@ -175,6 +192,54 @@ def check_upcoming_cti_courses():
         conn.close()
 
 
+def run_payment_reconciliation_job():
+    """Run payment reconciliation as a scheduled job."""
+    logger.info("[Jobs] Running payment reconciliation...")
+    conn = get_db()
+    try:
+        # Create a mock payment gateway client (since we don't have a real one)
+        class MockGatewayClient:
+            def check_status(self, payment_ref):
+                return None
+        
+        from config.payment_reconciliation import PaymentReconciler
+        reconciler = PaymentReconciler(conn, MockGatewayClient())
+        
+        # Run reconciliation components
+        pending_results = reconciler.reconcile_pending_payments()
+        orphaned_results = reconciler.reconcile_orphaned_payments()
+        anomaly_results = reconciler.detect_payment_anomalies()
+        
+        logger.info(f"[Jobs] Payment reconciliation completed")
+        logger.info(f"[Jobs] Pending reconciliation: {pending_results.get('updated', 0)} updated, {pending_results.get('failed', 0)} failed")
+        logger.info(f"[Jobs] Orphaned reconciliation: {orphaned_results.get('resolved', 0)} resolved")
+        logger.info(f"[Jobs] Anomalies detected: {anomaly_results.get('anomalies_detected', 0)}")
+        
+    except Exception as e:
+        logger.error(f"[Jobs] Payment reconciliation failed: {e}")
+    finally:
+        conn.close()
+
+
+def run_data_retention_job():
+    """Run data retention cleanup as a scheduled job."""
+    logger.info("[Jobs] Running data retention cleanup...")
+    conn = get_db()
+    try:
+        from config.data_retention import run_data_retention_cleanup
+        results = run_data_retention_cleanup(conn)
+        
+        logger.info(f"[Jobs] Data retention cleanup completed")
+        logger.info(f"[Jobs] Tasks completed: {results.get('tasks_completed', 0)}")
+        logger.info(f"[Jobs] Total deleted: {results.get('total_deleted', 0)}")
+        logger.info(f"[Jobs] Total errors: {results.get('total_errors', 0)}")
+        
+    except Exception as e:
+        logger.error(f"[Jobs] Data retention cleanup failed: {e}")
+    finally:
+        conn.close()
+
+
 def start_scheduler():
     scheduler = BackgroundScheduler(daemon=True)
     
@@ -187,6 +252,12 @@ def start_scheduler():
     # Update ratings daily at 2:00 AM
     scheduler.add_job(run_rating_update_cycle, 'cron', hour=2, minute=0)
     
+    # Payment reconciliation every 6 hours
+    scheduler.add_job(run_payment_reconciliation_job, 'cron', hour='*/6')
+    
+    # Data retention cleanup daily at 3:00 AM
+    scheduler.add_job(run_data_retention_job, 'cron', hour=3, minute=0)
+    
     scheduler.start()
-    logger.info("[Jobs] APScheduler started.")
+    logger.info("[Jobs] APScheduler started with payment reconciliation and data retention cleanup.")
 

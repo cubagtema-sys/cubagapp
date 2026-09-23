@@ -6,13 +6,17 @@ class WhitsunPayService {
   factory WhitsunPayService() => _instance;
   WhitsunPayService._internal();
 
-  static const String defaultEndpoint =
-      'https://developer.whitsun.dev/api/v1/payments';
-  static const String clientId = '019e8ba678a27f00bc19c3757989ed0b';
-  static const String apiKey =
-      'wp_live_h7Q8bld7YqtjvTVF2wwfBrUjxl6LShWexviNLfy5lQU';
-  static const String callbackUrl =
-      'https://cubag-api-server.onrender.com/api/payments/webhook';
+  /// Base URL of the Cloudflare proxy worker that holds the WhitsunPay API key
+  /// server-side. The client NEVER contains the key. Override at build time with:
+  ///   flutter build ... --dart-define=WHITSUN_PROXY_URL=https://cubag-whitsun-proxy.<account>.workers.dev
+  static const String proxyBaseUrl = String.fromEnvironment(
+    'WHITSUN_PROXY_URL',
+    defaultValue: 'https://cubag-whitsun-proxy.REPLACE_WITH_ACCOUNT.workers.dev',
+  );
+
+  /// All calls go through the proxy worker, which injects credentials and
+  /// forwards to https://developer.whitsun.dev.
+  static String get defaultEndpoint => '$proxyBaseUrl/api/v1/payments';
 
   final Dio _dio = Dio(
     BaseOptions(
@@ -21,9 +25,6 @@ class WhitsunPayService {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'x-client-id': clientId,
-        'x-api-key': apiKey,
-        'x-callback-url': callbackUrl,
         'User-Agent': 'CUBAG-Mobile/2.0 (Ghana Customs Platform)',
       },
     ),
@@ -91,7 +92,7 @@ class WhitsunPayService {
   /// Returns a Map with { 'isPaid': bool, 'status': String, 'txId': String }
   Future<Map<String, dynamic>> checkStatus(String txRef) async {
     if (txRef.isEmpty) return {'isPaid': false, 'status': 'unknown'};
-    final url = 'https://developer.whitsun.dev/api/v1/$txRef/status';
+    final url = '$proxyBaseUrl/api/v1/$txRef/status';
     try {
       final res = await _dio.get(url);
       if (res.statusCode == 200 && res.data is Map) {

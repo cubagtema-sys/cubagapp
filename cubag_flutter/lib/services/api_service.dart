@@ -44,14 +44,20 @@ class ApiService {
       return '$scheme://$host$portStr/api/v1';
     }
 
-    // ── 4. Android & iOS — connects to host machine IP on local Wi-Fi / physical devices ─
+    // ── 4. Android & iOS — TEMP: local dev backend on LAN ───────────────────
+    // Developing against the local backend for now. Before a production release,
+    // restore the production base: https://cubag-api-server.onrender.com/api/v1
     if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
-      return 'http://192.168.4.127:5005/api/v1';
+      return _localDevUrl;
     }
 
     // ── 5. macOS / Windows / Linux ─────────────────────────────────────────
-    return 'http://127.0.0.1:5005/api/v1';
+    return _localDevUrl;
   }
+
+  /// TEMP local development backend (LAN IP). Cleartext to these local addresses
+  /// is explicitly allow-listed in android network_security_config.xml.
+  static const String _localDevUrl = 'http://192.168.4.127:5005/api/v1';
 
   static String get activeHost {
     try {
@@ -69,7 +75,8 @@ class ApiService {
     String clean = newUrl.trim();
     if (clean.isEmpty) return;
     if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
-      clean = 'http://$clean';
+      // Default to TLS. A user must explicitly type http:// for a local dev server.
+      clean = 'https://$clean';
     }
     if (!clean.endsWith('/')) clean = '$clean/';
     if (!clean.contains('/api/v1/')) {

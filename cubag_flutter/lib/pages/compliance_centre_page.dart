@@ -7,12 +7,14 @@ import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../components/app_layout.dart';
 import '../components/in_app_document_viewer.dart';
 import '../components/skeleton_loader.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
+import '../utils/session_storage.dart';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const _kPrimary = Color(0xFFFF5000);
@@ -629,14 +631,35 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
   }
 
   Future<void> _downloadCertificate() async {
-    final url =
-        ApiService.resolveImageUrl('api/v1/compliance/applications/${widget.appId}/certificate');
-    await InAppDocumentViewer.show(
-      context,
-      url: url,
-      title: 'Annual Certificate of Compliance',
-      subtitle: 'Official CUBAG Certificate',
-    );
+    try {
+      final token = await SessionStorage.instance.getString('cubag_token');
+      if (token == null || token.isEmpty) {
+        _showSnack('Authentication required. Please login again.', color: _kRed);
+        return;
+      }
+
+      // Construct URL with token parameter
+      final baseUrl = ApiService.baseUrl;
+      final cleanBaseUrl = baseUrl.replaceFirst(RegExp(r'/api/v1/?$'), '');
+      final url = '$cleanBaseUrl/api/v1/compliance/applications/${widget.appId}/certificate?token=$token&format=pdf';
+
+      // Try to open in external browser first (more reliable for certificate downloads)
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Fallback to in-app viewer
+        await InAppDocumentViewer.show(
+          context,
+          url: url,
+          title: 'Annual Certificate of Compliance',
+          subtitle: 'Official CUBAG Certificate',
+        );
+      }
+    } catch (e) {
+      AppLogger.error('compliance_centre_page', e, null);
+      _showSnack('Failed to download certificate: $e', color: _kRed);
+    }
   }
 
   void _showSnack(
@@ -1082,14 +1105,39 @@ class _StatusViewPage extends StatelessWidget {
   const _StatusViewPage({required this.app, required this.appId});
 
   Future<void> _downloadCertificate(BuildContext context) async {
-    final url =
-        ApiService.resolveImageUrl('api/v1/compliance/applications/$appId/certificate');
-    await InAppDocumentViewer.show(
-      context,
-      url: url,
-      title: 'Annual Certificate of Compliance',
-      subtitle: 'Official CUBAG Certificate',
-    );
+    try {
+      final token = await SessionStorage.instance.getString('cubag_token');
+      if (token == null || token.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Authentication required. Please login again.')),
+        );
+        return;
+      }
+
+      // Construct URL with token parameter
+      final baseUrl = ApiService.baseUrl;
+      final cleanBaseUrl = baseUrl.replaceFirst(RegExp(r'/api/v1/?$'), '');
+      final url = '$cleanBaseUrl/api/v1/compliance/applications/$appId/certificate?token=$token&format=pdf';
+
+      // Try to open in external browser first (more reliable for certificate downloads)
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Fallback to in-app viewer
+        await InAppDocumentViewer.show(
+          context,
+          url: url,
+          title: 'Annual Certificate of Compliance',
+          subtitle: 'Official CUBAG Certificate',
+        );
+      }
+    } catch (e) {
+      AppLogger.error('compliance_centre_page', e, null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to download certificate: $e')),
+      );
+    }
   }
 
   @override

@@ -5,6 +5,7 @@ import hashlib
 import hmac
 import resend
 import logging
+import time
 from datetime import datetime, date, timedelta
 from flask import Blueprint, jsonify, request
 from flask_cors import cross_origin
@@ -12,9 +13,12 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from config.db import get_db
 from socket_instance import socketio
 from utils import admin_required, sub_admin_required, log_backend_error, log_admin_action, emit_to_member
+from config.security import verify_payment_ownership, verify_member_ownership
 from config.cache import cache
 from config.rate_limit import rate_limit
 from config.payment_validation import validate_member_payment_amount, get_cti_course_amount
+from config.payment_state_machine import PaymentStateMachine, validate_payment_state_transition
+from config.duplicate_payment import check_duplicate_payment
 
 payments_bp = Blueprint('payments', __name__)
 logger = logging.getLogger(__name__)
@@ -449,7 +453,7 @@ def create_payment():
             installment_number = int(data.get('installment_number', 1))
 
             server_amount, amount_err = validate_member_payment_amount(
-                cursor, member_id, description, amount, comp_app_id, is_installment
+                cursor, member_id, description, amount, comp_app_id, is_installment, installment_number
             )
             if amount_err:
                 return jsonify({'message': amount_err}), 400
@@ -610,6 +614,18 @@ def create_payment():
                     """, (amount, payment_ref, comp_app_id, is_installment, installment_number, payment_id))
                     logger.info(f"[Payments] Reset stale failed payment {payment_id} to pending for member {member_id}")
                 else:
+                    # Check for duplicate payments before creating new record (skip for installments)
+                    is_duplicate, duplicate_payment = check_duplicate_payment(
+                        cursor, member_id, amount, description, payment_method='momo', payment_ref=payment_ref, is_installment=is_installment
+                    )
+                    if is_duplicate:
+                        logger.warning(f"Duplicate payment prevented for member {member_id}: amount={amount}, description={description}")
+                        return jsonify({
+                            'message': 'A similar payment already exists. Please check your payment history.',
+                            'duplicate_payment_id': duplicate_payment.get('id') if duplicate_payment else None,
+                            'duplicate_status': duplicate_payment.get('status') if duplicate_payment else None
+                        }), 409
+                    
                     # Initialize New Record
                     cursor.execute("""
                         INSERT INTO payments (member_id, amount, description, status, payment_ref, application_id, is_installment, installment_number)
@@ -895,19 +911,23 @@ def verify_payment_code():
     if not payment_id:
         return jsonify({'message': 'Payment id is required', 'error': True}), 400
 
-    # Ownership: only the payer can poll, and the ref must match the stored payment.
+    # ── Enhanced IDOR Protection: Verify ownership before processing ─────────
     own_conn = get_db()
     try:
         with own_conn.cursor() as cursor:
+            has_access, is_admin, error = verify_payment_ownership(member_id, payment_id, cursor)
+            if error:
+                return error
+            
+            # Additional transaction reference validation
             cursor.execute(
-                "SELECT id, member_id, payment_ref, status FROM payments WHERE id = %s",
+                "SELECT payment_ref, status FROM payments WHERE id = %s",
                 (payment_id,),
             )
-            owned = cursor.fetchone()
-            if not owned or str(owned['member_id']) != str(member_id):
-                return jsonify({'message': 'Unauthorised', 'error': True}), 403
-            stored_ref = str(owned.get('payment_ref') or '')
+            payment = cursor.fetchone()
+            stored_ref = str(payment.get('payment_ref') or '')
             if stored_ref and stored_ref != tx_ref:
+                logger.warning(f"Transaction reference mismatch for payment {payment_id}: expected {stored_ref}, got {tx_ref}")
                 return jsonify({'message': 'Transaction reference mismatch', 'error': True}), 403
     finally:
         own_conn.close()
@@ -1085,13 +1105,25 @@ def _mark_payment_as_paid(payment_id, force=False):
     conn = get_db()
     try:
         with conn.cursor() as cursor:
-            # Check if already paid to avoid double processing
-            cursor.execute("SELECT status, member_id, description, amount, payment_ref, application_id, is_installment FROM payments WHERE id = %s", (payment_id,))
+            # Check if already paid to avoid double processing.
+            # FOR UPDATE locks this payment row for the duration of the transaction
+            # so a concurrent webhook + verify-code poll (or a duplicate/replayed
+            # webhook) serializes here: the second caller then sees status='paid'
+            # and returns early instead of extending the license twice.
+            cursor.execute("SELECT status, member_id, description, amount, payment_ref, application_id, is_installment FROM payments WHERE id = %s FOR UPDATE", (payment_id,))
             p = cursor.fetchone()
             if not p:
                 return
-            if not force and str(p.get('status', '')).lower() == 'paid':
+            
+            current_status = str(p.get('status', '')).lower()
+            if not force and current_status == 'paid':
                 return
+            
+            # State machine validation
+            is_valid, error = validate_payment_state_transition(current_status, 'paid')
+            if not is_valid and not force:
+                logger.warning(f"Invalid payment state transition in _mark_payment_as_paid for payment {payment_id}: {error}")
+                return  # Skip invalid transitions unless forced
 
             member_id = p['member_id']
             description = p.get('description') or ''
@@ -1296,6 +1328,12 @@ def _mark_payment_as_paid(payment_id, force=False):
             except Exception:
                 pass
 
+            # Persist the core payment/license/member/task mutations now. The
+            # compliance and CTI blocks below have their own conditional commits,
+            # so without this a plain renewal/registration payment would be rolled
+            # back when the pooled connection is returned (psycopg2 has no autocommit).
+            conn.commit()
+
             # ── FIX #1: Compliance application confirmation ──────────────────
             # If this payment's payment_ref matches a compliance application in
             # 'submitted' status, advance it to 'under_review'. This means the
@@ -1426,17 +1464,43 @@ def _mark_payment_as_paid(payment_id, force=False):
 
 # ─── PUT|POST /payments/webhook — WhitsunPay callback on terminal state ───────
 @payments_bp.route('/webhook', methods=['PUT', 'POST'])
+@cross_origin()
 def whitsunpay_webhook():
-    sig  = request.headers.get('X-Whitsun-Signature', '')
+    """
+    Enhanced webhook endpoint with robust HMAC signature verification.
+    Protects against replay attacks, timing attacks, and forged webhooks.
+    """
+    sig = request.headers.get('X-Whitsun-Signature', '')
+    timestamp = request.headers.get('X-Whitsun-Timestamp', '')
     body = request.get_data()
+    
+    # Enhanced security: Reject webhooks without timestamp to prevent replay attacks
+    if not timestamp:
+        logger.warning('[Webhook] Missing timestamp header — rejecting call')
+        return jsonify({'message': 'Missing timestamp header'}), 401
+    
+    # Check timestamp freshness (reject requests older than 5 minutes)
+    try:
+        webhook_time = int(timestamp)
+        current_time = int(time.time())
+        if abs(current_time - webhook_time) > 300:  # 5 minutes tolerance
+            logger.warning(f'[Webhook] Timestamp too old ({webhook_time} vs {current_time}) — rejecting call')
+            return jsonify({'message': 'Timestamp too old'}), 401
+    except (ValueError, TypeError):
+        logger.warning('[Webhook] Invalid timestamp format — rejecting call')
+        return jsonify({'message': 'Invalid timestamp format'}), 401
 
     # Fail closed in production: unsigned webhooks must not mark payments paid.
     if WHITSUNPAY_WEBHOOK_SECRET:
+        # Compute expected HMAC signature
         expected = 'sha256=' + hmac.new(
             WHITSUNPAY_WEBHOOK_SECRET.encode(), body, hashlib.sha256
         ).hexdigest()
+        
+        # Use constant-time comparison to prevent timing attacks
         if not hmac.compare_digest(sig or '', expected):
             logger.warning('[Webhook] Signature mismatch — rejecting call')
+            logger.debug(f'[Webhook] Expected: {expected[:20]}..., Received: {sig[:20] if sig else "None"}...')
             return jsonify({'message': 'Invalid signature'}), 401
     else:
         if os.getenv('FLASK_DEBUG', 'false').lower() == 'true':
@@ -1448,9 +1512,18 @@ def whitsunpay_webhook():
             logger.error('[Webhook] WHITSUNPAY_WEBHOOK_SECRET is not set — refusing webhook')
             return jsonify({'message': 'Webhook secret not configured'}), 503
 
-    event     = request.get_json() or {}
-    tx_ref    = event.get('transactionReference', '')
+    event = request.get_json() or {}
+    tx_ref = event.get('transactionReference', '')
     wp_status = str(event.get('status', '')).lower()
+    
+    # Additional validation: check for required fields
+    if not tx_ref:
+        logger.warning('[Webhook] Missing transactionReference in webhook payload')
+        return jsonify({'message': 'Missing transaction reference'}), 400
+    
+    if not wp_status:
+        logger.warning('[Webhook] Missing status in webhook payload')
+        return jsonify({'message': 'Missing status'}), 400
 
     if tx_ref:
         conn = get_db()
@@ -1458,6 +1531,27 @@ def whitsunpay_webhook():
             with conn.cursor() as cursor:
                 cursor.execute("SELECT id FROM payments WHERE payment_ref = %s", (tx_ref,))
                 row = cursor.fetchone()
+                if not row:
+                    try:
+                        cursor.execute(
+                            "SELECT id FROM guest_payments WHERE reference_no = %s",
+                            (tx_ref,),
+                        )
+                        guest = cursor.fetchone()
+                        if guest and wp_status in ('successful', 'success', 'completed'):
+                            cursor.execute(
+                                "UPDATE guest_payments SET status = 'paid', updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+                                (guest['id'],),
+                            )
+                            conn.commit()
+                        elif guest and wp_status in ('failed', 'declined', 'reversed', 'cancelled'):
+                            cursor.execute(
+                                "UPDATE guest_payments SET status = 'failed', updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+                                (guest['id'],),
+                            )
+                            conn.commit()
+                    except Exception as guest_err:
+                        logger.debug('[Webhook] guest_payments update skipped: %s', guest_err)
                 if row:
                     if wp_status in ('successful', 'success', 'completed'):
                         _mark_payment_as_paid(row['id'])
@@ -1807,15 +1901,15 @@ def get_all_payments_admin():
 @payments_bp.route('/member/<int:member_id>', methods=['GET'])
 @jwt_required()
 def get_member_payments(member_id):
+    """Get member payments with enhanced IDOR protection."""
     caller_id = get_jwt_identity()
     conn = get_db()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT role FROM members WHERE id = %s", (caller_id,))
-            caller = cursor.fetchone()
-            is_admin = caller and caller.get('role') in ('admin', 'sub_admin', 'super_admin')
-            if not is_admin and str(caller_id) != str(member_id):
-                return jsonify({'message': 'Unauthorized'}), 403
+            # Use enhanced ownership verification
+            has_access, is_admin, error = verify_member_ownership(caller_id, member_id, cursor)
+            if error:
+                return error
 
             cursor.execute("""
                 SELECT p.id, p.id as tx_id, p.amount, p.description, p.status,
@@ -1848,10 +1942,32 @@ def get_member_payments(member_id):
 @payments_bp.route('/admin/mark-paid/<int:payment_id>', methods=['POST'])
 @sub_admin_required('payments')
 def admin_mark_paid(payment_id):
+    """Admin endpoint to mark payment as paid with enhanced validation and state machine."""
     admin_id = get_jwt_identity()
+    conn = get_db()
     try:
-        conn = get_db()
         with conn.cursor() as cursor:
+            # Verify payment exists before updating
+            cursor.execute("SELECT id, member_id, status, amount FROM payments WHERE id = %s", (payment_id,))
+            payment = cursor.fetchone()
+            if not payment:
+                return jsonify({'message': 'Payment not found'}), 404
+            
+            current_status = str(payment.get('status', '')).lower()
+            amount = float(payment.get('amount', 0))
+            
+            # State machine validation
+            is_valid, error = PaymentStateMachine.validate_payment_update(
+                payment_id, current_status, 'paid', amount, verified_by=admin_id
+            )
+            if not is_valid:
+                logger.warning(f"Invalid payment state transition for payment {payment_id}: {error}")
+                return jsonify({'message': error}), 400
+            
+            # Additional validation: prevent double-marking as paid
+            if current_status == 'paid':
+                return jsonify({'message': 'Payment already marked as paid'}), 400
+            
             cursor.execute("""
                 UPDATE payments
                 SET verified_by = %s, verified_at = NOW(), status = 'paid', paid_at = NOW()
@@ -1882,57 +1998,56 @@ def admin_mark_paid(payment_id):
             row = cursor.fetchone()
             conn.commit()
 
-        # Use unified helper to update membership/license/compliance records
-        _mark_payment_as_paid(payment_id, force=True)
-
-        if row:
-            # Real-time WebSocket emission
-            try:
-                emit_to_member(socketio, row['member_id'], 'payment_approved', {'payment_id': payment_id, 'status': 'paid'})
-                emit_to_member(socketio, row['member_id'], 'payments_updated', {'payment_id': payment_id, 'status': 'paid'})
-                emit_to_member(socketio, row['member_id'], 'member_updated', {})
-                emit_to_member(socketio, row['member_id'], 'tasks_updated', {})
-                emit_to_member(socketio, row['member_id'], 'compliance_updated', {})
-            except Exception:
-                pass
-
-            # Push notification to member
-            if row.get('fcm_token'):
+            if row:
+                # Real-time WebSocket emission
                 try:
-                    from utils import send_push_notification
-                    send_push_notification(
-                        row['fcm_token'],
-                        title="Payment Confirmed & Approved ✅",
-                        body=f"Your payment of GH₵ {float(row['amount']):.2f} for {row.get('description', 'Dues')} has been approved.",
-                        data={'screen': 'payments', 'payment_id': str(payment_id), 'status': 'paid'}
-                    )
-                except Exception as ex:
-                    logger.warning(f"[Push] Payment approval push failed: {ex}")
+                    emit_to_member(socketio, row['member_id'], 'payment_approved', {'payment_id': payment_id, 'status': 'paid'})
+                    emit_to_member(socketio, row['member_id'], 'payments_updated', {'payment_id': payment_id, 'status': 'paid'})
+                    emit_to_member(socketio, row['member_id'], 'member_updated', {})
+                    emit_to_member(socketio, row['member_id'], 'tasks_updated', {})
+                    emit_to_member(socketio, row['member_id'], 'compliance_updated', {})
+                except Exception:
+                    pass
 
-            # Send official executive email receipt
-            if row.get('email'):
-                try:
-                    _send_receipt_email(row['email'], row.get('name', 'Valued Member'), row.get('description', 'CUBAG Dues & Fees'), float(row['amount']))
-                except Exception as em_err:
-                    logger.warning(f"[Receipt Email] Error: {em_err}")
+                # Push notification to member
+                if row.get('fcm_token'):
+                    try:
+                        from utils import send_push_notification
+                        send_push_notification(
+                            row['fcm_token'],
+                            title="Payment Confirmed & Approved ✅",
+                            body=f"Your payment of GH₵ {float(row['amount']):.2f} for {row.get('description', 'Dues')} has been approved.",
+                            data={'screen': 'payments', 'payment_id': str(payment_id), 'status': 'paid'}
+                        )
+                    except Exception as ex:
+                        logger.warning(f"[Push] Payment approval push failed: {ex}")
 
-            # Audit log
-            log_admin_action(
-                admin_id,
-                'Approved & Marked Payment as Paid',
-                target_type='payment',
-                target_id=payment_id,
-                target_name=row.get('name'),
-                details={'amount': float(row['amount']), 'description': row.get('description'), 'method': row.get('payment_method', 'bank')}
-            )
+                # Send official executive email receipt
+                if row.get('email'):
+                    try:
+                        _send_receipt_email(row['email'], row.get('name', 'Valued Member'), row.get('description', 'CUBAG Dues & Fees'), float(row['amount']))
+                    except Exception as em_err:
+                        logger.warning(f"[Receipt Email] Error: {em_err}")
 
-        return jsonify({'message': 'Payment approved and marked as PAID successfully'}), 200
+                # Audit log
+                log_admin_action(
+                    admin_id,
+                    'Approved & Marked Payment as Paid',
+                    target_type='payment',
+                    target_id=payment_id,
+                    target_name=row.get('name'),
+                    details={'amount': float(row['amount']), 'description': row.get('description'), 'method': row.get('payment_method', 'bank')}
+                )
     except Exception as e:
         logger.exception("[Admin Mark Paid Error] %s", e)
         return jsonify({'message': str(e)}), 500
     finally:
-        if 'conn' in locals() and conn:
-            conn.close()
+        conn.close()
+
+    # Use unified helper to update membership/license/compliance records
+    _mark_payment_as_paid(payment_id, force=True)
+
+    return jsonify({'message': 'Payment approved and marked as PAID successfully'}), 200
 
 
 # ─── POST /payments/admin/reject/<id> ────────────────────────────────────────
@@ -2008,6 +2123,80 @@ def admin_reject_payment(payment_id):
     except Exception as e:
         logger.exception("[Admin Reject Payment Error] %s", e)
         return jsonify({'message': str(e)}), 500
+    finally:
+        conn.close()
+
+
+# ─── GET /payments/public/verify-receipt — Public receipt verification via QR code ───────────────────────────────
+@payments_bp.route('/public/verify-receipt', methods=['GET'])
+@cross_origin()
+def verify_receipt_public():
+    """Public Receipt Verification — for QR code scanning without authentication."""
+    ref = request.args.get('ref', '').strip()
+    amount = request.args.get('amount', '').strip()
+    
+    if not ref:
+        return jsonify({
+            'verified': False, 
+            'message': 'Please provide a transaction reference.'
+        }), 400
+    
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT p.id, p.payment_ref, p.amount, p.description, p.status, p.created_at,
+                       p.payment_method, p.channel, p.network,
+                       m.name as member_name, m.company as member_company, 
+                       m.license_number, m.membership_number
+                FROM payments p
+                LEFT JOIN members m ON p.member_id = m.id
+                WHERE p.payment_ref = %s
+                LIMIT 1
+            """, (ref,))
+            payment = cursor.fetchone()
+            
+            if not payment:
+                return jsonify({
+                    'verified': False,
+                    'message': 'Receipt not found. Please check the reference number.'
+                }), 404
+            
+            # Verify amount if provided
+            if amount:
+                try:
+                    payment_amount = float(payment['amount'])
+                    check_amount = float(amount)
+                    if abs(payment_amount - check_amount) > 0.01:  # Allow small rounding differences
+                        return jsonify({
+                            'verified': False,
+                            'message': 'Amount mismatch. Expected: ₵%.2f, Provided: ₵%.2f' % (payment_amount, check_amount)
+                        }), 400
+                except (ValueError, TypeError):
+                    pass  # If amount parsing fails, skip amount verification
+            
+            # Return receipt details
+            return jsonify({
+                'verified': True,
+                'payment_ref': payment['payment_ref'],
+                'amount': float(payment['amount']),
+                'description': payment['description'],
+                'status': payment['status'],
+                'created_at': payment['created_at'].isoformat() if payment['created_at'] else None,
+                'payment_method': payment['payment_method'] or payment['channel'] or payment['network'] or 'N/A',
+                'member_name': payment.get('member_name'),
+                'member_company': payment.get('member_company'),
+                'license_number': payment.get('license_number'),
+                'membership_number': payment.get('membership_number'),
+                'verified_at': datetime.now().isoformat()
+            }), 200
+            
+    except Exception as e:
+        logger.exception("[Public Receipt Verification Error] %s", e)
+        return jsonify({
+            'verified': False,
+            'message': 'An error occurred while verifying the receipt.'
+        }), 500
     finally:
         conn.close()
 

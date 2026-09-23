@@ -1,5 +1,7 @@
 import os
 import uuid
+import socket
+import ipaddress
 import requests
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
@@ -135,6 +137,15 @@ def proxy_image():
     host_ok = any(host == allowed or host.endswith('.' + allowed) for allowed in allowed_hosts)
     if not host_ok:
         return jsonify({'message': 'Image host is not allowed'}), 403
+
+    try:
+        resolved = socket.getaddrinfo(host, None)
+        for info in resolved:
+            ip = ipaddress.ip_address(info[4][0])
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+                return jsonify({'message': 'Image host is not allowed'}), 403
+    except Exception:
+        return jsonify({'message': 'Image host could not be resolved'}), 403
 
     try:
         r = requests.get(target_url, timeout=10, allow_redirects=False)

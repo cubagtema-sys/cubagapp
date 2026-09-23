@@ -82,6 +82,7 @@ logger.info(f"JWT_SECRET_KEY env = {'SET' if os.getenv('JWT_SECRET_KEY') else 'N
 
 from config.db import get_db, init_db
 from config.cache import cache
+from config.csrf import validate_csrf_token, CSRF_PROTECTED_METHODS, CSRF_EXEMPT_ENDPOINTS
 from routes.auth import auth_bp
 from routes.members import members_bp
 from routes.announcements import announcements_bp
@@ -105,10 +106,38 @@ app.url_map.strict_slashes = False
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 @app.after_request
-def add_no_cache_headers(response):
+def add_security_headers(response):
+    """Add comprehensive security headers to prevent common vulnerabilities."""
+    # Cache control (already present)
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
+    
+    # Security headers for XSS, clickjacking, and other attacks
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    
+    # Content Security Policy (CSP) - restricts sources of content
+    csp_directives = [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.google.com https://www.gstatic.com",
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
+        "img-src 'self' data: https: http:",
+        "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com",
+        "connect-src 'self' https://api.whitsun.dev https://developer.whitsun.dev https://whitsun.dev wss://*.onrender.com wss://*.railway.app https://www.gstatic.com https://fonts.gstatic.com https://fonts.googleapis.com https://cubag-api-server.onrender.com",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "object-src 'none'",
+    ]
+    response.headers['Content-Security-Policy'] = '; '.join(csp_directives)
+    
+    # HSTS (HTTP Strict Transport Security) - only in production
+    if not IS_DEBUG:
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
+    
     return response
 
 # Auto-run DB migrations & schema setup on startup
@@ -248,6 +277,36 @@ def require_admin_role_for_admin_api():
 
 
 @app.before_request
+def enforce_csrf_protection():
+    """
+    CSRF protection for state-changing operations.
+    Validates CSRF tokens for POST/PUT/DELETE/PATCH requests except for exempt endpoints.
+    """
+    if request.method == 'OPTIONS':
+        return None
+    
+    # Skip CSRF for exempt endpoints
+    if request.path in CSRF_EXEMPT_ENDPOINTS:
+        return None
+    
+    # Only apply to state-changing methods
+    if request.method not in CSRF_PROTECTED_METHODS:
+        return None
+    
+    # Skip for static files and non-API routes
+    if not request.path.startswith('/api/'):
+        return None
+    
+    # Validate CSRF token
+    is_valid, error_msg = validate_csrf_token()
+    if not is_valid:
+        logger.warning(f"CSRF validation failed for {request.method} {request.path}")
+        return jsonify({'message': error_msg}), 403
+    
+    return None
+
+
+@app.before_request
 def enforce_account_status():
     """
     CROSS-04: Check live member status on every authenticated API call.
@@ -316,14 +375,12 @@ def _start_request_timer():
 def _log_request_time(response):
     try:
         if request.path.startswith('/api/'):
-            response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-            response.headers['Pragma'] = 'no-cache'
-            response.headers['Expires'] = '0'
-        start = getattr(g, '_start_time', None)
-        if start:
-            duration = time.time() - start
-            logger.info("%s %s completed in %.3fs", request.method, request.path, duration)
-            response.headers['X-Response-Time'] = f"{duration:.3f}s"
+            # Cache headers are now handled by add_security_headers
+            start = getattr(g, '_start_time', None)
+            if start:
+                duration = time.time() - start
+                logger.info("%s %s completed in %.3fs", request.method, request.path, duration)
+                response.headers['X-Response-Time'] = f"{duration:.3f}s"
     except Exception:
         pass
     return response
@@ -413,6 +470,7 @@ from routes.compliance_settings import compliance_settings_bp
 from routes.documents import documents_bp
 from routes.compliance import compliance_bp
 from routes.complaints import complaints_bp
+from routes.gdpr import gdpr_bp
 
 _BLUEPRINTS = [
     (auth_bp,          '/auth'),
@@ -436,6 +494,7 @@ _BLUEPRINTS = [
     (documents_bp,     '/documents'),
     (compliance_bp,    '/compliance'),
     (complaints_bp,    '/complaints'),
+    (gdpr_bp,          '/gdpr'),
 ]
 
 for bp, prefix in _BLUEPRINTS:
@@ -506,7 +565,8 @@ def serve_logo():
     return send_from_directory(static_dir, 'logo.jpeg')
 
 _SENSITIVE_UPLOAD_PREFIXES = (
-    'receipts/', 'compliance/', 'documents/', 'member_documents/', 'private/', 'bank/',
+    'receipts/', 'compliance/', 'compliance_docs/', 'documents/',
+    'member_documents/', 'member_docs/', 'private/', 'bank/',
 )
 
 
@@ -638,6 +698,11 @@ def serve_spa(path):
     ext = os.path.splitext(path)[1].lower()
     is_static_asset = ext in ('.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico', '.woff', '.woff2', '.ttf', '.json', '.pdf')
     is_upload_path = path.startswith('static/uploads/') or path.startswith('uploads/')
+    if is_upload_path:
+        rel = path.split('uploads/', 1)[-1] if 'uploads/' in path else path
+        auth_block = _require_jwt_for_sensitive_upload(rel)
+        if auth_block is not None:
+            return auth_block
 
     # Check if the requested path is a real file (like an image or JS)
     if app.static_folder:

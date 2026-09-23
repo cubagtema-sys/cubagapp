@@ -68,7 +68,7 @@ def get_public_members():
 
         # Public directory search strictly requires Good Standing & active status and excludes admins/staff
         query = """
-            SELECT id, name, company, member_type, role, email, phone, digital_address, location,
+            SELECT id, name, company, member_type, role, location,
                    COALESCE(primary_port, port_of_operation, 'Tema Port') as primary_port,
                    COALESCE(membership_number, 'CUBAG-2026-00' || id) as membership_number,
                    star_rating, compliance_score, profile_photo,
@@ -118,6 +118,8 @@ def get_public_members():
                 if is_good or m.get('good_standing') is True:
                     m['is_good_standing'] = True
                     m['status_label'] = 'Member in Good Standing'
+                    for private_key in ('email', 'phone', 'digital_address', 'tin', 'password_hash', 'fcm_token'):
+                        m.pop(private_key, None)
                     good_members.append(m)
         return jsonify(good_members), 200
     except Exception as e:

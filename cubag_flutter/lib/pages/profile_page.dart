@@ -829,6 +829,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         data: 'CUBAG:$_membershipId:${_user['id'] ?? ''}',
                         version: QrVersions.auto,
                         size: 52.0,
+                        errorCorrectionLevel: QrErrorCorrectLevel.H,
                         padding: EdgeInsets.zero,
                         eyeStyle: const QrEyeStyle(
                           eyeShape: QrEyeShape.square,

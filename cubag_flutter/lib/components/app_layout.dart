@@ -246,6 +246,27 @@ class _AppLayoutState extends State<AppLayout> {
     return Consumer<NotificationService>(
       builder: (context, notificationService, _) {
         final unreadCount = notificationService.unreadCount;
+
+        Future<void> handleMenuTap(String value) async {
+          Navigator.of(context).pop();
+          if (value == 'view_all') {
+            context.go(targetRoute);
+            return;
+          }
+          if (value.startsWith('notif_')) {
+            final idStr = value.substring(6);
+            try {
+              await ApiService().post(
+                '/notifications/mark-read',
+                data: {'notification_id': idStr},
+              );
+              notificationService.decrementCount();
+            } catch (_) {}
+            if (!context.mounted) return;
+            context.go(targetRoute);
+          }
+        }
+
         return PopupMenuButton<String>(
           padding: EdgeInsets.zero,
           tooltip: 'Notifications',
@@ -330,138 +351,196 @@ class _AppLayoutState extends State<AppLayout> {
           },
           itemBuilder: (context) {
             final recent = notificationService.recentNotifications;
-            
+            final maxListHeight = () {
+              final h = MediaQuery.of(context).size.height * 0.45;
+              return h < 360 ? h : 360.0;
+            }();
+
             return [
               PopupMenuItem<String>(
                 enabled: false,
-                child: Container(
-                  width: 280,
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                padding: EdgeInsets.zero,
+                child: SizedBox(
+                  width: 300,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        'Notifications',
-                        style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: textColor,
+                      // ── Fixed header ──────────────────────────────────────
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Notifications',
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: textColor,
+                              ),
+                            ),
+                            if (unreadCount > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFFef4444,
+                                  ).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  '$unreadCount New',
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFFef4444),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                      if (unreadCount > 0)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFef4444).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '$unreadCount New',
-                            style: GoogleFonts.outfit(
-                              color: const Color(0xFFef4444),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              PopupMenuItem<String>(
-                enabled: false,
-                height: 1,
-                child: Divider(color: borderThemeColor, height: 1),
-              ),
-              if (recent.isEmpty)
-                PopupMenuItem<String>(
-                  enabled: false,
-                  child: Container(
-                    width: 280,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'No recent notifications',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: isThemeDark ? Colors.white70 : const Color(0xFF64748b),
+                      Divider(height: 1, color: borderThemeColor),
+
+                      // ── Scrollable notification list ──────────────────────
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxHeight: maxListHeight),
+                        child: recent.isEmpty
+                            ? Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 28,
+                                  horizontal: 16,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'No recent notifications',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      color: isThemeDark
+                                          ? Colors.white70
+                                          : const Color(0xFF64748b),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : ListView.separated(
+                                shrinkWrap: true,
+                                padding: const EdgeInsets.symmetric(vertical: 2),
+                                itemCount: recent.length,
+                                separatorBuilder: (_, _) => Divider(
+                                  height: 1,
+                                  indent: 16,
+                                  endIndent: 16,
+                                  color: borderThemeColor.withValues(
+                                    alpha: 0.6,
+                                  ),
+                                ),
+                                itemBuilder: (_, i) {
+                                  final n = recent[i];
+                                  final isRead = n['read'] == true;
+                                  return InkWell(
+                                    onTap: () =>
+                                        handleMenuTap('notif_${n['id']}'),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 10,
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Container(
+                                            width: 8,
+                                            height: 8,
+                                            margin: const EdgeInsets.only(
+                                              top: 6,
+                                              right: 10,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: isRead
+                                                  ? Colors.transparent
+                                                  : const Color(0xFFFF5000),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  n['title']?.toString() ?? '',
+                                                  style: GoogleFonts.outfit(
+                                                    fontWeight: isRead
+                                                        ? FontWeight.w600
+                                                        : FontWeight.w800,
+                                                    fontSize: 14,
+                                                    color: textColor,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  n['message']?.toString() ?? '',
+                                                  style: GoogleFonts.inter(
+                                                    fontSize: 13,
+                                                    color: isThemeDark
+                                                        ? Colors.white70
+                                                        : const Color(
+                                                            0xFF64748b,
+                                                          ),
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                       ),
-                    ),
-                  ),
-                )
-              else
-                ...recent.map((n) {
-                  final isRead = n['read'] == true;
-                  return PopupMenuItem<String>(
-                    value: 'notif_${n['id']}',
-                    child: Container(
-                      width: 280,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            margin: const EdgeInsets.only(top: 6, right: 8),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isRead ? Colors.transparent : const Color(0xFFFF5000),
-                            ),
-                          ),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                      Divider(height: 1, color: borderThemeColor),
+
+                      // ── Fixed footer ──────────────────────────────────────
+                      InkWell(
+                        onTap: () => handleMenuTap('view_all'),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          child: Center(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  n['title']?.toString() ?? '',
+                                  'View All Notifications',
                                   style: GoogleFonts.outfit(
-                                    fontWeight: isRead ? FontWeight.w600 : FontWeight.w800,
+                                    fontWeight: FontWeight.bold,
                                     fontSize: 14,
-                                    color: textColor,
+                                    color: const Color(0xFFFF5000),
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  n['message']?.toString() ?? '',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    color: isThemeDark ? Colors.white70 : const Color(0xFF64748b),
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 15,
+                                  color: Color(0xFFFF5000),
                                 ),
                               ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  );
-                }),
-              PopupMenuItem<String>(
-                enabled: false,
-                height: 1,
-                child: Divider(color: borderThemeColor, height: 1),
-              ),
-              PopupMenuItem<String>(
-                value: 'view_all',
-                child: Container(
-                  width: 280,
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Text(
-                    'View All Notifications',
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: const Color(0xFFFF5000),
-                    ),
+                    ],
                   ),
                 ),
               ),

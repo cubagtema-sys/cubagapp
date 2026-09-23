@@ -1,10 +1,16 @@
 import 'dart:async';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../components/app_layout.dart';
 import '../components/app_logo.dart';
 import '../components/in_app_document_viewer.dart';
@@ -115,6 +121,318 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
 
   String _fmt(double n) => n.toStringAsFixed(2);
 
+  Future<Uint8List> _generateQrCodeImage(String data) async {
+    try {
+      final qrPainter = QrPainter(
+        data: data,
+        version: QrVersions.auto,
+        errorCorrectionLevel: QrErrorCorrectLevel.H,
+      );
+      final image = await qrPainter.toImage(200);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      return byteData!.buffer.asUint8List();
+    } catch (e) {
+      AppLogger.error('payment_history_page', e, null);
+      rethrow;
+    }
+  }
+
+  Future<void> _generateAndDownloadPdfReceipt(
+    Map<String, dynamic> payment,
+    String ref,
+    double amount,
+    String dateStr,
+    String desc,
+    String configLabel,
+    String? paymentMethod,
+    String? payerPhone,
+    String? momoTxId,
+    String? adminNote,
+    String verifyUrl,
+    String userName,
+    String userCompany,
+    String licenseNumber,
+  ) async {
+    // Generate QR code image first
+    final qrImageBytes = await _generateQrCodeImage(verifyUrl);
+
+    // Embed Inter as the PDF font. The pdf package's default base-14 Helvetica
+    // has no glyph for the cedi sign (₵, U+20B5), so "GH₵" rendered as a tofu box.
+    final interRegular =
+        pw.Font.ttf(await rootBundle.load('assets/fonts/Inter-400.ttf'));
+    final interBold =
+        pw.Font.ttf(await rootBundle.load('assets/fonts/Inter-700.ttf'));
+
+    final pdf = pw.Document(
+      theme: pw.ThemeData.withFont(base: interRegular, bold: interBold),
+    );
+
+    final memberName = payment['member_name']?.toString() ?? userName;
+    final finalMemberName = memberName.isNotEmpty ? memberName : 'Registered Broker';
+
+    final memberCompany = payment['member_company']?.toString() ?? userCompany;
+    final license = payment['license_number']?.toString() ?? licenseNumber;
+
+    // Generate PDF receipt
+    pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(32),
+          build: (pw.Context context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                // Header
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          'CUBAG',
+                          style: pw.TextStyle(
+                            fontSize: 24,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColor.fromInt(0xFF6B3E26),
+                          ),
+                        ),
+                        pw.SizedBox(height: 4),
+                        pw.Text(
+                          'Customs Brokers Association of Ghana',
+                          style: pw.TextStyle(
+                            fontSize: 12,
+                            color: PdfColor.fromInt(0xFF6F625B),
+                          ),
+                        ),
+                      ],
+                    ),
+                    pw.Container(
+                      padding: const pw.EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: pw.BoxDecoration(
+                        color: PdfColor.fromInt(0xFFECFDF5),
+                        borderRadius: pw.BorderRadius.circular(8),
+                        border: pw.Border.all(
+                          color: PdfColor.fromInt(0xFFA7F3D0),
+                          width: 1,
+                        ),
+                      ),
+                      child: pw.Text(
+                        'OFFICIAL RECEIPT',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColor.fromInt(0xFF059669),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                pw.SizedBox(height: 24),
+
+                // Receipt Title
+                pw.Center(
+                  child: pw.Text(
+                    'PAYMENT RECEIPT',
+                    style: pw.TextStyle(
+                      fontSize: 20,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColor.fromInt(0xFF6B3E26),
+                    ),
+                  ),
+                ),
+                pw.SizedBox(height: 16),
+
+                // Amount Display (cedi sign renders via the embedded Inter font)
+                pw.Container(
+                  width: double.infinity,
+                  padding: const pw.EdgeInsets.all(20),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColor.fromInt(0xFFF8F4F0),
+                    borderRadius: pw.BorderRadius.circular(12),
+                    border: pw.Border.all(
+                      color: PdfColor.fromInt(0xFFE8DED6),
+                      width: 1,
+                    ),
+                  ),
+                  child: pw.Column(
+                    children: [
+                      pw.Text(
+                        'TOTAL AMOUNT PAID',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          color: PdfColor.fromInt(0xFF6F625B),
+                        ),
+                      ),
+                      pw.SizedBox(height: 8),
+                      pw.Text(
+                        'GH₵ ${_fmt(amount)}',
+                        style: pw.TextStyle(
+                          fontSize: 32,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColor.fromInt(0xFF6B3E26),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 24),
+
+                // Receipt Details Table
+                _buildPdfTableRow('Transaction Reference', ref),
+                _buildPdfTableRow('Date & Time', dateStr),
+                _buildPdfTableRow('Status', configLabel),
+                _buildPdfTableRow('Payment Purpose', desc),
+                _buildPdfTableRow('Payment Method', paymentMethod?.toUpperCase() ?? 'N/A'),
+                _buildPdfTableRow('Payment Gateway', 'WhitsunPay / CUBAG Secure Portal'),
+                pw.SizedBox(height: 8),
+                _buildPdfTableRow('Member Name', finalMemberName),
+                if (memberCompany.isNotEmpty) _buildPdfTableRow('Agency / Company', memberCompany),
+                if (license.isNotEmpty) _buildPdfTableRow('Member ID / License', license),
+                if (payerPhone != null && payerPhone.isNotEmpty) _buildPdfTableRow('Payer Phone / Acct', payerPhone),
+                if (momoTxId != null && momoTxId.isNotEmpty) _buildPdfTableRow('MoMo / Txn ID', momoTxId),
+                if (adminNote != null && adminNote.isNotEmpty) _buildPdfTableRow('Admin Notes', adminNote),
+
+                pw.SizedBox(height: 24),
+
+                // Verification Section with QR Code
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(16),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColor.fromInt(0xFFF8F4F0),
+                    borderRadius: pw.BorderRadius.circular(12),
+                    border: pw.Border.all(
+                      color: PdfColor.fromInt(0xFFE8DED6),
+                      width: 1,
+                    ),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.center,
+                    children: [
+                      pw.Text(
+                        'Digital Verification',
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColor.fromInt(0xFF2B211D),
+                        ),
+                      ),
+                      pw.SizedBox(height: 12),
+                      pw.Container(
+                        width: 100,
+                        height: 100,
+                        decoration: pw.BoxDecoration(
+                          color: PdfColors.white,
+                          borderRadius: pw.BorderRadius.circular(8),
+                        ),
+                        child: pw.Image(
+                          pw.MemoryImage(qrImageBytes),
+                          width: 100,
+                          height: 100,
+                        ),
+                      ),
+                      pw.SizedBox(height: 12),
+                      pw.Text(
+                        'Scan to verify authenticity',
+                        style: pw.TextStyle(
+                          fontSize: 11,
+                          color: PdfColor.fromInt(0xFF6F625B),
+                        ),
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Text(
+                        verifyUrl,
+                        style: pw.TextStyle(
+                          fontSize: 9,
+                          color: PdfColor.fromInt(0xFF6B3E26),
+                          decoration: pw.TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                pw.SizedBox(height: 32),
+
+                // Footer
+                pw.Divider(color: PdfColor.fromInt(0xFFE8DED6)),
+                pw.SizedBox(height: 16),
+                pw.Center(
+                  child: pw.Text(
+                    'This is an official CUBAG Treasury Services receipt.',
+                    style: pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColor.fromInt(0xFF6F625B),
+                    ),
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+                pw.Center(
+                  child: pw.Text(
+                    'Generated: ${DateTime.now().toLocal().toString()}',
+                    style: pw.TextStyle(
+                      fontSize: 9,
+                      color: PdfColor.fromInt(0xFF6F625B),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+
+    // Save and share the PDF
+    await Printing.sharePdf(
+      bytes: await pdf.save(),
+      filename: 'CUBAG_Receipt_$ref.pdf',
+    );
+  }
+
+  pw.Widget _buildPdfTableRow(String label, String value) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(vertical: 8),
+      decoration: pw.BoxDecoration(
+        border: pw.Border(
+          bottom: pw.BorderSide(
+            color: PdfColor.fromInt(0xFFF1F5F9),
+            width: 1,
+          ),
+        ),
+      ),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.SizedBox(
+            width: 140,
+            child: pw.Text(
+              label,
+              style: pw.TextStyle(
+                fontSize: 11,
+                color: PdfColor.fromInt(0xFF6F625B),
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
+          ),
+          pw.SizedBox(width: 8),
+          pw.Expanded(
+            child: pw.Text(
+              value,
+              style: pw.TextStyle(
+                fontSize: 11,
+                color: PdfColor.fromInt(0xFF2B211D),
+                fontWeight: pw.FontWeight.normal,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatDateTime(dynamic rawDate) {
     if (rawDate == null) return '—';
     final dt = DateTime.tryParse(rawDate.toString())?.toLocal();
@@ -150,7 +468,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     final dateStr = _formatDateTime(payment['created_at']);
     final desc =
         payment['description']?.toString() ?? 'General Membership Dues';
-    final verifyUrl = 'https://cubag.org/verify-receipt?ref=$ref';
+    final verifyUrl = 'https://cubag.org/api/payments/public/verify-receipt?ref=$ref&amount=${_fmt(amount)}';
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dialogBg = isDark ? const Color(0xFF281710) : Colors.white;
@@ -425,7 +743,8 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                       child: QrImageView(
                         data: verifyUrl,
                         version: QrVersions.auto,
-                        size: 70.0,
+                        size: 80.0,
+                        errorCorrectionLevel: QrErrorCorrectLevel.H,
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -458,62 +777,113 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                 const SizedBox(height: 24),
 
                 // Actions
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          Clipboard.setData(
-                            ClipboardData(
-                              text:
-                                  'CUBAG Receipt Ref: $ref | Amount: GH₵ ${_fmt(amount)} | Date: $dateStr',
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Clipboard.setData(
+                                ClipboardData(
+                                  text:
+                                      'CUBAG Receipt Ref: $ref | Amount: GH₵ ${_fmt(amount)} | Date: $dateStr',
+                                ),
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Receipt details copied to clipboard',
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.copy_rounded, size: 16),
+                            label: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: const Text('Copy Details'),
                             ),
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Receipt details copied to clipboard',
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: isDark ? _kOrange : _kBrown,
+                              side: BorderSide(
+                                color: isDark ? _kOrange : _kBrown,
+                                width: 1.5,
+                              ),
+                              minimumSize: const Size(0, 48),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              textStyle: GoogleFonts.outfit(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
                               ),
                             ),
-                          );
-                        },
-                        icon: const Icon(Icons.copy_rounded, size: 16),
-                        label: const Text('Copy Details'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: isDark ? _kOrange : _kBrown,
-                          side: BorderSide(
-                            color: isDark ? _kOrange : _kBrown,
-                            width: 1.5,
-                          ),
-                          minimumSize: const Size(0, 48),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          textStyle: GoogleFonts.outfit(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
                           ),
                         ),
-                      ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              await _generateAndDownloadPdfReceipt(
+                                payment,
+                                ref,
+                                amount,
+                                dateStr,
+                                desc,
+                                config['label'] as String,
+                                paymentMethod,
+                                payerPhone,
+                                momoTxId,
+                                adminNote,
+                                verifyUrl,
+                                auth.userName ?? '',
+                                auth.userCompany ?? '',
+                                auth.licenseNumber ?? '',
+                              );
+                            },
+                            icon: const Icon(Icons.download_rounded, size: 16),
+                            label: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: const Text('Download PDF'),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: isDark ? _kOrange : _kBrown,
+                              side: BorderSide(
+                                color: isDark ? _kOrange : _kBrown,
+                                width: 1.5,
+                              ),
+                              minimumSize: const Size(0, 48),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              textStyle: GoogleFonts.outfit(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => Navigator.pop(ctx),
-                        icon: const Icon(Icons.check_rounded, size: 16),
-                        label: const Text('Done'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _kOrange,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          minimumSize: const Size(0, 48),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          textStyle: GoogleFonts.outfit(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: () => Navigator.pop(ctx),
+                      icon: const Icon(Icons.check_rounded, size: 16),
+                      label: const Text('Done'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kOrange,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        minimumSize: const Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        textStyle: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
                         ),
                       ),
                     ),
@@ -1371,6 +1741,70 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                                           const SizedBox(width: 4),
                                           Text(
                                             'View Receipt',
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                              color: titleCol,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  InkWell(
+                                    onTap: () async {
+                                      final status = (pay['status']?.toString().toLowerCase()) ?? 'pending';
+                                      final config = _statusConfigs[status] ?? _statusConfigs['pending']!;
+                                      final amount = double.tryParse(pay['amount']?.toString() ?? '0') ?? 0.0;
+                                      final ref = pay['payment_ref']?.toString() ?? 'TXN-${pay['id'] ?? '0000'}';
+                                      final dateStr = _formatDateTime(pay['created_at']);
+                                      final desc = pay['description']?.toString() ?? 'General Association Dues';
+                                      final momoTxId = pay['momo_tx_id']?.toString();
+                                      final paymentMethod = pay['payment_method']?.toString() ?? pay['channel']?.toString() ?? pay['network']?.toString();
+                                      final payerPhone = pay['phone']?.toString() ?? pay['payer_phone']?.toString();
+                                      final adminNote = pay['admin_note']?.toString();
+                                      final verifyUrl = 'https://cubag.org/api/payments/public/verify-receipt?ref=$ref&amount=${_fmt(amount)}';
+                                      final auth = Provider.of<AuthService>(context, listen: false);
+
+                                      await _generateAndDownloadPdfReceipt(
+                                        pay,
+                                        ref,
+                                        amount,
+                                        dateStr,
+                                        desc,
+                                        config['label'] as String,
+                                        paymentMethod,
+                                        payerPhone,
+                                        momoTxId,
+                                        adminNote,
+                                        verifyUrl,
+                                        auth.userName ?? '',
+                                        auth.userCompany ?? '',
+                                        auth.licenseNumber ?? '',
+                                      );
+                                    },
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: surfaceBg,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: borderCol),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.download_rounded,
+                                            size: 13,
+                                            color: titleCol,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Download PDF',
                                             style: GoogleFonts.outfit(
                                               fontSize: 13,
                                               fontWeight: FontWeight.bold,

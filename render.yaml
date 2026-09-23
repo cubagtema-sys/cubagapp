@@ -12,16 +12,21 @@ services:
         value: "production"
       - key: FLASK_APP
         value: "server.py"
+      # ── SECRETS: set these manually in the Render dashboard ──────────────
+      # These were previously committed in plaintext and are now in git history.
+      # ROTATE every one of them (they must be considered compromised), then add
+      # the new values via Render > cubag-api-server > Environment. `sync: false`
+      # keeps Render from overwriting the dashboard value on blueprint sync.
       - key: SECRET_KEY
-        value: "26706942c79c68dea826ca91f1bb12f609d4cd87547c5c266561b999730fcc6a"
+        sync: false # ROTATE: generate a new random 64-hex key
       - key: DATABASE_URL
-        value: "postgresql://postgres.feanlatdsyhlghsnepxw:zBfvAUjogIEsVhSj@aws-1-eu-west-1.pooler.supabase.com:6543/postgres"
+        sync: false # ROTATE: Supabase DB password (full postgresql:// URL)
       - key: JWT_SECRET_KEY
-        value: "54b5469e1d716229f722bf127939520a3e15b5b757bc296d746edc248a6964bb"
+        sync: false # ROTATE: generate a new random 64-hex key
       - key: JWT_ACCESS_TOKEN_EXPIRES
         value: "604800"
       - key: CORS_ALLOWED_ORIGINS
-        value: "*"
+        value: "*" # TODO: replace with your real web/mobile origins (comma-separated)
       - key: SMTP_HOST
         value: "smtp.hostinger.com"
       - key: SMTP_PORT
@@ -31,19 +36,19 @@ services:
       - key: SMTP_USER
         value: "support@winningedgeinvestment.com"
       - key: SMTP_PASS
-        value: "Brutality@54"
+        sync: false # ROTATE: Hostinger SMTP password
       - key: WHITSUNPAY_BASE_URL
         value: "https://developer.whitsun.dev"
       - key: WHITSUNPAY_CLIENT_ID
-        value: "019e8ba678a27f00bc19c3757989ed0b"
+        sync: false # ROTATE: WhitsunPay client id
       - key: x-client-id
-        value: "019e8ba678a27f00bc19c3757989ed0b"
+        sync: false # ROTATE: same value as WHITSUNPAY_CLIENT_ID
       - key: WHITSUNPAY_API_KEY
-        value: "wp_live_h7Q8bld7YqtjvTVF2wwfBrUjxl6LShWexviNLfy5lQU"
+        sync: false # ROTATE: WhitsunPay LIVE API key (wp_live_...)
       - key: x-api-key
-        value: "wp_live_h7Q8bld7YqtjvTVF2wwfBrUjxl6LShWexviNLfy5lQU"
+        sync: false # ROTATE: same value as WHITSUNPAY_API_KEY
       - key: WHITSUNPAY_WEBHOOK_SECRET
-        value: "2c4cf3096f18a079450126b25961aa8388226bd6fe66ed98a57b87c21a7e6f1b"
+        sync: false # ROTATE: WhitsunPay webhook HMAC secret
       - key: WHITSUNPAY_CALLBACK_URL
         value: "https://cubag-api-server.onrender.com/api/payments/webhook"
       - key: x-callback-url
@@ -51,13 +56,13 @@ services:
       - key: SUPABASE_URL
         value: "https://feanlatdsyhlghsnepxw.supabase.co"
       - key: SUPABASE_SERVICE_KEY
-        value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlYW5sYXRkc3lobGdoc25lcHh3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDU4Mzk0NywiZXhwIjoyMDk2MTU5OTQ3fQ.S2c2IpXFkfJtFhZ2zG7ZQ3kFCG8YKrxiSFUqtc5OQZE"
+        sync: false # ROTATE: Supabase service-role JWT
       - key: SUPABASE_BUCKET
         value: "uploads"
       - key: RESEND_API_KEY
         sync: false # Set manually in Render dashboard (blocked by GitHub secret scanning)
       - key: AIS_API_KEY
-        value: "696f6dc5d032b72c39b22b757ebc35c4445c570a"
+        sync: false # ROTATE: AIS API key
       - key: FIREBASE_CREDENTIALS_JSON
         sync: false # GITHUB BLOCKED THIS SECRET FROM BEING UPLOADED FOR YOUR SAFETY! Please paste it manually in Render.
 
@@ -65,7 +70,7 @@ services:
   - type: web
     env: static
     name: cubag-web-app
-    buildCommand: "cd cubag_flutter && git clone https://github.com/flutter/flutter.git -b stable && export PATH=\"$PATH:$(pwd)/flutter/bin\" && flutter build web --release"
+    buildCommand: "cd cubag_flutter && git clone https://github.com/flutter/flutter.git -b stable && export PATH=\"$PATH:$(pwd)/flutter/bin\" && flutter build web --release --dart-define=PRODUCTION_API_URL=https://cubag-api-server.onrender.com/api/v1"
     staticPublishPath: cubag_flutter/build/web
     routes:
       # Redirect all 404s to index.html for Flutter Web's routing to work

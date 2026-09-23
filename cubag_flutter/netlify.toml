@@ -1,6 +1,6 @@
 [build]
   publish = "build/web"
-  command = "flutter build web --release --dart-define=PRODUCTION_API_URL=https://your-backend.com/api/v1"
+  command = "flutter build web --release --dart-define=PRODUCTION_API_URL=https://cubag-api-server.onrender.com/api/v1"
 
 [build.environment]
   FLUTTER_VERSION = "3.44.8"

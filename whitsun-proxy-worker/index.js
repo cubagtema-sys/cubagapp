@@ -1,5 +1,14 @@
 /**
- * Clean Cloudflare Worker Reverse Proxy for WhitsunPay
+ * Cloudflare Worker Reverse Proxy for WhitsunPay.
+ *
+ * The WhitsunPay credentials live ONLY here as Worker secrets — they are never
+ * shipped inside the mobile/web client. The client calls this worker without any
+ * API key; the worker injects x-client-id / x-api-key / x-callback-url server-side.
+ *
+ * Set the secrets once with:
+ *   wrangler secret put WHITSUNPAY_CLIENT_ID
+ *   wrangler secret put WHITSUNPAY_API_KEY
+ *   wrangler secret put WHITSUNPAY_CALLBACK_URL
  */
 export default {
   async fetch(request, env) {
@@ -15,23 +24,38 @@ export default {
       });
     }
 
-    const url = new URL(request.url);
-    const targetUrl = `https://developer.whitsun.dev${url.pathname}${url.search}`;
+    const targetOrigin = env.TARGET_ORIGIN || 'https://developer.whitsun.dev';
+    const clientId = env.WHITSUNPAY_CLIENT_ID;
+    const apiKey = env.WHITSUNPAY_API_KEY;
 
-    // Pass only legitimate clean API headers (no spoofed Origin or Referer)
+    // Fail closed: never proxy without server-side credentials configured.
+    if (!clientId || !apiKey) {
+      return new Response(
+        JSON.stringify({ error: 'Worker WhitsunPay credentials are not configured' }),
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
+      );
+    }
+
+    const url = new URL(request.url);
+    const targetUrl = `${targetOrigin}${url.pathname}${url.search}`;
+
+    // Build clean headers. Credentials are injected from Worker secrets — any
+    // client-supplied x-api-key / x-client-id / x-callback-url is ignored.
     const cleanHeaders = new Headers();
     cleanHeaders.set('Content-Type', 'application/json');
     cleanHeaders.set('Accept', 'application/json');
     cleanHeaders.set('User-Agent', 'CUBAG-Server/2.0 (Ghana Customs Platform)');
-
-    const clientId = request.headers.get('x-client-id');
-    if (clientId) cleanHeaders.set('x-client-id', clientId);
-
-    const apiKey = request.headers.get('x-api-key');
-    if (apiKey) cleanHeaders.set('x-api-key', apiKey);
-
-    const callbackUrl = request.headers.get('x-callback-url');
-    if (callbackUrl) cleanHeaders.set('x-callback-url', callbackUrl);
+    cleanHeaders.set('x-client-id', clientId);
+    cleanHeaders.set('x-api-key', apiKey);
+    if (env.WHITSUNPAY_CALLBACK_URL) {
+      cleanHeaders.set('x-callback-url', env.WHITSUNPAY_CALLBACK_URL);
+    }
 
     const hasBody = request.method !== 'GET' && request.method !== 'HEAD';
     const body = hasBody ? await request.text() : undefined;

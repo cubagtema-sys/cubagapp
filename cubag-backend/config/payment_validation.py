@@ -157,6 +157,7 @@ def validate_member_payment_amount(
     client_amount: float,
     comp_app_id=None,
     is_installment: bool = False,
+    installment_number: int = 1,
 ):
     """
     Returns (server_amount, error_message).
@@ -180,6 +181,15 @@ def validate_member_payment_amount(
         paid = float(app.get('amount_paid') or 0)
         remaining = max(0.0, total - paid)
         if is_installment:
+            if remaining <= 0:
+                return None, 'This bill is already settled.'
+            min_inst = float(app.get('min_installment_amount') or 0.0)
+            if client_amount > remaining + _AMOUNT_TOLERANCE:
+                return None, f'Amount exceeds the remaining balance of GHS {remaining:,.2f}.'
+            if min_inst > 0 and client_amount + _AMOUNT_TOLERANCE < min_inst and client_amount + _AMOUNT_TOLERANCE < remaining:
+                return None, f'Amount is below the required minimum installment of GHS {min_inst:,.2f}.'
+            if client_amount <= 0:
+                return None, 'Installment amount must be greater than zero.'
             return client_amount, None
         if remaining > 0 and not _close(client_amount, remaining):
             return None, f'Amount must match the outstanding balance of GHS {remaining:,.2f}.'
@@ -196,6 +206,8 @@ def validate_member_payment_amount(
         expected = _renewal_expected_amount(cursor, member_id, comp_app_id)
         if expected is not None and expected > 0:
             if is_installment:
+                if client_amount <= 0 or client_amount > expected + _AMOUNT_TOLERANCE:
+                    return None, f'Renewal installment must be between GHS 0.01 and GHS {expected:,.2f}.'
                 return client_amount, None
             if not _close(client_amount, expected):
                 return None, f'Renewal amount must be GHS {expected:,.2f}.'
