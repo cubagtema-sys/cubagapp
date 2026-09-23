@@ -32,7 +32,7 @@ from email.mime.multipart import MIMEMultipart
 # ─── Shared Email Sender (Resend + SMTP Fallback) ───────────────────────────
 def _send_email(to_email: str, subject: str, body_text: str, body_html: str = None):
     """Send an email using Resend API or fallback to standard SMTP. Returns True on success."""
-    sender_email = os.getenv('SMTP_USER', 'support@winningedgeinvestment.com')
+    sender_email = os.getenv('SMTP_USER', 'eaap2026@eventslabs.org')
     sender_name = os.getenv('SMTP_SENDER_NAME', 'CUBAG Support')
 
     # 1. Try Resend API

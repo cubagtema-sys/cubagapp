@@ -12,7 +12,7 @@ old_email_func = '''def _send_receipt_email(to_email, member_name, amount, descr
         logger.error('[Resend] RESEND_API_KEY not configured — receipt email not sent.')
         return
 
-    sender_email = os.getenv('SMTP_USER', 'support@winningedgeinvestment.com')
+    sender_email = os.getenv('SMTP_USER', 'eaap2026@eventslabs.org')
 
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
@@ -49,7 +49,7 @@ new_email_func = '''def _send_receipt_email(to_email, member_name, amount, descr
         logger.info('[Resend] RESEND_API_KEY not configured — mock receipt logged.')
         return
 
-    sender_email = os.getenv('SMTP_USER', 'support@winningedgeinvestment.com')
+    sender_email = os.getenv('SMTP_USER', 'eaap2026@eventslabs.org')
     now_str = datetime.datetime.now().strftime("%B %d, %Y at %I:%M %p")
     formatted_amount = f"GH₵ {float(amount):,.2f}"
 

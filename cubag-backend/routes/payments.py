@@ -1593,7 +1593,7 @@ def _send_receipt_email(to_email, member_name, amount, description, payment_id=N
         logger.info('[Resend] RESEND_API_KEY not configured — mock receipt logged.')
         return
 
-    sender_email = os.getenv('SMTP_USER', 'support@winningedgeinvestment.com')
+    sender_email = os.getenv('SMTP_USER', 'eaap2026@eventslabs.org')
     now_str = datetime.datetime.now().strftime("%B %d, %Y at %I:%M %p")
     formatted_amount = f"GH₵ {float(amount):,.2f}"
 

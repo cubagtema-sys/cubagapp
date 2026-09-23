@@ -26,7 +26,7 @@ def _send_complaint_confirmation_email(to_email, name, comp_id, subject, categor
     if not to_email:
         return False
 
-    sender_email = os.getenv('SMTP_USER', 'support@winningedgeinvestment.com')
+    sender_email = os.getenv('SMTP_USER', 'eaap2026@eventslabs.org')
     sender_name = os.getenv('SMTP_SENDER_NAME', 'CUBAG Secretariat')
     email_subject = f"[CUBAG Grievance Registry] Complaint Received — Tracking ID: {comp_id}"
     now_str = datetime.utcnow().strftime("%B %d, %Y at %I:%M UTC")
