@@ -44,20 +44,17 @@ class ApiService {
       return '$scheme://$host$portStr/api/v1';
     }
 
-    // ── 4. Android & iOS — TEMP: local dev backend on LAN ───────────────────
-    // Developing against the local backend for now. Before a production release,
-    // restore the production base: https://cubag-api-server.onrender.com/api/v1
+    // ── 4. Android & iOS — production backend on Fly.io ──────────────────────
     if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
-      return _localDevUrl;
+      return _prodUrl;
     }
 
     // ── 5. macOS / Windows / Linux ─────────────────────────────────────────
-    return _localDevUrl;
+    return _prodUrl;
   }
 
-  /// TEMP local development backend (LAN IP). Cleartext to these local addresses
-  /// is explicitly allow-listed in android network_security_config.xml.
-  static const String _localDevUrl = 'http://192.168.4.127:5005/api/v1';
+  /// Production backend (Fly.io).
+  static const String _prodUrl = 'https://cubag-api-server.fly.dev/api/v1';
 
   static String get activeHost {
     try {
@@ -67,7 +64,7 @@ class ApiService {
         return '${uri.host}$portStr';
       }
     } catch (_) {}
-    return '192.168.4.127:5005';
+    return 'cubag-api-server.fly.dev';
   }
 
   /// Updates the active baseUrl at runtime and saves it to local storage.

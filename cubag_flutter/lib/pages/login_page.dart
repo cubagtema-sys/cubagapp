@@ -1164,21 +1164,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
-        Center(
-          child: TextButton.icon(
-            onPressed: _showServerConfigDialog,
-            icon: Icon(Icons.dns_outlined, size: 16, color: _kMuted),
-            label: Text(
-              'Server: ${ApiService.activeHost}  (tap to change)',
-              style: TextStyle(
-                color: _kMuted,
-                fontSize: 13,
-                decoration: TextDecoration.underline,
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }
