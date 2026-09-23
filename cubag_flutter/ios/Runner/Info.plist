@@ -62,6 +62,8 @@
 	<string>CUBAG needs calendar access to add association events and seminars to your calendar.</string>
 	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
 	<string>CUBAG needs calendar access to add association events and seminars to your calendar.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>CUBAG needs calendar access to add association events and seminars to your calendar.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>This app requires camera access to scan member QR codes for event verification.</string>
 	<key>NSFaceIDUsageDescription</key>
