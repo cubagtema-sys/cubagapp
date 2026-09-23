@@ -37,14 +37,13 @@ primary_region = "fra"
   auto_start_machines = true
   min_machines_running = 1
 
-  [http_service.checks]
-    [http_service.checks.health]
-      grace_period = "15s"
-      interval = "30s"
-      method = "get"
-      path = "/api/health"
-      protocol = "http"
-      timeout = "10s"
+  [[http_service.checks]]
+    grace_period = "15s"
+    interval = "30s"
+    method = "get"
+    path = "/api/health"
+    protocol = "http"
+    timeout = "10s"
 
 [[vm]]
   cpu_kind = "shared"
