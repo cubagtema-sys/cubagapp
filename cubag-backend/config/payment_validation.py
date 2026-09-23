@@ -126,6 +126,39 @@ def _match_fee_schedule(cursor, description: str):
     return None
 
 
+def _member_registration_fee(cursor, member_id):
+    """Resolve a member's registration fee by member type from the admin-set
+    fee_schedules. Mirrors routes/documents.py reg_key logic so the amount the
+    server charges always matches what the app displayed. Returns float or None.
+    """
+    try:
+        cursor.execute("SELECT member_type FROM members WHERE id = %s", (member_id,))
+        m = cursor.fetchone()
+        m_type = ((m.get('member_type') or '') if m else '').lower()
+        if 'licentiate' in m_type:
+            reg_key = 'licentiate_reg_form_fee'
+        elif 'associate' in m_type:
+            reg_key = 'associate_reg_form_fee'
+        else:
+            reg_key = 'reg_form_fee'
+        cursor.execute(
+            "SELECT amount FROM fee_schedules WHERE key = %s AND is_active = TRUE LIMIT 1",
+            (reg_key,),
+        )
+        row = cursor.fetchone()
+        if row and row.get('amount') is not None:
+            return _to_float(row['amount'])
+        cursor.execute(
+            "SELECT amount FROM fee_schedules WHERE key IN ('reg_form_fee', 'new_reg_fee') AND is_active = TRUE LIMIT 1"
+        )
+        row = cursor.fetchone()
+        if row and row.get('amount') is not None:
+            return _to_float(row['amount'])
+    except Exception as e:
+        logger.warning('[payment_validation] member registration fee lookup failed: %s', e)
+    return None
+
+
 def _renewal_expected_amount(cursor, member_id, comp_app_id=None):
     try:
         if comp_app_id:
@@ -229,6 +262,14 @@ def validate_member_payment_amount(
                 return client_amount, None
             if not _close(client_amount, expected):
                 return None, f'Renewal amount must be GHS {expected:,.2f}.'
+            return expected, None
+
+    # Registration fees are member-type specific (Associate / Licentiate / standard
+    # each have their own admin-set row). Resolve by member type BEFORE the generic
+    # description-substring match, which would otherwise grab the wrong row.
+    if any(k in desc_lower for k in ('registration', 'reg form', 'application fee', 'entrance')):
+        expected = _member_registration_fee(cursor, member_id)
+        if expected is not None and expected > 0:
             return expected, None
 
     sched_amt = _match_fee_schedule(cursor, description)
