@@ -714,7 +714,11 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: '/admin/payments',
               pageBuilder: (c, s) =>
-                  const NoTransitionPage(child: AdminPaymentsPage()),
+                  NoTransitionPage(
+                    child: AdminPaymentsPage(
+                      initialAction: s.uri.queryParameters['action'],
+                    ),
+                  ),
             ),
           ],
         ),

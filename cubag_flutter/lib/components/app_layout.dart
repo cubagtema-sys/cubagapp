@@ -17,6 +17,7 @@ class AppLayout extends StatefulWidget {
   final String title;
   final bool hideSearch;
   final bool scrollable;
+  final Widget? floatingActionButton;
 
   const AppLayout({
     super.key,
@@ -24,6 +25,7 @@ class AppLayout extends StatefulWidget {
     required this.title,
     this.hideSearch = true,
     this.scrollable = true,
+    this.floatingActionButton,
   });
 
   @override
@@ -114,6 +116,7 @@ class _AppLayoutState extends State<AppLayout> {
       backgroundColor: isThemeDark
           ? Theme.of(context).scaffoldBackgroundColor
           : const Color(0xFFF8F4F0),
+      floatingActionButton: widget.floatingActionButton,
       appBar: isDesktop
           ? null
           : AppBar(

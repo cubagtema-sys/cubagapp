@@ -17,7 +17,8 @@ const _kBlue = Color(0xFF3b82f6);
 const _kCardBg = Color(0xFF281710);
 
 class AdminPaymentsPage extends StatefulWidget {
-  const AdminPaymentsPage({super.key});
+  final String? initialAction;
+  const AdminPaymentsPage({super.key, this.initialAction});
   @override
   State<AdminPaymentsPage> createState() => _AdminPaymentsPageState();
 }
@@ -40,6 +41,11 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
   void initState() {
     super.initState();
     _fetch();
+    if (widget.initialAction == 'counter_payment') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showRecordCounterPaymentModal();
+      });
+    }
   }
 
   @override
@@ -872,6 +878,20 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     return AppLayout(
       title: 'Financial Center',
       scrollable: true,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showRecordCounterPaymentModal,
+        backgroundColor: _kGreen,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        icon: const Icon(Icons.point_of_sale_rounded, size: 20),
+        label: Text(
+          '➕ Record Counter / Cash Payment',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -896,7 +916,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                 onPressed: _showRecordCounterPaymentModal,
                 icon: const Icon(Icons.point_of_sale_rounded, size: 18),
                 label: Text(
-                  'Record Counter Payment',
+                  '➕ Record Counter / Cash Payment',
                   style: GoogleFonts.outfit(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,

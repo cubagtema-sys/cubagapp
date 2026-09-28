@@ -253,7 +253,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 if (_error != null) _buildErrorBanner(isDark),
                 _buildWelcomeHeader(context, userName),
                 _buildKPIGrid(context, pendingMembers.length),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
+                _buildCounterPaymentActionBanner(context, isDark),
                 _buildPendingApprovalsCard(
                   context,
                   pendingMembers,
@@ -266,6 +267,119 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 const SizedBox(height: 24),
               ],
             ),
+    );
+  }
+
+  Widget _buildCounterPaymentActionBanner(BuildContext context, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1B2E24) : const Color(0xFFE8F5E9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF10b981).withAlpha(isDark ? 90 : 120),
+          width: 1.2,
+        ),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 650;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10b981).withAlpha(40),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.point_of_sale_rounded,
+                      color: Color(0xFF10b981),
+                      size: 26,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Record Counter / Cash Payment',
+                          style: GoogleFonts.outfit(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : const Color(0xFF1A0F0A),
+                          ),
+                        ),
+                        Text(
+                          'Walk-in payments at the secretariat counter (Cash, Cheque, POS, Direct Deposit).',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: isDark ? const Color(0xFF94a3b8) : const Color(0xFF64748b),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!isNarrow) ...[
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10b981),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      onPressed: () => context.go('/admin/payments?action=counter_payment'),
+                      icon: const Icon(Icons.add_rounded, size: 20),
+                      label: Text(
+                        '➕ Record Payment',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              if (isNarrow) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10b981),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: () => context.go('/admin/payments?action=counter_payment'),
+                    icon: const Icon(Icons.add_rounded, size: 20),
+                    label: Text(
+                      '➕ Record Counter / Cash Payment',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -314,6 +428,30 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           subtitle:
               'Welcome back, $displayName. Association operations, compliance filings, and financial metrics.',
           actions: [
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF10b981),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              onPressed: () => context.go('/admin/payments?action=counter_payment'),
+              icon: const Icon(Icons.point_of_sale_rounded, size: 18),
+              label: Text(
+                '➕ Record Counter / Cash Payment',
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: kAdminOrange,
