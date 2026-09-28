@@ -77,6 +77,8 @@ class _DashboardPageState extends State<DashboardPage> {
   void _onRenewalBillReceived(dynamic data) {
     if (!mounted) return;
     _onLiveUpdate(null);
+    final isPkgPaid = _user['package_fee_paid'] == true || _user['package_fee_paid'] == 1 || _user['membership_status'] == 'active';
+    if (!isPkgPaid) return;
     final submitted = SessionStorage.instance.getStringSync('cubag_renewal_submitted');
     if (submitted == 'true') return;
     if (_user['renewal_payment_submitted'] == true ||
@@ -274,6 +276,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
   void _checkRenewalBillAlert(List<dynamic> tasks) {
     if (!mounted) return;
+    final isPkgPaid = _user['package_fee_paid'] == true || _user['package_fee_paid'] == 1 || _user['membership_status'] == 'active';
+    if (!isPkgPaid) return;
     // Suppress immediately if renewal payment was submitted or is under review
     final submitted = SessionStorage.instance.getStringSync('cubag_renewal_submitted');
     if (submitted == 'true') return;
@@ -656,31 +660,7 @@ class _DashboardPageState extends State<DashboardPage> {
     IconData btnIcon;
     VoidCallback btnAction;
 
-    if (daysLeft != null && daysLeft < 0) {
-      statusText =
-          '🔴 Membership Expired: Your annual membership expired on ${_formatDate(expiry)}. Submit renewal documents to begin verification.';
-      btnLabel = 'Submit Renewal';
-      btnIcon = Icons.warning_amber_rounded;
-      btnAction = () => context.go('/compliance');
-    } else if (daysLeft != null && daysLeft <= 30) {
-      statusText =
-          '🔴 Urgent Reminder: Only $daysLeft days remaining until membership expires on ${_formatDate(expiry)}! Submit renewal application now.';
-      btnLabel = 'Submit Renewal';
-      btnIcon = Icons.autorenew_rounded;
-      btnAction = () => context.go('/compliance');
-    } else if (daysLeft != null && daysLeft <= 60) {
-      statusText =
-          '🟠 Formal Notice: Approx. 2 months ($daysLeft days) remaining until membership expires on ${_formatDate(expiry)}. Please submit renewal.';
-      btnLabel = 'Submit Renewal';
-      btnIcon = Icons.autorenew_rounded;
-      btnAction = () => context.go('/compliance');
-    } else if (daysLeft != null && daysLeft <= 90) {
-      statusText =
-          '🟡 Early Notice: Your annual membership expires in 3 months ($daysLeft days). The renewal window is open.';
-      btnLabel = 'Renew Membership';
-      btnIcon = Icons.autorenew_rounded;
-      btnAction = () => context.go('/compliance');
-    } else if (isPackagePending) {
+    if (isPackagePending) {
       statusText =
           '🟡 Registration Fee Paid • Membership Entrance Package Pending Settlement ($memNo)';
       if (!_loadingTasks && pending.isNotEmpty) {
@@ -692,6 +672,30 @@ class _DashboardPageState extends State<DashboardPage> {
         btnIcon = Icons.payment_rounded;
         btnAction = () => context.go('/payments?fee=Membership%20Entrance%20Package');
       }
+    } else if (daysLeft != null && daysLeft < 0) {
+      statusText =
+          '🔴 Membership Expired: Your annual membership expired on ${_formatDate(expiry)}. Submit renewal documents to begin verification.';
+      btnLabel = 'Submit Renewal (Step 1)';
+      btnIcon = Icons.warning_amber_rounded;
+      btnAction = () => context.go('/compliance');
+    } else if (daysLeft != null && daysLeft <= 30) {
+      statusText =
+          '🔴 Urgent Reminder: Only $daysLeft days remaining until membership expires on ${_formatDate(expiry)}! Submit renewal application now.';
+      btnLabel = 'Submit Renewal (Step 1)';
+      btnIcon = Icons.autorenew_rounded;
+      btnAction = () => context.go('/compliance');
+    } else if (daysLeft != null && daysLeft <= 60) {
+      statusText =
+          '🟠 Formal Notice: Approx. 2 months ($daysLeft days) remaining until membership expires on ${_formatDate(expiry)}. Please submit renewal.';
+      btnLabel = 'Submit Renewal (Step 1)';
+      btnIcon = Icons.autorenew_rounded;
+      btnAction = () => context.go('/compliance');
+    } else if (daysLeft != null && daysLeft <= 90) {
+      statusText =
+          '🟡 Early Notice: Your annual membership expires in 3 months ($daysLeft days). The renewal window is open.';
+      btnLabel = 'Renew Membership (Step 1)';
+      btnIcon = Icons.autorenew_rounded;
+      btnAction = () => context.go('/compliance');
     } else {
       // Stable Good Standing Identity
       statusText =
@@ -1266,15 +1270,19 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ),
               const SizedBox(width: 10),
-              Text(
-                'Official Forex Rates',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18,
-                  color: textColor,
+              Expanded(
+                child: Text(
+                  'Official Forex Rates',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                    color: textColor,
+                  ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 6),
               const Icon(
                 Icons.verified_rounded,
                 size: 14,
@@ -1389,30 +1397,36 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                pair,
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                  color: textColor,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  pair,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    color: textColor,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                name,
-                style: const TextStyle(fontSize: 13, color: Color(0xFF94a3b8)),
-              ),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF94a3b8)),
+                ),
+              ],
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: 8),
           Text(
             rate,
             style: GoogleFonts.outfit(
               fontWeight: FontWeight.w800,
-              fontSize: 20,
+              fontSize: 18,
               color: color,
             ),
           ),
@@ -1422,6 +1436,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildQuickActionsGrid(bool isMobile) {
+    final isPkgPaid = _user['package_fee_paid'] == true || _user['package_fee_paid'] == 1 || _user['membership_status'] == 'active';
     return Column(
       children: [
         // Row 1: CTI Courses (Featured warm accent) & Pay Dues (Emerald badge)
@@ -1449,8 +1464,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 'Pay Dues',
                 '/payments',
                 color: const Color(0xFF10b981),
-                badgeText: 'ANNUAL',
-                subtext: 'Membership renewal dues',
+                badgeText: isPkgPaid ? 'ANNUAL' : 'PACKAGE',
+                subtext: isPkgPaid ? 'Membership renewal dues' : 'New membership entrance dues',
               ),
             ),
           ],
@@ -1841,20 +1856,25 @@ class _DashboardPageState extends State<DashboardPage> {
                   child: Icon(icon, color: color, size: 19),
                 ),
                 if (badgeText != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: color.withAlpha(isDark ? 35 : 20),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: color.withAlpha(70)),
-                    ),
-                    child: Text(
-                      badgeText,
-                      style: GoogleFonts.outfit(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w900,
-                        color: color,
-                        letterSpacing: 0.5,
+                  Flexible(
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                      decoration: BoxDecoration(
+                        color: color.withAlpha(isDark ? 35 : 20),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: color.withAlpha(70)),
+                      ),
+                      child: Text(
+                        badgeText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w900,
+                          color: color,
+                          letterSpacing: 0.4,
+                        ),
                       ),
                     ),
                   ),
@@ -1915,7 +1935,10 @@ class _DashboardPageState extends State<DashboardPage> {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1200),
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: MediaQuery.sizeOf(context).width < 600 ? 0 : 16,
+                        vertical: MediaQuery.sizeOf(context).width < 600 ? 0 : 16,
+                      ),
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           final isWide = constraints.maxWidth > 950;

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -187,6 +188,19 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
       _showToast('Network error while rejecting payment.', isError: true);
     }
     if (mounted) setState(() => _actionLoading = false);
+  }
+
+  void _showRecordCounterPaymentModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => _RecordCounterPaymentDialog(
+        onSuccess: () {
+          _showToast('Counter payment recorded and approved successfully!');
+          _fetch(refresh: true);
+        },
+      ),
+    );
   }
 
   void _showReceiptDialog(
@@ -868,6 +882,30 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
             actions: [
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
+                  backgroundColor: _kGreen,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                onPressed: _showRecordCounterPaymentModal,
+                icon: const Icon(Icons.point_of_sale_rounded, size: 18),
+                label: Text(
+                  'Record Counter Payment',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
                   backgroundColor: kAdminOrange,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
@@ -923,6 +961,74 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── Quick Office Counter Settlement Banner ──
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [const Color(0xFF10b981).withAlpha(40), const Color(0xFF065f46).withAlpha(30)]
+                    : [const Color(0xFFecfdf5), const Color(0xFFd1fae5).withAlpha(120)],
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: const Color(0xFF10b981).withAlpha(80),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10b981).withAlpha(40),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.point_of_sale_rounded, color: Color(0xFF10b981), size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Direct Walk-in / Office Counter Settlement',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: textColor,
+                        ),
+                      ),
+                      Text(
+                        'Member or customer paying at Secretariat office with Cash, Cheque, or POS Card Swipe?',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: subTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: _showRecordCounterPaymentModal,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF10b981),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  icon: const Icon(Icons.add_circle_outline_rounded, size: 16),
+                  label: Text(
+                    'Record Payment',
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
 
@@ -1455,3 +1561,791 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RECORD COUNTER / CASH PAYMENT MODAL DIALOG
+// ─────────────────────────────────────────────────────────────────────────────
+class _RecordCounterPaymentDialog extends StatefulWidget {
+  final VoidCallback onSuccess;
+
+  const _RecordCounterPaymentDialog({required this.onSuccess});
+
+  @override
+  State<_RecordCounterPaymentDialog> createState() => _RecordCounterPaymentDialogState();
+}
+
+class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog> {
+  final _searchController = TextEditingController();
+  final _amountController = TextEditingController();
+  final _receiptNoController = TextEditingController();
+  final _notesController = TextEditingController();
+
+  List<dynamic> _members = [];
+  bool _loadingMembers = true;
+  Map<String, dynamic>? _selectedMember;
+
+  String _category = 'Annual Renewal Dues';
+  String _paymentMethod = 'cash';
+  bool _submitting = false;
+  String? _errorMessage;
+  Timer? _searchDebounce;
+
+  static const List<String> _categories = [
+    'Annual Renewal Dues',
+    'New Membership Dues',
+    'CTI Training / Course',
+    'Statutory Processing / Service Fee',
+    'General Dues / Other',
+  ];
+
+  static const List<Map<String, String>> _methods = [
+    {'key': 'cash', 'label': 'Cash (Secretariat Counter)'},
+    {'key': 'cheque', 'label': 'Cheque'},
+    {'key': 'pos', 'label': 'POS Terminal / Debit Card'},
+    {'key': 'bank_deposit', 'label': 'Direct Bank Counter Deposit'},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMembers();
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    _amountController.dispose();
+    _receiptNoController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchMembers({String query = ''}) async {
+    if (mounted) setState(() => _loadingMembers = true);
+    try {
+      final qParam = query.trim().isNotEmpty ? '?q=${Uri.encodeComponent(query.trim())}' : '';
+      final res = await ApiService().get(
+        '/payments/admin/members-lookup$qParam',
+        options: Options(validateStatus: (status) => status != null && status < 600),
+      );
+      if (!mounted) return;
+      if (res.statusCode == 200 && res.data != null) {
+        final list = (res.data['members'] as List<dynamic>?) ?? [];
+        setState(() {
+          _members = list;
+          _loadingMembers = false;
+        });
+      } else {
+        setState(() => _loadingMembers = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingMembers = false);
+    }
+  }
+
+  void _onSearchChanged(String val) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      _fetchMembers(query: val);
+    });
+  }
+
+  void _selectMember(Map<String, dynamic> member) {
+    setState(() {
+      _selectedMember = member;
+      _errorMessage = null;
+
+      final appBill = double.tryParse(member['app_bill_amount']?.toString() ?? '') ?? 0.0;
+      final renewalFee = double.tryParse(member['renewal_fee_amount']?.toString() ?? '') ?? 0.0;
+      final bill = appBill > 0 ? appBill : renewalFee;
+      final isPkgPaid = member['package_fee_paid'] == true;
+
+      if (bill > 0) {
+        _category = 'Annual Renewal Dues';
+        _amountController.text = bill.toStringAsFixed(2);
+      } else if (!isPkgPaid) {
+        _category = 'New Membership Dues';
+        if (_amountController.text.isEmpty) {
+          _amountController.text = '1500.00';
+        }
+      }
+    });
+  }
+
+  Future<void> _submitPayment() async {
+    if (_selectedMember == null) {
+      setState(() => _errorMessage = 'Please select a member first.');
+      return;
+    }
+
+    final amountStr = _amountController.text.trim().replaceAll(',', '');
+    final amount = double.tryParse(amountStr);
+    if (amount == null || amount <= 0) {
+      setState(() => _errorMessage = 'Please enter a valid payment amount greater than zero.');
+      return;
+    }
+
+    setState(() {
+      _submitting = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final payload = {
+        'member_id': _selectedMember!['id'],
+        'amount': amount,
+        'description': _category,
+        'payment_method': _paymentMethod,
+        'receipt_no': _receiptNoController.text.trim(),
+        'notes': _notesController.text.trim(),
+        'application_id': _selectedMember!['renewal_app_id'],
+      };
+
+      final res = await ApiService().post('/payments/admin/record-counter', data: payload);
+      if (!mounted) return;
+
+      if (res.statusCode == 201 || res.statusCode == 200) {
+        Navigator.of(context).pop();
+        widget.onSuccess();
+      } else {
+        setState(() {
+          _errorMessage = res.data?['message']?.toString() ?? 'Failed to record payment.';
+          _submitting = false;
+        });
+      }
+    } catch (e, st) {
+      AppLogger.error('record_counter_payment', e, st);
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Network error recording payment. Please try again.';
+          _submitting = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? _kCardBg : Colors.white;
+    final textColor = isDark ? const Color(0xFFf8fafc) : const Color(0xFF1A0F0A);
+    final subTextColor = isDark ? const Color(0xFF94a3b8) : const Color(0xFF64748b);
+    final borderColor = isDark ? const Color(0xFF4D2D20) : const Color(0xFFe2e8f0);
+    final inputBg = isDark ? const Color(0xFF1A0F0A).withAlpha(120) : const Color(0xFFf8fafc);
+
+    final appBill = _selectedMember != null
+        ? (double.tryParse(_selectedMember!['app_bill_amount']?.toString() ?? '') ??
+           double.tryParse(_selectedMember!['renewal_fee_amount']?.toString() ?? '') ?? 0.0)
+        : 0.0;
+
+    return Dialog(
+      backgroundColor: cardBg,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 600,
+          maxHeight: MediaQuery.of(context).size.height * 0.90,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _kGreen.withAlpha(25),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.point_of_sale_rounded,
+                      color: _kGreen,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Record Counter / Office Payment',
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: textColor,
+                          ),
+                        ),
+                        Text(
+                          'Over-the-counter settlement for dues, renewals, or fees',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: subTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                    color: subTextColor,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 16),
+
+              // Scrollable Body
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Error banner
+                      if (_errorMessage != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _kRed.withAlpha(20),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: _kRed.withAlpha(60)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline_rounded, color: _kRed, size: 20),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: GoogleFonts.outfit(
+                                    color: _kRed,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+
+                      // ── Member Selection Section ─────────────────────────────
+                      Text(
+                        '1. SELECT MEMBER / CUSTOMER',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                          color: subTextColor,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      if (_selectedMember == null) ...[
+                        // Search bar
+                        TextField(
+                          controller: _searchController,
+                          onChanged: _onSearchChanged,
+                          style: GoogleFonts.outfit(fontSize: 14, color: textColor),
+                          decoration: InputDecoration(
+                            hintText: 'Search by member name, company, phone, license...',
+                            hintStyle: GoogleFonts.inter(fontSize: 13, color: subTextColor),
+                            prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                            filled: true,
+                            fillColor: inputBg,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: borderColor),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: borderColor),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Member list
+                        Container(
+                          height: 180,
+                          decoration: BoxDecoration(
+                            color: inputBg,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: _loadingMembers
+                              ? const Center(child: CircularProgressIndicator(color: _kOrange, strokeWidth: 2))
+                              : _members.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        'No matching members found.',
+                                        style: GoogleFonts.inter(fontSize: 13, color: subTextColor),
+                                      ),
+                                    )
+                                  : ListView.separated(
+                                      itemCount: _members.length,
+                                      separatorBuilder: (_, index) => Divider(height: 1, color: borderColor.withAlpha(80)),
+                                      itemBuilder: (ctx, idx) {
+                                        final m = _members[idx] as Map<String, dynamic>;
+                                        final name = m['name']?.toString() ?? 'Unknown Member';
+                                        final company = m['company']?.toString() ?? '';
+                                        final phone = m['phone']?.toString() ?? '';
+                                        final lic = m['license_number']?.toString();
+                                        final bill = double.tryParse(m['app_bill_amount']?.toString() ?? '') ??
+                                            double.tryParse(m['renewal_fee_amount']?.toString() ?? '') ?? 0.0;
+                                        final isPkgPaid = m['package_fee_paid'] == true;
+
+                                        return ListTile(
+                                          dense: true,
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                                          leading: CircleAvatar(
+                                            radius: 16,
+                                            backgroundColor: _kOrange.withAlpha(30),
+                                            child: Text(
+                                              name.isNotEmpty ? name[0].toUpperCase() : 'M',
+                                              style: GoogleFonts.outfit(
+                                                color: _kOrange,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ),
+                                          title: Text(
+                                            name,
+                                            style: GoogleFonts.outfit(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                              color: textColor,
+                                            ),
+                                          ),
+                                          subtitle: Text(
+                                            [
+                                              if (company.isNotEmpty) company,
+                                              if (phone.isNotEmpty) phone,
+                                              if (lic != null && lic.isNotEmpty) lic,
+                                            ].join(' · '),
+                                            style: GoogleFonts.inter(fontSize: 11, color: subTextColor),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          trailing: bill > 0
+                                              ? Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                  decoration: BoxDecoration(
+                                                    color: _kAmber.withAlpha(25),
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    border: Border.all(color: _kAmber.withAlpha(80)),
+                                                  ),
+                                                  child: Text(
+                                                    'Billed: GH₵ ${bill.toStringAsFixed(0)}',
+                                                    style: GoogleFonts.outfit(
+                                                      color: _kAmber,
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 11,
+                                                    ),
+                                                  ),
+                                                )
+                                              : (!isPkgPaid
+                                                  ? Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                      decoration: BoxDecoration(
+                                                        color: _kBlue.withAlpha(25),
+                                                        borderRadius: BorderRadius.circular(6),
+                                                      ),
+                                                      child: Text(
+                                                        'New Member Dues',
+                                                        style: GoogleFonts.outfit(
+                                                          color: _kBlue,
+                                                          fontWeight: FontWeight.bold,
+                                                          fontSize: 11,
+                                                        ),
+                                                      ),
+                                                    )
+                                                  : null),
+                                          onTap: () => _selectMember(m),
+                                        );
+                                      },
+                                    ),
+                        ),
+                      ] else ...[
+                        // Selected member card
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: _kGreen.withAlpha(15),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: _kGreen.withAlpha(60)),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundColor: _kGreen,
+                                child: Text(
+                                  (_selectedMember!['name']?.toString() ?? 'M')[0].toUpperCase(),
+                                  style: GoogleFonts.outfit(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _selectedMember!['name']?.toString() ?? 'Member',
+                                      style: GoogleFonts.outfit(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: textColor,
+                                      ),
+                                    ),
+                                    Text(
+                                      [
+                                        if (_selectedMember!['company'] != null) _selectedMember!['company'],
+                                        if (_selectedMember!['phone'] != null) _selectedMember!['phone'],
+                                        if (_selectedMember!['license_number'] != null)
+                                          'Lic: ${_selectedMember!['license_number']}',
+                                      ].join(' · '),
+                                      style: GoogleFonts.inter(fontSize: 12, color: subTextColor),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              TextButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedMember = null;
+                                    _amountController.clear();
+                                  });
+                                  _fetchMembers();
+                                },
+                                icon: const Icon(Icons.swap_horiz_rounded, size: 16),
+                                label: const Text('Change'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: _kOrange,
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // If member has official renewal bill, show quick fill action
+                        if (appBill > 0) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: _kAmber.withAlpha(20),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: _kAmber.withAlpha(60)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.receipt_long_rounded, color: _kAmber, size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Official Renewal Bill: GH₵ ${appBill.toStringAsFixed(2)}',
+                                    style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: textColor,
+                                    ),
+                                  ),
+                                ),
+                                OutlinedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _category = 'Annual Renewal Dues';
+                                      _amountController.text = appBill.toStringAsFixed(2);
+                                    });
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: _kAmber),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    minimumSize: const Size(0, 28),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                  ),
+                                  child: Text(
+                                    'Fill Full Bill',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: _kAmber,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+
+                      const SizedBox(height: 18),
+
+                      // ── Payment Details Section ──────────────────────────────
+                      Text(
+                        '2. PAYMENT SPECIFICATIONS',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                          color: subTextColor,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Payment Category Dropdown
+                      DropdownButtonFormField<String>(
+                        initialValue: _category,
+                        decoration: InputDecoration(
+                          labelText: 'Payment Category / Dues Type',
+                          labelStyle: GoogleFonts.outfit(color: subTextColor, fontSize: 13),
+                          filled: true,
+                          fillColor: inputBg,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                        ),
+                        dropdownColor: cardBg,
+                        items: _categories.map((c) {
+                          return DropdownMenuItem(
+                            value: c,
+                            child: Text(c, style: GoogleFonts.outfit(fontSize: 14, color: textColor)),
+                          );
+                        }).toList(),
+                        onChanged: (v) {
+                          if (v != null) setState(() => _category = v);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Amount & Method Row
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 5,
+                            child: TextFormField(
+                              controller: _amountController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              style: GoogleFonts.outfit(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                              ),
+                              decoration: InputDecoration(
+                                labelText: 'Amount Paid (GH₵)',
+                                labelStyle: GoogleFonts.outfit(color: subTextColor, fontSize: 13),
+                                prefixText: 'GH₵ ',
+                                prefixStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: _kGreen),
+                                filled: true,
+                                fillColor: inputBg,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: borderColor),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: borderColor),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 6,
+                            child: DropdownButtonFormField<String>(
+                              initialValue: _paymentMethod,
+                              decoration: InputDecoration(
+                                labelText: 'Payment Method',
+                                labelStyle: GoogleFonts.outfit(color: subTextColor, fontSize: 13),
+                                filled: true,
+                                fillColor: inputBg,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: borderColor),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: borderColor),
+                                ),
+                              ),
+                              dropdownColor: cardBg,
+                              items: _methods.map((m) {
+                                return DropdownMenuItem(
+                                  value: m['key']!,
+                                  child: Text(
+                                    m['label']!,
+                                    style: GoogleFonts.outfit(fontSize: 13, color: textColor),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (v) {
+                                if (v != null) setState(() => _paymentMethod = v);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Receipt / Cheque # field
+                      TextFormField(
+                        controller: _receiptNoController,
+                        style: GoogleFonts.outfit(fontSize: 14, color: textColor),
+                        decoration: InputDecoration(
+                          labelText: 'Physical Receipt Book # / Cheque # (Optional)',
+                          labelStyle: GoogleFonts.outfit(color: subTextColor, fontSize: 13),
+                          hintText: 'e.g. RCP-2026-0048 or Cheque #4092 Zenith Bank',
+                          hintStyle: GoogleFonts.inter(fontSize: 12, color: subTextColor.withAlpha(150)),
+                          prefixIcon: const Icon(Icons.tag_rounded, size: 20),
+                          filled: true,
+                          fillColor: inputBg,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Internal Notes field
+                      TextFormField(
+                        controller: _notesController,
+                        style: GoogleFonts.outfit(fontSize: 14, color: textColor),
+                        maxLines: 2,
+                        decoration: InputDecoration(
+                          labelText: 'Administrative / Office Notes (Optional)',
+                          labelStyle: GoogleFonts.outfit(color: subTextColor, fontSize: 13),
+                          hintText: 'e.g. Paid in cash at front desk by company director.',
+                          hintStyle: GoogleFonts.inter(fontSize: 12, color: subTextColor.withAlpha(150)),
+                          filled: true,
+                          fillColor: inputBg,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Automated Action Notice
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _kGreen.withAlpha(15),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: _kGreen.withAlpha(40)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.verified_rounded, color: _kGreen, size: 18),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Automated Settlement: Upon recording, status will immediately become PAID. Any applicable license will be renewed for 1 year, and an official receipt email + push notification will be sent to the member automatically.',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11.5,
+                                  color: textColor.withAlpha(200),
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 16),
+
+              // Action Buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: _submitting ? null : () => Navigator.of(context).pop(),
+                    style: TextButton.styleFrom(
+                      foregroundColor: subTextColor,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: _submitting ? null : _submitPayment,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _kGreen,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: _submitting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : const Icon(Icons.check_circle_rounded, size: 18),
+                    label: Text(
+                      _submitting ? 'Recording Payment...' : 'Confirm & Record Payment',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

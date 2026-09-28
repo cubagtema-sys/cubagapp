@@ -349,6 +349,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final size = MediaQuery.of(context).size;
     final isDesktop = size.width > 1100;
     final isTablet = size.width > 650 && size.width <= 1100;
+    final isTiny = size.width < 360;
     final revParts = _revenue.toStringAsFixed(2).split('.');
     final revWhole = revParts[0].replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -359,10 +360,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: isDesktop ? 5 : (isTablet ? 3 : 2),
-      mainAxisSpacing: 14,
-      crossAxisSpacing: 14,
-      childAspectRatio: isDesktop ? 1.75 : (isTablet ? 1.8 : 1.5),
+      crossAxisCount: isDesktop ? 5 : (isTablet ? 3 : (isTiny ? 1 : 2)),
+      mainAxisSpacing: isTiny ? 10 : 14,
+      crossAxisSpacing: isTiny ? 10 : 14,
+      childAspectRatio: isDesktop ? 1.75 : (isTablet ? 1.8 : (isTiny ? 2.8 : 1.35)),
       children: [
         _DashboardKPICard(
           icon: Icons.people_alt_rounded,
@@ -839,7 +840,10 @@ class _DashboardKPICardState extends State<_DashboardKPICard> {
           transform: _isHovered
               ? Matrix4.translationValues(0.0, -2.0, 0.0)
               : Matrix4.identity(),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          padding: EdgeInsets.symmetric(
+            horizontal: MediaQuery.sizeOf(context).width < 400 ? 10 : 14,
+            vertical: MediaQuery.sizeOf(context).width < 400 ? 10 : 14,
+          ),
           decoration: BoxDecoration(
             color: _isHovered
                 ? (isDark ? const Color(0xFF1A0F0A) : const Color(0xFFf8fafc))
@@ -862,16 +866,20 @@ class _DashboardKPICardState extends State<_DashboardKPICard> {
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: EdgeInsets.all(MediaQuery.sizeOf(context).width < 400 ? 7 : 10),
                 decoration: BoxDecoration(
                   color: widget.color.withValues(
                     alpha: _isHovered ? 0.18 : 0.1,
                   ),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(widget.icon, color: widget.color, size: 22),
+                child: Icon(
+                  widget.icon,
+                  color: widget.color,
+                  size: MediaQuery.sizeOf(context).width < 400 ? 18 : 22,
+                ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: MediaQuery.sizeOf(context).width < 400 ? 8 : 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

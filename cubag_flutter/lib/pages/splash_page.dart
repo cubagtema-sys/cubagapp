@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../utils/session_storage.dart';
 import '../services/auth_service.dart';
 import '../services/biometric_service.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 /// Professional Animated Quad-Split Splash Screen for CUBAG.
 /// Features a high-end 4-piece geometric convergence animation where the
@@ -58,9 +59,13 @@ class _SplashPageState extends State<SplashPage>
   void initState() {
     super.initState();
 
+    if (!kIsWeb) {
+      FlutterNativeSplash.remove();
+    }
+
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1100),
+      duration: const Duration(milliseconds: 1800),
     );
 
     // ── 1. Quadrant Convergence (0.0 -> 0.55) ───────────────────────────────
@@ -276,20 +281,25 @@ class _SplashPageState extends State<SplashPage>
 
           // ── Radial Ambient Core Glow ──────────────────────────────────────
           Center(
-            child: Container(
-              width: 380,
-              height: 380,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFFFF5000).withAlpha(45),
-                    const Color(0xFF6B3E26).withAlpha(25),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
-                ),
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final glowSize = (MediaQuery.sizeOf(context).width * 0.85).clamp(200.0, 380.0);
+                return Container(
+                  width: glowSize,
+                  height: glowSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFFFF5000).withAlpha(45),
+                        const Color(0xFF6B3E26).withAlpha(25),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.5, 1.0],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
 

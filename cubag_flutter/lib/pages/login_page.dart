@@ -617,32 +617,39 @@ class _LoginPageState extends State<LoginPage> {
     ],
   );
 
-  Widget _buildMobileLayout() => SafeArea(
-    child: Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: Container(
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              color: _kWhite,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: _kBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(6),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+  Widget _buildMobileLayout() {
+    final w = MediaQuery.sizeOf(context).width;
+    final isNarrow = w < 380;
+    return SafeArea(
+      child: Center(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(
+            horizontal: isNarrow ? 12 : 20,
+            vertical: isNarrow ? 16 : 32,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: Container(
+              padding: EdgeInsets.all(isNarrow ? 18 : 28),
+              decoration: BoxDecoration(
+                color: _kWhite,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: _kBorder),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(6),
+                    blurRadius: 20,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: _buildForm(showLogo: true),
             ),
-            child: _buildForm(showLogo: true),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 
   Widget _buildBrandPanel() => Container(
     decoration: BoxDecoration(
@@ -993,45 +1000,57 @@ class _LoginPageState extends State<LoginPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Checkbox(
-                    value: _rememberMe,
-                    activeColor: _kOrange,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    onChanged: !_loading
-                        ? (v) => setState(() => _rememberMe = v ?? false)
-                        : null,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: !_loading
-                      ? () => setState(() => _rememberMe = !_rememberMe)
-                      : null,
-                  child: Text(
-                    'Keep me signed in',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: _loading ? _kMuted : _kText,
+            Expanded(
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Checkbox(
+                      value: _rememberMe,
+                      activeColor: _kOrange,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      onChanged: !_loading
+                          ? (v) => setState(() => _rememberMe = v ?? false)
+                          : null,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: !_loading
+                          ? () => setState(() => _rememberMe = !_rememberMe)
+                          : null,
+                      child: Text(
+                        'Keep me signed in',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: MediaQuery.sizeOf(context).width < 380 ? 13.5 : 15,
+                          fontWeight: FontWeight.w500,
+                          color: _loading ? _kMuted : _kText,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             TextButton(
               onPressed: _loading ? null : () => context.go('/forgot-password'),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
               child: Text(
                 'Forgot?',
                 style: TextStyle(
                   color: _kBrown,
-                  fontSize: 16,
+                  fontSize: MediaQuery.sizeOf(context).width < 380 ? 13.5 : 15,
                   fontWeight: FontWeight.w700,
                 ),
               ),

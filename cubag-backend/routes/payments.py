@@ -2050,6 +2050,181 @@ def admin_mark_paid(payment_id):
     return jsonify({'message': 'Payment approved and marked as PAID successfully'}), 200
 
 
+# ─── GET /payments/admin/members-lookup ───────────────────────────────────────
+@payments_bp.route('/admin/members-lookup', methods=['GET'])
+@sub_admin_required('payments')
+def admin_lookup_members():
+    """Search/list members for counter payment processing."""
+    query = request.args.get('q', '').strip().lower()
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            if query:
+                pattern = f"%{query}%"
+                cursor.execute("""
+                    SELECT DISTINCT ON (m.id)
+                           m.id, m.name, m.email, m.phone, m.company, m.license_number,
+                           m.status, m.package_fee_paid, m.renewal_fee_amount, m.renewal_fee_title,
+                           ca.id as renewal_app_id, ca.payment_amount as app_bill_amount, ca.amount_paid as app_amount_paid
+                    FROM members m
+                    LEFT JOIN compliance_applications ca
+                           ON ca.member_id = m.id
+                           AND ca.type = 'renewal'
+                           AND ca.status NOT IN ('approved', 'completed')
+                    WHERE (
+                        LOWER(m.name) LIKE %s OR 
+                        LOWER(COALESCE(m.email, '')) LIKE %s OR 
+                        LOWER(COALESCE(m.phone, '')) LIKE %s OR 
+                        LOWER(COALESCE(m.company, '')) LIKE %s OR 
+                        LOWER(COALESCE(m.license_number, '')) LIKE %s
+                    )
+                    ORDER BY m.id DESC, ca.id DESC
+                    LIMIT 30
+                """, (pattern, pattern, pattern, pattern, pattern))
+            else:
+                cursor.execute("""
+                    SELECT DISTINCT ON (m.id)
+                           m.id, m.name, m.email, m.phone, m.company, m.license_number,
+                           m.status, m.package_fee_paid, m.renewal_fee_amount, m.renewal_fee_title,
+                           ca.id as renewal_app_id, ca.payment_amount as app_bill_amount, ca.amount_paid as app_amount_paid
+                    FROM members m
+                    LEFT JOIN compliance_applications ca
+                           ON ca.member_id = m.id
+                           AND ca.type = 'renewal'
+                           AND ca.status NOT IN ('approved', 'completed')
+                    ORDER BY m.id DESC, ca.id DESC
+                    LIMIT 40
+                """)
+            members = cursor.fetchall()
+            for m in members:
+                for k, v in list(m.items()):
+                    if hasattr(v, 'to_eng_string'):
+                        m[k] = float(v)
+                    elif hasattr(v, 'isoformat'):
+                        m[k] = v.isoformat()
+                    elif isinstance(v, bool):
+                        m[k] = v  # preserve booleans as-is
+            return jsonify({'members': members}), 200
+    except Exception as e:
+        logger.exception("[Admin Members Lookup Error] %s", e)
+        return jsonify({'message': str(e)}), 500
+    finally:
+        conn.close()
+
+
+# ─── POST /payments/admin/record-counter ──────────────────────────────────────
+@payments_bp.route('/admin/record-counter', methods=['POST'])
+@sub_admin_required('payments')
+def admin_record_counter_payment():
+    """Record a direct over-the-counter cash, cheque, or POS payment made at the office."""
+    admin_id = get_jwt_identity()
+    data = request.get_json() or {}
+
+    member_id = data.get('member_id')
+    try:
+        amount = float(str(data.get('amount', 0)).replace(',', ''))
+    except (TypeError, ValueError):
+        return jsonify({'message': 'Invalid payment amount provided.'}), 400
+
+    if not member_id:
+        return jsonify({'message': 'Please select a member.'}), 400
+    if amount <= 0:
+        return jsonify({'message': 'Payment amount must be greater than zero.'}), 400
+
+    description = str(data.get('description') or 'Annual Renewal Dues').strip()
+    payment_method = str(data.get('payment_method') or 'cash').lower().strip()
+    receipt_no = str(data.get('receipt_no') or '').strip()
+    notes = str(data.get('notes') or '').strip()
+
+    full_notes = f"Office Counter Payment ({payment_method.upper()})"
+    if receipt_no:
+        full_notes += f" | Receipt/Cheque #{receipt_no}"
+    if notes:
+        full_notes += f" | {notes}"
+
+    time_stamp = datetime.now().strftime("%y%m%d%H%M")
+    suffix = uuid.uuid4().hex[:6].upper()
+    payment_ref = f"OFFICE-{time_stamp}-{suffix}"
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id, name, email, phone, fcm_token FROM members WHERE id = %s", (member_id,))
+            member = cursor.fetchone()
+            if not member:
+                return jsonify({'message': 'Selected member does not exist.'}), 404
+
+            # Check if there is an active renewal application to link
+            app_id = data.get('application_id')
+            if not app_id and any(k in description.lower() for k in ('renewal', 'annual', 'license')):
+                cursor.execute("""
+                    SELECT id FROM compliance_applications 
+                    WHERE member_id = %s AND type = 'renewal' AND status NOT IN ('approved', 'completed')
+                    ORDER BY id DESC LIMIT 1
+                """, (member_id,))
+                ca = cursor.fetchone()
+                if ca:
+                    app_id = ca['id']
+
+            cursor.execute("""
+                INSERT INTO payments (
+                    member_id, amount, description, status, payment_method,
+                    payment_ref, notes, paid_at, verified_at, verified_by,
+                    application_id, created_at
+                ) VALUES (
+                    %s, %s, %s, 'pending', %s,
+                    %s, %s, NOW(), NOW(), %s,
+                    %s, NOW()
+                ) RETURNING id
+            """, (
+                member_id, amount, description, payment_method,
+                payment_ref, full_notes, admin_id,
+                app_id
+            ))
+            payment_row = cursor.fetchone()
+            payment_id = payment_row['id']
+            conn.commit()
+
+            # Audit log
+            log_admin_action(
+                admin_id,
+                'Recorded Counter Payment',
+                target_type='payment',
+                target_id=payment_id,
+                target_name=member.get('name'),
+                details={
+                    'amount': amount,
+                    'method': payment_method,
+                    'description': description,
+                    'receipt_no': receipt_no,
+                    'ref': payment_ref
+                }
+            )
+    except Exception as e:
+        logger.exception("[Admin Record Counter Payment Error] %s", e)
+        return jsonify({'message': str(e)}), 500
+    finally:
+        conn.close()
+
+    # Apply automated settlement logic (license extension, good standing, tasks, compliance update, push, email receipt)
+    try:
+        _mark_payment_as_paid(payment_id, force=True)
+    except Exception as mark_err:
+        logger.warning(f"[Admin Record Counter] _mark_payment_as_paid warning: {mark_err}")
+
+    # Invalidate cache
+    try:
+        cache.clear()
+    except Exception:
+        pass
+
+    return jsonify({
+        'message': f'Office payment of GH₵ {amount:.2f} recorded and marked as PAID successfully.',
+        'payment_id': payment_id,
+        'payment_ref': payment_ref,
+    }), 201
+
+
 # ─── POST /payments/admin/reject/<id> ────────────────────────────────────────
 @payments_bp.route('/admin/reject/<int:payment_id>', methods=['POST'])
 @sub_admin_required('payments')

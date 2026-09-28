@@ -368,7 +368,12 @@ class _PaymentsPageState extends State<PaymentsPage>
               _reason = 'New Membership Dues';
               _isCategoryLocked = true;
             } else if (qfLower.contains('renewal') || qfLower.contains('annual')) {
-              _reason = 'Annual Renewal Dues';
+              if (!_isPackageFeePaid) {
+                _reason = 'New Membership Dues';
+                _isCategoryLocked = false;
+              } else {
+                _reason = 'Annual Renewal Dues';
+              }
             } else if (qfLower.contains('cti') || qfLower.contains('course') || qfLower.contains('training')) {
               _reason = queryFee;
               _isCategoryLocked = true;
@@ -391,7 +396,7 @@ class _PaymentsPageState extends State<PaymentsPage>
           } else if (_renewalFeeAmount != null && _renewalFeeAmount! > 0) {
             _reason = 'Annual Renewal Dues';
           } else {
-            _reason = 'Annual Renewal Dues';
+            _reason = _isPackageFeePaid ? 'Annual Renewal Dues' : 'New Membership Dues';
           }
 
           if (_reason == 'Registration Fee') {
@@ -400,10 +405,15 @@ class _PaymentsPageState extends State<PaymentsPage>
             _reason = 'New Membership Dues';
             _amountCtrl.text = _packageFeeStr;
           } else if (_reason.toLowerCase().contains('renewal')) {
-            if (queryAmt != null && queryAmt.isNotEmpty) {
+            if (!_isPackageFeePaid) {
+              _reason = 'New Membership Dues';
+              _amountCtrl.text = _packageFeeStr;
+            } else if (queryAmt != null && queryAmt.isNotEmpty) {
               _amountCtrl.text = double.tryParse(queryAmt)?.toStringAsFixed(2) ?? queryAmt;
             } else if (_renewalFeeAmount != null && _renewalFeeAmount! > 0) {
               _amountCtrl.text = _renewalFeeAmount!.toStringAsFixed(2);
+            } else {
+              _amountCtrl.clear();
             }
           } else if (_reason.toLowerCase().contains('cti') || _reason.toLowerCase().contains('course')) {
             // Keep pre-filled course fee from query parameter
@@ -1394,12 +1404,17 @@ class _PaymentsPageState extends State<PaymentsPage>
                               child: Builder(
                                 builder: (ctx) {
                                   final isNoDoc = _isNoDocPaymentReason;
-                                  final labels = isNoDoc
-                                      ? ['Type', 'Method', 'Review', 'Verify']
-                                      : ['Type', 'Document', 'Method', 'Review', 'Verify'];
-                                  final stepMap = isNoDoc
-                                      ? {1: 0, 3: 1, 4: 2, 5: 3}
-                                      : {1: 0, 2: 1, 3: 2, 4: 3, 5: 4};
+                                  final isRenewal = _reason.toLowerCase().contains('renewal');
+                                  final labels = isRenewal
+                                      ? ['Document (Step 1)', 'Official Bill', 'Method', 'Review', 'Verify']
+                                      : (isNoDoc
+                                          ? ['Type', 'Method', 'Review', 'Verify']
+                                          : ['Type', 'Document', 'Method', 'Review', 'Verify']);
+                                  final stepMap = isRenewal
+                                      ? {2: 0, 1: 1, 3: 2, 4: 3, 5: 4}
+                                      : (isNoDoc
+                                          ? {1: 0, 3: 1, 4: 2, 5: 3}
+                                          : {1: 0, 2: 1, 3: 2, 4: 3, 5: 4});
                                   final curIdx = stepMap[_step] ?? 0;
                                   final totalSteps = labels.length;
 
@@ -1840,13 +1855,17 @@ class _PaymentsPageState extends State<PaymentsPage>
                 );
               }
 
-              // Always include Annual Renewal Dues for members
-              dropdownItems.add(
-                DropdownItem<String>(
-                  value: 'Annual Renewal Dues',
-                  label: '$renewalTitle · GH₵ $renewalAmtStr',
-                ),
-              );
+              // Only include Annual Renewal Dues if user has paid their new membership dues
+              if (_isPackageFeePaid) {
+                dropdownItems.add(
+                  DropdownItem<String>(
+                    value: 'Annual Renewal Dues',
+                    label: _renewalFeeAmount != null && _renewalFeeAmount! > 0
+                        ? '$renewalTitle · GH₵ $renewalAmtStr'
+                        : '$renewalTitle (Bill Pending Approval)',
+                  ),
+                );
+              }
 
               // Add non-tier general service fees from platform settings if configured
               for (var f in _fees) {
@@ -1915,11 +1934,17 @@ class _PaymentsPageState extends State<PaymentsPage>
                     DropdownItem<String>(value: 'New Membership Dues', label: labelText),
                   );
                 } else if (_reason.toLowerCase().contains('renewal')) {
-                  labelText = '$renewalTitle · GH₵ $renewalAmtStr';
-                  dropdownItems.insert(
-                    0,
-                    DropdownItem<String>(value: _reason, label: labelText),
-                  );
+                  if (!_isPackageFeePaid) {
+                    _reason = 'New Membership Dues';
+                  } else {
+                    labelText = _renewalFeeAmount != null && _renewalFeeAmount! > 0
+                        ? '$renewalTitle · GH₵ ${_renewalFeeAmount!.toStringAsFixed(2)}'
+                        : '$renewalTitle (Bill Pending Approval)';
+                    dropdownItems.insert(
+                      0,
+                      DropdownItem<String>(value: _reason, label: labelText),
+                    );
+                  }
                 } else {
                   dropdownItems.insert(
                     0,
@@ -1955,9 +1980,13 @@ class _PaymentsPageState extends State<PaymentsPage>
                       _complianceDocs = [];
                       _complianceStatus = '';
                     } else if (v.toLowerCase().contains('renewal')) {
-                      _amountCtrl.text = renewalAmtStr;
+                      if (_renewalFeeAmount != null && _renewalFeeAmount! > 0) {
+                        _amountCtrl.text = _renewalFeeAmount!.toStringAsFixed(2);
+                      } else {
+                        _amountCtrl.clear();
+                      }
                       _complianceAppId = null;
-                      _complianceType = null;
+                      _complianceType = 'renewal';
                       _complianceDocs = [];
                       _complianceStatus = '';
                     } else {
@@ -2187,7 +2216,9 @@ class _PaymentsPageState extends State<PaymentsPage>
                     decoration: InputDecoration(
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                      hintText: '0.00',
+                      hintText: (_reason.toLowerCase().contains('renewal') && (_renewalFeeAmount == null || _renewalFeeAmount == 0))
+                          ? 'Bill Pending (Submit Docs)'
+                          : '0.00',
                       suffixIcon: (_reason.toLowerCase().contains('renewal') && _allowInstallments && _isInstallmentMode)
                           ? const Tooltip(
                               message: 'Editable installment amount',
@@ -2506,21 +2537,22 @@ class _PaymentsPageState extends State<PaymentsPage>
                           ),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF059669).withAlpha(20),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          _isPartiallyPaid ? 'PARTIALLY PAID' : 'INSTALLMENTS PERMITTED',
-                          style: GoogleFonts.inter(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF059669),
+                      if (_isPartiallyPaid)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF059669).withAlpha(20),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'PARTIALLY PAID',
+                            style: GoogleFonts.inter(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF059669),
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -2734,41 +2766,131 @@ class _PaymentsPageState extends State<PaymentsPage>
             }(),
           ],
 
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: Builder(
-              builder: (ctx) {
-                final r = _reason.toLowerCase();
-                final isLicenseReason =
-                    r.contains('license') ||
-                    r.contains('renewal') ||
-                    r.contains('dues') ||
-                    r.contains('annual fee');
-                final isRenewal = r.contains('renewal');
-                final amt = double.tryParse(_amountCtrl.text) ?? 0.0;
-                final maxPayable = _renewalBalanceDue > 0
-                    ? _renewalBalanceDue
-                    : (_renewalFeeAmount ?? double.infinity);
-                final minPayable = _minInstallmentAmount > 0
-                    ? _minInstallmentAmount
-                    : 1.0;
+          Builder(
+            builder: (ctx) {
+              final isDark = Theme.of(ctx).brightness == Brightness.dark;
+              final r = _reason.toLowerCase();
+              final isLicenseReason =
+                  r.contains('license') ||
+                  r.contains('renewal') ||
+                  r.contains('dues') ||
+                  r.contains('annual fee');
+              final isRenewal = r.contains('renewal');
+              final amt = double.tryParse(_amountCtrl.text) ?? 0.0;
+              final maxPayable = _renewalBalanceDue > 0
+                  ? _renewalBalanceDue
+                  : (_renewalFeeAmount ?? double.infinity);
+              final minPayable = _minInstallmentAmount > 0
+                  ? _minInstallmentAmount
+                  : 1.0;
 
-                bool isAmountValid = amt > 0;
-                if (isRenewal && _allowInstallments && _isInstallmentMode) {
-                  if (amt < (minPayable - 0.01) || amt > (maxPayable + 0.01)) {
-                    isAmountValid = false;
-                  }
+              final bool hasOfficialRenewalBill = isRenewal &&
+                  ((_renewalFeeAmount != null && _renewalFeeAmount! > 0) ||
+                      (_amountCtrl.text.isNotEmpty && amt > 0 && _complianceAppId != null));
+
+              // If it's renewal but no official bill has been issued by admin yet:
+              if (isRenewal && !hasOfficialRenewalBill) {
+                return Column(
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 14),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF59E0B).withAlpha(15),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFF59E0B).withAlpha(50)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Document submission is Step 1. The Secretariat will vet your documents and issue your official renewal bill before payment can be made.',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? const Color(0xFFFDBA74) : const Color(0xFFC2410C),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Faded-out Pay button
+                    Opacity(
+                      opacity: 0.45,
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          onPressed: null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isDark ? Colors.grey.shade700 : Colors.grey.shade400,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.lock_outline_rounded, size: 18),
+                          label: Text(
+                            'Pay Annual Renewal Dues (Documents Required)',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    // Active Step 1 button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton.icon(
+                        onPressed: () => context.go('/compliance'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _kOrange,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        icon: const Icon(Icons.upload_file_rounded, size: 18),
+                        label: Text(
+                          'Submit Renewal Documents (Step 1)',
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              bool isAmountValid = amt > 0;
+              if (isRenewal && _allowInstallments && _isInstallmentMode) {
+                if (amt < (minPayable - 0.01) || amt > (maxPayable + 0.01)) {
+                  isAmountValid = false;
                 }
+              }
 
-                // Block only if: license is active AND reason is license-related
-                final canContinue =
-                    _reason.isNotEmpty &&
-                    _amountCtrl.text.isNotEmpty &&
-                    isAmountValid &&
-                    !(_isLicenseBlocked && isLicenseReason);
-                final isNoDoc = _isNoDocPaymentReason;
-                return ElevatedButton.icon(
+              // Block only if: license is active AND reason is license-related
+              final canContinue =
+                  _reason.isNotEmpty &&
+                  _amountCtrl.text.isNotEmpty &&
+                  isAmountValid &&
+                  !(_isLicenseBlocked && isLicenseReason);
+              final isNoDoc = _isNoDocPaymentReason;
+              return SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
                   onPressed: canContinue
                       ? () {
                           if (isNoDoc) {
@@ -2800,9 +2922,9 @@ class _PaymentsPageState extends State<PaymentsPage>
                     ),
                   ),
                   label: const Icon(Icons.arrow_forward_rounded, size: 16),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
         ],
       );

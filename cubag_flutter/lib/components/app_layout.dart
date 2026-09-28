@@ -105,6 +105,7 @@ class _AppLayoutState extends State<AppLayout> {
     final size = MediaQuery.of(context).size;
     final isDesktop = size.width > 800;
     final isSmall = size.width < 600;
+    final isNarrow = size.width < 380;
     final primary = Theme.of(context).primaryColor;
     final currentRoute = GoRouterState.of(context).matchedLocation;
     final isThemeDark = Theme.of(context).brightness == Brightness.dark;
@@ -120,19 +121,19 @@ class _AppLayoutState extends State<AppLayout> {
               surfaceTintColor: Colors.transparent,
               elevation: 0,
               centerTitle: false,
-              titleSpacing: isSmall ? 16 : 24,
+              titleSpacing: isNarrow ? 10 : (isSmall ? 16 : 24),
               iconTheme: const IconThemeData(color: Colors.white),
               title: Row(
                 children: [
                   const AppLogo(size: 28, borderRadius: 6, showShadow: false),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       widget.title,
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
-                        fontSize: isSmall ? 20 : 22,
+                        fontSize: isNarrow ? 18 : (isSmall ? 20 : 22),
                         letterSpacing: -0.5,
                       ),
                       maxLines: 1,
@@ -153,7 +154,7 @@ class _AppLayoutState extends State<AppLayout> {
                   builder: (context, auth, _) =>
                       _buildProfileMenu(context, auth, isSmall, isDark: true),
                 ),
-                SizedBox(width: 12 + MediaQuery.of(context).padding.right),
+                SizedBox(width: (isNarrow ? 6 : 12) + MediaQuery.of(context).padding.right),
               ],
             ),
       bottomNavigationBar: isDesktop
@@ -209,11 +210,17 @@ class _AppLayoutState extends State<AppLayout> {
                         child: SelectionArea(
                           child: widget.scrollable
                               ? SingleChildScrollView(
-                                  padding: const EdgeInsets.all(16),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: isNarrow ? 10 : 16,
+                                    vertical: isNarrow ? 10 : 16,
+                                  ),
                                   child: widget.child,
                                 )
                               : Padding(
-                                  padding: const EdgeInsets.all(16),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: isNarrow ? 10 : 16,
+                                    vertical: isNarrow ? 10 : 16,
+                                  ),
                                   child: widget.child,
                                 ),
                         ),

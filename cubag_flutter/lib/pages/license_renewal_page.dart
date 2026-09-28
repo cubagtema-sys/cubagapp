@@ -577,7 +577,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                     elevation: 0,
                   ),
                   child: Text(
-                    'Make Payment',
+                    'Submit Renewal Documents (Step 1)',
                     style: GoogleFonts.inter(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -677,7 +677,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                 elevation: 0,
               ),
               child: Text(
-                'Make Payment',
+                'Submit Documents (Step 1)',
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,

@@ -549,84 +549,196 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
 
   Widget _buildStepper() {
     final status = _app['status']?.toString() ?? 'draft';
-    final completed = status != 'draft' && status != 'revision_requested';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Application Progress',
-          style: GoogleFonts.outfit(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey.shade800,
-          ),
+    // Determine current step index (0-indexed)
+    int currentStepIdx;
+    if (status == 'draft' || status == 'revision_requested') {
+      currentStepIdx = 0; // Step 1: Documents
+    } else if (status == 'submitted' || status == 'under_review') {
+      currentStepIdx = 1; // Step 2: Vetting
+    } else if (status == 'awaiting_bill') {
+      currentStepIdx = 2; // Step 3: Official Bill Pending
+    } else if (status == 'awaiting_payment' || status == 'payment_pending') {
+      currentStepIdx = 3; // Step 4: Pay Official Bill
+    } else if (status == 'payment_submitted') {
+      currentStepIdx = 3; // Step 4: Payment Submitted
+    } else if (status == 'payment_confirmed' || status == 'approved' || status == 'completed') {
+      currentStepIdx = 4; // Step 5: Approved / License
+    } else {
+      currentStepIdx = 0;
+    }
+
+    final steps = [
+      {'title': 'Documents', 'subtitle': 'Step 1: Upload Statutory Docs'},
+      {'title': 'Vetting', 'subtitle': 'Step 2: Secretariat Review'},
+      {'title': 'Official Bill', 'subtitle': 'Step 3: Admin Issues Bill'},
+      {'title': 'Payment', 'subtitle': 'Step 4: Settle Renewal Dues'},
+      {'title': 'License', 'subtitle': 'Step 5: Good Standing'},
+    ];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: isDark ? _kCardDark : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? _kBorderDark : const Color(0xFFE2E8F0),
+          width: 1.0,
         ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 90,
-          child: Stack(
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 40,
-                child: Container(height: 2, color: const Color(0xFFe2e8f0)),
+              Text(
+                'Renewal & Compliance Steps',
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : _kTextDark,
+                ),
               ),
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: completed ? _kPrimary : _kAmber,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: completed ? _kPrimary : _kAmber,
-                          width: 2,
-                        ),
-                      ),
-                      child: Icon(
-                        completed
-                            ? Icons.check_rounded
-                            : Icons.description_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Documents',
-                      style: GoogleFonts.outfit(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: completed
-                            ? _kPrimary
-                            : (Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.white
-                                  : _kTextDark),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      completed
-                          ? 'Application uploaded and under review'
-                          : 'Upload or replace required documents',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: _kPrimary.withAlpha(20),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'STEP ${currentStepIdx + 1} OF 5',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: _kPrimary,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          // Stepper bar
+          Row(
+            children: List.generate(steps.length, (i) {
+              final isPassed = currentStepIdx > i;
+              final isCurrent = currentStepIdx == i;
+              final Color circleColor = isPassed
+                  ? _kGreen
+                  : (isCurrent ? _kPrimary : (isDark ? Colors.white24 : const Color(0xFFCBD5E1)));
+
+              return Expanded(
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Divider(
+                            thickness: 2.5,
+                            color: i == 0
+                                ? Colors.transparent
+                                : (currentStepIdx >= i
+                                    ? _kPrimary
+                                    : (isDark ? Colors.white12 : const Color(0xFFE2E8F0))),
+                          ),
+                        ),
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: circleColor,
+                            shape: BoxShape.circle,
+                            boxShadow: isCurrent
+                                ? [
+                                    BoxShadow(
+                                      color: _kPrimary.withAlpha(80),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Center(
+                            child: isPassed
+                                ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
+                                : Text(
+                                    '${i + 1}',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Divider(
+                            thickness: 2.5,
+                            color: i == steps.length - 1
+                                ? Colors.transparent
+                                : (currentStepIdx > i
+                                    ? _kPrimary
+                                    : (isDark ? Colors.white12 : const Color(0xFFE2E8F0))),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      steps[i]['title']!,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                        fontSize: 11.5,
+                        fontWeight: isCurrent ? FontWeight.bold : FontWeight.w600,
+                        color: isCurrent
+                            ? _kPrimary
+                            : (isPassed
+                                ? _kGreen
+                                : (isDark ? Colors.white60 : const Color(0xFF64748B))),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withAlpha(5) : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: 16,
+                  color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    steps[currentStepIdx]['subtitle']!,
+                    style: GoogleFonts.inter(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white70 : const Color(0xFF475569),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1073,22 +1185,55 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
               ),
             )
           else
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kPrimary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-                onPressed: () {
-                  context.go('/payments?fee=Annual%20Renewal%20Dues&amount=${amount.toStringAsFixed(2)}');
-                },
-                icon: const Icon(Icons.payment_rounded, size: 18),
-                label: Text('Proceed to Payment (GHS ${amount.toStringAsFixed(2)})', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
-              ),
+            Builder(
+              builder: (ctx) {
+                final allowInst = _app['allow_installments'] != false;
+                final minInst = double.tryParse(_app['min_installment_amount']?.toString() ?? '0') ?? 0.0;
+                final appId = _app['id']?.toString() ?? widget.appId.toString();
+                return Column(
+                  children: [
+                    if (allowInst)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.pie_chart_outline_rounded, size: 15, color: _kAmber),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Installment plan available • Minimum GHS ${minInst > 0 ? minInst.toStringAsFixed(2) : "100.00"}',
+                              style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: _kAmber),
+                            ),
+                          ],
+                        ),
+                      ),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _kPrimary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                        onPressed: () {
+                          context.go(
+                            '/payments?fee=Annual%20Renewal%20Dues&amount=${amount.toStringAsFixed(2)}&is_installment=$allowInst&min_amount=${minInst.toStringAsFixed(2)}&max_amount=${amount.toStringAsFixed(2)}&app_id=$appId',
+                          );
+                        },
+                        icon: const Icon(Icons.payment_rounded, size: 18),
+                        label: Text(
+                          allowInst
+                              ? 'Proceed to Payment (Full or Installment)'
+                              : 'Proceed to Payment (GHS ${amount.toStringAsFixed(2)})',
+                          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
         ],
       ),

@@ -16,9 +16,14 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'services/socket_service.dart';
 
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+
 void main() async {
   // 1. Basic binding initialization
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  if (!kIsWeb) {
+    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  }
 
   // Intercept uncaught async errors
   PlatformDispatcher.instance.onError = (error, stack) {
@@ -163,7 +168,15 @@ class _CubagAppState extends State<CubagApp> with WidgetsBindingObserver {
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
-        return MediaQuery.withNoTextScaling(
+        final mediaQuery = MediaQuery.of(context);
+        // Clamp text scaler to a balanced range [0.85, 1.15] so system display scaling
+        // does not distort cards, inputs, and buttons on small screens.
+        final clampedScaler = mediaQuery.textScaler.clamp(
+          minScaleFactor: 0.85,
+          maxScaleFactor: 1.15,
+        );
+        return MediaQuery(
+          data: mediaQuery.copyWith(textScaler: clampedScaler),
           child: child ?? const SizedBox.shrink(),
         );
       },
