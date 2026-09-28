@@ -1652,6 +1652,29 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
     }
   }
 
+  Future<void> _fetchMembers({String query = ''}) async {
+    if (mounted) setState(() => _loadingMembers = true);
+    try {
+      final qParam = query.trim().isNotEmpty ? '?q=${Uri.encodeComponent(query.trim())}' : '';
+      final res = await ApiService().get(
+        '/payments/admin/members-lookup$qParam',
+        options: Options(validateStatus: (status) => status != null && status < 600),
+      );
+      if (!mounted) return;
+      if (res.statusCode == 200 && res.data != null) {
+        final list = (res.data['members'] as List<dynamic>?) ?? [];
+        setState(() {
+          _members = list;
+          _loadingMembers = false;
+        });
+      } else {
+        setState(() => _loadingMembers = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingMembers = false);
+    }
+  }
+
   List<String> get _categories {
     final list = <String>[
       'Annual Renewal Dues',
@@ -2445,28 +2468,6 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                   ),
                                 ],
                               ],
-                            ),
-                          ),
-                                fontWeight: FontWeight.bold,
-                                color: textColor,
-                              ),
-                              decoration: InputDecoration(
-                                labelText: 'Amount Paid (GH₵)',
-                                labelStyle: GoogleFonts.outfit(color: subTextColor, fontSize: 13),
-                                prefixText: 'GH₵ ',
-                                prefixStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: _kGreen),
-                                filled: true,
-                                fillColor: inputBg,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: borderColor),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: borderColor),
-                                ),
-                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
