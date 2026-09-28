@@ -1604,19 +1604,15 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
   bool _loadingMembers = true;
   Map<String, dynamic>? _selectedMember;
 
+  List<Map<String, dynamic>> _platformFees = [];
+  bool _loadingFees = false;
+  String _feeSourceNotice = '';
+
   String _category = 'Annual Renewal Dues';
   String _paymentMethod = 'cash';
   bool _submitting = false;
   String? _errorMessage;
   Timer? _searchDebounce;
-
-  static const List<String> _categories = [
-    'Annual Renewal Dues',
-    'New Membership Dues',
-    'CTI Training / Course',
-    'Statutory Processing / Service Fee',
-    'General Dues / Other',
-  ];
 
   static const List<Map<String, String>> _methods = [
     {'key': 'cash', 'label': 'Cash (Secretariat Counter)'},
@@ -1629,39 +1625,190 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
   void initState() {
     super.initState();
     _fetchMembers();
+    _fetchPlatformFees();
   }
 
-  @override
-  void dispose() {
-    _searchDebounce?.cancel();
-    _searchController.dispose();
-    _amountController.dispose();
-    _receiptNoController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _fetchMembers({String query = ''}) async {
-    if (mounted) setState(() => _loadingMembers = true);
+  Future<void> _fetchPlatformFees() async {
+    if (mounted) setState(() => _loadingFees = true);
     try {
-      final qParam = query.trim().isNotEmpty ? '?q=${Uri.encodeComponent(query.trim())}' : '';
-      final res = await ApiService().get(
-        '/payments/admin/members-lookup$qParam',
-        options: Options(validateStatus: (status) => status != null && status < 600),
-      );
+      final res = await ApiService().get('admin/fees');
       if (!mounted) return;
-      if (res.statusCode == 200 && res.data != null) {
-        final list = (res.data['members'] as List<dynamic>?) ?? [];
+      if (res.statusCode == 200 && res.data != null && res.data is List) {
         setState(() {
-          _members = list;
-          _loadingMembers = false;
+          _platformFees = List<Map<String, dynamic>>.from(
+            (res.data as List).map((x) => Map<String, dynamic>.from(x as Map))
+          );
+          _loadingFees = false;
         });
+        if (_selectedMember != null) {
+          _updateAmountForCategory(_category);
+        }
       } else {
-        setState(() => _loadingMembers = false);
+        setState(() => _loadingFees = false);
       }
-    } catch (_) {
-      if (mounted) setState(() => _loadingMembers = false);
+    } catch (e, st) {
+      AppLogger.error('record_counter_fees_fetch', e, st);
+      if (mounted) setState(() => _loadingFees = false);
     }
+  }
+
+  List<String> get _categories {
+    final list = <String>[
+      'Annual Renewal Dues',
+      'Registration Fee',
+      'Subscription Fee',
+      'Vetting & Dossier Verification Fee',
+      'District / Branch Development Levy',
+      'New Membership Package Fee',
+    ];
+
+    final mType = (_selectedMember?['member_type'] ?? 'corporate').toString().toLowerCase().trim();
+
+    for (final f in _platformFees) {
+      final label = f['label']?.toString().trim() ?? '';
+      final section = (f['section'] ?? '').toString().toLowerCase().trim();
+
+      final isCategoryMatch = (mType == 'associate' && section == 'associate') ||
+          (mType == 'licentiate' && section == 'licentiate') ||
+          (mType == 'corporate' && (section == 'new_membership' || section == 'corporate'));
+
+      if (label.isNotEmpty && !list.contains(label) && (isCategoryMatch || section.isEmpty)) {
+        list.add(label);
+      }
+    }
+
+    list.addAll([
+      'CTI Training / Course',
+      'Statutory Processing / Service Fee',
+      'General Dues / Other',
+    ]);
+
+    return list;
+  }
+
+  void _updateAmountForCategory(String category) {
+    if (_selectedMember == null) return;
+
+    final mType = (_selectedMember!['member_type'] ?? 'corporate').toString().toLowerCase().trim();
+    final mTypeDisplay = mType == 'associate'
+        ? 'Associate'
+        : mType == 'licentiate'
+            ? 'Licentiate'
+            : 'Corporate';
+
+    final appBill = double.tryParse(_selectedMember!['app_bill_amount']?.toString() ?? '') ??
+        double.tryParse(_selectedMember!['renewal_fee_amount']?.toString() ?? '') ?? 0.0;
+
+    String notice = '';
+    double? resolvedAmount;
+
+    if (category == 'Annual Renewal Dues') {
+      if (appBill > 0) {
+        resolvedAmount = appBill;
+        notice = 'Official Issued Renewal Bill: GH₵ ${appBill.toStringAsFixed(2)}';
+      } else {
+        final renewalItem = _platformFees.firstWhere(
+          (f) => f['id'] == 'renewal_base_fee' || f['id'] == 'renewal_fee' || f['section'] == 'renewal',
+          orElse: () => {},
+        );
+        if (renewalItem.isNotEmpty && renewalItem['amount'] != null) {
+          resolvedAmount = double.tryParse(renewalItem['amount'].toString());
+          notice = 'Platform Tariff (admin/fees): Renewal Fee';
+        }
+      }
+    } else {
+      Map<String, dynamic> matchedFee = {};
+
+      for (final f in _platformFees) {
+        final sec = (f['section'] ?? '').toString().toLowerCase().trim();
+        final lbl = (f['label'] ?? '').toString().toLowerCase().trim();
+        final catLower = category.toLowerCase().trim();
+
+        final secMatch = (mType == 'associate' && sec == 'associate') ||
+            (mType == 'licentiate' && sec == 'licentiate') ||
+            (mType == 'corporate' && (sec == 'new_membership' || sec == 'corporate'));
+
+        if (secMatch && (lbl == catLower || lbl.contains(catLower) || catLower.contains(lbl))) {
+          matchedFee = f;
+          break;
+        }
+      }
+
+      if (matchedFee.isEmpty) {
+        for (final f in _platformFees) {
+          final lbl = (f['label'] ?? '').toString().toLowerCase().trim();
+          final catLower = category.toLowerCase().trim();
+          if (lbl == catLower || (catLower.length > 3 && lbl.contains(catLower))) {
+            matchedFee = f;
+            break;
+          }
+        }
+      }
+
+      if (matchedFee.isEmpty) {
+        final catLower = category.toLowerCase();
+        if (catLower.contains('registration') || catLower.contains('reg form')) {
+          matchedFee = _platformFees.firstWhere(
+            (f) => mType == 'associate'
+                ? f['id'] == 'associate_reg_form_fee'
+                : mType == 'licentiate'
+                    ? f['id'] == 'licentiate_reg_form_fee'
+                    : (f['id'] == 'reg_form_fee' || f['id'] == 'new_reg_fee'),
+            orElse: () => {},
+          );
+        } else if (catLower.contains('subscription')) {
+          matchedFee = _platformFees.firstWhere(
+            (f) => mType == 'associate'
+                ? f['id'] == 'associate_sub_fee'
+                : mType == 'licentiate'
+                    ? f['id'] == 'licentiate_sub_fee'
+                    : f['id'] == 'new_sub_fee',
+            orElse: () => {},
+          );
+        } else if (catLower.contains('vetting')) {
+          matchedFee = _platformFees.firstWhere(
+            (f) => mType == 'associate'
+                ? f['id'] == 'associate_vetting_fee'
+                : mType == 'licentiate'
+                    ? f['id'] == 'licentiate_vetting_fee'
+                    : f['id'] == 'new_vetting_fee',
+            orElse: () => {},
+          );
+        } else if (catLower.contains('district') || catLower.contains('branch')) {
+          matchedFee = _platformFees.firstWhere(
+            (f) => mType == 'associate'
+                ? f['id'] == 'associate_district_fee'
+                : mType == 'licentiate'
+                    ? f['id'] == 'licentiate_district_fee'
+                    : f['id'] == 'new_district_fee',
+            orElse: () => {},
+          );
+        } else if (catLower.contains('package') || catLower.contains('new membership dues')) {
+          matchedFee = _platformFees.firstWhere(
+            (f) => f['is_summary'] == true &&
+                ((mType == 'associate' && f['section'] == 'associate') ||
+                 (mType == 'licentiate' && f['section'] == 'licentiate') ||
+                 (mType == 'corporate' && f['section'] == 'new_membership')),
+            orElse: () => {},
+          );
+        }
+      }
+
+      if (matchedFee.isNotEmpty && matchedFee['amount'] != null) {
+        resolvedAmount = double.tryParse(matchedFee['amount'].toString());
+        final lbl = matchedFee['label']?.toString() ?? category;
+        notice = 'Platform Fee (admin/fees): $lbl [$mTypeDisplay]';
+      }
+    }
+
+    setState(() {
+      if (resolvedAmount != null && resolvedAmount > 0) {
+        _amountController.text = resolvedAmount.toStringAsFixed(2);
+        _feeSourceNotice = notice;
+      } else {
+        _feeSourceNotice = 'Manual / Custom Entry [$mTypeDisplay]';
+      }
+    });
   }
 
   void _onSearchChanged(String val) {
@@ -1683,13 +1830,13 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
 
       if (bill > 0) {
         _category = 'Annual Renewal Dues';
-        _amountController.text = bill.toStringAsFixed(2);
       } else if (!isPkgPaid) {
-        _category = 'New Membership Dues';
-        if (_amountController.text.isEmpty) {
-          _amountController.text = '1500.00';
-        }
+        _category = 'Registration Fee';
+      } else {
+        _category = 'Annual Renewal Dues';
       }
+
+      _updateAmountForCategory(_category);
     });
   }
 
@@ -1924,6 +2071,13 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                             double.tryParse(m['renewal_fee_amount']?.toString() ?? '') ?? 0.0;
                                         final isPkgPaid = m['package_fee_paid'] == true;
 
+                                        final mTypeRaw = (m['member_type']?.toString() ?? 'corporate').toLowerCase();
+                                        final mTypeStr = mTypeRaw == 'associate'
+                                            ? 'Associate'
+                                            : mTypeRaw == 'licentiate'
+                                                ? 'Licentiate'
+                                                : 'Corporate';
+
                                         return ListTile(
                                           dense: true,
                                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -1939,13 +2093,36 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                               ),
                                             ),
                                           ),
-                                          title: Text(
-                                            name,
-                                            style: GoogleFonts.outfit(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14,
-                                              color: textColor,
-                                            ),
+                                          title: Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  name,
+                                                  style: GoogleFonts.outfit(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 14,
+                                                    color: textColor,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                                decoration: BoxDecoration(
+                                                  color: _kOrange.withAlpha(20),
+                                                  borderRadius: BorderRadius.circular(4),
+                                                  border: Border.all(color: _kOrange.withAlpha(60)),
+                                                ),
+                                                child: Text(
+                                                  mTypeStr.toUpperCase(),
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 9.5,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: _kOrange,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                           subtitle: Text(
                                             [
@@ -2032,14 +2209,45 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                         color: textColor,
                                       ),
                                     ),
-                                    Text(
-                                      [
-                                        if (_selectedMember!['company'] != null) _selectedMember!['company'],
-                                        if (_selectedMember!['phone'] != null) _selectedMember!['phone'],
-                                        if (_selectedMember!['license_number'] != null)
-                                          'Lic: ${_selectedMember!['license_number']}',
-                                      ].join(' · '),
-                                      style: GoogleFonts.inter(fontSize: 12, color: subTextColor),
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: _kOrange.withAlpha(25),
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(color: _kOrange.withAlpha(80)),
+                                          ),
+                                          child: Text(
+                                            ((_selectedMember!['member_type'] ?? 'corporate').toString().toLowerCase() == 'associate'
+                                                    ? 'Associate'
+                                                    : (_selectedMember!['member_type'] ?? 'corporate').toString().toLowerCase() == 'licentiate'
+                                                        ? 'Licentiate'
+                                                        : 'Corporate')
+                                                .toUpperCase(),
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: _kOrange,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            [
+                                              if (_selectedMember!['company'] != null) _selectedMember!['company'],
+                                              if (_selectedMember!['phone'] != null) _selectedMember!['phone'],
+                                              if (_selectedMember!['license_number'] != null)
+                                                'Lic: ${_selectedMember!['license_number']}',
+                                            ].join(' · '),
+                                            style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -2049,6 +2257,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                   setState(() {
                                     _selectedMember = null;
                                     _amountController.clear();
+                                    _feeSourceNotice = '';
                                   });
                                   _fetchMembers();
                                 },
@@ -2092,6 +2301,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                     setState(() {
                                       _category = 'Annual Renewal Dues';
                                       _amountController.text = appBill.toStringAsFixed(2);
+                                      _feeSourceNotice = 'Official Issued Renewal Bill: GH₵ ${appBill.toStringAsFixed(2)}';
                                     });
                                   },
                                   style: OutlinedButton.styleFrom(
@@ -2131,7 +2341,9 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
 
                       // Payment Category Dropdown
                       DropdownButtonFormField<String>(
-                        initialValue: _category,
+                        value: _categories.contains(_category)
+                            ? _category
+                            : (_categories.isNotEmpty ? _categories.first : 'Annual Renewal Dues'),
                         decoration: InputDecoration(
                           labelText: 'Payment Category / Dues Type',
                           labelStyle: GoogleFonts.outfit(color: subTextColor, fontSize: 13),
@@ -2151,11 +2363,19 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                         items: _categories.map((c) {
                           return DropdownMenuItem(
                             value: c,
-                            child: Text(c, style: GoogleFonts.outfit(fontSize: 14, color: textColor)),
+                            child: Text(
+                              c,
+                              style: GoogleFonts.outfit(fontSize: 14, color: textColor),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           );
                         }).toList(),
                         onChanged: (v) {
-                          if (v != null) setState(() => _category = v);
+                          if (v != null) {
+                            setState(() => _category = v);
+                            _updateAmountForCategory(v);
+                          }
                         },
                       ),
                       const SizedBox(height: 12),
@@ -2166,11 +2386,67 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                         children: [
                           Expanded(
                             flex: 5,
-                            child: TextFormField(
-                              controller: _amountController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              style: GoogleFonts.outfit(
-                                fontSize: 16,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                TextFormField(
+                                  controller: _amountController,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: textColor,
+                                  ),
+                                  decoration: InputDecoration(
+                                    labelText: 'Amount Paid (GH₵)',
+                                    labelStyle: GoogleFonts.outfit(color: subTextColor, fontSize: 13),
+                                    prefixText: 'GH₵ ',
+                                    prefixStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: _kGreen),
+                                    filled: true,
+                                    fillColor: inputBg,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(color: borderColor),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(color: borderColor),
+                                    ),
+                                  ),
+                                ),
+                                if (_feeSourceNotice.isNotEmpty) ...[
+                                  const SizedBox(height: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: _kGreen.withAlpha(18),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: _kGreen.withAlpha(50)),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.verified_rounded, size: 13, color: _kGreen),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            _feeSourceNotice,
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: _kGreen,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
                                 fontWeight: FontWeight.bold,
                                 color: textColor,
                               ),

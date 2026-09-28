@@ -2065,6 +2065,8 @@ def admin_lookup_members():
                     SELECT DISTINCT ON (m.id)
                            m.id, m.name, m.email, m.phone, m.company, m.license_number,
                            m.status, m.package_fee_paid, m.renewal_fee_amount, m.renewal_fee_title,
+                           COALESCE(m.member_type, 'corporate') AS member_type,
+                           m.member_scale, m.fee_category, m.consolidation_scope,
                            ca.id as renewal_app_id, ca.payment_amount as app_bill_amount, ca.amount_paid as app_amount_paid
                     FROM members m
                     LEFT JOIN compliance_applications ca
@@ -2086,6 +2088,8 @@ def admin_lookup_members():
                     SELECT DISTINCT ON (m.id)
                            m.id, m.name, m.email, m.phone, m.company, m.license_number,
                            m.status, m.package_fee_paid, m.renewal_fee_amount, m.renewal_fee_title,
+                           COALESCE(m.member_type, 'corporate') AS member_type,
+                           m.member_scale, m.fee_category, m.consolidation_scope,
                            ca.id as renewal_app_id, ca.payment_amount as app_bill_amount, ca.amount_paid as app_amount_paid
                     FROM members m
                     LEFT JOIN compliance_applications ca
