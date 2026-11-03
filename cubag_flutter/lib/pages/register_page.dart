@@ -341,9 +341,20 @@ class _RegisterPageState extends State<RegisterPage> {
     final size = MediaQuery.of(context).size;
     final isWide = size.width > 700;
 
-    return Scaffold(
-      backgroundColor: _kCream,
-      body: isWide ? _buildTwoColumnLayout() : _buildMobileLayout(),
+    final overlayStyle = SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: _isDark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: _isDark ? Brightness.dark : Brightness.light,
+      systemNavigationBarColor: _kCream,
+      systemNavigationBarIconBrightness: _isDark ? Brightness.light : Brightness.dark,
+    );
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: overlayStyle,
+      child: Scaffold(
+        backgroundColor: _kCream,
+        body: isWide ? _buildTwoColumnLayout() : _buildMobileLayout(),
+      ),
     );
   }
 

@@ -70,11 +70,19 @@ class _LoginPageState extends State<LoginPage> {
     final prefs = await SharedPreferences.getInstance();
     final savedId = prefs.getString('remembered_identifier');
     final savedMode = prefs.getString('remembered_mode');
-    if (savedId != null && mounted) {
+    bool bioEnabled = false;
+    if (!kIsWeb) {
+      bioEnabled = await _bioService.isBiometricEnabled();
+    }
+    if (mounted) {
       setState(() {
-        _identifierCtrl.text = savedId;
-        _rememberMe = true;
+        if (savedId != null) {
+          _identifierCtrl.text = savedId;
+        }
         if (savedMode != null) _loginMode = savedMode;
+        if (savedId != null || bioEnabled) {
+          _rememberMe = true;
+        }
       });
     }
   }
@@ -361,28 +369,18 @@ class _LoginPageState extends State<LoginPage> {
     // 2. Perform authentication with backend
     final error = await authService.login(identifier, password);
 
-    // 3. Save credentials for Face ID / Touch ID on successful login
+    // 3. Keep me signed in seamlessly handles Face ID / Touch ID enrollment
     if (error == null) {
       if (!kIsWeb && _bioAvailable) {
         try {
-          final alreadyEnabled = await _bioService.isBiometricEnabled();
-          final savedCreds = await _bioService.getSavedCredentials();
-          if (alreadyEnabled && savedCreds != null) {
-            // Already enrolled: silently keep password fresh in keychain
+          if (_rememberMe) {
             await _bioService.saveCredentials(identifier, password);
-          } else if (mounted) {
-            // First time login: offer Face ID enrollment
-            final shouldEnable = await _promptEnableBiometrics();
-            if (shouldEnable == true) {
-              final verified = await _bioService.authenticate(
-                reason: 'Scan Face ID or Touch ID to enable for CUBAG',
-              );
-              if (verified) {
-                await _bioService.saveCredentials(identifier, password);
-                await _bioService.setBiometricEnabled(true);
-                debugPrint('[Login] Enrolled biometric credentials successfully for $identifier');
-              }
-            }
+            await _bioService.setBiometricEnabled(true);
+            debugPrint('[Login] Seamlessly enrolled Face ID / Biometrics via Keep Me Signed In for $identifier');
+          } else {
+            await _bioService.setBiometricEnabled(false);
+            await _bioService.clearCredentials();
+            debugPrint('[Login] Deactivated biometrics as Keep Me Signed In was unchecked');
           }
         } catch (e) {
           debugPrint('[Login] Biometric setup error: $e');
@@ -417,118 +415,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<bool?> _promptEnableBiometrics() async {
-    return showModalBottomSheet<bool>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isDismissible: false,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 44,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE2E8F0),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              width: 68,
-              height: 68,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0F2027), Color(0xFF203A43)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF0F2027).withAlpha(40),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.fingerprint_rounded,
-                size: 38,
-                color: Color(0xFFFFB300),
-              ),
-            ),
-            const SizedBox(height: 18),
-            Text(
-              'Enable Biometric Login?',
-              style: GoogleFonts.outfit(
-                fontSize: 21,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF0F2027),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Use Face ID or Touch ID for instant, secure sign-in next time without typing your password.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: 14.5,
-                color: const Color(0xFF64748B),
-                height: 1.45,
-              ),
-            ),
-            const SizedBox(height: 26),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.check_circle_outline_rounded, size: 20),
-                label: Text(
-                  'Enable Face ID / Biometrics',
-                  style: GoogleFonts.inter(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0F2027),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                onPressed: () => Navigator.of(ctx).pop(true),
-              ),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: Text(
-                  'Maybe Later',
-                  style: GoogleFonts.inter(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF94A3B8),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   void dispose() {
     _identifierCtrl.dispose();
@@ -537,7 +423,7 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  Widget _loginTab(String mode, IconData icon, String label) {
+  Widget _loginTab(String mode, IconData icon, String label, {bool isMobile = false}) {
     final isActive = _loginMode == mode;
     return Expanded(
       child: GestureDetector(
@@ -551,7 +437,7 @@ class _LoginPageState extends State<LoginPage> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: EdgeInsets.symmetric(vertical: isMobile ? 8 : 11),
           decoration: BoxDecoration(
             color: isActive ? _kWhite : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
@@ -569,12 +455,12 @@ class _LoginPageState extends State<LoginPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 16, color: isActive ? _kOrange : _kMuted),
-              const SizedBox(width: 8),
+              Icon(icon, size: isMobile ? 14 : 16, color: isActive ? _kOrange : _kMuted),
+              SizedBox(width: isMobile ? 6 : 8),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: isMobile ? 13.5 : 15,
                   fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
                   color: isActive ? _kBrown : _kMuted,
                 ),
@@ -593,11 +479,22 @@ class _LoginPageState extends State<LoginPage> {
     final isDesktop = size.width > 1050;
     final isTablet = size.width > 700 && size.width <= 1050;
 
-    return Scaffold(
-      backgroundColor: _kCream,
-      body: isDesktop
-          ? _buildThreeColumnLayout()
-          : (isTablet ? _buildTwoColumnLayout() : _buildMobileLayout()),
+    final overlayStyle = SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: _isDark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: _isDark ? Brightness.dark : Brightness.light,
+      systemNavigationBarColor: _kCream,
+      systemNavigationBarIconBrightness: _isDark ? Brightness.light : Brightness.dark,
+    );
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: overlayStyle,
+      child: Scaffold(
+        backgroundColor: _kCream,
+        body: isDesktop
+            ? _buildThreeColumnLayout()
+            : (isTablet ? _buildTwoColumnLayout() : _buildMobileLayout()),
+      ),
     );
   }
 
@@ -622,27 +519,31 @@ class _LoginPageState extends State<LoginPage> {
     return SafeArea(
       child: Center(
         child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
           padding: EdgeInsets.symmetric(
-            horizontal: isNarrow ? 12 : 20,
-            vertical: isNarrow ? 16 : 32,
+            horizontal: isNarrow ? 12 : 18,
+            vertical: isNarrow ? 6 : 10,
           ),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
+            constraints: const BoxConstraints(maxWidth: 420),
             child: Container(
-              padding: EdgeInsets.all(isNarrow ? 18 : 28),
+              padding: EdgeInsets.symmetric(
+                horizontal: isNarrow ? 16 : 22,
+                vertical: isNarrow ? 16 : 20,
+              ),
               decoration: BoxDecoration(
                 color: _kWhite,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: _kBorder),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withAlpha(6),
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
+                    blurRadius: 16,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
-              child: _buildForm(showLogo: true),
+              child: _buildForm(showLogo: true, isMobile: true),
             ),
           ),
         ),
@@ -866,13 +767,13 @@ class _LoginPageState extends State<LoginPage> {
             padding: EdgeInsets.all(padding),
             child: Container(
               constraints: const BoxConstraints(maxWidth: 420),
-              child: _buildForm(showLogo: showLogo),
+              child: _buildForm(showLogo: showLogo, isMobile: false),
             ),
           ),
         ),
       );
 
-  Widget _buildForm({required bool showLogo}) {
+  Widget _buildForm({required bool showLogo, bool isMobile = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -882,34 +783,45 @@ class _LoginPageState extends State<LoginPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (showLogo) ...[
-                const AppLogo(size: 60, borderRadius: 14, showShadow: true),
-                const SizedBox(height: 20),
+                AppLogo(
+                  size: isMobile ? 42 : 56,
+                  borderRadius: isMobile ? 10 : 14,
+                  showShadow: true,
+                ),
+                SizedBox(height: isMobile ? 10 : 16),
               ],
               Text(
                 'Welcome Back',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.outfit(
-                  fontSize: 32,
+                  fontSize: isMobile ? 24 : 32,
                   fontWeight: FontWeight.w900,
                   color: _kText,
                   letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: isMobile ? 4 : 6),
               Text(
                 'Sign in to the CUBAG Member Portal',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: _kMuted, fontSize: 17, height: 1.4),
+                style: TextStyle(
+                  color: _kMuted,
+                  fontSize: isMobile ? 13.5 : 16,
+                  height: 1.3,
+                ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 32),
+        SizedBox(height: isMobile ? 16 : 24),
 
         if (_error != null) ...[
           Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            margin: EdgeInsets.only(bottom: isMobile ? 12 : 16),
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 12 : 16,
+              vertical: isMobile ? 10 : 14,
+            ),
             decoration: BoxDecoration(
               color: const Color(0xFFfef2f2),
               borderRadius: BorderRadius.circular(12),
@@ -922,13 +834,13 @@ class _LoginPageState extends State<LoginPage> {
                   color: Color(0xFFef4444),
                   size: 18,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     _error!,
-                    style: const TextStyle(
-                      color: Color(0xFFb91c1c),
-                      fontSize: 16,
+                    style: TextStyle(
+                      color: const Color(0xFFb91c1c),
+                      fontSize: isMobile ? 13.5 : 15,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -940,17 +852,17 @@ class _LoginPageState extends State<LoginPage> {
               _error!.toLowerCase().contains('server') ||
               _error!.toLowerCase().contains('connection'))
             Padding(
-              padding: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.only(bottom: 14),
               child: Center(
                 child: TextButton.icon(
                   onPressed: _showServerConfigDialog,
-                  icon: const Icon(Icons.settings_ethernet_rounded, size: 18, color: Color(0xFFb91c1c)),
+                  icon: const Icon(Icons.settings_ethernet_rounded, size: 16, color: Color(0xFFb91c1c)),
                   label: Text(
                     'Configure Server Connection (${ApiService.activeHost})',
                     style: const TextStyle(
                       color: Color(0xFFb91c1c),
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      fontSize: 13,
                       decoration: TextDecoration.underline,
                     ),
                   ),
@@ -962,27 +874,27 @@ class _LoginPageState extends State<LoginPage> {
         Container(
           decoration: BoxDecoration(
             color: _kCream,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: _kBorder),
           ),
-          padding: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(3),
           child: Row(
             children: [
-              _loginTab('email', Icons.email_outlined, 'Email'),
-              _loginTab('phone', Icons.phone_outlined, 'Phone'),
+              _loginTab('email', Icons.email_outlined, 'Email', isMobile: isMobile),
+              _loginTab('phone', Icons.phone_outlined, 'Phone', isMobile: isMobile),
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: isMobile ? 14 : 20),
 
-        _inputLabel(_loginMode == 'email' ? 'Email Address' : 'Phone Number'),
-        const SizedBox(height: 8),
+        _inputLabel(_loginMode == 'email' ? 'Email Address' : 'Phone Number', isMobile: isMobile),
+        SizedBox(height: isMobile ? 4 : 6),
         TextFormField(
           enabled: !_loading,
           controller: _identifierCtrl,
           style: TextStyle(
             color: _kText,
-            fontSize: 16,
+            fontSize: isMobile ? 14.5 : 16,
             fontWeight: FontWeight.w600,
           ),
           keyboardType: _loginMode == 'email'
@@ -996,12 +908,13 @@ class _LoginPageState extends State<LoginPage> {
             icon: _loginMode == 'email'
                 ? Icons.mail_outline
                 : Icons.phone_android_outlined,
+            isMobile: isMobile,
           ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: isMobile ? 10 : 16),
 
-        _inputLabel('Password'),
-        const SizedBox(height: 8),
+        _inputLabel('Password', isMobile: isMobile),
+        SizedBox(height: isMobile ? 4 : 6),
         TextFormField(
           enabled: !_loading,
           controller: _passCtrl,
@@ -1009,28 +922,48 @@ class _LoginPageState extends State<LoginPage> {
           obscureText: !_showPw && _passFocused,
           style: TextStyle(
             color: _kText,
-            fontSize: 16,
+            fontSize: isMobile ? 14.5 : 16,
             fontWeight: FontWeight.w600,
           ),
           decoration: _inputDecoration(
             hint: '••••••••',
             icon: Icons.lock_outline_rounded,
-            suffix: IconButton(
-              icon: Icon(
-                _showPw
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                color: _kMuted,
-                size: 20,
-              ),
-              onPressed: _loading
-                  ? null
-                  : () => setState(() => _showPw = !_showPw),
+            isMobile: isMobile,
+            suffix: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_bioAvailable && !kIsWeb)
+                  IconButton(
+                    tooltip: defaultTargetPlatform == TargetPlatform.iOS
+                        ? 'Sign in with Face ID'
+                        : 'Sign in with Biometrics',
+                    icon: Icon(
+                      defaultTargetPlatform == TargetPlatform.iOS
+                          ? Icons.face_rounded
+                          : Icons.fingerprint_rounded,
+                      color: _kBrown,
+                      size: isMobile ? 20 : 22,
+                    ),
+                    onPressed: _loading ? null : _handleBiometricLogin,
+                  ),
+                IconButton(
+                  icon: Icon(
+                    _showPw
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    color: _kMuted,
+                    size: isMobile ? 19 : 20,
+                  ),
+                  onPressed: _loading
+                      ? null
+                      : () => setState(() => _showPw = !_showPw),
+                ),
+              ],
             ),
           ),
         ),
 
-        const SizedBox(height: 12),
+        SizedBox(height: isMobile ? 8 : 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -1038,13 +971,14 @@ class _LoginPageState extends State<LoginPage> {
               child: Row(
                 children: [
                   SizedBox(
-                    width: 24,
-                    height: 24,
+                    width: 20,
+                    height: 20,
                     child: Checkbox(
                       value: _rememberMe,
                       activeColor: _kOrange,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(5),
                       ),
                       onChanged: !_loading
                           ? (v) => setState(() => _rememberMe = v ?? false)
@@ -1057,15 +991,36 @@ class _LoginPageState extends State<LoginPage> {
                       onTap: !_loading
                           ? () => setState(() => _rememberMe = !_rememberMe)
                           : null,
-                      child: Text(
-                        'Keep me signed in',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: MediaQuery.sizeOf(context).width < 380 ? 13.5 : 15,
-                          fontWeight: FontWeight.w500,
-                          color: _loading ? _kMuted : _kText,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              _bioAvailable && !kIsWeb
+                                  ? (defaultTargetPlatform == TargetPlatform.iOS
+                                      ? 'Keep me signed in (Face ID)'
+                                      : 'Keep me signed in (Biometric)')
+                                  : 'Keep me signed in',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: isMobile ? 12.5 : 14.5,
+                                fontWeight: FontWeight.w600,
+                                color: _loading ? _kMuted : _kText,
+                              ),
+                            ),
+                          ),
+                          if (_bioAvailable && !kIsWeb) ...[
+                            const SizedBox(width: 4),
+                            Icon(
+                              defaultTargetPlatform == TargetPlatform.iOS
+                                  ? Icons.face_rounded
+                                  : Icons.fingerprint_rounded,
+                              size: 14,
+                              color: _rememberMe ? _kOrange : _kMuted,
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ),
@@ -1076,7 +1031,7 @@ class _LoginPageState extends State<LoginPage> {
             TextButton(
               onPressed: _loading ? null : () => context.go('/forgot-password'),
               style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
@@ -1084,25 +1039,25 @@ class _LoginPageState extends State<LoginPage> {
                 'Forgot?',
                 style: TextStyle(
                   color: _kBrown,
-                  fontSize: MediaQuery.sizeOf(context).width < 380 ? 13.5 : 15,
+                  fontSize: isMobile ? 12.5 : 14.5,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 32),
+        SizedBox(height: isMobile ? 16 : 24),
 
         SizedBox(
           width: double.infinity,
-          height: 56,
+          height: isMobile ? 48 : 54,
           child: ElevatedButton(
             onPressed: _loading ? null : _handleLogin,
             style: ElevatedButton.styleFrom(
               backgroundColor: _kOrange,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
               ),
               elevation: 0,
             ),
@@ -1110,110 +1065,73 @@ class _LoginPageState extends State<LoginPage> {
                 ? Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      SizedBox(
-                        width: 24,
-                        height: 24,
+                    children: [
+                      const SizedBox(
+                        width: 18,
+                        height: 18,
                         child: CircularProgressIndicator(
                           color: Colors.white,
-                          strokeWidth: 2.5,
+                          strokeWidth: 2.2,
                         ),
                       ),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Text(
                         'Signing in...',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: isMobile ? 16 : 17,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                     ],
                   )
-                : const Text(
+                : Text(
                     'Sign In to Account',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                      fontSize: isMobile ? 16 : 17,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
           ),
         ),
 
         if (_loading) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           Center(
             child: Text(
               'Signing in, please wait...',
-              style: TextStyle(color: _kMuted, fontSize: 15),
+              style: TextStyle(color: _kMuted, fontSize: 13.5),
             ),
           ),
         ],
 
-        if (_bioAvailable && !kIsWeb) ...[
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(child: Divider(color: _kBorder)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'OR',
-                  style: TextStyle(
-                    color: _kMuted,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-              Expanded(child: Divider(color: _kBorder)),
-            ],
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: OutlinedButton.icon(
-              onPressed: _loading ? null : _handleBiometricLogin,
-              icon: const Icon(Icons.fingerprint_rounded, size: 24),
-              label: Text(
-                defaultTargetPlatform == TargetPlatform.iOS
-                    ? 'Face ID / Touch ID Sign In'
-                    : 'Biometric Login',
-                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: _kBrown,
-                side: BorderSide(color: _kBrown, width: 2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-            ),
-          ),
-        ],
-        const SizedBox(height: 36),
+        SizedBox(height: isMobile ? 14 : 22),
 
         Center(
           child: GestureDetector(
             onTap: () => context.go('/register'),
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: "New to CUBAG? ",
-                    style: TextStyle(
-                      color: _kMuted,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w500,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: "New to CUBAG? ",
+                      style: TextStyle(
+                        color: _kMuted,
+                        fontSize: isMobile ? 14 : 16,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  TextSpan(
-                    text: 'Create an Account',
-                    style: TextStyle(
-                      color: _kOrange,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 17,
+                    TextSpan(
+                      text: 'Create an Account',
+                      style: TextStyle(
+                        color: _kOrange,
+                        fontWeight: FontWeight.w800,
+                        fontSize: isMobile ? 14 : 16,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -1222,30 +1140,41 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _inputLabel(String text) => Text(
+  Widget _inputLabel(String text, {bool isMobile = false}) => Text(
     text,
-    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: _kText),
+    style: TextStyle(
+      fontWeight: FontWeight.w700,
+      fontSize: isMobile ? 13 : 15,
+      color: _kText,
+    ),
   );
 
   InputDecoration _inputDecoration({
     required String hint,
     required IconData icon,
     Widget? suffix,
+    bool isMobile = false,
   }) => InputDecoration(
     hintText: hint,
-    prefixIcon: Icon(icon, color: _kBrown, size: 20),
+    prefixIcon: Icon(icon, color: _kBrown, size: isMobile ? 18 : 20),
     suffixIcon: suffix,
     filled: true,
     fillColor: _kWhite,
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: _kBorder, width: 1.5),
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: _kBorder, width: 1.2),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: _kOrange, width: 2),
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: _kOrange, width: 1.8),
     ),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-    hintStyle: TextStyle(color: _kMuted.withAlpha(180)),
+    contentPadding: EdgeInsets.symmetric(
+      horizontal: 14,
+      vertical: isMobile ? 11 : 16,
+    ),
+    hintStyle: TextStyle(
+      color: _kMuted.withAlpha(180),
+      fontSize: isMobile ? 13.5 : 15,
+    ),
   );
 }
