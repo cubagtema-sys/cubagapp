@@ -21,8 +21,23 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
     _fetch();
   }
 
+  String? _resolveMemberId() {
+    if (widget.memberId != null && widget.memberId!.trim().isNotEmpty) {
+      return widget.memberId!.trim();
+    }
+    final frag = Uri.tryParse(Uri.base.fragment);
+    if (frag != null && frag.queryParameters['id'] != null) {
+      return frag.queryParameters['id']!.trim();
+    }
+    if (frag != null && frag.queryParameters['query'] != null) {
+      return frag.queryParameters['query']!.trim();
+    }
+    return Uri.base.queryParameters['id']?.trim() ?? Uri.base.queryParameters['query']?.trim();
+  }
+
   Future<void> _fetch() async {
-    if (widget.memberId == null) {
+    final queryId = _resolveMemberId();
+    if (queryId == null || queryId.isEmpty) {
       setState(() {
         _error =
             'Membership could not be verified. Please contact CUBAG for assistance.';
@@ -32,7 +47,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
     }
     try {
       final res = await ApiService().getPublic(
-        'members/public/verify-member?query=${Uri.encodeComponent(widget.memberId!)}',
+        'members/public/verify-member?query=${Uri.encodeComponent(queryId)}',
       );
       if (res is Map && res['verified'] == true) {
         setState(() => _member = Map<String, dynamic>.from(res));
@@ -128,7 +143,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
-                    onPressed: () => context.go('/'),
+                    onPressed: () => context.canPop() ? context.pop() : context.go('/login'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primary,
                       shape: RoundedRectangleBorder(
@@ -137,7 +152,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                       elevation: 0,
                     ),
                     child: const Text(
-                      'Return to Home',
+                      'Back to CUBAG Portal',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -153,8 +168,8 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
     }
 
     final m = _member!;
-    final status = (m['status']?.toString().toLowerCase() ?? 'pending');
-    final isVerified = status == 'active';
+    final status = (m['status']?.toString().toLowerCase() ?? 'active').trim();
+    final isVerified = m['verified'] == true || status == 'active' || m['good_standing'] == true;
     final badgeColor = isVerified
         ? const Color(0xFF10b981)
         : const Color(0xFFf59e0b);

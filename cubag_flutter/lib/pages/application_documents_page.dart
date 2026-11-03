@@ -542,54 +542,115 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                   ),
                 ],
                 const SizedBox(height: 10),
-                SizedBox(
-                  height: 38,
-                  child: ElevatedButton.icon(
-                    key: ValueKey('upload_btn_${req['id']}_$isDark'),
-                    onPressed: isUploading ? null : () => _pickAndUpload(req),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: status == 'rejected'
-                          ? _kRed
-                          : (uploaded ? Colors.grey.shade100 : _kOrange),
-                      foregroundColor: status == 'rejected'
-                          ? Colors.white
-                          : (uploaded ? const Color(0xFF374151) : Colors.white),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                if (isUploading)
+                  SizedBox(
+                    height: 38,
+                    child: ElevatedButton.icon(
+                      onPressed: null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade100,
+                        foregroundColor: const Color(0xFF374151),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      icon: const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: _kOrange,
+                        ),
+                      ),
+                      label: Text(
+                        'Uploading...',
+                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
                     ),
-                    icon: isUploading
-                        ? const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Icon(
-                            status == 'rejected'
-                                ? Icons.error_outline_rounded
-                                : (uploaded
-                                      ? Icons.refresh_rounded
-                                      : Icons.upload_rounded),
-                            size: 16,
+                  )
+                else if (status == 'approved')
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _kGreen.withAlpha(20),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: _kGreen.withAlpha(80)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.check_circle_rounded, size: 15, color: _kGreen),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Verified',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: _kGreen,
                           ),
-                    label: Text(
-                      isUploading
-                          ? 'Uploading...'
-                          : (status == 'rejected'
-                                ? 'Re-upload'
-                                : (uploaded ? 'Replace' : 'Upload')),
-                      style: GoogleFonts.inter(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                        ),
+                      ],
+                    ),
+                  )
+                else if (uploaded && status != 'rejected')
+                  Opacity(
+                    opacity: 0.55,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.lock_outline_rounded, size: 14, color: Color(0xFF6B7280)),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Under Review',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              color: const Color(0xFF6B7280),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  SizedBox(
+                    height: 38,
+                    child: ElevatedButton.icon(
+                      key: ValueKey('upload_btn_${req['id']}_$isDark'),
+                      onPressed: () => _pickAndUpload(req),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: status == 'rejected' ? _kRed : _kOrange,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                      ),
+                      icon: Icon(
+                        status == 'rejected'
+                            ? Icons.error_outline_rounded
+                            : Icons.upload_rounded,
+                        size: 16,
+                      ),
+                      label: Text(
+                        status == 'rejected' ? 'Re-upload' : 'Upload',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -691,7 +752,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
         borderColor = const Color(0xFFfdba74);
         titleText = 'Application Submitted & Under Secretariat Review';
         descText =
-            'Your $_totalDocs documents have been uploaded and submitted. The Secretariat is currently reviewing your dossier. Please pay your fee if you have not already done so.';
+            'Your $_totalDocs documents have been uploaded and submitted. The Secretariat is currently reviewing your application files. Please pay your fee if you have not already done so.';
         btnText = 'Pay Fee';
         btnIcon = Icons.payment_rounded;
         btnBg = const Color(0xFFea580c);
@@ -706,7 +767,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
       borderColor = const Color(0xFF86efac);
       titleText = 'All $_totalDocs Documents Uploaded!';
       descText =
-          'Great job! All required documents have been uploaded. Click below to submit your application dossier for Secretariat vetting.';
+          'Great job! All required documents have been uploaded. Click below to submit your application files for Secretariat vetting.';
       btnText = _submitting ? 'Submitting...' : 'Upload To Submit & Pay';
       btnIcon = Icons.send_rounded;
       btnBg = _kGreen;
@@ -716,7 +777,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
       borderColor = isDark ? const Color(0xFF4D2D20) : const Color(0xFFcbd5e1);
       titleText = 'Upload All Documents to Unlock Payment';
       descText =
-          'You must upload all $_totalDocs required statutory documents before you can submit your application dossier and unlock fee payment. ($_uploadedCount of $_totalDocs uploaded so far)';
+          'You must upload all $_totalDocs required statutory documents before you can submit your application files and unlock fee payment. ($_uploadedCount of $_totalDocs uploaded so far)';
       btnText = 'Pay Fee';
       btnIcon = Icons.payment_rounded;
       btnBg = isDark ? Colors.white24 : Colors.grey.shade400;

@@ -11,6 +11,7 @@ import '../utils/app_logger.dart';
 import '../services/socket_service.dart';
 import 'package:go_router/go_router.dart';
 
+const _kBrown = Color(0xFF6B3E26);
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10B981);
 const _kBlue = Color(0xFF3B82F6);
@@ -89,22 +90,6 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
     super.dispose();
   }
 
-  String _detectNetworkFromPhone(String phone) {
-    final clean = phone.replaceAll(RegExp(r'\D'), '');
-    if (clean.length < 3) return '';
-    final prefix = clean.substring(0, 3);
-    if (['024', '025', '053', '054', '055', '059'].contains(prefix)) {
-      return 'MTN';
-    }
-    if (['020', '050'].contains(prefix)) {
-      return 'Vodafone';
-    }
-    if (['026', '056', '027', '057'].contains(prefix)) {
-      return 'AirtelTigo';
-    }
-    return '';
-  }
-
   Future<void> _fetchCourses() async {
     setState(() => _loading = true);
     try {
@@ -124,38 +109,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
 
     if (mounted) {
       setState(() {
-        _courses = [
-          {
-            'id': 1,
-            'title': 'Freight Forwarding Fundamentals',
-            'start_date': '25 Aug 2026',
-            'duration': '4 Weeks',
-            'mode': 'Hybrid',
-            'fee': 'GHS 1,980',
-            'description': 'Foundational customs clearance and brokerage procedures, tariff classification, and international cargo documentation.',
-            'is_enrolled': false,
-          },
-          {
-            'id': 2,
-            'title': 'Customs Declarations & ICUMS 2.0',
-            'start_date': '15 Sep 2026',
-            'duration': '3 Weeks',
-            'mode': 'In-Person',
-            'fee': 'GHS 1,500',
-            'description': 'Hands-on declaration classification, valuation, CCVR handling, and ICUMS 2.0 electronic clearance processing workflow.',
-            'is_enrolled': false,
-          },
-          {
-            'id': 3,
-            'title': 'Port Operations & Logistics Management',
-            'start_date': '10 Oct 2026',
-            'duration': '6 Weeks',
-            'mode': 'Online',
-            'fee': 'GHS 2,200',
-            'description': 'Advanced multimodal logistics, terminal gate operations, demurrage mitigation, and maritime shipping law.',
-            'is_enrolled': false,
-          },
-        ];
+        _courses = [];
         _loading = false;
       });
     }
@@ -249,7 +203,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
           if (detectedNetwork == 'MTN') {
             networkBadgeCol = const Color(0xFFEAB308);
             networkLabel = 'MTN Mobile Money';
-          } else if (detectedNetwork == 'Vodafone') {
+          } else if (detectedNetwork == 'Telecel' || detectedNetwork == 'Vodafone') {
             networkBadgeCol = const Color(0xFFEF4444);
             networkLabel = 'Telecel Cash';
           } else if (detectedNetwork == 'AirtelTigo') {
@@ -301,6 +255,29 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                     const SizedBox(height: 16),
 
                     if (!isFreeCourse) ...[
+                      Text('SELECT MOBILE CARRIER', style: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.w900, color: subTextCol, letterSpacing: 0.5)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: ['MTN', 'Telecel', 'AirtelTigo'].map((net) {
+                          final isSelected = detectedNetwork == net;
+                          return ChoiceChip(
+                            label: Text(net),
+                            selected: isSelected,
+                            selectedColor: _kOrange,
+                            labelStyle: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: isSelected ? Colors.white : textCol,
+                            ),
+                            onSelected: (v) {
+                              if (v) setSheetState(() => detectedNetwork = net);
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 12),
                       Text('MOMO PHONE NUMBER', style: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.w900, color: subTextCol, letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       TextFormField(
@@ -310,8 +287,6 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                         style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: textCol),
                         onChanged: (v) {
                           phone = v;
-                          final net = _detectNetworkFromPhone(v);
-                          setSheetState(() => detectedNetwork = net);
                         },
                         decoration: InputDecoration(
                           isDense: true,
@@ -349,6 +324,10 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                         onPressed: isSubmitting
                             ? null
                             : () async {
+                                if (!isFreeCourse && detectedNetwork.isEmpty) {
+                                  setSheetState(() => errorMsg = 'Please select your mobile carrier (MTN, Telecel, or AirtelTigo)');
+                                  return;
+                                }
                                 if (!isFreeCourse && phone.trim().length != 10) {
                                   setSheetState(() => errorMsg = 'Please enter a valid 10-digit phone number');
                                   return;
@@ -740,20 +719,31 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
   }
 
   Widget _buildMiniBadge(IconData icon, String text, Color color, {bool isDark = false}) {
-    final effectiveColor = isDark ? Colors.white : color;
-    final effectiveBg = isDark ? Colors.white.withAlpha(20) : color.withAlpha(15);
+    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final bgCol = isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
+    final textCol = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: effectiveBg,
-        borderRadius: BorderRadius.circular(5),
+        color: bgCol,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: borderCol, width: 1.0),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 10, color: effectiveColor),
-          const SizedBox(width: 3),
-          Text(text, style: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.w700, color: effectiveColor)),
+          Icon(icon, size: 11, color: _kBrown),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: textCol,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
         ],
       ),
     );
@@ -778,11 +768,11 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC);
-    final cardBg = isDark ? const Color(0xFF1A0F0A) : Colors.white;
-    final border = isDark ? const Color(0xFF281710) : const Color(0xFFE2E8F0);
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final bg = isDark ? const Color(0xFF140C08) : const Color(0xFFF8F4F0);
+    final cardBg = isDark ? const Color(0xFF1E130D) : Colors.white;
+    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textPrimary = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
+    final textMuted = isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B);
 
     return AppLayout(
       title: 'CTI Courses',
@@ -793,19 +783,55 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── SIMPLE HEADER ─────────────────────────────────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('CTI Training Courses', style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: textPrimary)),
-                    const SizedBox(height: 2),
-                    Text('Accredited brokerage & ICUMS certifications', style: GoogleFonts.inter(fontSize: 13.5, color: textMuted)),
-                  ],
-                ),
-              ],
+            // ── CTI SYLLABUS HEADER ─────────────────────────────────────────────
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: border, width: 1.0),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: border, width: 1.0),
+                    ),
+                    child: const Icon(Icons.school_outlined, color: _kBrown, size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Customs Training Institute (CTI) Syllabus',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: textPrimary,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'GRA Customs Division accredited tariff classification and brokerage certification cohorts',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 14),
 
@@ -813,8 +839,8 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
             Container(
               decoration: BoxDecoration(
                 color: cardBg,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: border),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: border, width: 1.0),
               ),
               child: TabBar(
                 controller: _tabController,
@@ -822,7 +848,11 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                 labelColor: _kOrange,
                 unselectedLabelColor: textMuted,
                 indicatorWeight: 2.5,
-                labelStyle: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold),
+                labelStyle: GoogleFonts.outfit(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.bold,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
                 tabs: [
                   Tab(text: 'Catalog (${_courses.length})'),
                   Tab(text: 'My Enrolled (${_myEnrollments.length})'),
@@ -860,12 +890,12 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
           decoration: BoxDecoration(
             color: cardBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: border),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: border, width: 1.0),
           ),
           child: Row(
             children: [
-              Icon(Icons.search_rounded, size: 20, color: textMuted),
+              Icon(Icons.search_rounded, size: 18, color: textMuted),
               const SizedBox(width: 10),
               Expanded(
                 child: TextField(
@@ -874,10 +904,10 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                     _onSearchChanged(v);
                     setState(() {});
                   },
-                  style: GoogleFonts.outfit(fontSize: 14.5, color: textPrimary),
+                  style: GoogleFonts.outfit(fontSize: 14, color: textPrimary),
                   decoration: InputDecoration(
                     hintText: 'Search training courses, topics...',
-                    hintStyle: GoogleFonts.inter(fontSize: 13.5, color: textMuted),
+                    hintStyle: GoogleFonts.inter(fontSize: 13, color: textMuted),
                     isDense: true,
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -915,21 +945,21 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                       _selectedMode = mode == 'All' ? null : mode;
                     });
                   },
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(6),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: isSelected ? _kOrange : (isDark ? const Color(0xFF281710) : Colors.white),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(6),
                       border: Border.all(
                         color: isSelected ? _kOrange : border,
-                        width: 1,
+                        width: 1.0,
                       ),
                     ),
                     child: Text(
                       mode == 'All' ? 'All Formats' : mode,
                       style: GoogleFonts.outfit(
-                        fontSize: 13,
+                        fontSize: 12.5,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                         color: isSelected ? Colors.white : textPrimary,
                       ),
@@ -954,9 +984,9 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: border)),
+            decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(10), border: Border.all(color: border, width: 1.0)),
             child: Center(
-              child: Text('No courses found.', style: GoogleFonts.outfit(fontSize: 14.5, color: textMuted)),
+              child: Text('No courses found.', style: GoogleFonts.inter(fontSize: 14, color: textMuted)),
             ),
           )
         else
@@ -965,13 +995,21 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
             physics: const NeverScrollableScrollPhysics(),
             itemCount: list.length,
             separatorBuilder: (_, index) => const SizedBox(height: 10),
-            itemBuilder: (context, idx) => _buildCourseCard(list[idx], isDark, cardBg, border, textPrimary, textMuted),
+            itemBuilder: (context, idx) => _buildCourseCard(list[idx], idx, isDark, cardBg, border, textPrimary, textMuted),
           ),
       ],
     );
   }
 
-  Widget _buildCourseCard(Map<String, dynamic> course, bool isDark, Color cardBg, Color border, Color textPrimary, Color textMuted) {
+  Widget _buildCourseCard(
+    Map<String, dynamic> course,
+    int idx,
+    bool isDark,
+    Color cardBg,
+    Color border,
+    Color textPrimary,
+    Color textMuted,
+  ) {
     final title = course['title']?.toString() ?? 'Course';
     final fee = course['fee']?.toString() ?? 'GHS 1,500';
     final mode = course['mode']?.toString() ?? 'Hybrid';
@@ -980,58 +1018,115 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
     final desc = course['description']?.toString() ?? '';
     final isEnrolled = course['is_enrolled'] == true;
     final daysLeft = _getDaysRemaining(startDate);
+    final surfaceRaised = isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
+    final indexStr = (idx + 1).toString().padLeft(2, '0');
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: isEnrolled ? _kGreen.withAlpha(100) : border, width: isEnrolled ? 1.5 : 1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isEnrolled ? _kGreen.withValues(alpha: 0.5) : border,
+          width: 1.0,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            desc,
-            style: GoogleFonts.inter(fontSize: 13.5, color: textMuted, height: 1.4),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: surfaceRaised,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: border, width: 1.0),
+                ),
+                child: Center(
+                  child: Text(
+                    indexStr,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: _kBrown,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w700,
+                        color: textPrimary,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    if (desc.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        desc,
+                        style: TextStyle(fontSize: 13, color: textMuted, height: 1.4),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 6,
             runSpacing: 6,
             children: [
-              _buildMiniBadge(Icons.calendar_today_rounded, startDate, isDark ? Colors.white : _kBlue, isDark: isDark),
-              _buildMiniBadge(Icons.timelapse_rounded, duration, isDark ? Colors.white : _kIndigo, isDark: isDark),
-              _buildMiniBadge(Icons.location_on_outlined, mode, isDark ? Colors.white : _kPurple, isDark: isDark),
+              _buildMiniBadge(Icons.calendar_today_rounded, startDate, _kBrown, isDark: isDark),
+              _buildMiniBadge(Icons.schedule_rounded, duration, _kBrown, isDark: isDark),
+              _buildMiniBadge(Icons.domain_rounded, mode, _kBrown, isDark: isDark),
               if (daysLeft != null && daysLeft >= 0)
-                _buildMiniBadge(Icons.alarm_on_rounded, 'In $daysLeft d', _kGreen),
+                _buildMiniBadge(Icons.alarm_on_rounded, 'Commences in $daysLeft d', _kGreen, isDark: isDark),
             ],
           ),
           const SizedBox(height: 12),
+          Divider(color: border, height: 1.0),
+          const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 fee,
-                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w900, color: _kOrange),
+                style: const TextStyle(
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.w700,
+                  color: _kOrange,
+                  letterSpacing: -0.3,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isEnrolled ? _kGreen : _kOrange,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  minimumSize: const Size(0, 34),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   elevation: 0,
                 ),
                 onPressed: isEnrolled ? null : () => _openEnrollmentSheet(course),
-                child: Text(isEnrolled ? 'Enrolled' : 'Enroll Now', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                child: Text(
+                  isEnrolled ? 'Enrolled' : 'Enroll Now',
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                ),
               ),
             ],
           ),
@@ -1054,9 +1149,9 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: border)),
+        decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(10), border: Border.all(color: border, width: 1.0)),
         child: Center(
-          child: Text('No active course enrollments yet.', style: GoogleFonts.outfit(fontSize: 14.5, color: textMuted)),
+          child: Text('No active course enrollments yet.', style: GoogleFonts.inter(fontSize: 14, color: textMuted)),
         ),
       );
     }
@@ -1078,8 +1173,8 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: cardBg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _kGreen.withAlpha(80), width: 1.2),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: _kGreen.withAlpha(80), width: 1.0),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1092,7 +1187,15 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                       children: [
                         Text(title, style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary)),
                         const SizedBox(height: 2),
-                        Text('$fee • Paid & Confirmed', style: GoogleFonts.inter(fontSize: 13, color: _kGreen, fontWeight: FontWeight.w600)),
+                        Text(
+                          '$fee • Paid & Confirmed',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: _kGreen,
+                            fontWeight: FontWeight.w600,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
                       ],
                     ),
                   ),

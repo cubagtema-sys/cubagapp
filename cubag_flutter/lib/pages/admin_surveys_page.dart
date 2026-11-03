@@ -500,19 +500,19 @@ class _State extends State<AdminSurveysPage>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
+    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
     final borderColor = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
+        ? const Color(0xFF3D261C)
+        : const Color(0xFFE8DED6);
     final textColor = isDark
-        ? const Color(0xFFf8fafc)
-        : const Color(0xFF1A0F0A);
+        ? Colors.white
+        : const Color(0xFF1F1612);
     final subTextColor = isDark
-        ? const Color(0xFF94a3b8)
-        : const Color(0xFF475569);
+        ? const Color(0xFFB0A298)
+        : const Color(0xFF6B5E55);
     final inputBg = isDark
-        ? const Color(0xFF1A0F0A).withValues(alpha: 0.4)
-        : const Color(0xFFf8fafc);
+        ? const Color(0xFF1A0F0A)
+        : const Color(0xFFFAF6F0);
 
     if (_viewingResults != null) {
       return AppLayout(

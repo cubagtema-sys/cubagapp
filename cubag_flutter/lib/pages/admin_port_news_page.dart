@@ -318,10 +318,10 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final borderCol = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
-    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subTextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textColor = isDark ? Colors.white : const Color(0xFF1F1612);
+    final subTextColor = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
     final total = _bulletins.length;
     final active = _bulletins.where((b) => b['is_active'] == true).length;
@@ -393,7 +393,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                         hintStyle: GoogleFonts.inter(fontSize: 12.5, color: subTextColor),
                         prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderCol)),
                         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderCol)),
                         contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),

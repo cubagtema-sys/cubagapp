@@ -585,6 +585,40 @@ def sign_upload(app_id):
     }), 200
 
 
+def _notify_admins_doc_updated(cursor, app_id, member_id, label, is_replacement=False):
+    """Notify all admins when a member uploads or replaces a compliance document and ensure application is under review."""
+    try:
+        cursor.execute("SELECT name, company_name FROM members WHERE id = %s", (member_id,))
+        m = cursor.fetchone() or {}
+        member_name = m.get('company_name') or m.get('name') or f"Member #{member_id}"
+
+        # Transition application to under_review if submitted, revision requested, or already undergoing review
+        cursor.execute("""
+            UPDATE compliance_applications
+            SET status = 'under_review', updated_at = NOW()
+            WHERE id = %s AND status IN ('revision_requested', 'rejected', 'submitted', 'under_review', 'payment_confirmed')
+        """, (app_id,))
+
+        cursor.execute("SELECT id, fcm_token FROM members WHERE role IN ('admin', 'super_admin', 'sub_admin')")
+        admins = cursor.fetchall()
+        action_verb = "replaced" if is_replacement else "uploaded"
+        alert_title = f"Compliance Doc {action_verb.capitalize()}: {label}"
+        alert_body = f"{member_name} {action_verb} '{label}' on Application #{app_id}. Application is now Under Review."
+
+        for adm in admins:
+            cursor.execute("""
+                INSERT INTO notifications (member_id, title, body, category, notification_type, created_at)
+                VALUES (%s, %s, %s, 'Compliance', 'document_replaced', NOW())
+            """, (adm['id'], alert_title, alert_body))
+            if adm.get('fcm_token'):
+                try:
+                    send_push_notification(adm['fcm_token'], alert_title, alert_body, {'app_id': str(app_id), 'type': 'compliance'})
+                except Exception:
+                    pass
+    except Exception as e:
+        logger.warning(f"[Compliance] Failed notifying admins of doc update: {e}")
+
+
 @compliance_bp.route('/applications/<int:app_id>/upload', methods=['POST'])
 @jwt_required()
 def upload_compliance_document(app_id):
@@ -664,6 +698,7 @@ def upload_compliance_document(app_id):
                 (app_id, requirement)
             )
             existing = cursor.fetchone()
+            is_replacement = existing is not None
             if existing:
                 cursor.execute("""
                     UPDATE compliance_documents
@@ -678,6 +713,8 @@ def upload_compliance_document(app_id):
                         (application_id, requirement, label, file_url, file_name, file_size, status)
                     VALUES (%s, %s, %s, %s, %s, %s, 'pending')
                 """, (app_id, requirement, label, public_url, file.filename, size_bytes))
+
+            _notify_admins_doc_updated(cursor, app_id, member_id, label, is_replacement=is_replacement)
             conn.commit()
 
         return jsonify({'message': 'Document uploaded successfully', 'file_url': public_url}), 200
@@ -728,6 +765,7 @@ def confirm_upload(app_id):
                 (app_id, requirement)
             )
             existing = cursor.fetchone()
+            is_replacement = existing is not None
             if existing:
                 cursor.execute("""
                     UPDATE compliance_documents
@@ -742,6 +780,8 @@ def confirm_upload(app_id):
                         (application_id, requirement, label, file_url, file_name, file_size, status)
                     VALUES (%s, %s, %s, %s, %s, %s, 'pending')
                 """, (app_id, requirement, label, public_url, filename, size))
+
+            _notify_admins_doc_updated(cursor, app_id, member_id, label, is_replacement=is_replacement)
             conn.commit()
 
         return jsonify({'message': 'Document saved'}), 200

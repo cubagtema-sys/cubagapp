@@ -18,6 +18,7 @@ import '../utils/session_storage.dart';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const _kPrimary = Color(0xFFFF5000);
+const _kOrange = _kPrimary;
 const _kGreen = Color(0xFF10b981);
 const _kAmber = Color(0xFFf59e0b);
 const _kRed = Color(0xFFef4444);
@@ -234,6 +235,173 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
     }
   }
 
+  Future<void> _startNewApplication(String type) async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(
+          child: CircularProgressIndicator(color: _kPrimary),
+        ),
+      );
+      final res = await ApiService().post('/compliance/applications', data: {
+        'type': type,
+      });
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+
+      final data = res.data is Map ? res.data as Map : {};
+      final appId = (data['application_id'] ?? data['id']) as int?;
+      if (appId != null && mounted) {
+        await _fetch();
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => _ApplicationDetailPage(appId: appId)),
+        );
+        if (mounted) _fetch();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(data['message']?.toString() ?? 'Unable to start application.'),
+              backgroundColor: _kRed,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to initialize application: $e'),
+            backgroundColor: _kRed,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showNewApplicationDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1A0F0A) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Start Compliance Application',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            color: isDark ? Colors.white : _kTextDark,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Select the statutory application category you wish to initiate:',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: isDark ? Colors.white70 : const Color(0xFF64748b),
+              ),
+            ),
+            const SizedBox(height: 18),
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              tileColor: isDark ? const Color(0xFF281710) : const Color(0xFFFBF8F3),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6),
+                ),
+              ),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _kOrange.withAlpha(25),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.sync_rounded, color: _kOrange, size: 22),
+              ),
+              title: Text(
+                'Annual Membership Renewal',
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: isDark ? Colors.white : const Color(0xFF1A0F0A),
+                ),
+              ),
+              subtitle: Text(
+                'Annual membership renewal, good standing review, and tax clearance',
+                style: GoogleFonts.inter(
+                  fontSize: 12.5,
+                  color: isDark ? Colors.white60 : const Color(0xFF64748b),
+                ),
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _startNewApplication('renewal');
+              },
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              tileColor: isDark ? const Color(0xFF281710) : const Color(0xFFFBF8F3),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6),
+                ),
+              ),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _kGreen.withAlpha(25),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.badge_outlined, color: _kGreen, size: 22),
+              ),
+              title: Text(
+                'Customs Broker License & ID',
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: isDark ? Colors.white : const Color(0xFF1A0F0A),
+                ),
+              ),
+              subtitle: Text(
+                'GRA operational license endorsement and official CUBAG broker ID',
+                style: GoogleFonts.inter(
+                  fontSize: 12.5,
+                  color: isDark ? Colors.white60 : const Color(0xFF64748b),
+                ),
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _startNewApplication('customs_licence');
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white70 : const Color(0xFF64748b),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -299,7 +467,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                       ),
                     ),
                     child: Text(
-                      'Start new compliance applications from the Payments page. The Compliance Centre now helps you monitor submitted applications, review admin notes, and reupload documents for revisions or rejected files.',
+                      'Manage statutory vetting records, annual membership renewals, and customs broker credentials. Start a new application or select an active record below to view details and upload documents.',
                       style: GoogleFonts.inter(
                         fontSize: 15,
                         color: isDark
@@ -312,13 +480,36 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                   const SizedBox(height: 36),
 
                   // ── Applications List ───────────────────────────────────
-                  Text(
-                    'My Applications',
-                    style: GoogleFonts.outfit(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : _kTextDark,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'My Applications',
+                        style: GoogleFonts.outfit(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : _kTextDark,
+                        ),
+                      ),
+                      if (_applications.isNotEmpty)
+                        ElevatedButton.icon(
+                          onPressed: _showNewApplicationDialog,
+                          icon: const Icon(Icons.add_rounded, size: 16),
+                          label: const Text('Start Application'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _kOrange,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            elevation: 0,
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 14),
 
@@ -380,7 +571,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                       ),
                     )
                   else if (_applications.isEmpty)
-                    _EmptyState()
+                    _EmptyState(onStartApplication: _showNewApplicationDialog)
                   else
                     ListView.separated(
                       shrinkWrap: true,
@@ -1441,31 +1632,26 @@ class _SectionHeader extends StatelessWidget {
     padding: const EdgeInsets.all(22),
     decoration: BoxDecoration(
       gradient: const LinearGradient(
-        colors: [Color(0xFFFF5000), Color(0xFFd96e1c)],
+        colors: [Color(0xFF381F14), Color(0xFF1E110A)],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
-      borderRadius: BorderRadius.circular(18),
-      boxShadow: [
-        BoxShadow(
-          color: _kPrimary.withValues(alpha: 0.3),
-          blurRadius: 20,
-          offset: const Offset(0, 8),
-        ),
-      ],
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFF5A3522), width: 1.0),
     ),
     child: Row(
       children: [
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(14),
+            color: _kPrimary.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: _kPrimary.withValues(alpha: 0.4), width: 1.0),
           ),
           child: const Icon(
             Icons.shield_outlined,
-            color: Colors.white,
-            size: 26,
+            color: _kPrimary,
+            size: 24,
           ),
         ),
         const SizedBox(width: 16),
@@ -1474,17 +1660,21 @@ class _SectionHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Compliance Centre',
+                'COMPLIANCE & STATUTORY CENTRE',
                 style: GoogleFonts.outfit(
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                  letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                'Manage your membership renewal & Member ID applications',
-                style: GoogleFonts.outfit(color: Colors.white70, fontSize: 15),
+                'Manage statutory vetting records, annual renewals, and compliance certification',
+                style: GoogleFonts.inter(
+                  color: Colors.white.withAlpha(200),
+                  fontSize: 13.5,
+                ),
               ),
             ],
           ),
@@ -1508,18 +1698,18 @@ class _AlertBanner extends StatelessWidget {
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
       color: color.withValues(alpha: 0.1),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(8),
       border: Border.all(color: color.withValues(alpha: 0.35)),
     ),
     child: Row(
       children: [
-        Icon(icon, color: color, size: 22),
+        Icon(icon, color: color, size: 20),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             message,
             style: GoogleFonts.outfit(
-              fontSize: 15,
+              fontSize: 14.5,
               color: color,
               fontWeight: FontWeight.w600,
             ),
@@ -1548,42 +1738,35 @@ class _ApplicationCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: isDark ? _kCardDark : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: status == 'revision_requested'
                 ? _kAmber.withValues(alpha: 0.5)
-                : (isDark ? _kBorderDark : const Color(0xFFe2e8f0)),
-            width: status == 'revision_requested' ? 2 : 1,
+                : (isDark ? _kBorderDark : const Color(0xFFE8DED6)),
+            width: 1.0,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 type == 'renewal'
                     ? Icons.autorenew_rounded
                     : Icons.badge_outlined,
                 color: color,
-                size: 22,
+                size: 20,
               ),
             ),
             const SizedBox(width: 14),
@@ -1592,23 +1775,17 @@ class _ApplicationCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          typeLabel,
-                          style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16.5,
-                            color: isDark ? Colors.white : _kTextDark,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    typeLabel,
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      color: isDark ? Colors.white : _kTextDark,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Expanded(
@@ -1617,7 +1794,8 @@ class _ApplicationCard extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w500,
-                            color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                            color: isDark ? Colors.white60 : const Color(0xFF6F625B),
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1625,10 +1803,10 @@ class _ApplicationCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: color.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: color.withValues(alpha: 0.28), width: 1),
                         ),
                         child: Row(
@@ -1654,9 +1832,9 @@ class _ApplicationCard extends StatelessWidget {
                               _statusLabel(status),
                               style: GoogleFonts.outfit(
                                 color: color,
-                                fontSize: 11.5,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                letterSpacing: 0.1,
+                                letterSpacing: 0.3,
                               ),
                             ),
                           ],
@@ -1668,7 +1846,7 @@ class _ApplicationCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8), size: 20),
+            const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8), size: 18),
           ],
         ),
       ),
@@ -1788,9 +1966,10 @@ class _ProgressCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: isDark ? _kCardDark : Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: isDark ? _kBorderDark : const Color(0xFFe2e8f0),
+          color: isDark ? _kBorderDark : const Color(0xFFE8DED6),
+          width: 1.0,
         ),
       ),
       child: Column(
@@ -1811,20 +1990,21 @@ class _ProgressCard extends StatelessWidget {
                 style: GoogleFonts.outfit(
                   fontWeight: FontWeight.bold,
                   color: _kPrimary,
-                  fontSize: 17,
+                  fontSize: 16,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
               value: pct,
               minHeight: 8,
               backgroundColor: isDark
                   ? const Color(0xFF3E2418)
-                  : const Color(0xFFe2e8f0),
+                  : const Color(0xFFE8DED6),
               valueColor: AlwaysStoppedAnimation<Color>(
                 uploaded == total ? _kGreen : _kPrimary,
               ),
@@ -1833,9 +2013,12 @@ class _ProgressCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             uploaded == total
-                ? 'All documents uploaded! You may now submit.'
-                : '${total - uploaded} document(s) remaining',
-            style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey),
+                ? 'All documents uploaded. Ready for Secretariat submission.'
+                : '${total - uploaded} document(s) remaining for vetting',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: isDark ? Colors.white60 : const Color(0xFF6F625B),
+            ),
           ),
         ],
       ),
@@ -1893,16 +2076,17 @@ class _DocRow extends StatelessWidget {
         ? _kRed.withValues(alpha: 0.4)
         : isStaleDoc
         ? _kAmber.withValues(alpha: 0.4)
-        : (isDark ? _kBorderDark : const Color(0xFFe2e8f0));
+        : (isDark ? _kBorderDark : const Color(0xFFE8DED6));
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: isDark ? _kCardDark : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: uploaded ? sColor.withValues(alpha: 0.3) : borderColor,
+          width: 1.0,
         ),
       ),
       child: Column(
@@ -1913,13 +2097,70 @@ class _DocRow extends StatelessWidget {
               Icon(sIcon, color: sColor, size: 20),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  label,
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15.5,
-                    color: isDark ? Colors.white : _kTextDark,
-                  ),
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Text(
+                      label,
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: isDark ? Colors.white : _kTextDark,
+                      ),
+                    ),
+                    if (uploaded)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: (docStatus == 'approved'
+                                  ? _kGreen
+                                  : (needsAction ? _kRed : _kAmber))
+                              .withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: (docStatus == 'approved'
+                                    ? _kGreen
+                                    : (needsAction ? _kRed : _kAmber))
+                                .withValues(alpha: 0.35),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              docStatus == 'approved'
+                                  ? Icons.check_circle_rounded
+                                  : (needsAction
+                                      ? Icons.error_outline_rounded
+                                      : Icons.hourglass_top_rounded),
+                              size: 11,
+                              color: docStatus == 'approved'
+                                  ? _kGreen
+                                  : (needsAction ? _kRed : _kAmber),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              docStatus == 'approved'
+                                  ? 'Approved'
+                                  : (needsAction ? 'Action Required' : 'Under Review'),
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: docStatus == 'approved'
+                                    ? _kGreen
+                                    : (needsAction ? _kRed : _kAmber),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
               ),
               if (isUploading)
@@ -1931,10 +2172,80 @@ class _DocRow extends StatelessWidget {
                     color: _kPrimary,
                   ),
                 )
+              else if (docStatus == 'approved')
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _kGreen.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: _kGreen.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.verified_rounded,
+                        size: 13,
+                        color: _kGreen,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Verified',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                          color: _kGreen,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else if (uploaded && !needsAction)
+                // Uploaded and under review: lock / fade out the replace button
+                Opacity(
+                  opacity: 0.65,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: Colors.grey.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.lock_outline_rounded,
+                          size: 13,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Under Review',
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
               else if (isEditable)
                 InkWell(
                   onTap: onUpload,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -1944,27 +2255,27 @@ class _DocRow extends StatelessWidget {
                       color:
                           (needsAction
                                   ? _kRed
-                                  : (uploaded ? _kPrimary : _kGreen))
+                                  : _kGreen)
                               .withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(6),
                       border: Border.all(
                         color:
                             (needsAction
                                     ? _kRed
-                                    : (uploaded ? _kPrimary : _kGreen))
+                                    : _kGreen)
                                 .withValues(alpha: 0.3),
                       ),
                     ),
                     child: Text(
                       needsAction
                           ? 'Re-upload'
-                          : (uploaded ? 'Replace' : 'Upload'),
+                          : 'Upload',
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: 13,
                         color: needsAction
                             ? _kRed
-                            : (uploaded ? _kPrimary : _kGreen),
+                            : _kGreen,
                       ),
                     ),
                   ),
@@ -2074,7 +2385,7 @@ class _InfoBox extends StatelessWidget {
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
       color: color.withValues(alpha: 0.09),
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(10),
       border: Border.all(color: color.withValues(alpha: 0.25)),
     ),
     child: Row(
@@ -2124,13 +2435,13 @@ class _ActionButton extends StatelessWidget {
           : Icon(icon, size: 18),
       label: Text(
         label,
-        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 17),
+        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
       ),
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         elevation: 0,
       ),
       onPressed: loading ? null : onTap,
@@ -2139,33 +2450,78 @@ class _ActionButton extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
+  final VoidCallback? onStartApplication;
+  const _EmptyState({this.onStartApplication});
+
   @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 40),
-      child: Column(
-        children: [
-          Icon(
-            Icons.folder_open_rounded,
-            size: 60,
-            color: Colors.grey.shade300,
-          ),
-          const SizedBox(height: 14),
-          Text(
-            'No applications yet',
-            style: GoogleFonts.outfit(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _kOrange.withAlpha(20),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.folder_open_rounded,
+                size: 44,
+                color: _kOrange,
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Start a new application above',
-            style: GoogleFonts.outfit(fontSize: 15, color: Colors.grey),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text(
+              'No Active Compliance Applications',
+              style: GoogleFonts.outfit(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : const Color(0xFF1A0F0A),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Text(
+                'Start a renewal or customs broker license application to upload statutory documents and track vetting progress.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: isDark ? Colors.white60 : const Color(0xFF64748b),
+                  height: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: onStartApplication,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: Text(
+                'Start Application Now',
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kOrange,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

@@ -20,65 +20,52 @@ class _EngagementPageState extends State<EngagementPage> {
   List<dynamic> _tickets = [];
   Map<String, dynamic>? _selectedTicket;
 
+  static const _kBrown = Color(0xFF6B3E26);
+  static const _kOrange = Color(0xFFFF5000);
+  static const _kGreen = Color(0xFF10B981);
+  static const _kAmber = Color(0xFFF59E0B);
+
   final _subjects = [
     {
       'title': 'General Inquiry',
       'desc': 'Questions about CUBAG services, processes, or membership',
-      'icon': Icons.help_outline_rounded,
-      'color': const Color(0xFFFF5000),
-      'bg': const Color(0x19FF5000),
     },
     {
       'title': 'License Support',
       'desc': 'Assistance with activations, renewals, or key management',
-      'icon': Icons.key_rounded,
-      'color': const Color(0xFF8B5CF6),
-      'bg': const Color(0x198B5CF6),
     },
     {
       'title': 'Payment Issue',
       'desc': 'Help with invoices, billing cycles, or transaction errors',
-      'icon': Icons.payments_rounded,
-      'color': const Color(0xFFEC4899),
-      'bg': const Color(0x19EC4899),
     },
     {
       'title': 'Event Registration',
       'desc': 'Troubleshoot sign-ups or attendee information',
-      'icon': Icons.calendar_today_rounded,
-      'color': const Color(0xFF3B82F6),
-      'bg': const Color(0x193B82F6),
     },
     {
       'title': 'Technical Problem',
       'desc': 'Bugs, system errors, or accessibility difficulties',
-      'icon': Icons.bug_report_rounded,
-      'color': const Color(0xFFEF4444),
-      'bg': const Color(0x19EF4444),
     },
     {
       'title': 'Complaint',
       'desc': 'Formal feedback regarding service quality or experience',
-      'icon': Icons.warning_amber_rounded,
-      'color': const Color(0xFF6B7280),
-      'bg': const Color(0x196B7280),
     },
   ];
 
   final _statusMeta = {
     'open': {
-      'color': const Color(0xFFFF5000),
-      'bg': const Color(0x19FF5000),
+      'color': _kOrange,
+      'bg': Color(0x19FF5000),
       'label': 'Open',
     },
     'pending': {
-      'color': const Color(0xFFf59e0b),
-      'bg': const Color(0x19f59e0b),
+      'color': _kAmber,
+      'bg': Color(0x19F59E0B),
       'label': 'Pending',
     },
     'resolved': {
-      'color': const Color(0xFF10b981),
-      'bg': const Color(0x1910b981),
+      'color': _kGreen,
+      'bg': Color(0x1910B981),
       'label': 'Resolved',
     },
   };
@@ -137,44 +124,53 @@ class _EngagementPageState extends State<EngagementPage> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1E130D) : Colors.white;
+    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final text = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
+    final muted = isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B);
+    final surfaceRaised = isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
+
     return AppLayout(
-      title: 'Support Center',
+      title: 'Support & Inquiries',
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Tabs
+          // Segmented tab bar (8px radius, quiet border)
           Container(
-            padding: const EdgeInsets.all(4),
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(12),
+              color: surfaceRaised,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: border, width: 1.0),
             ),
             child: Row(
               children: [
                 Expanded(
-                  child: GestureDetector(
+                  child: InkWell(
                     onTap: () => setState(() => _tab = 0),
+                    borderRadius: BorderRadius.circular(6),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 9),
                       decoration: BoxDecoration(
-                        color: _tab == 0 ? primary : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
+                        color: _tab == 0 ? _kBrown : Colors.transparent,
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.edit_note,
-                            color: _tab == 0 ? Colors.white : Colors.grey,
-                            size: 18,
+                            Icons.edit_note_rounded,
+                            color: _tab == 0 ? Colors.white : muted,
+                            size: 16,
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'New Request',
+                            'New Inquiry',
                             style: TextStyle(
-                              color: _tab == 0 ? Colors.white : Colors.grey,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
+                              color: _tab == 0 ? Colors.white : text,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13.5,
                             ),
                           ),
                         ],
@@ -183,32 +179,34 @@ class _EngagementPageState extends State<EngagementPage> {
                   ),
                 ),
                 Expanded(
-                  child: GestureDetector(
+                  child: InkWell(
                     onTap: () {
                       setState(() => _tab = 1);
                       _fetchTickets();
                     },
+                    borderRadius: BorderRadius.circular(6),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 9),
                       decoration: BoxDecoration(
-                        color: _tab == 1 ? primary : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
+                        color: _tab == 1 ? _kBrown : Colors.transparent,
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.confirmation_number,
-                            color: _tab == 1 ? Colors.white : Colors.grey,
-                            size: 18,
+                            Icons.confirmation_number_outlined,
+                            color: _tab == 1 ? Colors.white : muted,
+                            size: 16,
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'My Tickets (${_tickets.length})',
+                            'Archives (${_tickets.length})',
                             style: TextStyle(
-                              color: _tab == 1 ? Colors.white : Colors.grey,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
+                              color: _tab == 1 ? Colors.white : text,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13.5,
+                              fontFeatures: const [FontFeature.tabularFigures()],
                             ),
                           ),
                         ],
@@ -221,82 +219,108 @@ class _EngagementPageState extends State<EngagementPage> {
           ),
           const SizedBox(height: 16),
 
-          if (_tab == 0) _buildContactTab(primary),
-          if (_tab == 1) _buildTicketsTab(primary),
+          if (_tab == 0) _buildContactTab(cardBg, border, text, muted, surfaceRaised),
+          if (_tab == 1) _buildTicketsTab(cardBg, border, text, muted, surfaceRaised),
         ],
       ),
     );
   }
 
-  Widget _buildContactTab(Color primary) {
+  Widget _buildContactTab(
+    Color cardBg,
+    Color border,
+    Color text,
+    Color muted,
+    Color surfaceRaised,
+  ) {
     if (_sent) {
       return Container(
-        padding: const EdgeInsets.all(40),
+        padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(16),
+          color: cardBg,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: border, width: 1.0),
         ),
         child: Column(
           children: [
-            const Icon(Icons.check_circle, color: Color(0xFF10b981), size: 56),
+            const Icon(Icons.check_circle_outline_rounded, color: _kGreen, size: 48),
             const SizedBox(height: 12),
-            const Text(
-              'Ticket Created',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+            Text(
+              'Inquiry Recorded',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                color: text,
+                letterSpacing: -0.3,
+              ),
             ),
+            const SizedBox(height: 6),
             if (_newTicketId != null)
-              Text(
-                '#$_newTicketId',
-                style: TextStyle(
-                  color: primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  fontFamily: 'monospace',
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: surfaceRaised,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: border, width: 1.0),
+                ),
+                child: Text(
+                  'CASE #$_newTicketId',
+                  style: const TextStyle(
+                    color: _kBrown,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
                 ),
               ),
-            const SizedBox(height: 8),
-            const Text(
-              "We'll respond within 24 hours.",
-              style: TextStyle(color: Colors.grey),
+            Text(
+              'CUBAG Secretariat will review and respond within 24 hours.',
+              style: TextStyle(color: muted, fontSize: 13.5),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
-            Column(
+            Row(
               children: [
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: () => setState(() => _tab = 1),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primary,
-                      elevation: 0,
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => setState(() => _sent = false),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(color: border, width: 1.0),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text(
-                      'View Tickets',
+                    child: Text(
+                      'Log Another',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
+                        color: text,
+                        fontSize: 13.5,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: OutlinedButton(
-                    onPressed: () => setState(() => _sent = false),
-                    style: OutlinedButton.styleFrom(
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => setState(() => _tab = 1),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      backgroundColor: _kOrange,
+                      elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                     child: const Text(
-                      'Another Request',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      'View Archives',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13.5,
+                      ),
                     ),
                   ),
                 ),
@@ -310,20 +334,35 @@ class _EngagementPageState extends State<EngagementPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border, width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'New Support Ticket',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          Text(
+            'Lodge Inquiry or Grievance',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: text,
+              letterSpacing: -0.2,
+            ),
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'Subject',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          const SizedBox(height: 4),
+          Text(
+            'Direct communication with CUBAG executive officers and compliance desk.',
+            style: TextStyle(fontSize: 13, color: muted),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            'Subject Matter',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              color: text,
+            ),
           ),
           const SizedBox(height: 6),
           CustomDropdown<String>(
@@ -337,66 +376,72 @@ class _EngagementPageState extends State<EngagementPage> {
                 .toList(),
             onChanged: (v) => setState(() => _subject = v),
           ),
-          const SizedBox(height: 14),
-          const Text(
-            'Description',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          const SizedBox(height: 16),
+          Text(
+            'Description / Particulars',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              color: text,
+            ),
           ),
           const SizedBox(height: 6),
           TextField(
             controller: _msgCtrl,
-            maxLines: 4,
+            maxLines: 5,
             onChanged: (_) => setState(() {}),
+            style: TextStyle(color: text, fontSize: 14),
             decoration: InputDecoration(
-              hintText: 'Explain your issue...',
-              hintStyle: const TextStyle(
-                fontSize: 15,
-                color: Color(0xFF64748b),
-              ),
+              hintText: 'Provide details, consignment or reference numbers if applicable...',
+              hintStyle: TextStyle(fontSize: 13.5, color: muted.withValues(alpha: 0.7)),
               contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
+                horizontal: 14,
+                vertical: 12,
               ),
+              filled: true,
+              fillColor: surfaceRaised,
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: border, width: 1.0),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: primary, width: 2),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: _kBrown, width: 1.5),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
-            height: 52,
+            height: 46,
             child: ElevatedButton(
               onPressed:
                   (_loading || _subject.isEmpty || _msgCtrl.text.trim().isEmpty)
                   ? null
                   : _submit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: primary,
+                backgroundColor: _kOrange,
+                disabledBackgroundColor: _kOrange.withValues(alpha: 0.4),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
               child: _loading
                   ? const SizedBox(
-                      width: 20,
-                      height: 20,
+                      width: 18,
+                      height: 18,
                       child: CircularProgressIndicator(
                         color: Colors.white,
                         strokeWidth: 2,
                       ),
                     )
                   : const Text(
-                      'Submit Ticket',
+                      'Submit Request',
                       style: TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
                       ),
                     ),
             ),
@@ -406,119 +451,175 @@ class _EngagementPageState extends State<EngagementPage> {
     );
   }
 
-  Widget _buildTicketsTab(Color primary) {
+  Widget _buildTicketsTab(
+    Color cardBg,
+    Color border,
+    Color text,
+    Color muted,
+    Color surfaceRaised,
+  ) {
     if (_selectedTicket != null) {
       final sm =
           _statusMeta[_selectedTicket!['status']] ?? _statusMeta['open']!;
       return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
               TextButton.icon(
                 onPressed: () => setState(() => _selectedTicket = null),
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('Back'),
+                icon: const Icon(Icons.arrow_back_rounded, size: 16),
+                label: const Text('Back to Archives'),
+                style: TextButton.styleFrom(
+                  foregroundColor: _kBrown,
+                  textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                ),
               ),
             ],
           ),
+          const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(16),
+              color: cardBg,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: border, width: 1.0),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Text(
                         _selectedTicket!['subject']?.toString() ?? '',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 17,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          color: text,
+                          letterSpacing: -0.2,
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
+                        horizontal: 8,
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
                         color: sm['bg'] as Color,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: (sm['color'] as Color).withValues(alpha: 0.3),
+                          width: 1.0,
+                        ),
                       ),
                       child: Text(
                         (sm['label'] as String).toUpperCase(),
                         style: TextStyle(
                           color: sm['color'] as Color,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    borderRadius: BorderRadius.circular(12),
+                    color: surfaceRaised,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: border, width: 1.0),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'YOU · ${_selectedTicket!['date'] ?? ''}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            'SUBMITTED BY YOU',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: muted,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            _selectedTicket!['date']?.toString() ?? '',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: muted,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
                         _selectedTicket!['message']?.toString() ?? '',
-                        style: const TextStyle(fontSize: 15),
+                        style: TextStyle(fontSize: 14, color: text, height: 1.4),
                       ),
                     ],
                   ),
                 ),
                 if (_selectedTicket!['replies'] != null)
                   ...((_selectedTicket!['replies'] as List).map(
-                    (r) => Container(
-                      margin: const EdgeInsets.only(top: 8),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: r['author'] == 'Admin'
-                            ? primary.withValues(alpha: 0.05)
-                            : Theme.of(context).scaffoldBackgroundColor,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${r['author']} · ${r['date'] ?? ''}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: r['author'] == 'Admin'
-                                  ? primary
-                                  : Colors.grey,
-                              fontWeight: FontWeight.bold,
+                    (r) {
+                      final isAdmin = r['author'] == 'Admin';
+                      return Container(
+                        margin: const EdgeInsets.only(top: 10),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isAdmin
+                              ? _kBrown.withValues(alpha: 0.05)
+                              : surfaceRaised,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isAdmin ? _kBrown.withValues(alpha: 0.2) : border,
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  isAdmin ? 'CUBAG SECRETARIAT' : '${r['author']}'.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: isAdmin ? _kBrown : muted,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  r['date']?.toString() ?? '',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: muted,
+                                    fontFeatures: const [FontFeature.tabularFigures()],
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            r['message']?.toString() ?? '',
-                            style: const TextStyle(fontSize: 15),
-                          ),
-                        ],
-                      ),
-                    ),
+                            const SizedBox(height: 6),
+                            Text(
+                              r['message']?.toString() ?? '',
+                              style: TextStyle(fontSize: 14, color: text, height: 1.4),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   )),
               ],
             ),
@@ -529,13 +630,21 @@ class _EngagementPageState extends State<EngagementPage> {
 
     if (_tickets.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(60),
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: border, width: 1.0),
+        ),
         alignment: Alignment.center,
-        child: const Column(
+        child: Column(
           children: [
-            Icon(Icons.confirmation_number, size: 48, color: Colors.grey),
-            SizedBox(height: 12),
-            Text('No tickets yet.', style: TextStyle(color: Colors.grey)),
+            Icon(Icons.inbox_outlined, size: 40, color: muted),
+            const SizedBox(height: 10),
+            Text(
+              'No active inquiries or archives logged.',
+              style: TextStyle(color: muted, fontSize: 14, fontWeight: FontWeight.w500),
+            ),
           ],
         ),
       );
@@ -548,8 +657,9 @@ class _EngagementPageState extends State<EngagementPage> {
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(14),
+            color: cardBg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: border, width: 1.0),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,30 +667,35 @@ class _EngagementPageState extends State<EngagementPage> {
               Row(
                 children: [
                   Text(
-                    '#${(t['id']?.toString() ?? '').padLeft(6, '0')}',
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey,
+                    '#${(t['id']?.toString() ?? '').padLeft(5, '0')}',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: muted,
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
+                      horizontal: 7,
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
                       color: sm['bg'] as Color,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: (sm['color'] as Color).withValues(alpha: 0.3),
+                        width: 1.0,
+                      ),
                     ),
                     child: Text(
                       (sm['label'] as String).toUpperCase(),
                       style: TextStyle(
                         color: sm['color'] as Color,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.4,
                       ),
                     ),
                   ),
@@ -589,9 +704,11 @@ class _EngagementPageState extends State<EngagementPage> {
               const SizedBox(height: 6),
               Text(
                 t['subject']?.toString() ?? '',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                  color: text,
+                  letterSpacing: -0.2,
                 ),
               ),
               const SizedBox(height: 4),
@@ -599,14 +716,18 @@ class _EngagementPageState extends State<EngagementPage> {
                 t['message']?.toString() ?? '',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.grey, fontSize: 14),
+                style: TextStyle(color: muted, fontSize: 13, height: 1.35),
               ),
               const SizedBox(height: 10),
               Row(
                 children: [
                   Text(
                     'Updated: ${t['lastUpdate'] ?? ''}',
-                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: muted,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
                   const Spacer(),
                   OutlinedButton(
@@ -619,11 +740,19 @@ class _EngagementPageState extends State<EngagementPage> {
                         vertical: 4,
                       ),
                       minimumSize: const Size(0, 30),
+                      side: BorderSide(color: border, width: 1.0),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                     ),
-                    child: const Text('View', style: TextStyle(fontSize: 14)),
+                    child: Text(
+                      'View Details',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: text,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ],
               ),

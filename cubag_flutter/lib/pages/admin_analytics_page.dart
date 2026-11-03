@@ -398,7 +398,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
   }
 
   void _showExportDialog(bool isDark, Color cardBg, Color textPrimary, Color textMuted) {
-    final borderCol = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
+    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -759,11 +759,11 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final border = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark ? Colors.white70 : const Color(0xFF64748B);
-    final innerBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF1F5F9);
+    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
+    final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
+    final innerBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0);
 
     return AppLayout(
       title: 'Platform Analytics',
@@ -921,7 +921,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                   child: TabBar(
                     controller: _tabController,
                     labelColor: _kOrange,
-                    unselectedLabelColor: isDark ? Colors.white70 : const Color(0xFF64748B),
+                    unselectedLabelColor: isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55),
                     indicatorColor: _kOrange,
                     indicatorWeight: 3,
                     labelStyle: GoogleFonts.outfit(
@@ -1099,7 +1099,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                               Expanded(
                                 child: _buildStreamCard(
                                   title: 'New Membership',
-                                  subtitle: 'Dossiers & entrance dues',
+                                  subtitle: 'Applications & entrance dues',
                                   amount: newMemAmt,
                                   percentage: newMemPct,
                                   count: catCounts['New Membership'] ?? 0,
@@ -1163,7 +1163,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                               const SizedBox(height: 10),
                               _buildStreamCard(
                                 title: 'New Membership Dues',
-                                subtitle: 'Dossiers & entrance dues',
+                                subtitle: 'Applications & entrance dues',
                                 amount: newMemAmt,
                                 percentage: newMemPct,
                                 count: catCounts['New Membership'] ?? 0,
@@ -1261,7 +1261,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                               ),
                             if (totalRev <= 1.0 && renewalAmt == 0 && newMemAmt == 0 && courseAmt == 0 && otherAmt == 0)
                               Expanded(
-                                child: Container(color: isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0)),
+                                child: Container(color: isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6)),
                               ),
                           ],
                         ),

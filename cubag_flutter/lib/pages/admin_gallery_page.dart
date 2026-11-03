@@ -11,7 +11,7 @@ import '../utils/app_logger.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10b981);
-const _kCardBg = Color(0xFF281710);
+const _kCardBg = Color(0xFF22140E);
 
 class AdminGalleryPage extends StatefulWidget {
   const AdminGalleryPage({super.key});
@@ -592,10 +592,10 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? _kCardBg : Colors.white;
+    final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
     final borderCol = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
+        ? const Color(0xFF3D261C)
+        : const Color(0xFFE8DED6);
 
     final total = _items.length;
     final active = _items.where((i) => i['is_active'] == true).length;

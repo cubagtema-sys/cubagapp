@@ -10,7 +10,7 @@ const _kGreen = Color(0xFF10b981);
 const _kBlue = Color(0xFF3b82f6);
 const _kRed = Color(0xFFef4444);
 const _kPurple = Color(0xFF8b5cf6);
-const _kCardBg = Color(0xFF281710);
+const _kCardBg = Color(0xFF22140E);
 
 class AdminAuditLogPage extends StatefulWidget {
   const AdminAuditLogPage({super.key});
@@ -278,16 +278,16 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
       context: context,
       builder: (ctx) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final cardBg = isDark ? _kCardBg : Colors.white;
+        final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
         final borderCol = isDark
-            ? const Color(0xFF4D2D20)
-            : const Color(0xFFe2e8f0);
+            ? const Color(0xFF3D261C)
+            : const Color(0xFFE8DED6);
         final textCol = isDark
-            ? const Color(0xFFf8fafc)
-            : const Color(0xFF1A0F0A);
+            ? Colors.white
+            : const Color(0xFF1F1612);
         final subTextCol = isDark
-            ? const Color(0xFF94a3b8)
-            : const Color(0xFF64748b);
+            ? const Color(0xFFB0A298)
+            : const Color(0xFF6B5E55);
         final inputBg = isDark
             ? const Color(0xFF1A0F0A).withAlpha(120)
             : const Color(0xFFf8fafc);
@@ -452,17 +452,17 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? _kCardBg : Colors.white;
+    final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
     final borderCol = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
+        ? const Color(0xFF3D261C)
+        : const Color(0xFFE8DED6);
     final headerBg = isDark
-        ? const Color(0xFF1A0F0A).withAlpha(150)
-        : const Color(0xFFf8fafc);
-    final textCol = isDark ? const Color(0xFFf8fafc) : const Color(0xFF1A0F0A);
+        ? const Color(0xFF1A0F0A)
+        : const Color(0xFFFAF6F0);
+    final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
     final subTextCol = isDark
-        ? const Color(0xFF94a3b8)
-        : const Color(0xFF64748b);
+        ? const Color(0xFFB0A298)
+        : const Color(0xFF6B5E55);
 
     final displayLogs = _filteredLogs;
 

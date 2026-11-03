@@ -325,7 +325,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   InkWell(
-                    onTap: () => context.go('/'),
+                    onTap: () => context.canPop() ? context.pop() : context.go('/login'),
                     child: Row(
                       children: [
                         Container(
@@ -374,14 +374,14 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                   Row(
                     children: [
                       TextButton.icon(
-                        onPressed: () => context.go('/'),
+                        onPressed: () => context.canPop() ? context.pop() : context.go('/login'),
                         icon: const Icon(
                           Icons.arrow_back_rounded,
                           size: 16,
                           color: _kBrown,
                         ),
                         label: Text(
-                          'Back to Home',
+                          'Back to Portal',
                           style: GoogleFonts.outfit(
                             fontWeight: FontWeight.bold,
                             color: _kBrown,

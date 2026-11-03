@@ -29,8 +29,10 @@ dist/
 
 # Member-uploaded documents are PII and belong in Supabase Storage in prod
 # (file_storage._save_file). Do not ship local dev uploads in the image.
-uploads/
-static/uploads/
+uploads/*
+!uploads/doc_placeholder.png
+static/uploads/*
+!static/uploads/doc_placeholder.png
 
 # Git
 .git/

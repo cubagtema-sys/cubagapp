@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/in_app_legal_viewer.dart';
 import '../services/api_service.dart';
@@ -30,6 +29,11 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _showNew = false;
   bool _showConfirm = false;
 
+  static const _kBrown = Color(0xFF6B3E26);
+  static const _kOrange = Color(0xFFFF5000);
+  static const _kGreen = Color(0xFF10B981);
+  static const _kRed = Color(0xFFDC2626);
+
   @override
   void initState() {
     super.initState();
@@ -45,7 +49,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _changePassword() async {
     if (_newCtrl.text != _confirmCtrl.text) {
-      setState(() => _message = '❌ Passwords do not match!');
+      setState(() => _message = 'Passwords do not match');
       return;
     }
     setState(() {
@@ -63,7 +67,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (!mounted) return;
       if (res.statusCode == 200) {
         setState(() {
-          _message = '✅ Password updated successfully!';
+          _message = 'Password updated successfully';
         });
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted) {
@@ -80,31 +84,41 @@ class _SettingsPageState extends State<SettingsPage> {
         final msg = res.data is Map
             ? (res.data['message'] ?? 'Update failed')
             : 'Update failed';
-        setState(() => _message = '❌ $msg');
+        setState(() => _message = msg);
       }
     } catch (_) {
       if (!mounted) return;
-      setState(() => _message = '❌ Connection error. Try again.');
+      setState(() => _message = 'Connection error. Please try again.');
     }
     if (mounted) setState(() => _loading = false);
   }
 
-  Future<void> _confirmDeleteAccount() async {
+  Future<void> _confirmDeleteAccount(
+    Color cardBg,
+    Color border,
+    Color text,
+    Color muted,
+    Color surfaceRaised,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: cardBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: border, width: 1.0),
+        ),
         title: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Delete Account',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                ),
+            const Icon(Icons.warning_amber_rounded, color: _kRed, size: 24),
+            const SizedBox(width: 8),
+            Text(
+              'Delete Account',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 17,
+                color: text,
+                letterSpacing: -0.2,
               ),
             ),
           ],
@@ -115,25 +129,25 @@ class _SettingsPageState extends State<SettingsPage> {
           children: [
             Text(
               'Are you sure you want to permanently delete your CUBAG member account?',
-              style: GoogleFonts.inter(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF1A0F0A),
+                color: text,
               ),
             ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.withAlpha(15),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.red.withAlpha(50)),
+                color: _kRed.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: _kRed.withValues(alpha: 0.2)),
               ),
-              child: Text(
-                'This action is irreversible. All member profile data, uploaded verification documents, membership certificates, payment history, and event access will be permanently deactivated.',
-                style: GoogleFonts.inter(
-                  fontSize: 14.5,
-                  color: Colors.red.shade900,
+              child: const Text(
+                'This action is irreversible. All member profile data, certificates, uploaded verification documents, and payment history will be permanently erased.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: _kRed,
                   height: 1.4,
                 ),
               ),
@@ -145,24 +159,29 @@ class _SettingsPageState extends State<SettingsPage> {
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
               'Cancel',
-              style: GoogleFonts.inter(
-                color: Colors.grey.shade700,
+              style: TextStyle(
+                color: muted,
                 fontWeight: FontWeight.w600,
+                fontSize: 13,
               ),
             ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: _kRed,
+              elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
               ),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(
-              'Permanently Delete',
-              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+            child: const Text(
+              'Delete Permanently',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                color: Colors.white,
+              ),
             ),
           ),
         ],
@@ -179,7 +198,7 @@ class _SettingsPageState extends State<SettingsPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Your account has been successfully deleted.'),
+              content: Text('Your account has been deleted.'),
             ),
           );
           context.go('/login');
@@ -193,12 +212,11 @@ class _SettingsPageState extends State<SettingsPage> {
     if (mounted) {
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text(
             'Unable to complete account deletion at this time. Please contact support@cubag.org.gh',
-            style: GoogleFonts.inter(),
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: _kRed,
         ),
       );
     }
@@ -214,21 +232,27 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1E130D) : Colors.white;
+    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final text = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
+    final muted = isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B);
+    final surfaceRaised = isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
+
     return AppLayout(
       title: 'Account Settings',
       scrollable: false,
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: const BoxConstraints(maxWidth: 640),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+            padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: !_changingPw
-                  ? _buildMenu(primary)
-                  : _buildPasswordForm(primary),
+                  ? _buildMenu(cardBg, border, text, muted, surfaceRaised)
+                  : _buildPasswordForm(cardBg, border, text, muted, surfaceRaised),
             ),
           ),
         ),
@@ -236,112 +260,116 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildMenu(Color primary) {
+  Widget _buildMenu(
+    Color cardBg,
+    Color border,
+    Color text,
+    Color muted,
+    Color surfaceRaised,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Section 1: Security & Preferences
-        Card(
-          color: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: const Color(0xFFcbd5e1).withAlpha(120),
-              width: 1.5,
-            ),
+        Container(
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: border, width: 1.0),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
                 child: Text(
                   'SECURITY & PREFERENCES',
-                  style: GoogleFonts.outfit(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    color: const Color(0xFF64748b),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: _kBrown,
                     letterSpacing: 0.5,
                   ),
                 ),
               ),
-              const Divider(height: 1, color: Color(0xFFf1f5f9)),
+              Divider(height: 1, color: border),
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
+                  horizontal: 14,
+                  vertical: 2,
                 ),
                 leading: Container(
-                  width: 36,
-                  height: 36,
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
-                    color: primary.withAlpha(20),
-                    borderRadius: BorderRadius.circular(10),
+                    color: surfaceRaised,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: border, width: 1.0),
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.lock_outline_rounded,
-                    color: primary,
-                    size: 18,
+                    color: _kBrown,
+                    size: 16,
                   ),
                 ),
                 title: Text(
                   'Change Password',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15.5,
-                    color: const Color(0xFF281710),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: text,
                   ),
                 ),
-                trailing: const Icon(
+                trailing: Icon(
                   Icons.chevron_right_rounded,
-                  color: Color(0xFF94a3b8),
-                  size: 20,
+                  color: muted,
+                  size: 18,
                 ),
                 onTap: () => setState(() => _changingPw = true),
               ),
               if (!kIsWeb && _biometricAvailable) ...[
-                const Divider(height: 1, color: Color(0xFFf1f5f9)),
+                Divider(height: 1, color: border),
                 SwitchListTile(
                   value: _biometricEnabled,
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
+                    horizontal: 14,
+                    vertical: 2,
                   ),
-                  activeThumbColor: primary,
-                  activeTrackColor: primary.withAlpha(120),
+                  activeThumbColor: _kOrange,
+                  activeTrackColor: _kOrange.withValues(alpha: 0.3),
                   secondary: Container(
-                    width: 36,
-                    height: 36,
+                    width: 32,
+                    height: 32,
                     decoration: BoxDecoration(
-                      color: primary.withAlpha(20),
-                      borderRadius: BorderRadius.circular(10),
+                      color: surfaceRaised,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: border, width: 1.0),
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.fingerprint_rounded,
-                      color: primary,
-                      size: 18,
+                      color: _kBrown,
+                      size: 16,
                     ),
                   ),
                   title: Text(
-                    'Face ID / Biometric Login',
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15.5,
-                      color: const Color(0xFF281710),
+                    'Biometric / Face ID Sign-In',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: text,
                     ),
                   ),
                   subtitle: Text(
-                    'Require Face ID or Touch ID to sign in and unlock',
-                    style: GoogleFonts.inter(
-                      fontSize: 12.5,
-                      color: const Color(0xFF64748b),
+                    'Authenticate via device hardware credentials',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: muted,
                     ),
                   ),
                   onChanged: (v) async {
                     if (v) {
                       final verified = await BiometricService().authenticate(
-                        reason: 'Verify Face ID to enable biometric login',
+                        reason: 'Verify identity to enable biometric sign-in',
                       );
                       if (!verified) return;
                     }
@@ -350,15 +378,15 @@ class _SettingsPageState extends State<SettingsPage> {
                   },
                 ),
               ],
-              const Divider(height: 1, color: Color(0xFFf1f5f9)),
+              Divider(height: 1, color: border),
               SwitchListTile(
                 value: _notificationsEnabled,
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
+                  horizontal: 14,
+                  vertical: 2,
                 ),
-                activeThumbColor: primary,
-                activeTrackColor: primary.withAlpha(120),
+                activeThumbColor: _kOrange,
+                activeTrackColor: _kOrange.withValues(alpha: 0.3),
                 onChanged: (v) async {
                   setState(() => _notificationsEnabled = v);
                   try {
@@ -371,264 +399,283 @@ class _SettingsPageState extends State<SettingsPage> {
                   }
                 },
                 secondary: Container(
-                  width: 36,
-                  height: 36,
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF3b82f6).withAlpha(15),
-                    borderRadius: BorderRadius.circular(10),
+                    color: surfaceRaised,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: border, width: 1.0),
                   ),
                   child: const Icon(
                     Icons.notifications_active_outlined,
-                    color: Color(0xFF3b82f6),
-                    size: 18,
+                    color: _kBrown,
+                    size: 16,
                   ),
                 ),
                 title: Text(
                   'Push Notifications',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15.5,
-                    color: const Color(0xFF281710),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: text,
+                  ),
+                ),
+                subtitle: Text(
+                  'Regulatory notices and sitrep alerts',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: muted,
                   ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        // Section 2: Contact & Support
-        Card(
-          color: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: const Color(0xFFcbd5e1).withAlpha(120),
-              width: 1.5,
-            ),
+        const SizedBox(height: 14),
+
+        // Section 2: Contact & Secretariat
+        Container(
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: border, width: 1.0),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
                 child: Text(
-                  'CONTACT & SUPPORT',
-                  style: GoogleFonts.outfit(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    color: const Color(0xFF64748b),
+                  'SECRETARIAT & LIAISON',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: _kBrown,
                     letterSpacing: 0.5,
                   ),
                 ),
               ),
-              const Divider(height: 1, color: Color(0xFFf1f5f9)),
+              Divider(height: 1, color: border),
               _contactItem(
                 Icons.call_rounded,
-                const Color(0xFFFF5000),
-                'Call Support',
+                'Secretariat Phone Desk',
                 '+233 (0) 302 123 456',
                 () async {
                   final uri = Uri.parse('tel:+233302123456');
                   if (await canLaunchUrl(uri)) await launchUrl(uri);
                 },
+                text,
+                muted,
+                border,
+                surfaceRaised,
               ),
-              const Divider(height: 1, color: Color(0xFFf1f5f9)),
+              Divider(height: 1, color: border),
               _contactItem(
                 Icons.mail_outline_rounded,
-                const Color(0xFF3b82f6),
-                'Email Us',
+                'Official Dispatch Email',
                 'support@cubag.org.gh',
                 () async {
                   final uri = Uri.parse('mailto:support@cubag.org.gh');
                   if (await canLaunchUrl(uri)) await launchUrl(uri);
                 },
+                text,
+                muted,
+                border,
+                surfaceRaised,
               ),
-              const Divider(height: 1, color: Color(0xFFf1f5f9)),
+              Divider(height: 1, color: border),
               _contactItem(
-                Icons.forum_outlined,
-                const Color(0xFF10b981),
-                'Support Center',
-                'Help desk & messages',
+                Icons.confirmation_number_outlined,
+                'Support & Inquiries Desk',
+                'Submit grievance or view past archives',
                 () => context.go('/engagement'),
+                text,
+                muted,
+                border,
+                surfaceRaised,
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        // Section 3: Legal & About
-        Card(
-          color: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: const Color(0xFFcbd5e1).withAlpha(120),
-              width: 1.5,
-            ),
+        const SizedBox(height: 14),
+
+        // Section 3: Legal & Governance
+        Container(
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: border, width: 1.0),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
                 child: Text(
-                  'ABOUT & LEGAL',
-                  style: GoogleFonts.outfit(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    color: const Color(0xFF64748b),
+                  'GOVERNANCE & STATUTES',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: _kBrown,
                     letterSpacing: 0.5,
                   ),
                 ),
               ),
-              const Divider(height: 1, color: Color(0xFFf1f5f9)),
+              Divider(height: 1, color: border),
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
+                  horizontal: 14,
+                  vertical: 2,
                 ),
                 leading: Container(
-                  width: 36,
-                  height: 36,
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6366f1).withAlpha(15),
-                    borderRadius: BorderRadius.circular(10),
+                    color: surfaceRaised,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: border, width: 1.0),
                   ),
                   child: const Icon(
                     Icons.privacy_tip_outlined,
-                    color: Color(0xFF6366f1),
-                    size: 18,
+                    color: _kBrown,
+                    size: 16,
                   ),
                 ),
                 title: Text(
                   'Privacy Policy',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15.5,
-                    color: const Color(0xFF281710),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: text,
                   ),
                 ),
-                trailing: const Icon(
+                trailing: Icon(
                   Icons.chevron_right_rounded,
-                  color: Color(0xFF94a3b8),
-                  size: 20,
+                  color: muted,
+                  size: 18,
                 ),
                 onTap: () => InAppLegalViewer.showPrivacyPolicy(context),
               ),
-              const Divider(height: 1, color: Color(0xFFf1f5f9)),
+              Divider(height: 1, color: border),
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
+                  horizontal: 14,
+                  vertical: 2,
                 ),
                 leading: Container(
-                  width: 36,
-                  height: 36,
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0ea5e9).withAlpha(15),
-                    borderRadius: BorderRadius.circular(10),
+                    color: surfaceRaised,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: border, width: 1.0),
                   ),
                   child: const Icon(
                     Icons.description_outlined,
-                    color: Color(0xFF0ea5e9),
-                    size: 18,
+                    color: _kBrown,
+                    size: 16,
                   ),
                 ),
                 title: Text(
-                  'Terms of Service',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15.5,
-                    color: const Color(0xFF281710),
+                  'Terms of Service & Code of Conduct',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: text,
                   ),
                 ),
-                trailing: const Icon(
+                trailing: Icon(
                   Icons.chevron_right_rounded,
-                  color: Color(0xFF94a3b8),
-                  size: 20,
+                  color: muted,
+                  size: 18,
                 ),
                 onTap: () => InAppLegalViewer.showTermsOfService(context),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        // Section 4: Danger Zone
-        Card(
-          color: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: Colors.red.withAlpha(80),
-              width: 1.5,
-            ),
+        const SizedBox(height: 14),
+
+        // Section 4: Deactivation
+        Container(
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: _kRed.withValues(alpha: 0.3), width: 1.0),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
                 child: Text(
-                  'DANGER ZONE',
-                  style: GoogleFonts.outfit(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.red.shade700,
+                  'ACCOUNT DECOMMISSIONING',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: _kRed,
                     letterSpacing: 0.5,
                   ),
                 ),
               ),
-              const Divider(height: 1, color: Color(0xFFfee2e2)),
+              Divider(height: 1, color: _kRed.withValues(alpha: 0.2)),
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
+                  horizontal: 14,
+                  vertical: 2,
                 ),
                 leading: Container(
-                  width: 36,
-                  height: 36,
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
-                    color: Colors.red.withAlpha(20),
-                    borderRadius: BorderRadius.circular(10),
+                    color: _kRed.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: _kRed.withValues(alpha: 0.2), width: 1.0),
                   ),
                   child: const Icon(
-                    Icons.delete_forever_rounded,
-                    color: Colors.red,
-                    size: 20,
+                    Icons.delete_outline_rounded,
+                    color: _kRed,
+                    size: 16,
                   ),
                 ),
-                title: Text(
-                  'Delete Account',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15.5,
-                    color: Colors.red.shade800,
+                title: const Text(
+                  'Delete Member Account',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: _kRed,
                   ),
                 ),
                 subtitle: Text(
-                  'Permanently delete your member profile and data',
-                  style: GoogleFonts.inter(
-                    fontSize: 13.5,
-                    color: const Color(0xFF94a3b8),
+                  'Permanently deactivate your CUBAG portal record',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: muted,
                   ),
                 ),
                 trailing: _loading
                     ? const SizedBox(
-                        width: 20,
-                        height: 20,
+                        width: 16,
+                        height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.red,
+                          color: _kRed,
                         ),
                       )
                     : const Icon(
                         Icons.chevron_right_rounded,
-                        color: Colors.red,
-                        size: 20,
+                        color: _kRed,
+                        size: 18,
                       ),
-                onTap: _loading ? null : _confirmDeleteAccount,
+                onTap: _loading
+                    ? null
+                    : () => _confirmDeleteAccount(
+                          cardBg,
+                          border,
+                          text,
+                          muted,
+                          surfaceRaised,
+                        ),
               ),
             ],
           ),
@@ -640,84 +687,87 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _contactItem(
     IconData icon,
-    Color color,
     String label,
     String sub,
     VoidCallback onTap,
+    Color text,
+    Color muted,
+    Color border,
+    Color surfaceRaised,
   ) {
     return ListTile(
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       leading: Container(
-        width: 36,
-        height: 36,
+        width: 32,
+        height: 32,
         decoration: BoxDecoration(
-          color: color.withAlpha(15),
-          borderRadius: BorderRadius.circular(10),
+          color: surfaceRaised,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: border, width: 1.0),
         ),
-        child: Icon(icon, color: color, size: 18),
+        child: Icon(icon, color: _kBrown, size: 16),
       ),
       title: Text(
         label,
-        style: GoogleFonts.outfit(
-          fontWeight: FontWeight.w700,
-          fontSize: 15.5,
-          color: const Color(0xFF281710),
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+          color: text,
         ),
       ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 2),
-        child: Text(
-          sub,
-          style: GoogleFonts.outfit(
-            fontSize: 13.5,
-            color: const Color(0xFF64748b),
-            fontWeight: FontWeight.w500,
-          ),
+      subtitle: Text(
+        sub,
+        style: TextStyle(
+          fontSize: 12,
+          color: muted,
         ),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         Icons.chevron_right_rounded,
-        color: Color(0xFF94a3b8),
-        size: 20,
+        color: muted,
+        size: 18,
       ),
     );
   }
 
-  Widget _buildPasswordForm(Color primary) {
+  Widget _buildPasswordForm(
+    Color cardBg,
+    Color border,
+    Color text,
+    Color muted,
+    Color surfaceRaised,
+  ) {
     Widget? messageWidget;
     if (_message.isNotEmpty) {
-      final isSuccess = _message.contains('✅');
-      final msgColor = isSuccess
-          ? const Color(0xFF10b981)
-          : const Color(0xFFef4444);
+      final isSuccess = _message.contains('success');
+      final msgColor = isSuccess ? _kGreen : _kRed;
       final msgBg = isSuccess
-          ? const Color(0xFF10b981).withAlpha(15)
-          : const Color(0xFFef4444).withAlpha(15);
-      final cleanMsg = _message.replaceAll('✅', '').replaceAll('❌', '').trim();
+          ? _kGreen.withValues(alpha: 0.08)
+          : _kRed.withValues(alpha: 0.08);
 
       messageWidget = Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: msgBg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: msgColor.withAlpha(80), width: 1),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: msgColor.withValues(alpha: 0.3), width: 1.0),
         ),
         child: Row(
           children: [
             Icon(
-              isSuccess ? Icons.check_circle_rounded : Icons.error_rounded,
+              isSuccess ? Icons.check_circle_outline_rounded : Icons.error_outline_rounded,
               color: msgColor,
-              size: 18,
+              size: 16,
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                cleanMsg,
-                style: GoogleFonts.outfit(
+                _message,
+                style: TextStyle(
                   color: msgColor,
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -726,130 +776,136 @@ class _SettingsPageState extends State<SettingsPage> {
       );
     }
 
-    return Card(
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: const Color(0xFFcbd5e1).withAlpha(120),
-          width: 1.5,
-        ),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border, width: 1.0),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Change Password',
-              style: GoogleFonts.outfit(
-                fontWeight: FontWeight.w900,
-                fontSize: 20,
-                color: const Color(0xFF281710),
-              ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Change Password',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: text,
+              letterSpacing: -0.2,
             ),
-            const SizedBox(height: 6),
-            Text(
-              'Please enter your current password to verify identity, followed by your new password.',
-              style: GoogleFonts.outfit(
-                fontSize: 14,
-                color: const Color(0xFF64748b),
-                fontWeight: FontWeight.w500,
-              ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Enter your current credentials to verify authorization, then define your new password.',
+            style: TextStyle(
+              fontSize: 13,
+              color: muted,
             ),
-            const SizedBox(height: 24),
-            _pwField(
-              'Current Password',
-              _currentCtrl,
-              _showCurrent,
-              () => setState(() => _showCurrent = !_showCurrent),
-            ),
-            const SizedBox(height: 16),
-            _pwField(
-              'New Password',
-              _newCtrl,
-              _showNew,
-              () => setState(() => _showNew = !_showNew),
-            ),
-            const SizedBox(height: 16),
-            _pwField(
-              'Confirm New Password',
-              _confirmCtrl,
-              _showConfirm,
-              () => setState(() => _showConfirm = !_showConfirm),
-            ),
-            if (messageWidget != null) ...[
-              const SizedBox(height: 16),
-              messageWidget,
-            ],
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _loading ? null : _changePassword,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primary,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(0, 52),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: _loading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
-                          )
-                        : Text(
-                            'Update',
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => setState(() {
-                      _changingPw = false;
-                      _message = '';
-                      _currentCtrl.clear();
-                      _newCtrl.clear();
-                      _confirmCtrl.clear();
-                    }),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 52),
-                      side: const BorderSide(
-                        color: Color(0xFFcbd5e1),
-                        width: 1.5,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: Text(
-                      'Cancel',
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: const Color(0xFF475569),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          ),
+          const SizedBox(height: 20),
+          _pwField(
+            'Current Password',
+            _currentCtrl,
+            _showCurrent,
+            () => setState(() => _showCurrent = !_showCurrent),
+            cardBg,
+            border,
+            text,
+            muted,
+            surfaceRaised,
+          ),
+          const SizedBox(height: 14),
+          _pwField(
+            'New Password',
+            _newCtrl,
+            _showNew,
+            () => setState(() => _showNew = !_showNew),
+            cardBg,
+            border,
+            text,
+            muted,
+            surfaceRaised,
+          ),
+          const SizedBox(height: 14),
+          _pwField(
+            'Confirm New Password',
+            _confirmCtrl,
+            _showConfirm,
+            () => setState(() => _showConfirm = !_showConfirm),
+            cardBg,
+            border,
+            text,
+            muted,
+            surfaceRaised,
+          ),
+          if (messageWidget != null) ...[
+            const SizedBox(height: 14),
+            messageWidget,
           ],
-        ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => setState(() {
+                    _changingPw = false;
+                    _message = '';
+                    _currentCtrl.clear();
+                    _newCtrl.clear();
+                    _confirmCtrl.clear();
+                  }),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 46),
+                    side: BorderSide(color: border, width: 1.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
+                      color: text,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _changePassword,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _kOrange,
+                    elevation: 0,
+                    minimumSize: const Size(0, 46),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: _loading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Update',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13.5,
+                            color: Colors.white,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -859,53 +915,49 @@ class _SettingsPageState extends State<SettingsPage> {
     TextEditingController ctrl,
     bool show,
     VoidCallback toggle,
+    Color cardBg,
+    Color border,
+    Color text,
+    Color muted,
+    Color surfaceRaised,
   ) {
     return TextField(
       controller: ctrl,
       obscureText: !show,
+      style: TextStyle(color: text, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.outfit(
-          color: const Color(0xFF94a3b8),
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
+        labelStyle: TextStyle(
+          color: muted,
+          fontSize: 13.5,
         ),
-        prefixIcon: const Icon(
+        prefixIcon: Icon(
           Icons.lock_outline_rounded,
-          color: Color(0xFF94a3b8),
-          size: 18,
+          color: muted,
+          size: 16,
         ),
+        filled: true,
+        fillColor: surfaceRaised,
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
-            color: const Color(0xFFcbd5e1).withAlpha(120),
-            width: 1.5,
-          ),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: border, width: 1.0),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
-            color: Theme.of(context).primaryColor,
-            width: 2,
-          ),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: _kBrown, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
+          horizontal: 14,
+          vertical: 12,
         ),
         suffixIcon: IconButton(
           icon: Icon(
             show ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-            color: const Color(0xFF94a3b8),
-            size: 18,
+            color: muted,
+            size: 16,
           ),
           onPressed: toggle,
         ),
-      ),
-      style: GoogleFonts.outfit(
-        color: const Color(0xFF281710),
-        fontSize: 15.5,
-        fontWeight: FontWeight.w500,
       ),
     );
   }

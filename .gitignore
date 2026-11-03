@@ -65,3 +65,7 @@ cubag-react/assets/ios/
 
 # Service accounts
 *-firebase-adminsdk-*.json
+
+# Gradle caches
+**/.gradle/
+**/android/build/

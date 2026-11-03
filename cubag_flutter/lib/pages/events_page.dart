@@ -135,6 +135,7 @@ class _EventsPageState extends State<EventsPage> {
   }
 
   Widget _buildFilterChip(String label, String value, Color primary) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = _selectedFilter == value;
     return GestureDetector(
       onTap: () {
@@ -147,80 +148,74 @@ class _EventsPageState extends State<EventsPage> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? primary : Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? primary : (isDark ? const Color(0xFF281710) : Colors.white),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: isSelected
                 ? primary
-                : const Color(0xFFcbd5e1).withAlpha(120),
-            width: 1.5,
+                : (isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6)),
+            width: 1.0,
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: primary.withAlpha(40),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
         ),
         child: Text(
           label,
           style: GoogleFonts.outfit(
-            color: isSelected ? Colors.white : const Color(0xFF64748b),
-            fontWeight: FontWeight.w800,
-            fontSize: 15,
+            color: isSelected ? Colors.white : (isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B)),
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            fontSize: 13,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildHeaderControls(Color primary) {
+  Widget _buildHeaderControls(Color primary, bool isDark) {
+    final cardBg = isDark ? const Color(0xFF1E130D) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textColor = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
+    final mutedColor = isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Search bar
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            color: cardBg,
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: const Color(0xFFcbd5e1).withAlpha(120),
-              width: 1.5,
+              color: borderColor,
+              width: 1.0,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(8),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
           ),
           child: TextField(
             controller: _searchCtrl,
+            style: GoogleFonts.inter(
+              fontSize: 14.5,
+              color: textColor,
+              fontWeight: FontWeight.w600,
+            ),
             decoration: InputDecoration(
               hintText: 'Search events by title, description, location...',
-              hintStyle: GoogleFonts.outfit(
-                color: const Color(0xFF94a3b8),
-                fontSize: 15.5,
+              hintStyle: GoogleFonts.inter(
+                color: mutedColor,
+                fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
               border: InputBorder.none,
-              icon: const Icon(
+              icon: Icon(
                 Icons.search_rounded,
-                color: Color(0xFF94a3b8),
-                size: 22,
+                color: mutedColor,
+                size: 20,
               ),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.clear_rounded,
-                        color: Color(0xFF94a3b8),
+                        color: mutedColor,
                         size: 18,
                       ),
                       onPressed: () {
@@ -237,7 +232,7 @@ class _EventsPageState extends State<EventsPage> {
         Row(
           children: [
             _buildFilterChip('Upcoming Events', 'upcoming', primary),
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
             _buildFilterChip('Past Events', 'past', primary),
           ],
         ),
@@ -245,64 +240,51 @@ class _EventsPageState extends State<EventsPage> {
     );
   }
 
-  Widget _buildCalendarBadge(DateTime? date, Color primary) {
+  Widget _buildCalendarBadge(DateTime? date, Color primary, bool isDark) {
+    final badgeBorder = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final badgeBg = isDark ? const Color(0xFF1E130D) : Colors.white;
+    final dayTextColor = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
+
     if (date == null) {
       return Container(
-        width: 52,
-        height: 56,
+        width: 50,
+        height: 54,
         decoration: BoxDecoration(
-          color: const Color(0xFFf1f5f9),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFe2e8f0)),
+          color: isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: badgeBorder, width: 1.0),
         ),
-        child: Icon(Icons.calendar_month_rounded, color: primary, size: 24),
+        child: Icon(Icons.calendar_month_rounded, color: primary, size: 22),
       );
     }
     final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
     final monthStr = months[date.month - 1].toUpperCase();
     final dayStr = '${date.day}';
 
     return Container(
-      width: 52,
-      height: 56,
+      width: 50,
+      height: 54,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: badgeBg,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: const Color(0xFFcbd5e1).withAlpha(150),
-          width: 1.5,
+          color: badgeBorder,
+          width: 1.0,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(8),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         children: [
           // Top red/orange bar with month
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 2.5),
+            padding: const EdgeInsets.symmetric(vertical: 2),
             decoration: BoxDecoration(
               color: primary,
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(10),
+                top: Radius.circular(7),
               ),
             ),
             child: Text(
@@ -310,7 +292,7 @@ class _EventsPageState extends State<EventsPage> {
               textAlign: TextAlign.center,
               style: GoogleFonts.outfit(
                 color: Colors.white,
-                fontSize: 11,
+                fontSize: 10.5,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0.5,
               ),
@@ -322,10 +304,11 @@ class _EventsPageState extends State<EventsPage> {
               child: Text(
                 dayStr,
                 style: GoogleFonts.outfit(
-                  color: const Color(0xFF281710),
-                  fontSize: 20,
+                  color: dayTextColor,
+                  fontSize: 19,
                   fontWeight: FontWeight.w900,
                   height: 1.0,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
             ),
@@ -565,7 +548,6 @@ class _EventsPageState extends State<EventsPage> {
                           elevation: 0,
                         ),
                         onPressed: () async {
-                          Navigator.pop(ctx);
                           final title = e['title']?.toString() ?? 'CUBAG Event';
                           final description =
                               e['description']?.toString() ?? '';
@@ -579,6 +561,9 @@ class _EventsPageState extends State<EventsPage> {
                                 (DateTime.tryParse(rawDate) ?? startDate)
                                     .toLocal();
                           }
+
+                          Navigator.pop(ctx);
+                          await Future.delayed(const Duration(milliseconds: 250));
 
                           await CalendarService.addEventToCalendar(
                             title: title,
@@ -600,7 +585,7 @@ class _EventsPageState extends State<EventsPage> {
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        'Syncing event "$title" with your device calendar...',
+                                        'Event "$title" added to your calendar!',
                                         style: GoogleFonts.outfit(
                                           fontWeight: FontWeight.w700,
                                         ),
@@ -760,27 +745,26 @@ class _EventsPageState extends State<EventsPage> {
           }
         }
 
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final cardBg = isDark ? const Color(0xFF1E130D) : Colors.white;
+        final textColor = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF281710);
+        final mutedColor = isDark ? const Color(0xFFC8ADA0) : const Color(0xFF64748B);
+        final borderColor = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            color: cardBg,
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: const Color(0xFFcbd5e1).withAlpha(120),
-              width: 1.5,
+              color: borderColor,
+              width: 1.0,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(5),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(10),
               onTap: () => _showEventDetails(context, e, date, primary),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -788,7 +772,7 @@ class _EventsPageState extends State<EventsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Left Column: Tear-off calendar badge
-                    _buildCalendarBadge(date, primary),
+                    _buildCalendarBadge(date, primary, isDark),
                     const SizedBox(width: 16),
                     // Middle Column: Event info
                     Expanded(
@@ -804,7 +788,7 @@ class _EventsPageState extends State<EventsPage> {
                                   style: GoogleFonts.outfit(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 16.5,
-                                    color: const Color(0xFF281710),
+                                    color: textColor,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -819,9 +803,9 @@ class _EventsPageState extends State<EventsPage> {
                           const SizedBox(height: 6),
                           Text(
                             e['description']?.toString() ?? '',
-                            style: GoogleFonts.outfit(
-                              color: const Color(0xFF64748b),
-                              fontSize: 14,
+                            style: GoogleFonts.inter(
+                              color: mutedColor,
+                              fontSize: 13.5,
                               fontWeight: FontWeight.w500,
                             ),
                             maxLines: 2,
@@ -927,6 +911,7 @@ class _EventsPageState extends State<EventsPage> {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AppLayout(
       title: 'Events & Workshops',
       scrollable: false,
@@ -938,7 +923,7 @@ class _EventsPageState extends State<EventsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeaderControls(primary),
+                _buildHeaderControls(primary, isDark),
                 const SizedBox(height: 16),
                 Expanded(
                   child: RefreshIndicator(

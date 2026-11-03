@@ -854,22 +854,163 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     }
   }
 
+  Widget _buildTypographicFinancialLedger({
+    required double revenue,
+    required String pendingCount,
+    required String failedCount,
+    required bool isDark,
+    required Color borderCol,
+    required Color cardBg,
+    required Color textInk,
+    required Color subInk,
+  }) {
+    final revParts = revenue.toStringAsFixed(2).split('.');
+    final revWhole = revParts[0].replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+    final revFormatted = 'GH₵ $revWhole.${revParts[1]}';
+    final pCountInt = int.tryParse(pendingCount) ?? 0;
+    final fCountInt = int.tryParse(failedCount) ?? 0;
+
+    final items = [
+      {
+        'label': 'SETTLED REVENUE',
+        'value': revFormatted,
+        'badge': 'FY 2026 Audit',
+        'badgeColor': const Color(0xFF10b981),
+      },
+      {
+        'label': 'PENDING APPROVALS',
+        'value': pendingCount,
+        'badge': pCountInt > 0 ? 'Slip Verification' : 'Queue Cleared',
+        'badgeColor': pCountInt > 0 ? kAdminOrange : const Color(0xFF10b981),
+      },
+      {
+        'label': 'FAILED / REJECTED',
+        'value': failedCount,
+        'badge': fCountInt > 0 ? 'Action Required' : 'Zero Failed',
+        'badgeColor':
+            fCountInt > 0 ? const Color(0xFFEF4444) : const Color(0xFF10b981),
+      },
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderCol, width: 1.0),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isSmall = constraints.maxWidth < 750;
+          if (isSmall) {
+            return Column(
+              children: items.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final it = entry.value;
+                return Column(
+                  children: [
+                    _buildLedgerItem(it, textInk, subInk),
+                    if (idx < items.length - 1)
+                      Divider(height: 1, color: borderCol, thickness: 1),
+                  ],
+                );
+              }).toList(),
+            );
+          }
+
+          return Row(
+            children: items.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final it = entry.value;
+              return Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: idx < items.length - 1
+                        ? Border(right: BorderSide(color: borderCol, width: 1.0))
+                        : null,
+                  ),
+                  child: _buildLedgerItem(it, textInk, subInk),
+                ),
+              );
+            }).toList(),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLedgerItem(
+    Map<String, dynamic> it,
+    Color textInk,
+    Color subInk,
+  ) {
+    final badgeColor = it['badgeColor'] as Color;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                it['label'] as String,
+                style: GoogleFonts.outfit(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: subInk,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                decoration: BoxDecoration(
+                  color: badgeColor.withAlpha(20),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  it['badge'] as String,
+                  style: GoogleFonts.outfit(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w800,
+                    color: badgeColor,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Text(
+            it['value'] as String,
+            style: GoogleFonts.outfit(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: textInk,
+              letterSpacing: -0.4,
+            ).copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? _kCardBg : Colors.white;
-    final borderColor = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
-    final headerBg = isDark
-        ? const Color(0xFF1A0F0A).withAlpha(150)
-        : const Color(0xFFf8fafc);
-    final textColor = isDark
-        ? const Color(0xFFf8fafc)
-        : const Color(0xFF1A0F0A);
-    final subTextColor = isDark
-        ? const Color(0xFF94a3b8)
-        : const Color(0xFF64748b);
+    final cardBg = isDark ? kAdminPaperDark : kAdminPaperLight;
+    final borderColor = isDark ? kAdminBorderDark : kAdminBorderLight;
+    final headerBg =
+        isDark ? const Color(0xFF170C08) : const Color(0xFFF4EFEA);
+    final textColor = isDark ? Colors.white : kAdminInk;
+    final subTextColor =
+        isDark ? const Color(0xFF9E8F84) : const Color(0xFF6B5E55);
 
     final revenue = double.tryParse(_kpis['revenue']?.toString() ?? '0') ?? 0;
     final pendingCount = _kpis['pending']?.toString() ?? '0';
@@ -878,20 +1019,6 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     return AppLayout(
       title: 'Financial Center',
       scrollable: true,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showRecordCounterPaymentModal,
-        backgroundColor: _kGreen,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        icon: const Icon(Icons.point_of_sale_rounded, size: 20),
-        label: Text(
-          '➕ Record Counter / Cash Payment',
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -951,106 +1078,20 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
           ),
           const SizedBox(height: 18),
 
-          // ── Metric Summary Cards ─────────────────────────────────────────────
-          Row(
-            children: [
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Total Collected Revenue',
-                  value: 'GHS ${revenue.toStringAsFixed(2)}',
-                  icon: Icons.account_balance_wallet_outlined,
-                  color: kAdminGreen,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Pending Approvals',
-                  value: pendingCount,
-                  icon: Icons.hourglass_top_rounded,
-                  color: kAdminAmber,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Failed / Overdue',
-                  value: failedCount,
-                  icon: Icons.cancel_outlined,
-                  color: kAdminRed,
-                ),
-              ),
-            ],
+          // ── Typographic Metric Ledger ─────────────────────────────────────────
+          _buildTypographicFinancialLedger(
+            revenue: revenue,
+            pendingCount: pendingCount,
+            failedCount: failedCount,
+            isDark: isDark,
+            borderCol: borderColor,
+            cardBg: cardBg,
+            textInk: textColor,
+            subInk: subTextColor,
           ),
           const SizedBox(height: 16),
 
-          // ── Quick Office Counter Settlement Banner ──
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDark
-                    ? [const Color(0xFF10b981).withAlpha(40), const Color(0xFF065f46).withAlpha(30)]
-                    : [const Color(0xFFecfdf5), const Color(0xFFd1fae5).withAlpha(120)],
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: const Color(0xFF10b981).withAlpha(80),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10b981).withAlpha(40),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.point_of_sale_rounded, color: Color(0xFF10b981), size: 20),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Direct Walk-in / Office Counter Settlement',
-                        style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: textColor,
-                        ),
-                      ),
-                      Text(
-                        'Member or customer paying at Secretariat office with Cash, Cheque, or POS Card Swipe?',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: subTextColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: _showRecordCounterPaymentModal,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF10b981),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  icon: const Icon(Icons.add_circle_outline_rounded, size: 16),
-                  label: Text(
-                    'Record Payment',
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
+
 
           // ── Filter & Search Toolbar ──────────────────────────────────────────
           AdminToolbar(
@@ -1605,7 +1646,6 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
   Map<String, dynamic>? _selectedMember;
 
   List<Map<String, dynamic>> _platformFees = [];
-  bool _loadingFees = false;
   String _feeSourceNotice = '';
 
   String _category = 'Annual Renewal Dues';
@@ -1629,7 +1669,6 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
   }
 
   Future<void> _fetchPlatformFees() async {
-    if (mounted) setState(() => _loadingFees = true);
     try {
       final res = await ApiService().get('admin/fees');
       if (!mounted) return;
@@ -1638,17 +1677,13 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
           _platformFees = List<Map<String, dynamic>>.from(
             (res.data as List).map((x) => Map<String, dynamic>.from(x as Map))
           );
-          _loadingFees = false;
         });
         if (_selectedMember != null) {
           _updateAmountForCategory(_category);
         }
-      } else {
-        setState(() => _loadingFees = false);
       }
     } catch (e, st) {
       AppLogger.error('record_counter_fees_fetch', e, st);
-      if (mounted) setState(() => _loadingFees = false);
     }
   }
 
@@ -1680,7 +1715,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
       'Annual Renewal Dues',
       'Registration Fee',
       'Subscription Fee',
-      'Vetting & Dossier Verification Fee',
+      'Vetting & Document Verification Fee',
       'District / Branch Development Levy',
       'New Membership Package Fee',
     ];
@@ -2364,7 +2399,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
 
                       // Payment Category Dropdown
                       DropdownButtonFormField<String>(
-                        value: _categories.contains(_category)
+                        initialValue: _categories.contains(_category)
                             ? _category
                             : (_categories.isNotEmpty ? _categories.first : 'Annual Renewal Dues'),
                         decoration: InputDecoration(

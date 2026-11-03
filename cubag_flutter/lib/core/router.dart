@@ -6,14 +6,12 @@ import '../services/telemetry_service.dart';
 import '../services/auth_service.dart';
 import 'package:provider/provider.dart';
 
-import '../pages/public_home_page.dart';
 import '../pages/guest_service_request_page.dart';
 import '../pages/complaints_portal_page.dart';
 import '../pages/membership_services_page.dart';
 
 // ── Always-loaded pages ──────────────────────────────────────────────────────
 import '../pages/splash_page.dart';
-import '../pages/landing_page.dart';
 import '../pages/login_page.dart';
 import '../pages/register_page.dart';
 import '../pages/forgot_password_page.dart';
@@ -21,6 +19,7 @@ import '../pages/reset_password_page.dart';
 import '../pages/verify_email_page.dart';
 import '../pages/otp_verification_page.dart';
 import '../pages/verify_member_page.dart';
+import '../pages/verify_payment_page.dart';
 import '../pages/member_detail_page.dart';
 import '../pages/public_directory_page.dart';
 import '../pages/dashboard_page.dart';
@@ -77,26 +76,26 @@ import '../pages/admin_compliance_page.dart';
 
 /// Routes accessible without a JWT token.
 const _publicRoutes = {
-  '/',
   '/splash',
-  '/landing',
   '/login',
   '/register',
   '/forgot-password',
   '/reset-password',
   '/verify-email',
   '/otp-verification',
-  '/public-services',
   '/guest-services',
   '/directory',
   '/members-directory',
   '/complaints',
   '/track-complaint',
+  '/verify-member',
+  '/verify-payment',
 };
 
 bool _isPublic(String path) =>
     _publicRoutes.contains(path) ||
-    path.startsWith('/verify-member/') ||
+    path.startsWith('/verify-member') ||
+    path.startsWith('/verify-payment') ||
     path.startsWith('/member-detail/') ||
     path.startsWith('/guest-services') ||
     path.startsWith('/complaints');
@@ -109,7 +108,7 @@ Future<void> preloadAdminLibraries() async {}
 
 // ── Router ───────────────────────────────────────────────────────────────────
 final GoRouter appRouter = GoRouter(
-  initialLocation: kIsWeb ? '/' : '/splash',
+  initialLocation: kIsWeb ? '/login' : '/splash',
   refreshListenable: AuthService(),
   observers: [TelemetryRouteObserver()],
   redirect: (context, state) {
@@ -123,7 +122,15 @@ final GoRouter appRouter = GoRouter(
 
     final bool isAdminRole = role == 'admin' || role == 'sub_admin' || role == 'super_admin';
 
-    if (!loggedIn && !_isPublic(loc)) return '/login';
+    // Unauthenticated root, landing, or protected routes always go directly to /login
+    if (!loggedIn) {
+      if (loc == '/' || loc == '/landing' || loc == '/public-services') {
+        return '/login';
+      }
+      if (!_isPublic(loc)) {
+        return '/login';
+      }
+    }
 
     // ── Messaging Route Synchronizer: Admin -> /admin/messages, Member -> /messaging ──
     if (loggedIn) {
@@ -176,7 +183,7 @@ final GoRouter appRouter = GoRouter(
       }
     }
 
-    if (loggedIn && (loc == '/login' || loc == '/register')) {
+    if (loggedIn && (loc == '/' || loc == '/landing' || loc == '/public-services' || loc == '/login' || loc == '/register')) {
       if (role == 'admin' || role == 'sub_admin' || role == 'super_admin') {
         if (!kIsWeb) return '/admin-unavailable';
         if (role == 'sub_admin') {
@@ -213,8 +220,23 @@ final GoRouter appRouter = GoRouter(
   },
   routes: [
     GoRoute(path: '/splash', builder: (c, s) => const SplashPage()),
-    GoRoute(path: '/', builder: (c, s) => const PublicHomePage()),
-    GoRoute(path: '/landing', builder: (c, s) => const LandingPage()),
+    GoRoute(
+      path: '/',
+      redirect: (c, s) {
+        final storage = SessionStorage.instance;
+        final auth = AuthService();
+        final token = storage.getStringSync('cubag_token');
+        final bool loggedIn = (token != null && token.isNotEmpty) || auth.isAuthenticated;
+        if (!loggedIn) return '/login';
+        final role = storage.getStringSync('cubag_role') ?? auth.userRole;
+        if (role == 'admin' || role == 'sub_admin' || role == 'super_admin') {
+          return '/admin/dashboard';
+        }
+        return '/dashboard';
+      },
+    ),
+    GoRoute(path: '/landing', redirect: (c, s) => '/login'),
+    GoRoute(path: '/public-services', redirect: (c, s) => '/login'),
     GoRoute(path: '/login', builder: (c, s) => const LoginPage()),
     GoRoute(path: '/register', builder: (c, s) => const RegisterPage()),
     GoRoute(
@@ -238,8 +260,30 @@ final GoRouter appRouter = GoRouter(
           OTPVerificationPage(email: s.uri.queryParameters['email']),
     ),
     GoRoute(
+      path: '/verify-member',
+      builder: (c, s) => VerifyMemberPage(
+        memberId: s.uri.queryParameters['id'] ?? s.uri.queryParameters['query'],
+      ),
+    ),
+    GoRoute(
       path: '/verify-member/:id',
-      builder: (c, s) => VerifyMemberPage(memberId: s.pathParameters['id']),
+      builder: (c, s) => VerifyMemberPage(
+        memberId: s.pathParameters['id'] ?? s.uri.queryParameters['id'],
+      ),
+    ),
+    GoRoute(
+      path: '/verify-payment',
+      builder: (c, s) => VerifyPaymentPage(
+        paymentRef: s.uri.queryParameters['ref'],
+        amount: s.uri.queryParameters['amount'],
+      ),
+    ),
+    GoRoute(
+      path: '/verify-payment/:ref',
+      builder: (c, s) => VerifyPaymentPage(
+        paymentRef: s.pathParameters['ref'] ?? s.uri.queryParameters['ref'],
+        amount: s.uri.queryParameters['amount'],
+      ),
     ),
     GoRoute(
       path: '/member-detail/:id',
@@ -249,10 +293,6 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/members-directory',
       builder: (c, s) => const PublicDirectoryPage(),
-    ),
-    GoRoute(
-      path: '/public-services',
-      builder: (c, s) => const PublicHomePage(),
     ),
     GoRoute(
       path: '/guest-services',

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
@@ -8,7 +7,6 @@ import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../components/shimmer_loader.dart';
 import '../services/api_service.dart';
-import '../services/auth_service.dart';
 import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
 
@@ -31,6 +29,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   int _applicationsCount = 0;
   List<dynamic> _rawMembers = [];
   Timer? _prefetchTimer;
+  Map<String, String> _forex = {
+    'USD': '15.45',
+    'EUR': '16.80',
+    'GBP': '19.50',
+    'CNY': '2.15',
+  };
+  int _activeWorkspaceIndex = 0; // 0: Vetting Queue, 1: Maritime & FX, 2: Counter POS Desk
 
   @override
   void initState() {
@@ -187,6 +192,20 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         setState(() => _loading = false);
       }
 
+      api.getPublic('intelligence').then((res) {
+        if (mounted && res is Map && res['forex'] is Map) {
+          final fx = Map<String, dynamic>.from(res['forex']);
+          setState(() {
+            _forex = {
+              'USD': fx['USD']?.toString() ?? _forex['USD']!,
+              'EUR': fx['EUR']?.toString() ?? _forex['EUR']!,
+              'GBP': fx['GBP']?.toString() ?? _forex['GBP']!,
+              'CNY': fx['CNY']?.toString() ?? _forex['CNY']!,
+            };
+          });
+        }
+      }).catchError((_) {});
+
       if (!_prefetchStarted) {
         _prefetchAdminData();
       }
@@ -232,7 +251,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         : const Color(0xFFE8DED6);
     final textColor = isDark ? Colors.white : const Color(0xFF2B211D);
     final subTextColor = isDark ? Colors.white70 : const Color(0xFF6F625B);
-    final userName = context.select<AuthService, String?>((a) => a.userName);
 
     final pendingMembers = _rawMembers
         .where((m) {
@@ -247,138 +265,777 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       scrollable: true,
       child: _loading
           ? const _AdminDashboardSkeleton()
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (_error != null) _buildErrorBanner(isDark),
-                _buildWelcomeHeader(context, userName),
-                _buildKPIGrid(context, pendingMembers.length),
-                const SizedBox(height: 20),
-                _buildCounterPaymentActionBanner(context, isDark),
-                _buildPendingApprovalsCard(
-                  context,
-                  pendingMembers,
-                  primary,
-                  cardBg,
-                  borderColor,
-                  textColor,
-                  subTextColor,
+          : SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1300),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_error != null) _buildErrorBanner(isDark),
+                      _buildTypographicKpiLedger(
+                        context,
+                        pendingMembers.length,
+                        isDark,
+                      ),
+                      const SizedBox(height: 18),
+                      _buildWorkspaceTabs(context, isDark, pendingMembers.length),
+                      const SizedBox(height: 16),
+                      _buildActiveWorkspaceContent(
+                        context,
+                        pendingMembers,
+                        primary,
+                        cardBg,
+                        borderColor,
+                        textColor,
+                        subTextColor,
+                        isDark,
+                      ),
+                      const SizedBox(height: 36),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 24),
-              ],
+              ),
             ),
     );
   }
 
-  Widget _buildCounterPaymentActionBanner(BuildContext context, bool isDark) {
+
+
+  Widget _buildTypographicKpiLedger(
+    BuildContext context,
+    int pendingCount,
+    bool isDark,
+  ) {
+    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
+    final subInk = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
+
+    final revParts = _revenue.toStringAsFixed(2).split('.');
+    final revWhole = revParts[0].replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+    final revenueLabel = 'GH₵ $revWhole.${revParts[1]}';
+
+    final totalPending =
+        _applicationsCount > 0 ? _applicationsCount : pendingCount;
+
+    final items = [
+      {
+        'label': 'PENDING VETTING',
+        'value': '$totalPending',
+        'badge': totalPending > 0 ? 'Action Required' : 'Queue Clear',
+        'badgeColor': totalPending > 0 ? kAdminOrange : const Color(0xFF10b981),
+        'onTap': () => setState(() => _activeWorkspaceIndex = 0),
+      },
+      {
+        'label': 'ACCREDITED BROKERS',
+        'value': '$_totalMembers',
+        'badge': 'Active Registry',
+        'badgeColor': const Color(0xFF6B3E26),
+        'onTap': () => context.go('/admin/members'),
+      },
+      {
+        'label': 'SETTLED REVENUE',
+        'value': revenueLabel,
+        'badge': 'FY 2026 Settled',
+        'badgeColor': const Color(0xFF10b981),
+        'onTap': () => context.go('/admin/payments'),
+      },
+      {
+        'label': 'OPEN GRIEVANCES',
+        'value': '$_openTickets',
+        'badge': 'Disputes Desk',
+        'badgeColor': const Color(0xFF2563EB),
+        'onTap': () => context.go('/admin/tickets'),
+      },
+    ];
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1B2E24) : const Color(0xFFE8F5E9),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF10b981).withAlpha(isDark ? 90 : 120),
-          width: 1.2,
-        ),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderCol, width: 1.0),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isNarrow = constraints.maxWidth < 650;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+          final isSmall = constraints.maxWidth < 750;
+          if (isSmall) {
+            return Column(
+              children: items.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final it = entry.value;
+                return Column(
+                  children: [
+                    _buildKpiItem(it, isDark, textInk, subInk),
+                    if (idx < items.length - 1)
+                      Divider(height: 1, color: borderCol, thickness: 1),
+                  ],
+                );
+              }).toList(),
+            );
+          }
+
+          return Row(
+            children: items.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final it = entry.value;
+              return Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: idx < items.length - 1
+                        ? Border(right: BorderSide(color: borderCol, width: 1.0))
+                        : null,
+                  ),
+                  child: _buildKpiItem(it, isDark, textInk, subInk),
+                ),
+              );
+            }).toList(),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildKpiItem(
+    Map<String, dynamic> it,
+    bool isDark,
+    Color textInk,
+    Color subInk,
+  ) {
+    final badgeColor = it['badgeColor'] as Color;
+    return InkWell(
+      onTap: it['onTap'] as VoidCallback?,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  it['label'] as String,
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: subInk,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withAlpha(20),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    it['badge'] as String,
+                    style: GoogleFonts.outfit(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      color: badgeColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              it['value'] as String,
+              style: GoogleFonts.outfit(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: textInk,
+                letterSpacing: -0.4,
+              ).copyWith(
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWorkspaceTabs(BuildContext context, bool isDark, int pendingCount) {
+    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
+    final subInk = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
+
+    final tabs = [
+      {
+        'index': 0,
+        'label': 'Applications & Vetting Queue',
+        'icon': Icons.pending_actions_rounded,
+        'badge': '$pendingCount',
+        'badgeColor': pendingCount > 0 ? kAdminOrange : const Color(0xFF10b981),
+      },
+      {
+        'index': 1,
+        'label': 'Maritime Port & Forex Feeds',
+        'icon': Icons.anchor_rounded,
+        'badge': 'LIVE',
+        'badgeColor': const Color(0xFF10b981),
+      },
+      {
+        'index': 2,
+        'label': 'Counter Walk-in POS Desk',
+        'icon': Icons.point_of_sale_rounded,
+        'badge': 'COUNTER',
+        'badgeColor': const Color(0xFF2563EB),
+      },
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E120B) : const Color(0xFFEDE5DC),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderCol, width: 1.0),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isSmall = constraints.maxWidth < 700;
+          if (isSmall) {
+            return Column(
+              children: tabs.map((t) => _buildTabItem(t, isDark, textInk, subInk)).toList(),
+            );
+          }
+
+          return Row(
+            children: tabs
+                .map((t) => Expanded(child: _buildTabItem(t, isDark, textInk, subInk)))
+                .toList(),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTabItem(
+    Map<String, dynamic> t,
+    bool isDark,
+    Color textInk,
+    Color subInk,
+  ) {
+    final idx = t['index'] as int;
+    final isSelected = _activeWorkspaceIndex == idx;
+    final badgeColor = t['badgeColor'] as Color;
+    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final activeBg = isDark ? const Color(0xFF2A170F) : Colors.white;
+
+    return InkWell(
+      onTap: () => setState(() => _activeWorkspaceIndex = idx),
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: isSelected ? activeBg : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: isSelected ? Border.all(color: borderCol, width: 1.0) : null,
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(isDark ? 25 : 8),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  )
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              t['icon'] as IconData,
+              size: 16,
+              color: isSelected ? kAdminOrange : subInk,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                t['label'] as String,
+                style: GoogleFonts.outfit(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: isSelected ? textInk : subInk,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? badgeColor.withAlpha(25)
+                    : (isDark ? Colors.white10 : Colors.black.withAlpha(12)),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                t['badge'] as String,
+                style: GoogleFonts.outfit(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: isSelected ? badgeColor : subInk,
+                ).copyWith(
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActiveWorkspaceContent(
+    BuildContext context,
+    List<dynamic> pendingMembers,
+    Color primary,
+    Color cardBg,
+    Color borderColor,
+    Color textColor,
+    Color subTextColor,
+    bool isDark,
+  ) {
+    switch (_activeWorkspaceIndex) {
+      case 0:
+        return _buildPendingApprovalsCard(
+          context,
+          pendingMembers,
+          primary,
+          cardBg,
+          borderColor,
+          textColor,
+          subTextColor,
+        );
+      case 1:
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth > 850;
+            if (isWide) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10b981).withAlpha(40),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.point_of_sale_rounded,
-                      color: Color(0xFF10b981),
-                      size: 26,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Record Counter / Cash Payment',
-                          style: GoogleFonts.outfit(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : const Color(0xFF1A0F0A),
-                          ),
-                        ),
-                        Text(
-                          'Walk-in payments at the secretariat counter (Cash, Cheque, POS, Direct Deposit).',
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            color: isDark ? const Color(0xFF94a3b8) : const Color(0xFF64748b),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (!isNarrow) ...[
-                    const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF10b981),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
+                  Expanded(flex: 55, child: _buildPortOperationalDeskCard(context, isDark)),
+                  const SizedBox(width: 16),
+                  Expanded(flex: 45, child: _buildForexDeskCard(context, isDark)),
+                ],
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildPortOperationalDeskCard(context, isDark),
+                const SizedBox(height: 16),
+                _buildForexDeskCard(context, isDark),
+              ],
+            );
+          },
+        );
+      case 2:
+      default:
+        return _buildCounterPaymentActionCard(context, isDark);
+    }
+  }
+
+
+
+  Widget _buildCounterPaymentActionCard(BuildContext context, bool isDark) {
+    final cardBg = isDark ? const Color(0xFF1B2E24) : const Color(0xFFE8F5E9);
+    final borderCol = const Color(0xFF10b981).withAlpha(isDark ? 90 : 120);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderCol, width: 1.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10b981).withAlpha(35),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.point_of_sale_rounded,
+                  color: Color(0xFF10b981),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Secretariat Counter Desk',
+                      style: GoogleFonts.outfit(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : const Color(0xFF1F1612),
+                        letterSpacing: -0.3,
                       ),
-                      onPressed: () => context.go('/admin/payments?action=counter_payment'),
-                      icon: const Icon(Icons.add_rounded, size: 20),
-                      label: Text(
-                        '➕ Record Payment',
-                        style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
+                    ),
+                    Text(
+                      'Walk-in payments: Cash, Cheque, POS card, Direct wire',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: isDark ? const Color(0xFF94a3b8) : const Color(0xFF64748b),
                       ),
                     ),
                   ],
-                ],
+                ),
               ),
-              if (isNarrow) ...[
-                const SizedBox(height: 12),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF10b981),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                elevation: 0,
+              ),
+              onPressed: () => context.go('/admin/payments?action=counter_payment'),
+              icon: const Icon(Icons.add_rounded, size: 17),
+              label: Text(
+                '➕ Record Counter / Cash Payment',
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13.5,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPortOperationalDeskCard(BuildContext context, bool isDark) {
+    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderCol, width: 1.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.anchor_rounded, size: 16, color: kAdminOrange),
+                    const SizedBox(width: 8),
+                    Text(
+                      'PORT OPERATIONS DESK',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: textInk,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10b981).withAlpha(20),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'LIVE STATUS',
+                    style: GoogleFonts.outfit(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF10b981),
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, thickness: 1, color: borderCol),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                _buildPortStatusRow('Tema Port (MPS Terminal 3)', 'Operational', 'Berth Normal', const Color(0xFF10b981), isDark),
+                const SizedBox(height: 8),
+                _buildPortStatusRow('Takoradi Maritime Terminal', 'Operational', 'Clearance Active', const Color(0xFF10b981), isDark),
+                const SizedBox(height: 8),
+                _buildPortStatusRow('Kotoka Cargo Village (KIA)', 'Operational', 'Air Waybills Active', const Color(0xFF10b981), isDark),
+                const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF10b981),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
+                  child: OutlinedButton(
+                    onPressed: () => context.go('/admin/port-news'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: textInk,
+                      side: BorderSide(color: borderCol),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     ),
-                    onPressed: () => context.go('/admin/payments?action=counter_payment'),
-                    icon: const Icon(Icons.add_rounded, size: 20),
-                    label: Text(
-                      '➕ Record Counter / Cash Payment',
+                    child: Text(
+                      'Manage Port Bulletins →',
                       style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
                       ),
                     ),
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPortStatusRow(String name, String status, String note, Color color, bool isDark) {
+    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
+    final subInk = isDark ? const Color(0xFF9E8F84) : const Color(0xFF6B5E55);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF170C08) : Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: borderCol, width: 0.8),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: textInk,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  note,
+                  style: GoogleFonts.inter(fontSize: 10.5, color: subInk),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+            decoration: BoxDecoration(
+              color: color.withAlpha(20),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              status,
+              style: GoogleFonts.outfit(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildForexDeskCard(BuildContext context, bool isDark) {
+    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderCol, width: 1.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.currency_exchange_rounded, size: 16, color: const Color(0xFF6B3E26)),
+                    const SizedBox(width: 8),
+                    Text(
+                      'OFFICIAL CUSTOMS FX RATES',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: textInk,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10b981).withAlpha(20),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'INDICATIVE',
+                    style: GoogleFonts.outfit(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF10b981),
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, thickness: 1, color: borderCol),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                _buildFxRateRow('\$', 'USD / GHS', _forex['USD'] ?? '15.45', isDark),
+                const SizedBox(height: 6),
+                _buildFxRateRow('€', 'EUR / GHS', _forex['EUR'] ?? '16.80', isDark),
+                const SizedBox(height: 6),
+                _buildFxRateRow('£', 'GBP / GHS', _forex['GBP'] ?? '19.50', isDark),
+                const SizedBox(height: 6),
+                _buildFxRateRow('¥', 'CNY / GHS', _forex['CNY'] ?? '2.15', isDark),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () => context.go('/admin/intelligence'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: textInk,
+                      side: BorderSide(color: borderCol),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    child: Text(
+                      'Update FX Tariffs & News →',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFxRateRow(String symbol, String pair, String rate, bool isDark) {
+    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF170C08) : Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: borderCol, width: 0.8),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 22,
+                height: 22,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF22140E) : const Color(0xFFF4EFEA),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  symbol,
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF6B3E26),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                pair,
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: textInk,
+                ),
+              ),
             ],
-          );
-        },
+          ),
+          Text(
+            rate,
+            style: GoogleFonts.outfit(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: textInk,
+            ).copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -403,7 +1060,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               _error!,
               style: GoogleFonts.inter(
                 color: const Color(0xFFef4444),
-                fontSize: 17,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -414,131 +1071,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildWelcomeHeader(BuildContext context, String? name) {
-    final displayName = name ?? 'Administrator';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AdminHeader(
-          title: 'Executive Dashboard',
-          subtitle:
-              'Welcome back, $displayName. Association operations, compliance filings, and financial metrics.',
-          actions: [
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF10b981),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              onPressed: () => context.go('/admin/payments?action=counter_payment'),
-              icon: const Icon(Icons.point_of_sale_rounded, size: 18),
-              label: Text(
-                '➕ Record Counter / Cash Payment',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kAdminOrange,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              onPressed: _fetchData,
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: Text(
-                'Refresh Dashboard',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 17,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 18),
-      ],
-    );
-  }
-
-  Widget _buildKPIGrid(BuildContext context, int pendingCount) {
-    final primary = Theme.of(context).primaryColor;
-    final size = MediaQuery.of(context).size;
-    final isDesktop = size.width > 1100;
-    final isTablet = size.width > 650 && size.width <= 1100;
-    final isTiny = size.width < 360;
-    final revParts = _revenue.toStringAsFixed(2).split('.');
-    final revWhole = revParts[0].replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    );
-    final revenueLabel = 'GH₵ $revWhole.${revParts[1]}';
-
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: isDesktop ? 5 : (isTablet ? 3 : (isTiny ? 1 : 2)),
-      mainAxisSpacing: isTiny ? 10 : 14,
-      crossAxisSpacing: isTiny ? 10 : 14,
-      childAspectRatio: isDesktop ? 1.75 : (isTablet ? 1.8 : (isTiny ? 2.8 : 1.35)),
-      children: [
-        _DashboardKPICard(
-          icon: Icons.people_alt_rounded,
-          color: primary,
-          title: 'TOTAL MEMBERS',
-          value: '$_totalMembers',
-          onTap: () => context.go('/admin/members'),
-        ),
-        _DashboardKPICard(
-          icon: Icons.pending_actions_rounded,
-          color: const Color(0xFFFF5000),
-          title: 'PENDING APPROVALS',
-          value: '$pendingCount',
-          onTap: () => context.go('/admin/members?status=pending'),
-        ),
-        _DashboardKPICard(
-          icon: Icons.assignment_rounded,
-          color: const Color(0xFF8b5cf6),
-          title: 'APPLICATIONS',
-          value: '$_applicationsCount',
-          onTap: () => context.go('/admin/compliance'),
-        ),
-        _DashboardKPICard(
-          icon: Icons.account_balance_wallet_rounded,
-          color: const Color(0xFF10b981),
-          title: 'TOTAL REVENUE',
-          value: revenueLabel,
-          onTap: () => context.go('/admin/payments'),
-        ),
-        _DashboardKPICard(
-          icon: Icons.confirmation_number_rounded,
-          color: const Color(0xFF3b82f6),
-          title: 'OPEN TICKETS',
-          value: '$_openTickets',
-          onTap: () => context.go('/admin/tickets'),
-        ),
-      ],
     );
   }
 
@@ -560,8 +1092,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       width: double.infinity,
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor, width: 1.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor, width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -574,14 +1106,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(6),
+                      padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withAlpha(30),
+                        color: kAdminOrange.withAlpha(25),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
                         Icons.pending_actions_rounded,
-                        color: Colors.orange,
+                        color: kAdminOrange,
                         size: 20,
                       ),
                     ),
@@ -592,16 +1124,17 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         Text(
                           'Pending Registration Approvals',
                           style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
                             color: textColor,
+                            letterSpacing: -0.3,
                           ),
                         ),
                         Text(
                           'Review and verify newly submitted member applications',
                           style: GoogleFonts.inter(
                             color: subTextColor,
-                            fontSize: 16,
+                            fontSize: 13,
                           ),
                         ),
                       ],
@@ -612,22 +1145,24 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
+                        horizontal: 8,
+                        vertical: 3.5,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withAlpha(25),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.orange.withAlpha(60)),
+                        color: kAdminOrange.withAlpha(20),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: kAdminOrange.withAlpha(50)),
                       ),
                       child: Text(
                         pendingMembers.length > 5
                             ? 'Showing latest 5 of ${pendingMembers.length}'
                             : '${pendingMembers.length} awaiting review',
                         style: GoogleFonts.outfit(
-                          color: Colors.orange,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          color: kAdminOrange,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ).copyWith(
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
                     ),
@@ -635,12 +1170,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     TextButton.icon(
                       onPressed: () =>
                           context.go('/admin/members?status=pending'),
-                      icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                      icon: const Icon(Icons.arrow_forward_rounded, size: 14),
                       label: Text(
                         'View All',
                         style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
                         ),
                       ),
                     ),
@@ -689,7 +1224,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           else
             ClipRRect(
               borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(16),
+                bottom: Radius.circular(12),
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -928,150 +1463,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 }
 
-class _DashboardKPICard extends StatefulWidget {
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String value;
-  final VoidCallback? onTap;
 
-  const _DashboardKPICard({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.value,
-    this.onTap,
-  });
-
-  @override
-  State<_DashboardKPICard> createState() => _DashboardKPICardState();
-}
-
-class _DashboardKPICardState extends State<_DashboardKPICard> {
-  bool _isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final borderColor = isDark
-        ? (_isHovered
-              ? widget.color.withValues(alpha: 0.5)
-              : const Color(0xFF4D2D20))
-        : (_isHovered
-              ? widget.color.withValues(alpha: 0.4)
-              : const Color(0xFFe2e8f0));
-    final textColor = isDark ? Colors.white : const Color(0xFF1A0F0A);
-    final subTextColor = isDark ? Colors.white70 : const Color(0xFF64748b);
-
-    return MouseRegion(
-      cursor: widget.onTap != null
-          ? SystemMouseCursors.click
-          : SystemMouseCursors.basic,
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-          transform: _isHovered
-              ? Matrix4.translationValues(0.0, -2.0, 0.0)
-              : Matrix4.identity(),
-          padding: EdgeInsets.symmetric(
-            horizontal: MediaQuery.sizeOf(context).width < 400 ? 10 : 14,
-            vertical: MediaQuery.sizeOf(context).width < 400 ? 10 : 14,
-          ),
-          decoration: BoxDecoration(
-            color: _isHovered
-                ? (isDark ? const Color(0xFF1A0F0A) : const Color(0xFFf8fafc))
-                : cardBg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: borderColor,
-              width: _isHovered ? 1.8 : 1.2,
-            ),
-            boxShadow: _isHovered
-                ? [
-                    BoxShadow(
-                      color: widget.color.withValues(alpha: 0.15),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(MediaQuery.sizeOf(context).width < 400 ? 7 : 10),
-                decoration: BoxDecoration(
-                  color: widget.color.withValues(
-                    alpha: _isHovered ? 0.18 : 0.1,
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  widget.icon,
-                  color: widget.color,
-                  size: MediaQuery.sizeOf(context).width < 400 ? 18 : 22,
-                ),
-              ),
-              SizedBox(width: MediaQuery.sizeOf(context).width < 400 ? 8 : 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            widget.title,
-                            style: GoogleFonts.inter(
-                              color: _isHovered ? widget.color : subTextColor,
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (widget.onTap != null)
-                          Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 13,
-                            color: _isHovered
-                                ? widget.color
-                                : subTextColor.withValues(alpha: 0.5),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        widget.value,
-                        style: GoogleFonts.outfit(
-                          color: textColor,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _AdminDashboardSkeleton extends StatelessWidget {
   const _AdminDashboardSkeleton();

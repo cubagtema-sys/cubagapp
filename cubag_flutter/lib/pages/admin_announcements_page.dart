@@ -144,12 +144,12 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
         ),
         content: Text(
           'Are you sure you want to archive this announcement? It will be moved from the live member broadcast feed.',
-          style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF64748B), height: 1.4),
+          style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF6B5E55), height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: GoogleFonts.outfit(color: const Color(0xFF64748B), fontWeight: FontWeight.w600)),
+            child: Text('Cancel', style: GoogleFonts.outfit(color: const Color(0xFF6B5E55), fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -204,10 +204,10 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
-          final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-          final border = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
-          final textCol = isDark ? Colors.white : const Color(0xFF0F172A);
-          final textMuted = isDark ? Colors.white70 : const Color(0xFF64748B);
+          final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+          final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+          final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
+          final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
           final categories = [
             {'label': 'General Notice', 'key': 'General', 'icon': Icons.article_outlined, 'color': _kBlue},
@@ -307,7 +307,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                         hintStyle: GoogleFonts.inter(fontSize: 13, color: textMuted),
                         isDense: true,
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange)),
@@ -330,7 +330,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                         hintStyle: GoogleFonts.inter(fontSize: 13, color: textMuted),
                         isDense: true,
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange)),
@@ -412,10 +412,10 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
-          final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-          final border = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
-          final textCol = isDark ? Colors.white : const Color(0xFF0F172A);
-          final textMuted = isDark ? Colors.white70 : const Color(0xFF64748B);
+          final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+          final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+          final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
+          final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
           return Dialog(
             backgroundColor: cardBg,
@@ -477,7 +477,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                       decoration: InputDecoration(
                         isDense: true,
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       ),
@@ -493,7 +493,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                       decoration: InputDecoration(
                         isDense: true,
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                         contentPadding: const EdgeInsets.all(12),
                       ),
@@ -587,11 +587,11 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC);
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final border = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark ? Colors.white60 : const Color(0xFF64748B);
+    final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0);
+    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
+    final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
     final displayList = _tab == 'active' ? _filterList(_active) : _filterList(_archived);
     final isLoading = _tab == 'active' ? _loadingActive : _loadingArchived;
@@ -981,7 +981,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
           color: isSel ? color.withAlpha(isDark ? 40 : 25) : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
-            color: isSel ? color : (isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0)),
+            color: isSel ? color : (isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6)),
             width: isSel ? 1.5 : 1,
           ),
         ),

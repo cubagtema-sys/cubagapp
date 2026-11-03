@@ -158,11 +158,11 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
 
   void _openUpdateDialog(Map<String, dynamic> item) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dialogBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final fieldBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC);
-    final borderCol = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
-    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subTextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final dialogBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+    final fieldBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0);
+    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textColor = isDark ? Colors.white : const Color(0xFF1F1612);
+    final subTextColor = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
     String status = item['status']?.toString() ?? 'Received';
     String priority = item['priority']?.toString() ?? 'Normal';
@@ -354,11 +354,11 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
 
   void _openViewDetailsDialog(Map<String, dynamic> item) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dialogBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final fieldBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC);
-    final borderCol = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
-    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subTextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final dialogBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+    final fieldBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0);
+    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textColor = isDark ? Colors.white : const Color(0xFF1F1612);
+    final subTextColor = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
     final complaintId = item['complaint_id']?.toString() ?? '';
     final status = item['status']?.toString() ?? 'Received';
@@ -395,7 +395,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Grievance Dossier', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)),
+                  Text('Grievance Record', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)),
                   Text('$complaintId • Filed $createdAt', style: GoogleFonts.outfit(fontSize: 11.5, color: subTextColor)),
                 ],
               ),
@@ -528,10 +528,10 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
-    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subTextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+    final borderColor = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textColor = isDark ? Colors.white : const Color(0xFF1F1612);
+    final subTextColor = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
     final complaints = _displayedComplaints;
 
@@ -548,7 +548,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
             actions: [
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: isDark ? Colors.white : const Color(0xFF334155),
+                  foregroundColor: textColor,
                   side: BorderSide(color: borderColor),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -595,7 +595,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                               hintStyle: GoogleFonts.inter(fontSize: 12.5, color: subTextColor),
                               prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
                               filled: true,
-                              fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                              fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
                               enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
                               focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange, width: 1.2)),
@@ -697,7 +697,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                             dataRowMinHeight: 52,
                             dataRowMaxHeight: 58,
                             headingRowColor: WidgetStateProperty.all(
-                              isDark ? const Color(0xFF381F15) : const Color(0xFFF8FAFC),
+                              isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0),
                             ),
                             headingTextStyle: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.w700, color: subTextColor),
                             dataTextStyle: GoogleFonts.inter(fontSize: 13, color: textColor),
@@ -800,7 +800,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                                             elevation: 0,
                                           ),
-                                          child: Text('Dossier', style: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                          child: Text('Case Details', style: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.bold)),
                                         ),
                                         const SizedBox(width: 6),
                                         ElevatedButton(
@@ -929,7 +929,13 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                 children: [
                   Text(
                     count,
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 16, color: textColor),
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      color: textColor,
+                    ).copyWith(
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
                   Text(
                     label,

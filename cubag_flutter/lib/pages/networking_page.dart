@@ -102,34 +102,32 @@ class _NetworkingPageState extends State<NetworkingPage> {
             .join()
             .toUpperCase();
 
-  Widget _buildFilterChip(String value, String label) {
+  Widget _buildFilterChip(String value, String label, bool isDark) {
     final isSelected = _filterType == value;
+    final chipBg = isSelected
+        ? _kBrown
+        : (isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0));
+    final chipBorder = isSelected
+        ? _kBrown
+        : (isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6));
+
     return GestureDetector(
       onTap: () => setState(() => _filterType = value),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         margin: const EdgeInsets.only(right: 8),
         decoration: BoxDecoration(
-          color: isSelected ? _kBrown : _kCream,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? _kBrown : _kBorder, width: 1),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: _kBrown.withAlpha(40),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
+          color: chipBg,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: chipBorder, width: 1),
         ),
         child: Text(
           label,
           style: GoogleFonts.outfit(
-            color: isSelected ? Colors.white : _kText,
+            color: isSelected ? Colors.white : (isDark ? const Color(0xFFFFF8F3) : _kText),
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-            fontSize: 14,
+            fontSize: 13,
           ),
         ),
       ),
@@ -200,107 +198,133 @@ class _NetworkingPageState extends State<NetworkingPage> {
     );
   }
 
-  Widget _buildMemberCard(Map<String, dynamic> m) {
-    final mType = (m['member_type'] ?? '').toString().trim();
-    final color =
-        _typeColors[mType] ?? _typeColors[mType.toLowerCase()] ?? _kBrown;
+  Widget _buildMemberCard(Map<String, dynamic> m, bool isDark) {
+    final mType = (m['member_type'] ?? 'Licensed').toString().trim();
     final initials = _initials(m['name']?.toString() ?? '');
-    final port = m['port_of_operation'] ?? m['primary_port'] ?? 'Tema Port';
+    final port = m['port_of_operation'] ?? m['primary_port'] ?? 'Tema Maritime Port';
     final name = m['name']?.toString() ?? 'Licensed Member';
-    final company = m['company']?.toString() ?? 'Independent Broker';
+    final company = m['company']?.toString() ?? 'Accredited Brokerage Desk';
+    final regId = m['license_number'] ?? m['membership_number'] ?? 'GH-${(m['id']?.toString() ?? '00').padLeft(4, '0')}';
+
+    final cardBg = isDark ? const Color(0xFF1E130D) : _kWhite;
+    final textColor = isDark ? const Color(0xFFFFF8F3) : _kText;
+    final mutedColor = isDark ? const Color(0xFFC8ADA0) : _kMuted;
+    final borderColor = isDark ? const Color(0xFF3D261C) : _kBorder;
+    final surfaceRaised = isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: _kWhite,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _kBorder, width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(4),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        color: cardBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderColor, width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: _kCream,
-                backgroundImage:
-                    (m['profile_photo'] != null &&
-                        m['profile_photo'].toString().isNotEmpty)
-                    ? CachedNetworkImageProvider(m['profile_photo'].toString())
-                    : null,
-                child:
-                    (m['profile_photo'] == null ||
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: surfaceRaised,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: borderColor, width: 1.0),
+                  image: (m['profile_photo'] != null &&
+                          m['profile_photo'].toString().isNotEmpty)
+                      ? DecorationImage(
+                          image: CachedNetworkImageProvider(m['profile_photo'].toString()),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: (m['profile_photo'] == null ||
                         m['profile_photo'].toString().isEmpty)
-                    ? Text(
-                        initials,
-                        style: GoogleFonts.outfit(
-                          color: _kBrown,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
+                    ? Center(
+                        child: Text(
+                          initials,
+                          style: const TextStyle(
+                            color: _kBrown,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
                         ),
                       )
                     : null,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       name,
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 17,
-                        color: _kText,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14.5,
+                        color: textColor,
+                        letterSpacing: -0.2,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 3),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: color.withAlpha(20),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: color.withAlpha(60)),
-                      ),
-                      child: Text(
-                        mType.toUpperCase(),
-                        style: GoogleFonts.outfit(
-                          fontSize: 11,
-                          color: color,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: surfaceRaised,
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: borderColor, width: 1.0),
+                          ),
+                          child: Text(
+                            mType.toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: _kBrown,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            regId.toString(),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: mutedColor,
+                              fontWeight: FontWeight.w500,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+          Divider(color: borderColor, height: 1.0),
+          const SizedBox(height: 6),
           Row(
             children: [
-              const Icon(Icons.business_rounded, size: 14, color: _kMuted),
-              const SizedBox(width: 6),
+              Icon(Icons.business_rounded, size: 13, color: mutedColor),
+              const SizedBox(width: 5),
               Expanded(
                 child: Text(
                   company,
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: _kMuted,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: textColor,
                     fontWeight: FontWeight.w600,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -308,17 +332,17 @@ class _NetworkingPageState extends State<NetworkingPage> {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Row(
             children: [
-              const Icon(Icons.location_on_rounded, size: 14, color: _kOrange),
-              const SizedBox(width: 6),
+              Icon(Icons.anchor_rounded, size: 13, color: mutedColor),
+              const SizedBox(width: 5),
               Expanded(
                 child: Text(
                   port.toString(),
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: _kMuted,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: mutedColor,
                     fontWeight: FontWeight.w500,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -335,25 +359,26 @@ class _NetworkingPageState extends State<NetworkingPage> {
                     _showMemberDetails(context, m);
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _kBrown,
-                    side: const BorderSide(color: _kBorder, width: 1.2),
-                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    foregroundColor: textColor,
+                    side: BorderSide(color: borderColor, width: 1.0),
+                    padding: const EdgeInsets.symmetric(vertical: 7),
+                    minimumSize: const Size(0, 32),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                   ),
-                  child: Text(
-                    'Details',
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                  child: const Text(
+                    'Profile',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12.5,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Expanded(
-                child: ElevatedButton.icon(
+                child: ElevatedButton(
                   onPressed: () {
                     final id = m['id']?.toString() ?? '';
                     final n = m['name']?.toString() ?? 'Member';
@@ -366,17 +391,17 @@ class _NetworkingPageState extends State<NetworkingPage> {
                     backgroundColor: _kOrange,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    padding: const EdgeInsets.symmetric(vertical: 7),
+                    minimumSize: const Size(0, 32),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                   ),
-                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 13),
-                  label: Text(
-                    'Start A Conversation',
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                  child: const Text(
+                    'Message',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12.5,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -713,6 +738,11 @@ class _NetworkingPageState extends State<NetworkingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1E130D) : _kWhite;
+    final borderColor = isDark ? const Color(0xFF3D261C) : _kBorder;
+    final textColor = isDark ? const Color(0xFFFFF8F3) : _kText;
+
     final filtered = _members.where((m) {
       if (m['role'] == 'admin' || m['role'] == 'sub_admin') return false;
       final q = _search.toLowerCase();
@@ -730,6 +760,8 @@ class _NetworkingPageState extends State<NetworkingPage> {
       return matchSearch && matchType;
     }).toList();
 
+    final surfaceRaised = isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
+
     return AppLayout(
       title: 'Member Directory',
       hideSearch: false,
@@ -738,42 +770,86 @@ class _NetworkingPageState extends State<NetworkingPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1000),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── Editorial Ledger Registry Header ────────────────────────
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: borderColor, width: 1.0),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: surfaceRaised,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: borderColor, width: 1.0),
+                        ),
+                        child: const Icon(Icons.badge_outlined, color: _kBrown, size: 18),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'National Register of Customs Brokers',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15.5,
+                                color: textColor,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
                 // ── 1. Search Bar ─────────────────────────────────────────────
                 Container(
                   decoration: BoxDecoration(
-                    color: _kWhite,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: _kBorder),
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: borderColor, width: 1.0),
                   ),
                   child: TextFormField(
                     controller: _searchCtrl,
                     onChanged: _onSearchChanged,
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      color: _kText,
-                      fontWeight: FontWeight.w600,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: textColor,
+                      fontWeight: FontWeight.w500,
                     ),
                     decoration: InputDecoration(
                       hintText:
                           'Search members by name, company, or operating port...',
                       hintStyle: TextStyle(
-                        color: _kMuted.withAlpha(160),
-                        fontSize: 15,
+                        color: _kMuted.withValues(alpha: 0.7),
+                        fontSize: 13.5,
                       ),
                       prefixIcon: const Icon(
                         Icons.search_rounded,
                         color: _kBrown,
+                        size: 18,
                       ),
                       suffixIcon: _searchCtrl.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.clear_rounded,
                                 color: _kMuted,
-                                size: 18,
+                                size: 16,
                               ),
                               onPressed: () => setState(() {
                                 _searchCtrl.clear();
@@ -783,13 +859,13 @@ class _NetworkingPageState extends State<NetworkingPage> {
                           : null,
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
+                        horizontal: 14,
+                        vertical: 12,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
                 // ── 2. Type filter chips ──────────────────────────────────────
                 SingleChildScrollView(
@@ -797,29 +873,30 @@ class _NetworkingPageState extends State<NetworkingPage> {
                   physics: const BouncingScrollPhysics(),
                   child: Row(
                     children: [
-                      _buildFilterChip('All', 'All Members'),
-                      _buildFilterChip('Licentiate', 'Licentiate'),
-                      _buildFilterChip('Associate', 'Associate'),
-                      _buildFilterChip('Corporate', 'Corporate'),
+                      _buildFilterChip('All', 'All Members', isDark),
+                      _buildFilterChip('Licentiate', 'Licentiate', isDark),
+                      _buildFilterChip('Associate', 'Associate', isDark),
+                      _buildFilterChip('Corporate', 'Corporate', isDark),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
                 if (!_loading)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Text(
-                      'SHOWING ${filtered.length} ACTIVE MEMBERS',
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13.5,
+                      'SHOWING ${filtered.length} ACTIVE PRACTITIONERS',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11.5,
                         color: _kBrown,
                         letterSpacing: 0.5,
+                        fontFeatures: [FontFeature.tabularFigures()],
                       ),
                     ),
                   ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
 
                 // ── 3. Grid / List View ───────────────────────────────────────
                 Expanded(
@@ -837,22 +914,27 @@ class _NetworkingPageState extends State<NetworkingPage> {
                         ? _buildEmptyState()
                         : LayoutBuilder(
                             builder: (context, constraints) {
-                              final isWide = constraints.maxWidth > 650;
+                              final width = constraints.maxWidth;
+                              final isWide = width > 600;
                               if (isWide) {
+                                final int crossAxisCount = width >= 1200
+                                    ? 4
+                                    : (width >= 850 ? 3 : 2);
                                 return GridView.builder(
                                   physics:
                                       const AlwaysScrollableScrollPhysics(),
                                   gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 2,
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: crossAxisCount,
                                         crossAxisSpacing: 12,
                                         mainAxisSpacing: 12,
-                                        childAspectRatio: 1.55,
+                                        mainAxisExtent: 168,
                                       ),
                                   itemCount: filtered.length,
                                   itemBuilder: (context, i) {
                                     return _buildMemberCard(
                                       filtered[i] as Map<String, dynamic>,
+                                      isDark,
                                     );
                                   },
                                 );
@@ -865,9 +947,10 @@ class _NetworkingPageState extends State<NetworkingPage> {
                                       const SizedBox(height: 12),
                                   itemBuilder: (context, i) {
                                     return SizedBox(
-                                      height: 200,
+                                      height: 172,
                                       child: _buildMemberCard(
                                         filtered[i] as Map<String, dynamic>,
+                                        isDark,
                                       ),
                                     );
                                   },

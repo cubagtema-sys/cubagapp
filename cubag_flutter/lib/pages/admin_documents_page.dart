@@ -191,21 +191,34 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 17, color: isSelected ? color : (isDark ? Colors.white60 : const Color(0xFF64748B))),
+              Icon(
+                icon,
+                size: 17,
+                color: isSelected
+                    ? color
+                    : (isDark ? Colors.white60 : const Color(0xFF7A6B60)),
+              ),
               const SizedBox(width: 8),
               Text(
                 title,
                 style: GoogleFonts.outfit(
                   fontSize: 15,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  color: isSelected ? (isDark ? Colors.white : color) : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                  color: isSelected
+                      ? (isDark ? Colors.white : color)
+                      : (isDark ? Colors.white70 : const Color(0xFF6B5E55)),
                 ),
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isSelected ? color : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                  color: isSelected
+                      ? color
+                      : (isDark
+                          ? Colors.white12
+                          : const Color(0xFFE8DED6)),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -213,7 +226,11 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                   style: GoogleFonts.outfit(
                     fontSize: 12.5,
                     fontWeight: FontWeight.bold,
-                    color: isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark
+                            ? Colors.white70
+                            : const Color(0xFF6B5E55)),
                   ),
                 ),
               ),
@@ -233,31 +250,31 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: isSel ? activeColor.withAlpha(isDark ? 40 : 25) : (isDark ? const Color(0xFF281710) : Colors.white),
+          color: isSel ? activeColor.withAlpha(isDark ? 40 : 25) : (isDark ? const Color(0xFF22140E) : Colors.white),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSel ? activeColor : (isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0)),
+            color: isSel ? activeColor : (isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6)),
             width: isSel ? 1.5 : 1,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: isSel ? activeColor : (isDark ? Colors.white60 : const Color(0xFF64748B))),
+            Icon(icon, size: 14, color: isSel ? activeColor : (isDark ? Colors.white60 : const Color(0xFF7A6B60))),
             const SizedBox(width: 6),
             Text(
               label,
               style: GoogleFonts.outfit(
                 fontSize: 13.5,
                 fontWeight: isSel ? FontWeight.w700 : FontWeight.w600,
-                color: isSel ? activeColor : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                color: isSel ? activeColor : (isDark ? Colors.white70 : const Color(0xFF6B5E55)),
               ),
             ),
             const SizedBox(width: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
               decoration: BoxDecoration(
-                color: isSel ? activeColor : (isDark ? Colors.white12 : const Color(0xFFF1F5F9)),
+                color: isSel ? activeColor : (isDark ? Colors.white12 : const Color(0xFFEDE5DC)),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -265,7 +282,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                 style: GoogleFonts.outfit(
                   fontSize: 11.5,
                   fontWeight: FontWeight.bold,
-                  color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF64748B)),
+                  color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF7A6B60)),
                 ),
               ),
             ),
@@ -278,11 +295,11 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC);
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0);
+    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+    final borderColor = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
+    final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
     final corpMembers = _getMembersForCategory('corporate');
     final licMembers = _getMembersForCategory('licentiate');
@@ -325,7 +342,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Applicant Dossiers',
+                          'Applicant Documents',
                           style: GoogleFonts.outfit(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
@@ -390,7 +407,9 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF281710) : const Color(0xFFF1F5F9),
+                  color: isDark
+                      ? const Color(0xFF22140E)
+                      : const Color(0xFFEDE5DC),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: borderColor),
                 ),
@@ -504,7 +523,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                                       ),
                                       const SizedBox(height: 12),
                                       Text(
-                                        'No dossiers found',
+                                        'No applicant records found',
                                         style: GoogleFonts.outfit(
                                           fontSize: 17,
                                           fontWeight: FontWeight.bold,
@@ -1228,12 +1247,13 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
     String title,
     String fileUrl,
   ) {
+    final cleanUrl = ApiService.resolveImageUrl(fileUrl);
     final isImage =
-        fileUrl.toLowerCase().contains('.png') ||
-        fileUrl.toLowerCase().contains('.jpg') ||
-        fileUrl.toLowerCase().contains('.jpeg') ||
-        fileUrl.toLowerCase().contains('.webp') ||
-        fileUrl.toLowerCase().contains('.gif');
+        cleanUrl.toLowerCase().contains('.png') ||
+        cleanUrl.toLowerCase().contains('.jpg') ||
+        cleanUrl.toLowerCase().contains('.jpeg') ||
+        cleanUrl.toLowerCase().contains('.webp') ||
+        cleanUrl.toLowerCase().contains('.gif');
 
     showDialog(
       context: context,
@@ -1266,8 +1286,8 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                   IconButton(
                     icon: const Icon(Icons.open_in_new_rounded),
                     onPressed: () async {
-                      final uri = Uri.parse(fileUrl);
-                      if (await canLaunchUrl(uri)) {
+                      final uri = Uri.tryParse(cleanUrl);
+                      if (uri != null && await canLaunchUrl(uri)) {
                         await launchUrl(
                           uri,
                           mode: LaunchMode.externalApplication,
@@ -1287,7 +1307,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                 child: isImage
                     ? InteractiveViewer(
                         child: CorsImageWidget(
-                          url: fileUrl,
+                          url: cleanUrl,
                           fit: BoxFit.contain,
                           placeholder: const Center(
                             child: CircularProgressIndicator(color: _kOrange),
@@ -1298,8 +1318,8 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                         ),
                       )
                     : doc_preview.buildDocPreview(
-                        fileUrl,
-                        'modal_${title.hashCode}',
+                        cleanUrl,
+                        'modal_${title.hashCode}_${cleanUrl.hashCode}',
                       ),
               ),
             ],
@@ -1331,7 +1351,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Verify & Approve Dossier',
+                'Verify & Approve Documents',
                 style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
               ),
             ),
@@ -1355,7 +1375,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
               ),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Approve Dossier'),
+            child: const Text('Approve Documents'),
           ),
         ],
       ),
@@ -1377,7 +1397,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
         }
       }
     } catch (_) {
-      if (mounted) _snack('Network error while approving dossier', _kRed);
+      if (mounted) _snack('Network error while approving documents', _kRed);
     }
     if (mounted) setState(() => _approvingAll = false);
   }
@@ -1408,13 +1428,13 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC);
-    final border = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+    final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0);
+    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
     final textMuted = isDark
-        ? Colors.white
-        : const Color(0xFF64748B);
+        ? const Color(0xFFB0A298)
+        : const Color(0xFF6B5E55);
 
     final name = ((_member['name'] as String?) ?? 'Applicant').trim();
     final company = ((_member['company'] as String?) ?? 'Company / Enterprise')
@@ -1720,7 +1740,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                           : const Icon(Icons.verified_rounded, size: 16)),
                                 label: Text(
                                   isApproved
-                                      ? 'Dossier Verified'
+                                      ? 'Documents Verified'
                                       : (_approvingAll
                                             ? 'Verifying...'
                                             : (total > 0
@@ -1997,35 +2017,53 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
               const SizedBox(width: 14),
 
               if (id != null && isUploaded)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _kGreen,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                        elevation: 0,
-                      ),
-                      onPressed: _actionLoading[id] == true ? null : () => _setStatus(id, 'approved', key),
-                      icon: const Icon(Icons.check_rounded, size: 13),
-                      label: Text('Approve', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold)),
+                if (status == 'approved')
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _kGreen.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: _kGreen.withValues(alpha: 0.35)),
                     ),
-                    const SizedBox(width: 6),
-                    OutlinedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: _kRed,
-                        side: const BorderSide(color: _kRed),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                      ),
-                      onPressed: _actionLoading[id] == true ? null : () => _setStatus(id, 'rejected', key),
-                      icon: const Icon(Icons.close_rounded, size: 13),
-                      label: Text('Reject', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.verified_rounded, size: 14, color: _kGreen),
+                        const SizedBox(width: 5),
+                        Text('Approved', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: _kGreen)),
+                      ],
                     ),
-                  ],
-                ),
+                  )
+                else
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _kGreen,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          elevation: 0,
+                        ),
+                        onPressed: _actionLoading[id] == true ? null : () => _setStatus(id, 'approved', key),
+                        icon: const Icon(Icons.check_rounded, size: 13),
+                        label: Text('Approve', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: 6),
+                      OutlinedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: _kRed,
+                          side: const BorderSide(color: _kRed),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        ),
+                        onPressed: _actionLoading[id] == true ? null : () => _setStatus(id, 'rejected', key),
+                        icon: const Icon(Icons.close_rounded, size: 13),
+                        label: Text('Reject', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
             ],
           ),
         );

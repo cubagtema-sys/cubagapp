@@ -45,8 +45,55 @@ public class Add2CalendarPlugin: NSObject, FlutterPlugin {
     }
 
     private func addEventToCalendar(from args: [String:Any]) {
+        let eventStore = EKEventStore()
         
-        
+        if #available(iOS 17, *) {
+            let authStatus = EKEventStore.authorizationStatus(for: .event)
+            switch authStatus {
+            case .fullAccess, .writeOnly, .authorized:
+                self.saveOrPresentEvent(from: args)
+            case .notDetermined:
+                eventStore.requestWriteOnlyAccessToEvents { [weak self] granted, error in
+                    if granted {
+                        self?.saveOrPresentEvent(from: args)
+                    } else {
+                        eventStore.requestFullAccessToEvents { [weak self] fullGranted, _ in
+                            if fullGranted {
+                                self?.saveOrPresentEvent(from: args)
+                            } else {
+                                self?.completePendingResult(false)
+                            }
+                        }
+                    }
+                }
+            case .denied, .restricted:
+                completePendingResult(false)
+            @unknown default:
+                completePendingResult(false)
+            }
+        } else {
+            let authStatus = getAuthorizationStatus()
+            switch authStatus {
+            case .authorized:
+                self.saveOrPresentEvent(from: args)
+            case .notDetermined:
+                eventStore.requestAccess(to: .event) { [weak self] (granted, error) in
+                    if granted {
+                        self?.saveOrPresentEvent(from: args)
+                    } else {
+                        self?.completePendingResult(false)
+                    }
+                }
+            case .denied, .restricted:
+                completePendingResult(false)
+            default:
+                completePendingResult(false)
+            }
+        }
+    }
+
+    private func saveOrPresentEvent(from args: [String:Any]) {
+        let store = EKEventStore()
         let title = args["title"] as! String
         let description = args["desc"] is NSNull ? nil: args["desc"] as? String
         let location = args["location"] is NSNull ? nil: args["location"] as? String
@@ -56,11 +103,29 @@ public class Add2CalendarPlugin: NSObject, FlutterPlugin {
         let alarmInterval = args["alarmInterval"] as? Double
         let allDay = args["allDay"] as! Bool
         let url = args["url"] as? String
-        
-        let eventStore = EKEventStore()
-        let event = createEvent(eventStore: eventStore, alarmInterval: alarmInterval, title: title, description: description, location: location, timeZone: timeZone, startDate: startDate, endDate: endDate, allDay: allDay, url: url, args: args)
 
-        presentCalendarModalToAddEvent(event, eventStore: eventStore)
+        let event = createEvent(eventStore: store, alarmInterval: alarmInterval, title: title, description: description, location: location, timeZone: timeZone, startDate: startDate, endDate: endDate, allDay: allDay, url: url, args: args)
+
+        let targetCalendar = store.defaultCalendarForNewEvents ?? store.calendars(for: .event).first(where: { $0.allowsContentModifications }) ?? store.calendars(for: .event).first
+
+        if let cal = targetCalendar {
+            event.calendar = cal
+            do {
+                try store.save(event, span: .thisEvent, commit: true)
+                OperationQueue.main.addOperation {
+                    let feedback = UINotificationFeedbackGenerator()
+                    feedback.notificationOccurred(.success)
+                    self.completePendingResult(true)
+                }
+                return
+            } catch {
+                print("[Add2Calendar] Direct calendar save failed: \(error). Falling back to modal presentation.")
+            }
+        }
+
+        OperationQueue.main.addOperation {
+            self.presentEventCalendarDetailModal(event: event, eventStore: store)
+        }
     }
     
     private func createEvent(eventStore: EKEventStore, alarmInterval: Double?, title: String, description: String?, location: String?, timeZone: TimeZone?, startDate: Date?, endDate: Date?, allDay: Bool, url: String?, args: [String:Any]) -> EKEvent {
@@ -106,67 +171,17 @@ public class Add2CalendarPlugin: NSObject, FlutterPlugin {
         return EKEventStore.authorizationStatus(for: EKEntityType.event)
     }
     
-    // Show event kit ui to add event to calendar
-    
-    func presentCalendarModalToAddEvent(_ event: EKEvent, eventStore: EKEventStore) {
-        if #available(iOS 17, *) {
-            OperationQueue.main.addOperation {
-                self.presentEventCalendarDetailModal(event: event, eventStore: eventStore)
-            }
-        } else {
-            let authStatus = getAuthorizationStatus()
-            switch authStatus {
-            case .authorized:
-                OperationQueue.main.addOperation {
-                    self.presentEventCalendarDetailModal(event: event, eventStore: eventStore)
-                }
-            case .notDetermined:
-                //Auth is not determined
-                //We should request access to the calendar
-                eventStore.requestAccess(to: .event, completion: { [weak self] (granted, error) in
-                    if granted {
-                        OperationQueue.main.addOperation {
-                            self?.presentEventCalendarDetailModal(event: event, eventStore: eventStore)
-                        }
-                    } else {
-                        // Auth denied
-                        self?.completePendingResult(false)
-                    }
-                })
-            case .denied, .restricted:
-                // Auth denied or restricted
-                completePendingResult(false)
-            default:
-                completePendingResult(false)
-            }
-        }
-    }
-    
-    // Present edit event calendar modal
-    
+    // Present edit event calendar modal as pageSheet
     func presentEventCalendarDetailModal(event: EKEvent, eventStore: EKEventStore) {
         let eventModalVC = EKEventEditViewController()
         eventModalVC.event = event
         eventModalVC.eventStore = eventStore
         eventModalVC.editViewDelegate = self
+        eventModalVC.modalPresentationStyle = .pageSheet
         
-        if #available(iOS 13, *) {
-            eventModalVC.modalPresentationStyle = .fullScreen
-        }
-        
-        // CUBAG patch: resolve the presenter from the active UIWindowScene.
-        // UIApplication.shared.keyWindow is deprecated and returns nil under a
-        // scene-based lifecycle (this app declares UIApplicationSceneManifest),
-        // which made the stock plugin fail-closed and silently fall back to a
-        // web Google Calendar link instead of adding to the native calendar.
         if let presenter = topPresentedViewController() {
-            presenter.present(eventModalVC, animated: true, completion: {
-                statusBarStyle = UIApplication.shared.statusBarStyle
-                UIApplication.shared.statusBarStyle = UIStatusBarStyle.default
-            })
+            presenter.present(eventModalVC, animated: true, completion: nil)
         } else {
-            // No window/root available — fail-closed so the Future
-            // doesn't hang. Same observable as #135, different cause.
             completePendingResult(false)
         }
     }
@@ -189,6 +204,9 @@ public class Add2CalendarPlugin: NSObject, FlutterPlugin {
         }
         var top = root
         while let presented = top?.presentedViewController {
+            if presented.isBeingDismissed {
+                break
+            }
             top = presented
         }
         return top

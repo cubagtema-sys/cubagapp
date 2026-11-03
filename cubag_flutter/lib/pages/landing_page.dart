@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -15,33 +14,33 @@ import '../services/socket_service.dart';
 import '../utils/app_colors.dart';
 import '../components/cors_image_widget.dart';
 
-// ── CUBAG Dynamic Theme System ───────────────────────────────────────────────
+// ── CUBAG Dynamic Theme System (Polished Editorial & Mobile-First) ───────────
 bool get _globalIsDark => ThemeService.instance.isDark;
 Color get _kBg => _globalIsDark
     ? const Color(0xFF1A0F0A)
-    : const Color(0xFFFFFFFF); // deep espresso chocolate
+    : const Color(0xFFFFFFFF); // clean crisp background
 Color get _kCream => _globalIsDark
     ? const Color(0xFF281710)
-    : const Color(0xFFF8F4F0); // warm velvet chocolate
+    : const Color(0xFFF8F4F0); // warm ivory cream section contrast
 Color get _kCardBg => _globalIsDark
     ? const Color(0xFF281710)
-    : Colors.white; // chocolate cards & surfaces
+    : Colors.white; // clean card surface
 Color get _kBrown => _globalIsDark
     ? const Color(0xFFFF5000)
-    : const Color(0xFF6B3E26); // shining caramel gold
-Color get _kAccent => const Color(0xFFFF5000); // CTA, active states ONLY
+    : const Color(0xFF6B3E26); // rich cocoa brown
+Color get _kAccent => const Color(0xFFFF5000); // vibrant orange CTA accent
 Color get _kText => _globalIsDark
     ? const Color(0xFFFFF8F3)
-    : const Color(0xFF2B211D); // warm ivory cream text
+    : const Color(0xFF2B211D); // deep espresso text
 Color get _kMuted => _globalIsDark
     ? const Color(0xFFC8ADA0)
-    : const Color(0xFF6F625B); // soft cocoa tan muted
+    : const Color(0xFF6F625B); // muted warm slate-brown
 Color get _kBorder => _globalIsDark
     ? const Color(0xFF4D2D20)
-    : const Color(0xFFE8DED6); // warm bronze borders
+    : const Color(0xFFE8DED6); // subtle warm border
 Color get _kFooter => _globalIsDark
     ? const Color(0xFF120A06)
-    : const Color(0xFF2B211D); // deepest espresso footer
+    : const Color(0xFF2B211D); // deep espresso footer
 
 TextStyle _outfit({
   Color? color,
@@ -49,6 +48,7 @@ TextStyle _outfit({
   FontWeight? fontWeight,
   double? height,
   double? letterSpacing,
+  List<FontFeature>? fontFeatures,
 }) {
   return TextStyle(
     fontFamily: 'Outfit',
@@ -58,6 +58,7 @@ TextStyle _outfit({
     fontWeight: fontWeight,
     height: height,
     letterSpacing: letterSpacing,
+    fontFeatures: fontFeatures,
   );
 }
 
@@ -67,6 +68,7 @@ TextStyle _inter({
   FontWeight? fontWeight,
   double? height,
   double? letterSpacing,
+  List<FontFeature>? fontFeatures,
 }) {
   return TextStyle(
     fontFamily: 'Inter',
@@ -76,6 +78,7 @@ TextStyle _inter({
     fontWeight: fontWeight,
     height: height,
     letterSpacing: letterSpacing,
+    fontFeatures: fontFeatures,
   );
 }
 
@@ -115,22 +118,22 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
 
   // Real-time News & Port Bulletins
   List<dynamic> _newsArticles = [];
-  bool _loadingNews = false;
+  bool _loadingNews = true;
   List<dynamic> _portBulletins = [];
-  bool _loadingBulletins = false;
+  bool _loadingBulletins = true;
 
   // Real-time Events & Meetings
   List<dynamic> _eventsList = [];
   List<dynamic> _meetingsList = [];
-  bool _loadingEvents = false;
+  bool _loadingEvents = true;
 
   // Real-time CTI Short Courses
   List<dynamic> _coursesList = [];
-  bool _loadingCourses = false;
+  bool _loadingCourses = true;
 
   // Real-time Public Surveys & Polls
   List<dynamic> _publicSurveys = [];
-  bool _loadingSurveys = false;
+  bool _loadingSurveys = true;
   int _activeSurveyIdx = 0;
   final Map<int, String> _selectedOptionMap = {};
   final Set<int> _votedSurveyIds = {};
@@ -140,21 +143,17 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
   // Real-time Gallery
   final ScrollController _galleryScrollCtrl = ScrollController();
   List<dynamic> _galleryList = [];
-  bool _loadingGallery = false;
+  bool _loadingGallery = true;
   Timer? _galleryAutoTimer;
   Timer? _backgroundSyncTimer;
 
   // Ports count
-  int _portsCount = 6;
+  int _portsCount = 0;
 
   // Segmented tab state
   int _activeUpdatesTab = 0; // 0 = Port News, 1 = Industry News
   int _activeEventsTab = 0; // 0 = Events,    1 = Meetings
 
-  // Mobile footer accordion
-  bool _footerAboutExpanded = false;
-  bool _footerLinksExpanded = false;
-  bool _footerContactExpanded = false;
 
   @override
   void initState() {
@@ -714,107 +713,99 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
 
     return Scaffold(
       backgroundColor: _kBg,
-      body: Stack(
-        children: [
-          // Scrollable page content
-          Positioned.fill(
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              child: Column(
-                children: [
-                  SizedBox(
-                    height: 72.0 + MediaQuery.of(context).padding.top,
-                  ), // header clearance with device status bar
-                  // ① Hero
-                  _buildHeroSection(size, isMobile),
-                  // ② Quick Services
-                  _buildQuickServicesSection(isMobile),
-                  // ③ Industry Updates
-                  _buildIndustryUpdatesSection(isMobile),
-                  // ④ Community Surveys & Polls (Guest & Public participation)
-                  _buildSurveysSection(isMobile),
-                  // ⑤ Member Directory
-                  _buildMemberDirectorySection(isMobile),
-                  // ⑥ Events & Meetings
-                  _buildEventsSection(isMobile),
-                  // ⑦ CTI Training
-                  _buildCtiTrainingSection(isMobile),
-                  // ⑧ Complaints & Tracking Order
-                  _buildComplaintsSection(isMobile),
-                  // ⑨ Gallery
-                  _buildGallerySection(isMobile),
-                  // ⑩ Merged Need Help & Footer
-                  _buildFooter(isMobile),
-                ],
+      body: SelectionArea(
+        child: Stack(
+          children: [
+            // Scrollable page content
+            Positioned.fill(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: 72.0 + MediaQuery.of(context).padding.top,
+                    ), // header clearance with device status bar
+                    // ① Hero
+                    _buildHeroSection(size, isMobile),
+                    // ② Quick Services
+                    _buildQuickServicesSection(isMobile),
+                    // ③ Industry Updates
+                    _buildIndustryUpdatesSection(isMobile),
+                    // ④ Community Surveys & Polls (Guest & Public participation)
+                    _buildSurveysSection(isMobile),
+                    // ⑤ Member Directory
+                    _buildMemberDirectorySection(isMobile),
+                    // ⑥ Events & Meetings
+                    _buildEventsSection(isMobile),
+                    // ⑦ CTI Training
+                    _buildCtiTrainingSection(isMobile),
+                    // ⑧ Complaints & Tracking Order
+                    _buildComplaintsSection(isMobile),
+                    // ⑨ Gallery
+                    _buildGallerySection(isMobile),
+                    // ⑩ Merged Need Help & Footer
+                    _buildFooter(isMobile),
+                  ],
+                ),
               ),
             ),
-          ),
 
-          // Floating scroll-aware header
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: _buildHeader(context, isMobile),
-          ),
+            // Floating scroll-aware header
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: _buildHeader(context, isMobile),
+            ),
 
-          // Mobile navigation drawer overlay
-          if (_mobileMenuOpen) _buildMobileMenuDrawer(context),
-        ],
+            // Mobile navigation drawer overlay
+            if (_mobileMenuOpen) _buildMobileMenuDrawer(context),
+          ],
+        ),
       ),
     );
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // HEADER
+  // HEADER — Clean, full-width bar (no black box behind CUBAG)
   // ──────────────────────────────────────────────────────────────────────────
   Widget _buildHeader(BuildContext context, bool isMobile) {
     final topPadding = MediaQuery.of(context).padding.top;
     final headerHeight = 72.0 + topPadding;
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
+      duration: const Duration(milliseconds: 220),
       height: headerHeight,
       padding: EdgeInsets.only(
         top: topPadding > 0 ? topPadding + 4 : 0,
-        left: (isMobile ? 16 : 24) + MediaQuery.of(context).padding.left,
-        right: (isMobile ? 16 : 24) + MediaQuery.of(context).padding.right,
+        left: (isMobile ? 16 : 28) + MediaQuery.of(context).padding.left,
+        right: (isMobile ? 16 : 28) + MediaQuery.of(context).padding.right,
       ),
       decoration: BoxDecoration(
         color: _scrolled
             ? (_globalIsDark
                   ? const Color(0xFF1A0F0A).withAlpha(248)
                   : Colors.white.withAlpha(248))
-            : (topPadding > 0
-                  ? (_globalIsDark
-                        ? const Color(0xFF1A0F0A).withAlpha(220)
-                        : Colors.white.withAlpha(220))
-                  : Colors.transparent),
+            : (_globalIsDark
+                  ? const Color(0xFF1A0F0A).withAlpha(235)
+                  : Colors.white.withAlpha(235)),
         border: Border(
           bottom: BorderSide(
-            color: _scrolled ? _kBorder : Colors.transparent,
+            color: _scrolled ? _kBorder : _kBorder.withAlpha(110),
             width: 1,
           ),
         ),
-        boxShadow: _scrolled
-            ? [
-                BoxShadow(
-                  color: Colors.black.withAlpha(_globalIsDark ? 50 : 8),
-                  blurRadius: 12,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : [],
       ),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1200),
           child: Row(
             children: [
-              // Logo
+              // Logo + CUBAG Brand Name (clean background, no black box)
               GestureDetector(
                 onTap: () => _scrollTo(_heroKey),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     const AppLogo(
                       size: 38,
@@ -828,7 +819,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                         color: _kText,
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: -0.3,
+                        letterSpacing: -0.4,
                       ),
                     ),
                   ],
@@ -837,7 +828,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
 
               const Spacer(),
 
-              // Desktop nav
+              // Desktop navigation links — exact requested titles
               if (!isMobile) ...[
                 _headerLink('Services', () => _scrollTo(_servicesKey)),
                 _headerLink('Updates', () => _scrollTo(_updatesKey)),
@@ -846,10 +837,10 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                 _headerLink('Register A Course', () => _scrollTo(_trainingKey)),
                 _headerLink('Surveys & Polls', () => _scrollTo(_surveysKey)),
                 _headerLink('Complaints', () => _scrollTo(_complaintsKey)),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
               ],
 
-              // Public Header CTAs (Always show Sign In / Join CUBAG on the public landing page)
+              // Public Header CTAs: Sign In & Join CUBAG
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -864,20 +855,24 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                     ),
                     child: Text(
                       'Sign In',
-                      style: _outfit(fontSize: 16, fontWeight: FontWeight.w700),
+                      style: _outfit(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w700,
+                        color: _kText,
+                      ),
                     ),
                   ),
                   if (!isMobile) ...[
                     const SizedBox(width: 8),
                     SizedBox(
-                      height: 38,
+                      height: 40,
                       child: ElevatedButton(
                         onPressed: () => context.go('/register'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _kAccent,
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 18),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -887,6 +882,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                           style: _outfit(
                             fontSize: 15.5,
                             fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
                         ),
                       ),
@@ -910,12 +906,12 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
   }
 
   Widget _headerLink(String text, VoidCallback onTap) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 10),
+    padding: const EdgeInsets.symmetric(horizontal: 8),
     child: InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(6),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
         child: Text(
           text,
           style: _outfit(
@@ -933,98 +929,208 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
   // ──────────────────────────────────────────────────────────────────────────
   Widget _buildMobileMenuDrawer(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return Positioned.fill(
       child: GestureDetector(
         onTap: () => setState(() => _mobileMenuOpen = false),
         child: Container(
-          color: Colors.black.withAlpha(100),
+          color: Colors.black.withAlpha(120),
           child: Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
               onTap: () {},
               child: Container(
-                width: 280,
+                width: 320,
                 height: double.infinity,
-                color: _globalIsDark ? const Color(0xFF281710) : Colors.white,
-                padding: EdgeInsets.only(
-                  top: topPadding > 0 ? topPadding + 16 : 24,
-                  bottom: 24,
-                  left: 24,
-                  right: 24,
+                decoration: BoxDecoration(
+                  color: _globalIsDark
+                      ? const Color(0xFF1F1612)
+                      : const Color(0xFFFAF6F0),
+                  border: Border(
+                    left: BorderSide(
+                      color: _globalIsDark
+                          ? const Color(0xFF3E2418)
+                          : const Color(0xFFE2D6CB),
+                      width: 1,
+                    ),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(50),
+                      blurRadius: 30,
+                      offset: const Offset(-8, 0),
+                    ),
+                  ],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'MENU',
-                          style: _outfit(
-                            color: _kMuted,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
+                child: SafeArea(
+                  top: false,
+                  bottom: false,
+                  child: Column(
+                    children: [
+                      // ── Top Bar with CUBAG mark, Ghana flag & Close Button ──
+                      Container(
+                        padding: EdgeInsets.only(
+                          top: topPadding > 0 ? topPadding + 14 : 20,
+                          bottom: 16,
+                          left: 22,
+                          right: 18,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _globalIsDark
+                              ? const Color(0xFF170F0B)
+                              : Colors.white,
+                          border: Border(
+                            bottom: BorderSide(
+                              color: _globalIsDark
+                                  ? const Color(0xFF331E14)
+                                  : const Color(0xFFE8DED6),
+                            ),
                           ),
                         ),
-                        IconButton(
-                          onPressed: () =>
-                              setState(() => _mobileMenuOpen = false),
-                          icon: Icon(Icons.close_rounded, color: _kMuted),
+                        child: Row(
+                          children: [
+                            const AppLogo(size: 34, borderRadius: 8),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'CUBAG',
+                                        style: _outfit(
+                                          color: _kText,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.3,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      _buildGhanaFlagSvg(width: 18, height: 12),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'OFFICIAL ROLL & SERVICES',
+                                    style: _inter(
+                                      color: _kBrown,
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () =>
+                                    setState(() => _mobileMenuOpen = false),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.all(7),
+                                  decoration: BoxDecoration(
+                                    color: _kBrown.withAlpha(16),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.close_rounded,
+                                    size: 20,
+                                    color: _kText,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    Divider(color: _kBorder),
-                    const SizedBox(height: 8),
-                    _drawerLink(
-                      'Services',
-                      Icons.grid_view_outlined,
-                      () => _scrollTo(_servicesKey),
-                    ),
-                    _drawerLink(
-                      'Industry Updates',
-                      Icons.article_outlined,
-                      () => _scrollTo(_updatesKey),
-                    ),
-                    _drawerLink(
-                      'Find A Clearing Agent',
-                      Icons.manage_search_rounded,
-                      () => _scrollTo(_directoryKey),
-                    ),
-                    _drawerLink(
-                      'Events & Meetings',
-                      Icons.event_outlined,
-                      () => _scrollTo(_eventsKey),
-                    ),
-                    _drawerLink(
-                      'Register A Course',
-                      Icons.school_outlined,
-                      () => _scrollTo(_trainingKey),
-                    ),
-                    _drawerLink(
-                      'Complaints & Tracking',
-                      Icons.report_problem_outlined,
-                      () => _scrollTo(_complaintsKey),
-                    ),
-                    _drawerLink(
-                      'Surveys & Polls',
-                      Icons.how_to_vote_outlined,
-                      () => _scrollTo(_surveysKey),
-                    ),
-                    _drawerLink(
-                      'Gallery',
-                      Icons.photo_library_outlined,
-                      () => _scrollTo(_galleryKey),
-                    ),
-                    _drawerLink(
-                      'Contact',
-                      Icons.phone_outlined,
-                      () => _scrollTo(_contactKey),
-                    ),
-                    const Spacer(),
-                    Consumer<AuthService>(
-                      builder: (context, auth, _) {
-                        if (auth.isAuthenticated) {
+                      ),
+
+                      // ── Scrollable Navigation Items ───────────────────────
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 18,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _drawerSectionLabel('PUBLIC SERVICES & ROLL'),
+                              const SizedBox(height: 6),
+                              _drawerLink(
+                                'Services',
+                                'Quick Services Desk',
+                                Icons.grid_view_rounded,
+                                () => _scrollTo(_servicesKey),
+                              ),
+                              _drawerLink(
+                                'Updates',
+                                'Port & Industry News',
+                                Icons.article_outlined,
+                                () => _scrollTo(_updatesKey),
+                              ),
+                              _drawerLink(
+                                'Licensed Brokers',
+                                'National Clearing Agent Roll',
+                                Icons.verified_user_outlined,
+                                () => _scrollTo(_directoryKey),
+                              ),
+
+                              const SizedBox(height: 18),
+                              _drawerSectionLabel('ACADEMY & SITTINGS'),
+                              const SizedBox(height: 6),
+                              _drawerLink(
+                                'Events & Meetings',
+                                'Assembly & Executive Sittings',
+                                Icons.calendar_month_outlined,
+                                () => _scrollTo(_eventsKey),
+                              ),
+                              _drawerLink(
+                                'Register A Course',
+                                'CTI Customs Training Academy',
+                                Icons.school_outlined,
+                                () => context.go('/guest-services/cti_training'),
+                              ),
+
+                              const SizedBox(height: 18),
+                              _drawerSectionLabel('GOVERNANCE & REDRESSAL'),
+                              const SizedBox(height: 6),
+                              _drawerLink(
+                                'Surveys & Polls',
+                                'Public Stakeholder Opinions',
+                                Icons.how_to_vote_outlined,
+                                () => _scrollTo(_surveysKey),
+                              ),
+                              _drawerLink(
+                                'Complaints & Tracking',
+                                'Dispute Resolution Desk',
+                                Icons.track_changes_rounded,
+                                () => context.go('/complaints'),
+                              ),
+                              _drawerLink(
+                                'Gallery',
+                                'Documentary & Field Archive',
+                                Icons.photo_library_outlined,
+                                () => _scrollTo(_galleryKey),
+                              ),
+                              _drawerLink(
+                                'Secretariat Desk',
+                                'Headquarters Contact & Hours',
+                                Icons.headset_mic_outlined,
+                                () => _scrollTo(_contactKey),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // ── Bottom Action Block (Member Session Only) ────────
+                      Consumer<AuthService>(
+                        builder: (context, auth, _) {
+                          if (!auth.isAuthenticated) return const SizedBox.shrink();
                           final role = auth.userRole;
                           final isAdmin =
                               role == 'admin' ||
@@ -1045,120 +1151,102 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                                     ? '/application-documents'
                                     : '/dashboard');
                           final btnLabel = isAdmin
-                              ? 'Go to Admin Portal'
+                              ? 'Admin Portal'
                               : (isPending
-                                    ? 'Complete My Application'
-                                    : 'Go to Member Dashboard');
+                                    ? 'Application Documents'
+                                    : 'Member Dashboard');
 
-                          return Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(
-                                width: double.infinity,
-                                height: 48,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    setState(() => _mobileMenuOpen = false);
-                                    context.go(targetRoute);
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: isPending
-                                        ? const Color(0xFFFF5000)
-                                        : _kBrown,
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    btnLabel,
-                                    style: _outfit(fontWeight: FontWeight.bold),
-                                  ),
+                          return Container(
+                            padding: EdgeInsets.only(
+                              left: 18,
+                              right: 18,
+                              top: 14,
+                              bottom: bottomPadding > 0 ? bottomPadding + 12 : 20,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _globalIsDark
+                                  ? const Color(0xFF170F0B)
+                                  : Colors.white,
+                              border: Border(
+                                top: BorderSide(
+                                  color: _globalIsDark
+                                      ? const Color(0xFF331E14)
+                                      : const Color(0xFFE8DED6),
                                 ),
                               ),
-                              const SizedBox(height: 10),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 48,
-                                child: OutlinedButton(
-                                  onPressed: () async {
-                                    setState(() => _mobileMenuOpen = false);
-                                    await auth.logout();
-                                  },
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.redAccent,
-                                    side: const BorderSide(
-                                      color: Colors.redAccent,
-                                      width: 1.5,
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 48,
+                                  child: ElevatedButton.icon(
+                                    icon: const Icon(
+                                      Icons.dashboard_rounded,
+                                      size: 18,
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                    label: Text(
+                                      btnLabel,
+                                      style: _outfit(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15,
+                                      ),
                                     ),
-                                  ),
-                                  child: Text(
-                                    'Sign Out',
-                                    style: _outfit(fontWeight: FontWeight.bold),
+                                    onPressed: () {
+                                      setState(
+                                        () => _mobileMenuOpen = false,
+                                      );
+                                      context.go(targetRoute);
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: isPending
+                                          ? _kAccent
+                                          : _kBrown,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12),
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 42,
+                                  child: TextButton.icon(
+                                    icon: const Icon(
+                                      Icons.logout_rounded,
+                                      size: 16,
+                                    ),
+                                    label: Text(
+                                      'Sign Out',
+                                      style: _outfit(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    onPressed: () async {
+                                      setState(
+                                        () => _mobileMenuOpen = false,
+                                      );
+                                      await auth.logout();
+                                    },
+                                    style: TextButton.styleFrom(
+                                      foregroundColor:
+                                          const Color(0xFFDC2626),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
-                        }
-
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizedBox(
-                              width: double.infinity,
-                              height: 48,
-                              child: OutlinedButton(
-                                onPressed: () {
-                                  setState(() => _mobileMenuOpen = false);
-                                  context.go('/login');
-                                },
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: _kBrown,
-                                  side: BorderSide(color: _kBrown, width: 1.5),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: Text(
-                                  'Sign In',
-                                  style: _outfit(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 48,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  setState(() => _mobileMenuOpen = false);
-                                  context.go('/register');
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _kAccent,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: Text(
-                                  'Join CUBAG',
-                                  style: _outfit(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1168,53 +1256,140 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _drawerLink(String text, IconData icon, VoidCallback onTap) => InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(10),
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 13),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: _kBrown),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              text,
-              style: _outfit(
-                color: _kText,
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
+  Widget _drawerSectionLabel(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, top: 4, bottom: 2),
+      child: Text(
+        title,
+        style: _outfit(
+          color: _kAccent,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.0,
+        ),
       ),
-    ),
-  );
+    );
+  }
+
+  Widget _drawerLink(
+    String title,
+    String subtitle,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          setState(() => _mobileMenuOpen = false);
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+          child: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: _kBrown.withAlpha(16),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 17, color: _kBrown),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: _outfit(
+                        color: _kText,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: _inter(
+                        color: _kMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 13,
+                color: _kMuted.withAlpha(140),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // ① HERO SECTION
+  // ① HERO SECTION — Polished & Mobile-First with Vector Ghana Flag & Globe
   // ──────────────────────────────────────────────────────────────────────────
-  Widget _buildHeroSection(Size size, bool isMobile) {
+  Widget _buildGhanaFlagSvg({double width = 26, double height = 18}) {
     return Container(
-      key: _heroKey,
-      color: _kBg,
-      child: Stack(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: Colors.black.withAlpha(28), width: 0.6),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: CustomPaint(
+        size: Size(width, height),
+        painter: const _GhanaFlagVectorPainter(),
+      ),
+    );
+  }
+
+  Widget _buildGlobeSvg({double size = 28}) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        size: Size(size, size),
+        painter: _GlobeVectorPainter(color: _kAccent),
+      ),
+    );
+  }
+
+  Widget _buildHeroEyebrowBadge({required bool isMobile}) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 12 : 16,
+        vertical: 7,
+      ),
+      decoration: BoxDecoration(
+        color: _kBrown.withAlpha(18),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _kBrown.withAlpha(45)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Subtle diagonal port/route pattern at ~4% opacity
-          Positioned.fill(
-            child: CustomPaint(painter: _SubtleRoutePatternPainter()),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: isMobile ? 20 : 48,
-              vertical: isMobile ? 48 : 80,
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1200),
-                child: isMobile ? _buildMobileHero() : _buildDesktopHero(),
+          _buildGhanaFlagSvg(width: 20, height: 14),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              'CUSTOMS BROKERS ASSOCIATION OF GHANA',
+              style: _outfit(
+                color: _kBrown,
+                fontSize: isMobile ? 11.5 : 12.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.0,
               ),
             ),
           ),
@@ -1223,65 +1398,79 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     );
   }
 
+  Widget _buildHeroSection(Size size, bool isMobile) {
+    return Container(
+      key: _heroKey,
+      color: _kBg,
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 20 : 48,
+        vertical: isMobile ? 40 : 72,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: isMobile ? _buildMobileHero() : _buildDesktopHero(),
+        ),
+      ),
+    );
+  }
+
   Widget _buildMobileHero() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Eyebrow label
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          decoration: BoxDecoration(
-            color: _kBrown.withAlpha(18),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _kBrown.withAlpha(40)),
-          ),
-          child: Text(
-            'CUSTOMS BROKERS ASSOCIATION OF GHANA',
-            style: _outfit(
-              color: _kBrown,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-            ),
-          ),
-        ),
+        _buildHeroEyebrowBadge(isMobile: true),
         const SizedBox(height: 20),
-        RichText(
-          textAlign: TextAlign.center,
-          text: TextSpan(
+        Text.rich(
+          TextSpan(
             style: _outfit(
-              fontSize: 28,
+              fontSize: 30,
               fontWeight: FontWeight.w900,
-              height: 1.22,
-              letterSpacing: -0.5,
+              height: 1.24,
+              letterSpacing: -0.6,
             ),
             children: [
               TextSpan(
-                text: '🇬🇭 Connecting ',
+                text: 'Connecting ',
                 style: TextStyle(color: _kText),
               ),
               TextSpan(
-                text: 'Customs Clearance\n',
+                text: 'Customs Clearance ',
                 style: TextStyle(color: _kBrown),
               ),
-              TextSpan(
-                text: '🌍 Int\'l Trade & ',
-                style: TextStyle(color: _kAccent),
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: _buildGhanaFlagSvg(width: 26, height: 18),
+                ),
               ),
               TextSpan(
-                text: 'Freight Forwarding',
+                text: '\nFreight Forwarding &\n',
                 style: TextStyle(color: _kText),
+              ),
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 6, bottom: 2),
+                  child: _buildGlobeSvg(size: 26),
+                ),
+              ),
+              TextSpan(
+                text: 'Int\'l Trade',
+                style: TextStyle(color: _kAccent),
               ),
             ],
           ),
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
         Text(
-          'Access CUBAG services, connect with industry professionals, discover training opportunities, and stay informed about Ghana\'s customs and trade industry.',
+          'Access CUBAG services, connect with industry professionals, discover training opportunities, and stay informed about Ghana\'s customs and trade',
           textAlign: TextAlign.center,
-          style: _inter(color: _kMuted, fontSize: 16, height: 1.65),
+          style: _inter(color: _kMuted, fontSize: 16, height: 1.6),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 28),
         SizedBox(
           width: double.infinity,
           height: 52,
@@ -1301,7 +1490,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
           height: 52,
@@ -1320,6 +1509,8 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
             ),
           ),
         ),
+        const SizedBox(height: 28),
+        _buildHeroStatsPanel(),
       ],
     );
   }
@@ -1328,40 +1519,21 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Left: Headline + CTAs
+        // Left: Eyebrow + Headline + Subtitle + CTAs
         Expanded(
-          flex: 6,
+          flex: 7,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: _kBrown.withAlpha(18),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _kBrown.withAlpha(40)),
-                ),
-                child: Text(
-                  'CUSTOMS BROKERS ASSOCIATION OF GHANA',
-                  style: _outfit(
-                    color: _kBrown,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ),
+              _buildHeroEyebrowBadge(isMobile: false),
               const SizedBox(height: 24),
-              RichText(
-                text: TextSpan(
+              Text.rich(
+                TextSpan(
                   style: _outfit(
-                    fontSize: 46,
+                    fontSize: 48,
                     fontWeight: FontWeight.w900,
-                    height: 1.18,
-                    letterSpacing: -1.0,
+                    height: 1.16,
+                    letterSpacing: -1.1,
                   ),
                   children: [
                     TextSpan(
@@ -1369,15 +1541,29 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                       style: TextStyle(color: _kText),
                     ),
                     TextSpan(
-                      text: 'Customs Clearance 🇬🇭\n',
+                      text: 'Customs Clearance ',
                       style: TextStyle(color: _kBrown),
                     ),
-                    TextSpan(
-                      text: 'Freight Forwarding & ',
-                      style: TextStyle(color: _kText),
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: _buildGhanaFlagSvg(width: 36, height: 25),
+                      ),
                     ),
                     TextSpan(
-                      text: '🌍 Int\'l Trade',
+                      text: '\nFreight Forwarding &\n',
+                      style: TextStyle(color: _kText),
+                    ),
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 8, bottom: 3),
+                        child: _buildGlobeSvg(size: 36),
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'Int\'l Trade',
                       style: TextStyle(color: _kAccent),
                     ),
                   ],
@@ -1385,13 +1571,13 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               ),
               const SizedBox(height: 20),
               ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 500),
+                constraints: const BoxConstraints(maxWidth: 540),
                 child: Text(
-                  'Access CUBAG services, connect with industry professionals, discover training opportunities, and stay informed about Ghana\'s customs and trade industry.',
+                  'Access CUBAG services, connect with industry professionals, discover training opportunities, and stay informed about Ghana\'s customs and trade',
                   style: _inter(color: _kMuted, fontSize: 18, height: 1.65),
                 ),
               ),
-              const SizedBox(height: 36),
+              const SizedBox(height: 34),
               Row(
                 children: [
                   SizedBox(
@@ -1443,9 +1629,9 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
             ],
           ),
         ),
-        const SizedBox(width: 56),
+        const SizedBox(width: 48),
         // Right: Branded at-a-glance stats panel
-        Expanded(flex: 4, child: _buildHeroStatsPanel()),
+        Expanded(flex: 5, child: _buildHeroStatsPanel()),
       ],
     );
   }
@@ -1455,7 +1641,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         color: _kCream,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _kBorder),
       ),
       child: Column(
@@ -1465,9 +1651,9 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
             'CUBAG at a Glance',
             style: _outfit(
               color: _kBrown,
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
+              fontSize: 13.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
             ),
           ),
           const SizedBox(height: 20),
@@ -1475,13 +1661,13 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
           Divider(height: 24, color: _kBorder),
           _statRow(
             Icons.location_on_outlined,
-            '$_portsCount',
+            _portsCount > 0 ? '$_portsCount' : '6',
             'Port & Border Locations',
           ),
           Divider(height: 24, color: _kBorder),
           _statRow(
             Icons.school_outlined,
-            _coursesList.isNotEmpty ? '${_coursesList.length}+' : '12+',
+            _loadingCourses ? '...' : (_coursesList.isNotEmpty ? '${_coursesList.length}' : '0'),
             'CTI Courses Offered',
           ),
           Divider(height: 24, color: _kBorder),
@@ -1489,26 +1675,6 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
             Icons.directions_boat_outlined,
             'Live',
             'Vessel Tracking & AIS',
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: ElevatedButton(
-              onPressed: () => context.go('/login'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kBrown,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                'Member Login',
-                style: _outfit(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
           ),
         ],
       ),
@@ -1518,34 +1684,36 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
   Widget _statRow(IconData icon, String value, String label) => Row(
     children: [
       Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: _kBrown.withAlpha(18),
-          borderRadius: BorderRadius.circular(10),
+          color: _kBrown.withAlpha(20),
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(icon, size: 18, color: _kBrown),
+        child: Icon(icon, size: 20, color: _kBrown),
       ),
       const SizedBox(width: 14),
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            value,
-            style: _outfit(
-              fontSize: 19,
-              fontWeight: FontWeight.w900,
-              color: _kText,
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: _outfit(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: _kText,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
             ),
-          ),
-          Text(label, style: _inter(fontSize: 14, color: _kMuted)),
-        ],
+            Text(label, style: _inter(fontSize: 14, color: _kMuted)),
+          ],
+        ),
       ),
     ],
   );
 
   // ──────────────────────────────────────────────────────────────────────────
-  // ──────────────────────────────────────────────────────────────────────────
-  // ② QUICK SERVICES SECTION
+  // ② QUICK SERVICES SECTION — Exact 6 Services, Cleanly Aligned
   // ──────────────────────────────────────────────────────────────────────────
   Widget _buildQuickServicesSection(bool isMobile) {
     final services = [
@@ -1556,28 +1724,28 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
         onTap: () => _scrollTo(_directoryKey),
       ),
       (
-        title: 'Community Polls & Surveys',
-        subtitle: 'Vote & voice your opinion',
-        icon: Icons.how_to_vote_outlined,
-        onTap: () => _scrollTo(_surveysKey),
-      ),
-      (
-        title: 'Register A Course',
-        subtitle: 'Professional CTI training',
-        icon: Icons.school_outlined,
-        onTap: () => context.go('/guest-services/cti_training'),
-      ),
-      (
         title: 'Complaints & Tracking',
         subtitle: 'Lodge & track grievance',
         icon: Icons.report_problem_outlined,
         onTap: () => _scrollTo(_complaintsKey),
       ),
       (
+        title: 'Community Polls & Surveys',
+        subtitle: 'Vote & voice your opinion',
+        icon: Icons.how_to_vote_outlined,
+        onTap: () => _scrollTo(_surveysKey),
+      ),
+      (
         title: 'Become a Member',
         subtitle: 'Join the association',
         icon: Icons.person_add_outlined,
         onTap: () => context.go('/register'),
+      ),
+      (
+        title: 'Register A Course',
+        subtitle: 'Professional CTI training',
+        icon: Icons.school_outlined,
+        onTap: () => context.go('/guest-services/cti_training'),
       ),
       (
         title: 'Renew Membership',
@@ -1620,7 +1788,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               ),
               const SizedBox(height: 4),
               Text(
-                'Find what you need — no account required.',
+                'Find what you need - no account required.',
                 style: _inter(color: _kMuted, fontSize: 16),
               ),
               const SizedBox(height: 28),
@@ -1628,10 +1796,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               LayoutBuilder(
                 builder: (context, constraints) {
                   final width = constraints.maxWidth;
-                  // Phone: 1 per line (< 650px)
-                  // Tablet Mode (650px - 1100px): 2 on a line (horizontal cards, 2 per row)
-                  // Desktop (>= 1100px): 3 on a line (2 rows of 3)
-                  final int cols = width < 650 ? 1 : (width < 1100 ? 2 : 3);
+                  final int cols = width < 650 ? 1 : (width < 1050 ? 2 : 3);
 
                   if (cols == 1) {
                     return Column(
@@ -1649,7 +1814,6 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                     );
                   }
 
-                  // Multi-column row layout (2 on a line for tablet, 3 on a line for wide desktop)
                   final List<Widget> rows = [];
                   for (int i = 0; i < services.length; i += cols) {
                     final rowItems = services.sublist(
@@ -1672,7 +1836,6 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                                 ),
                               ),
                             ],
-                            // If row is not full, fill remaining columns with spacers
                             for (int k = 0; k < (cols - rowItems.length); k++) ...[
                               const SizedBox(width: 16),
                               const Expanded(child: SizedBox()),
@@ -1709,66 +1872,56 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _kBorder, width: 1.5),
+            border: Border.all(color: _kBorder, width: 1.2),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Senior-friendly icon container — 56px box, 26px icon
               Container(
-                width: 56,
-                height: 56,
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
-                  color: _kBrown.withAlpha(22),
+                  color: _kBrown.withAlpha(20),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, size: 26, color: _kBrown),
+                child: Icon(icon, size: 24, color: _kBrown),
               ),
               const SizedBox(width: 16),
-              // Title, subtitle & action
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      title,
-                      style: _outfit(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: _kText,
-                        height: 1.25,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      subtitle,
-                      style: _inter(fontSize: 13.5, color: _kMuted),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Get started',
+                          title,
                           style: _outfit(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: _kAccent,
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w800,
+                            color: _kText,
+                            height: 1.25,
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 15,
-                          color: _kAccent,
+                        const SizedBox(height: 5),
+                        Text(
+                          subtitle,
+                          style: _inter(fontSize: 14, color: _kMuted),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Get started →',
+                      style: _outfit(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        color: _kAccent,
+                      ),
                     ),
                   ],
                 ),
@@ -1781,7 +1934,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // ③ INDUSTRY UPDATES  (above member directory — mobile-first priority)
+  // ③ INDUSTRY UPDATES
   // ──────────────────────────────────────────────────────────────────────────
   Widget _buildIndustryUpdatesSection(bool isMobile) {
     return Container(
@@ -1800,23 +1953,25 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Industry Updates',
-                        style: _outfit(
-                          color: _kText,
-                          fontSize: isMobile ? 26 : 32,
-                          fontWeight: FontWeight.w900,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Industry Updates',
+                          style: _outfit(
+                            color: _kText,
+                            fontSize: isMobile ? 26 : 32,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Stay informed about the latest developments.',
-                        style: _inter(color: _kMuted, fontSize: 16),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          'Stay informed about the latest developments.',
+                          style: _inter(color: _kMuted, fontSize: 16),
+                        ),
+                      ],
+                    ),
                   ),
                   if (!isMobile)
                     _textCta(
@@ -1830,7 +1985,6 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               ),
               const SizedBox(height: 24),
 
-              // Segmented pill control — Brown bg / white text when selected
               _segmentedControl(
                 tabs: ['Port News', 'Industry News'],
                 active: _activeUpdatesTab,
@@ -1838,7 +1992,6 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               ),
               const SizedBox(height: 20),
 
-              // Tab content
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 child: _activeUpdatesTab == 0
@@ -1891,11 +2044,8 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
       return Container(
         key: key,
         width: double.infinity,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: _kCream,
-          borderRadius: BorderRadius.circular(16),
-        ),
+        padding: const EdgeInsets.all(28),
+        color: _kCream,
         child: Text(
           'No port operational bulletins published at this time.',
           style: _inter(color: _kMuted, fontSize: 15),
@@ -1910,7 +2060,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
             'port': pb['port_name']?.toString() ?? 'Port Terminal',
             'code': pb['code']?.toString() ?? 'GHA',
             'notice': pb['notice']?.toString() ?? '',
-            'date': 'Live Update',
+            'date': 'Live Dispatch',
             'status': pb['status']?.toString() ?? 'Operational',
             'status_color': AppColors.parseHexColor(
               pb['status_color'],
@@ -1932,7 +2082,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               statusLabel: pb['status']?.toString() ?? '',
               statusColor:
                   (pb['status_color'] as Color?) ?? const Color(0xFF2E7D32),
-              trailingLabel: 'Read Full Notice',
+              trailingLabel: 'Read Notice →',
               onTap: () => _showAllUpdatesModal(context, initialTab: 0),
             ),
           )
@@ -1950,45 +2100,33 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
         ),
       );
     }
-    final articles = _newsArticles.isNotEmpty
-        ? _newsArticles
-              .take(3)
-              .map(
-                (a) => {
-                  'title': a['title']?.toString() ?? '',
-                  'summary':
-                      a['summary']?.toString() ??
-                      a['description']?.toString() ??
-                      '',
-                  'source': a['source']?.toString() ?? 'CUBAG News',
-                  'date': a['pubDate']?.toString() ?? 'Recent',
-                },
-              )
-              .toList()
-        : [
-            {
-              'title': 'Ghana Revenue Authority Launches ICUMS 2.0 Automation',
-              'source': 'GRA Customs Circular',
-              'date': '17 Aug 2026',
-              'summary':
-                  'New customs clearance upgrades implemented at Tema Port for faster ICUMS processing.',
-            },
-            {
-              'title': 'GPHA Announces Port Fee Tariff Review for Q3 2026',
-              'source': 'GPHA Maritime',
-              'date': '16 Aug 2026',
-              'summary':
-                  'GPHA updates vessel handling tariffs across Tema and Takoradi port terminals.',
-            },
-            {
-              'title':
-                  'West Africa Maritime Trade Corridors Record 8.5% Growth',
-              'source': 'FreightWaves',
-              'date': '15 Aug 2026',
-              'summary':
-                  'Container throughput in agro-exports and raw goods sets record highs for the region.',
-            },
-          ];
+    if (_newsArticles.isEmpty) {
+      return Container(
+        key: key,
+        width: double.infinity,
+        padding: const EdgeInsets.all(28),
+        color: _kCream,
+        child: Text(
+          'No industry news updates available at this time.',
+          style: _inter(color: _kMuted, fontSize: 15),
+        ),
+      );
+    }
+
+    final articles = _newsArticles
+        .take(3)
+        .map(
+          (a) => {
+            'title': a['title']?.toString() ?? '',
+            'summary':
+                a['summary']?.toString() ??
+                a['description']?.toString() ??
+                '',
+            'source': a['source']?.toString() ?? 'CUBAG News',
+            'date': a['pubDate']?.toString() ?? 'Recent',
+          },
+        )
+        .toList();
 
     return Column(
       key: key,
@@ -1999,7 +2137,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               headline: a['title']!,
               body: a['summary']!,
               meta: '${a['source']}  ·  ${a['date']}',
-              trailingLabel: 'Read More',
+              trailingLabel: 'Read More →',
               onTap: () => _showAllUpdatesModal(context, initialTab: 1),
             ),
           )
@@ -2018,105 +2156,107 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     VoidCallback? onTap,
     Key? key,
   }) {
-    return Material(
+    return Padding(
       key: key,
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: _kCream,
         borderRadius: BorderRadius.circular(14),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _kCream,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _kBorder),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: _kBrown.withAlpha(18),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, size: 18, color: _kBrown),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _kBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            headline,
-                            style: _outfit(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: _kText,
-                              height: 1.3,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: _kBrown.withAlpha(18),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(icon, size: 19, color: _kBrown),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        headline,
+                        style: _outfit(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: _kText,
+                          height: 1.25,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (statusLabel != null && statusLabel.isNotEmpty) ...[
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: (statusColor ?? _kBrown).withAlpha(22),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          statusLabel,
+                          style: _inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: statusColor ?? _kBrown,
                           ),
                         ),
-                        if (statusLabel != null) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: (statusColor ?? _kBrown).withAlpha(20),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              statusLabel,
-                              style: _outfit(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: statusColor ?? _kBrown,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      body,
-                      style: _inter(fontSize: 15, color: _kMuted, height: 1.5),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            meta,
-                            style: _inter(fontSize: 13, color: _kMuted),
-                          ),
-                        ),
-                        if (trailingLabel != null)
-                          Text(
-                            trailingLabel,
-                            style: _outfit(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: _kAccent,
-                            ),
-                          ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 10),
+                Text(
+                  body,
+                  style: _inter(fontSize: 14.5, color: _kMuted, height: 1.55),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        meta,
+                        style: _inter(
+                          fontSize: 13,
+                          color: _kMuted,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ),
+                    if (trailingLabel != null)
+                      Text(
+                        trailingLabel,
+                        style: _outfit(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: _kAccent,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -2124,158 +2264,176 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // ④ FIND A CLEARING AGENT DIRECTORY & SEARCH
+  // ④ LICENSED BROKER REGISTRY
   // ──────────────────────────────────────────────────────────────────────────
   Widget _buildMemberDirectorySection(bool isMobile) {
-    return Container(
-      key: _directoryKey,
-      color: _kCream,
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 20 : 48,
-        vertical: 56,
+    final searchLedger = Container(
+      padding: EdgeInsets.all(isMobile ? 20 : 28),
+      decoration: BoxDecoration(
+        color: _kCardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _kBorder),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2B211D).withAlpha(10),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Find a Licensed Broker',
+            style: _outfit(
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+              color: _kText,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Search by company name, clearing agent, license number, or location.',
+            style: _inter(fontSize: 14.5, color: _kMuted, height: 1.45),
+          ),
+          const SizedBox(height: 18),
+          _buildBrokerTypeAhead(isMobile),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'FIND A LICENSED BROKER (CLEARING AGENT/FORWARDER)',
-                          style: _outfit(
-                            color: _kBrown,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Find A Licensed Broker (Clearing Agent/Forwarder)',
-                          style: _outfit(
-                            color: _kText,
-                            fontSize: isMobile ? 24 : 30,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Search accredited CUBAG licensed customs brokers, clearing agents, and freight forwarders across Ghana.',
-                          style: _inter(color: _kMuted, fontSize: 16),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              Text(
+                '${_directoryMembers.length} verified brokers available',
+                style: _inter(
+                  fontSize: 13.5,
+                  color: _kMuted,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
-              const SizedBox(height: 24),
-
-              // Search field + Search Action
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: _kCardBg,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: _kBorder),
-                      ),
-                      child: TextField(
-                        controller: _dirSearchCtrl,
-                        onSubmitted: (query) => _showAllDirectoryModal(
-                          context,
-                          initialQuery: query.trim(),
-                        ),
-                        decoration: InputDecoration(
-                          hintText:
-                              'Search by broker name, clearing agency, license #, or port of operation...',
-                          hintStyle: _inter(
-                            color: _kMuted,
-                            fontSize: isMobile ? 15 : 16,
-                          ),
-                          prefixIcon: Icon(
-                            Icons.search_rounded,
-                            color: _kBrown,
-                            size: 20,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: () => _showAllDirectoryModal(
-                      context,
-                      initialQuery: _dirSearchCtrl.text.trim(),
-                    ),
-                    icon: const Icon(Icons.search_rounded, size: 16),
-                    label: Text(
-                      isMobile ? 'Search' : 'Search Directory',
-                      style: _outfit(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _kBrown,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isMobile ? 16 : 24,
-                        vertical: 18,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Action CTA: View Full Directory
-              Center(
-                child: SizedBox(
-                  width: isMobile ? double.infinity : 320,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _showAllDirectoryModal(
-                      context,
-                      initialQuery: _dirSearchCtrl.text.trim(),
-                    ),
-                    icon: const Icon(Icons.people_outline_rounded, size: 18),
-                    label: Text(
-                      'View Full Agent Directory',
-                      style: _outfit(
-                        fontSize: 16.5,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _kAccent,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 28,
-                        vertical: 16,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
+              InkWell(
+                onTap: () => _showAllDirectoryModal(
+                  context,
+                  initialQuery: _dirSearchCtrl.text.trim(),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Text(
+                    'Browse Full Directory →',
+                    style: _outfit(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      color: _kAccent,
                     ),
                   ),
                 ),
               ),
             ],
           ),
+        ],
+      ),
+    );
+
+    return Container(
+      key: _directoryKey,
+      color: _kCream,
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 16 : 48,
+        vertical: isMobile ? 48 : 84,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1280),
+          child: isMobile
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'FIND A LICENSED BROKER (CLEARING AGENT/FORWARDER)',
+                      style: _outfit(
+                        color: _kAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Licensed Brokers Directory',
+                      style: _outfit(
+                        color: _kText,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.6,
+                        height: 1.12,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Verify standing before entrusting cargo documents. Every firm listed holds active CUBAG accreditation.',
+                      style: _inter(
+                        color: _kMuted,
+                        fontSize: 15,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    searchLedger,
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 48),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'FIND A LICENSED BROKER (CLEARING AGENT/FORWARDER)',
+                              style: _outfit(
+                                color: _kAccent,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Licensed Brokers Directory',
+                              style: _outfit(
+                                color: _kText,
+                                fontSize: 38,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.9,
+                                height: 1.08,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 420),
+                              child: Text(
+                                'Verify standing before entrusting cargo documents. Every firm listed holds active CUBAG accreditation across Ghana.',
+                                style: _inter(
+                                  color: _kMuted,
+                                  fontSize: 16,
+                                  height: 1.6,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(flex: 7, child: searchLedger),
+                  ],
+                ),
         ),
       ),
     );
@@ -2299,7 +2457,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     final company =
         m['company']?.toString() ?? m['name']?.toString() ?? 'CUBAG Member';
     final name = m['name']?.toString() ?? '';
-    final port = m['primary_port']?.toString() ?? 'Tema Port';
+    final port = m['primary_port']?.toString() ?? 'Main Port';
     final type = m['member_type']?.toString() ?? 'Licentiate';
     final phone = m['phone']?.toString() ?? '';
     final email = m['email']?.toString() ?? '';
@@ -2309,39 +2467,43 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _kCardBg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        contentPadding: const EdgeInsets.all(28),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        contentPadding: const EdgeInsets.all(26),
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10b981).withAlpha(20),
-                  shape: BoxShape.circle,
+                  color: const Color(0xFF10b981).withAlpha(24),
+                  borderRadius: BorderRadius.circular(999),
                 ),
-                child: const Icon(
-                  Icons.verified_rounded,
-                  color: Color(0xFF10b981),
-                  size: 48,
+                child: Text(
+                  'Verified Standing · Active Roll',
+                  style: _inter(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF10b981),
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               Text(
-                'Accredited Customs Broker',
+                company,
                 style: _outfit(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                   fontSize: 22,
                   color: _kText,
+                  letterSpacing: -0.4,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Customs Brokers Association of Ghana (CUBAG)',
                 style: _inter(fontSize: 14, color: _kMuted),
-                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
               Container(
@@ -2349,7 +2511,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: _kCream,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: _kBorder),
                 ),
                 child: Column(
@@ -2357,29 +2519,29 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                   children: [
                     _modalDetailRow('Company Entity', company),
                     if (name.isNotEmpty && name != company) ...[
-                      const Divider(height: 16),
+                      const SizedBox(height: 12),
                       _modalDetailRow('Lead Broker / Contact', name),
                     ],
-                    const Divider(height: 16),
+                    const SizedBox(height: 12),
                     _modalDetailRow('Primary Port', port),
-                    const Divider(height: 16),
+                    const SizedBox(height: 12),
                     _modalDetailRow('Member Category', type),
                     if (location.isNotEmpty) ...[
-                      const Divider(height: 16),
+                      const SizedBox(height: 12),
                       _modalDetailRow('Office Location', location),
                     ],
                     if (phone.isNotEmpty) ...[
-                      const Divider(height: 16),
+                      const SizedBox(height: 12),
                       _modalDetailRow('Direct Phone', phone),
                     ],
                     if (email.isNotEmpty) ...[
-                      const Divider(height: 16),
+                      const SizedBox(height: 12),
                       _modalDetailRow('Official Email', email, isEmail: true),
                     ],
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 22),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -2388,14 +2550,14 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     elevation: 0,
                   ),
                   onPressed: () => Navigator.of(ctx).pop(),
                   child: Text(
-                    'Close',
-                    style: _outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                    'Close Record',
+                    style: _outfit(fontWeight: FontWeight.bold, fontSize: 15.5),
                   ),
                 ),
               ),
@@ -2406,11 +2568,234 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     );
   }
 
+  Widget _buildBrokerTypeAhead(bool isMobile) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return RawAutocomplete<Map<String, dynamic>>(
+          textEditingController: _dirSearchCtrl,
+          focusNode: FocusNode(),
+          optionsBuilder: (TextEditingValue textEditingValue) {
+            final query = textEditingValue.text.trim().toLowerCase();
+            if (query.isEmpty) {
+              return const Iterable<Map<String, dynamic>>.empty();
+            }
+            final matches = <Map<String, dynamic>>[];
+            for (final raw in _directoryMembers) {
+              if (raw is Map<String, dynamic>) {
+                final name = (raw['name'] ?? '').toString().toLowerCase();
+                final company = (raw['company'] ?? '').toString().toLowerCase();
+                final license = (raw['license_number'] ?? '').toString().toLowerCase();
+                final port = (raw['primary_port'] ?? '').toString().toLowerCase();
+                final location = (raw['location'] ?? '').toString().toLowerCase();
+
+                if (name.contains(query) ||
+                    company.contains(query) ||
+                    license.contains(query) ||
+                    port.contains(query) ||
+                    location.contains(query)) {
+                  matches.add(raw);
+                  if (matches.length >= 8) break;
+                }
+              }
+            }
+            return matches;
+          },
+          displayStringForOption: (option) =>
+              option['company']?.toString() ?? option['name']?.toString() ?? '',
+          onSelected: (option) {
+            _showMemberVerificationModal(option);
+          },
+          fieldViewBuilder: (
+            BuildContext context,
+            TextEditingController fieldTextEditingController,
+            FocusNode fieldFocusNode,
+            VoidCallback onFieldSubmitted,
+          ) {
+            final searchInput = Container(
+              decoration: BoxDecoration(
+                color: _kCream,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _kBorder),
+              ),
+              child: TextField(
+                controller: fieldTextEditingController,
+                focusNode: fieldFocusNode,
+                onSubmitted: (query) => _showAllDirectoryModal(
+                  context,
+                  initialQuery: query.trim(),
+                ),
+                style: _inter(fontSize: isMobile ? 15 : 15.5, color: _kText),
+                decoration: InputDecoration(
+                  hintText: 'Search broker name, company, or license...',
+                  hintStyle: _inter(color: _kMuted, fontSize: isMobile ? 14 : 15),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    color: _kBrown,
+                    size: 20,
+                  ),
+                  suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: fieldTextEditingController,
+                    builder: (context, val, _) {
+                      if (val.text.isEmpty) return const SizedBox.shrink();
+                      return IconButton(
+                        icon: const Icon(Icons.clear_rounded, size: 18, color: Colors.grey),
+                        onPressed: () => fieldTextEditingController.clear(),
+                      );
+                    },
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 14 : 16,
+                    vertical: isMobile ? 14 : 16,
+                  ),
+                ),
+              ),
+            );
+
+            if (isMobile) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  searchInput,
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () => _showAllDirectoryModal(
+                        context,
+                        initialQuery: fieldTextEditingController.text.trim(),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kBrown,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'Search Brokers',
+                        style: _outfit(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            } else {
+              return Row(
+                children: [
+                  Expanded(child: searchInput),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: () => _showAllDirectoryModal(
+                        context,
+                        initialQuery: fieldTextEditingController.text.trim(),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kBrown,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 26),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'Search Directory',
+                        style: _outfit(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }
+          },
+          optionsViewBuilder: (
+            BuildContext context,
+            AutocompleteOnSelected<Map<String, dynamic>> onSelected,
+            Iterable<Map<String, dynamic>> options,
+          ) {
+            final optionsList = options.toList();
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 8,
+                borderRadius: BorderRadius.circular(12),
+                color: _kCardBg,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: 320,
+                    maxWidth: isMobile ? constraints.maxWidth : constraints.maxWidth * 0.75,
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _kBorder),
+                    ),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      shrinkWrap: true,
+                      itemCount: optionsList.length,
+                      separatorBuilder: (_, _) => Divider(height: 1, color: _kBorder.withAlpha(80)),
+                      itemBuilder: (BuildContext context, int index) {
+                        final m = optionsList[index];
+                        final company = m['company']?.toString() ?? m['name']?.toString() ?? 'Licensed Broker';
+                        final name = m['name']?.toString() ?? '';
+                        final port = m['primary_port']?.toString() ?? 'Port Operations';
+                        final license = m['license_number']?.toString();
+
+                        return ListTile(
+                          dense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                          leading: CircleAvatar(
+                            radius: 16,
+                            backgroundColor: const Color(0xFF10b981).withAlpha(25),
+                            child: const Icon(Icons.verified_rounded, color: Color(0xFF10b981), size: 18),
+                          ),
+                          title: Text(
+                            company,
+                            style: _outfit(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: _kText,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${name.isNotEmpty ? "$name · " : ""}$port${license != null && license.isNotEmpty ? " · Lic: $license" : ""}',
+                            style: _inter(fontSize: 12, color: _kMuted),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.grey),
+                          onTap: () {
+                            onSelected(m);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _modalDetailRow(String label, String value, {bool isEmail = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: _inter(fontSize: 14.5, color: _kMuted)),
+        Text(label, style: _inter(fontSize: 14, color: _kMuted)),
         const SizedBox(width: 12),
         Expanded(
           child: FittedBox(
@@ -2420,7 +2805,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               value,
               style: _outfit(
                 fontSize: isEmail ? 14.5 : 15,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
                 color: _kText,
               ),
             ),
@@ -2431,96 +2816,132 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // ⑤ EVENTS & MEETINGS
+  // ⑤ EVENTS & MEETINGS SECTION
   // ──────────────────────────────────────────────────────────────────────────
   Widget _buildEventsSection(bool isMobile) {
+    final eventsFeed = AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200),
+      child: (_loadingEvents && _eventsList.isEmpty && _meetingsList.isEmpty)
+          ? Center(
+              key: const ValueKey('loading_events'),
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: _kAccent,
+                ),
+              ),
+            )
+          : _activeEventsTab == 0
+          ? _buildEventCards(key: const ValueKey('ev'))
+          : _buildMeetingCards(key: const ValueKey('mt')),
+    );
+
     return Container(
       key: _eventsKey,
       color: _kBg,
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 20 : 48,
-        vertical: 56,
+        horizontal: isMobile ? 16 : 48,
+        vertical: isMobile ? 48 : 84,
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Events & Meetings',
-                          style: _outfit(
-                            color: _kText,
-                            fontSize: isMobile ? 26 : 32,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Upcoming CUBAG events and scheduled meetings.',
-                          style: _inter(color: _kMuted, fontSize: 16),
-                        ),
-                      ],
+          constraints: const BoxConstraints(maxWidth: 1280),
+          child: isMobile
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Events & Meetings',
+                      style: _outfit(
+                        color: _kText,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.6,
+                        height: 1.12,
+                      ),
                     ),
-                  ),
-                  if (!isMobile)
+                    const SizedBox(height: 6),
+                    Text(
+                      'Mark your calendar for upcoming CUBAG events and meetings.',
+                      style: _inter(
+                        color: _kMuted,
+                        fontSize: 15,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    _segmentedControl(
+                      tabs: ['Events', 'Meetings'],
+                      active: _activeEventsTab,
+                      onSelect: (i) => setState(() => _activeEventsTab = i),
+                    ),
+                    const SizedBox(height: 18),
+                    eventsFeed,
+                    const SizedBox(height: 12),
                     _textCta(
-                      'View All',
+                      'View all',
                       () => _showAllEventsModal(
                         context,
                         initialTab: _activeEventsTab,
                       ),
                     ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              _segmentedControl(
-                tabs: ['Events', 'Meetings'],
-                active: _activeEventsTab,
-                onSelect: (i) => setState(() => _activeEventsTab = i),
-              ),
-              const SizedBox(height: 20),
-
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: (_loadingEvents && _eventsList.isEmpty && _meetingsList.isEmpty)
-                    ? Center(
-                        key: const ValueKey('loading_events'),
-                        child: Padding(
-                          padding: const EdgeInsets.all(32),
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: _kAccent,
-                          ),
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 48),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Events & Meetings',
+                              style: _outfit(
+                                color: _kText,
+                                fontSize: 38,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.9,
+                                height: 1.08,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 400),
+                              child: Text(
+                                'Mark your calendar for upcoming CUBAG general assemblies, industry forums, and regional chapter meetings.',
+                                style: _inter(
+                                  color: _kMuted,
+                                  fontSize: 16,
+                                  height: 1.6,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 26),
+                            _segmentedControl(
+                              tabs: ['Events', 'Meetings'],
+                              active: _activeEventsTab,
+                              onSelect: (i) =>
+                                  setState(() => _activeEventsTab = i),
+                            ),
+                            const SizedBox(height: 22),
+                            _textCta(
+                              'View all',
+                              () => _showAllEventsModal(
+                                context,
+                                initialTab: _activeEventsTab,
+                              ),
+                            ),
+                          ],
                         ),
-                      )
-                    : _activeEventsTab == 0
-                    ? _buildEventCards(key: const ValueKey('ev'))
-                    : _buildMeetingCards(key: const ValueKey('mt')),
-              ),
-
-              if (isMobile) ...[
-                const SizedBox(height: 16),
-                Center(
-                  child: _textCta(
-                    'View All',
-                    () => _showAllEventsModal(
-                      context,
-                      initialTab: _activeEventsTab,
+                      ),
                     ),
-                  ),
+                    Expanded(flex: 7, child: eventsFeed),
+                  ],
                 ),
-              ],
-            ],
-          ),
         ),
       ),
     );
@@ -2542,10 +2963,11 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
       return Container(
         key: key,
         width: double.infinity,
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
           color: _kCream,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _kBorder),
         ),
         child: Text(
           'No upcoming events scheduled at this time.',
@@ -2586,13 +3008,14 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
       return Container(
         key: key,
         width: double.infinity,
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
           color: _kCream,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _kBorder),
         ),
         child: Text(
-          'No upcoming executive meetings scheduled at this time.',
+          'No upcoming meetings scheduled at this time.',
           style: _inter(color: _kMuted, fontSize: 15),
         ),
       );
@@ -2664,111 +3087,97 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     String location, {
     VoidCallback? onTap,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: _kCream,
         borderRadius: BorderRadius.circular(14),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _kCream,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _kBorder),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Date badge
-              Container(
-                width: 52,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: _kAccent.withAlpha(22),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      day,
-                      textAlign: TextAlign.center,
-                      style: _outfit(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: _kAccent,
-                      ),
-                    ),
-                    Text(
-                      year,
-                      style: _outfit(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: _kAccent,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: _outfit(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: _kText,
-                        height: 1.3,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(Icons.schedule_outlined, size: 13, color: _kMuted),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            time,
-                            style: _inter(fontSize: 14, color: _kMuted),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _kBorder),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 74,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _kCardBg,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: _kBorder),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        day,
+                        textAlign: TextAlign.center,
+                        style: _outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: _kAccent,
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 13,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        year,
+                        style: _inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                           color: _kMuted,
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            location,
-                            style: _inter(fontSize: 14, color: _kMuted),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'View Details →',
-                      style: _outfit(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: _kAccent,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: _outfit(
+                          fontSize: 16.5,
+                          fontWeight: FontWeight.w700,
+                          color: _kText,
+                          height: 1.25,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '$time  ·  $location',
+                        style: _inter(
+                          fontSize: 14,
+                          color: _kMuted,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'View details →',
+                        style: _outfit(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: _kBrown,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -2776,144 +3185,161 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // ⑥ CTI TRAINING
+  // ⑥ REGISTER A COURSE (CTI TRAINING)
   // ──────────────────────────────────────────────────────────────────────────
   Widget _buildCtiTrainingSection(bool isMobile) {
+    Widget coursesContent;
+    if (_loadingCourses && _coursesList.isEmpty) {
+      coursesContent = Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: _kAccent,
+          ),
+        ),
+      );
+    } else if (_coursesList.isEmpty) {
+      coursesContent = Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(
+          color: _kCardBg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _kBorder),
+        ),
+        child: Text(
+          'No CTI training courses currently open for enrolment.',
+          style: _inter(color: _kMuted, fontSize: 15),
+        ),
+      );
+    } else {
+      coursesContent = Column(
+        children: _coursesList
+            .take(3)
+            .toList()
+            .asMap()
+            .entries
+            .map(
+              (entry) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _ctiCourseCard(
+                  entry.value as Map<dynamic, dynamic>,
+                  index: entry.key + 1,
+                  onTap: () => _showAllCoursesModal(context),
+                ),
+              ),
+            )
+            .toList(),
+      );
+    }
+
     return Container(
       key: _trainingKey,
       color: _kCream,
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 20 : 48,
-        vertical: 56,
+        horizontal: isMobile ? 16 : 48,
+        vertical: isMobile ? 48 : 84,
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'REGISTER A COURSE',
-                          style: _outfit(
-                            color: _kBrown,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Register A Course',
-                          style: _outfit(
-                            color: _kText,
-                            fontSize: isMobile ? 26 : 32,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Professional CTI customs & trade certification courses open for enrolment.',
-                          style: _inter(color: _kMuted, fontSize: 16),
-                        ),
-                      ],
+          constraints: const BoxConstraints(maxWidth: 1280),
+          child: isMobile
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'REGISTER A COURSE',
+                      style: _outfit(
+                        color: _kAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.1,
+                      ),
                     ),
-                  ),
-                  if (!isMobile) ...[
-                    const SizedBox(width: 16),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Professional CTI Training',
+                      style: _outfit(
+                        color: _kText,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.6,
+                        height: 1.12,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Enroll in Customs Training Institute (CTI) short courses and certification programs.',
+                      style: _inter(
+                        color: _kMuted,
+                        fontSize: 15,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    coursesContent,
+                    const SizedBox(height: 10),
                     _textCta(
-                      'View All Courses',
+                      'View all courses',
                       () => _showAllCoursesModal(context),
                     ),
                   ],
-                ],
-              ),
-              const SizedBox(height: 28),
-
-              if (_loadingCourses && _coursesList.isEmpty)
-                Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: _kAccent,
-                    ),
-                  ),
                 )
-              else if (_coursesList.isEmpty)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    'No CTI training courses currently open for enrolment.',
-                    style: _inter(color: _kMuted, fontSize: 15),
-                  ),
-                )
-              else if (isMobile)
-                Column(
-                  children: _coursesList
-                      .take(3)
-                      .map(
-                        (c) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _ctiCourseCard(
-                            c as Map<dynamic, dynamic>,
-                            onTap: () => _showAllCoursesModal(context),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                )
-              else
-                Builder(
-                  builder: (context) {
-                    final previewList = _coursesList.take(3).toList();
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: previewList
-                          .asMap()
-                          .entries
-                          .map(
-                            (e) => Expanded(
-                              child: Padding(
-                                padding: EdgeInsets.only(
-                                  right: e.key < previewList.length - 1
-                                      ? 16
-                                      : 0,
-                                ),
-                                child: _ctiCourseCard(
-                                  e.value as Map<dynamic, dynamic>,
-                                  onTap: () => _showAllCoursesModal(context),
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 48),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'REGISTER A COURSE',
+                              style: _outfit(
+                                color: _kAccent,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Professional CTI Training',
+                              style: _outfit(
+                                color: _kText,
+                                fontSize: 38,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.9,
+                                height: 1.08,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 420),
+                              child: Text(
+                                'Professional customs tariff, HS classification, and ICUMS declarant cohorts conducted by the Customs Training Institute (CTI).',
+                                style: _inter(
+                                  color: _kMuted,
+                                  fontSize: 16,
+                                  height: 1.6,
                                 ),
                               ),
                             ),
-                          )
-                          .toList(),
-                    );
-                  },
+                            const SizedBox(height: 26),
+                            _textCta(
+                              'View all courses',
+                              () => _showAllCoursesModal(context),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(flex: 7, child: coursesContent),
+                  ],
                 ),
-
-              if (isMobile) ...[
-                const SizedBox(height: 8),
-                Center(
-                  child: _textCta(
-                    'View All Courses',
-                    () => _showAllCoursesModal(context),
-                  ),
-                ),
-              ],
-            ],
-          ),
         ),
       ),
     );
@@ -2926,108 +3352,154 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _ctiCourseCard(Map<dynamic, dynamic> c, {VoidCallback? onTap}) {
+  Widget _ctiCourseCard(
+    Map<dynamic, dynamic> c, {
+    int index = 1,
+    VoidCallback? onTap,
+  }) {
+    final startDate =
+        c['start_date']?.toString() ?? c['date']?.toString() ?? 'Upcoming';
+    final durationAndMode =
+        '${c['duration'] ?? '4 Weeks'} · ${c['mode'] ?? 'Hybrid'}';
+    final fee = c['fee']?.toString() ?? 'GHS 1,500';
+
     return Material(
       color: _kCardBg,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: _kBorder),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _kBrown.withAlpha(18),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(Icons.school_outlined, size: 20, color: _kBrown),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                c['title']?.toString() ?? '',
-                style: _outfit(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: _kText,
-                  height: 1.3,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _metaRow(
-                Icons.calendar_today_outlined,
-                c['start_date']?.toString() ??
-                    c['date']?.toString() ??
-                    'Upcoming',
-              ),
-              const SizedBox(height: 5),
-              _metaRow(
-                Icons.schedule_outlined,
-                '${c['duration'] ?? '4 Weeks'} · ${c['mode'] ?? 'Hybrid'}',
-              ),
-              const SizedBox(height: 5),
-              _metaRow(
-                Icons.payments_outlined,
-                c['fee']?.toString() ?? 'GHS 1,500',
-              ),
-              const SizedBox(height: 16),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: onTap ?? () => _showAllCoursesModal(context),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: _kBrown,
-                        side: BorderSide(color: _kBrown, width: 1.2),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: Text(
-                        'Details',
-                        style: _outfit(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _kAccent.withAlpha(20),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      index.toString().padLeft(2, '0'),
+                      style: _outfit(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        color: _kAccent,
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 14),
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        final courseTitle = (c['title'] ?? '')
-                            .toString()
-                            .trim();
-                        final uri = courseTitle.isNotEmpty
-                            ? '/guest-services/cti_training?course=${Uri.encodeComponent(courseTitle)}'
-                            : '/guest-services/cti_training';
-                        context.go(uri);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _kAccent,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                c['title']?.toString() ?? '',
+                                style: _outfit(
+                                  fontSize: 17.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: _kText,
+                                  height: 1.25,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              fee,
+                              style: _outfit(
+                                fontSize: 15.5,
+                                fontWeight: FontWeight.w800,
+                                color: _kBrown,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      child: Text(
-                        'Register',
-                        style: _outfit(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                        const SizedBox(height: 6),
+                        Text(
+                          '$startDate  ·  $durationAndMode',
+                          style: _inter(
+                            fontSize: 14,
+                            color: _kMuted,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 16),
+                        Wrap(
+                          spacing: 16,
+                          runSpacing: 10,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () {
+                                final courseTitle = (c['title'] ?? '')
+                                    .toString()
+                                    .trim();
+                                final uri = courseTitle.isNotEmpty
+                                    ? '/guest-services/cti_training?course=${Uri.encodeComponent(courseTitle)}'
+                                    : '/guest-services/cti_training';
+                                context.go(uri);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _kAccent,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              child: Text(
+                                'Register Now →',
+                                style: _outfit(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            InkWell(
+                              onTap:
+                                  onTap ?? () => _showAllCoursesModal(context),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 6,
+                                  horizontal: 4,
+                                ),
+                                child: Text(
+                                  'Course Details',
+                                  style: _outfit(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: _kBrown,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -3039,14 +3511,6 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _metaRow(IconData icon, String text) => Row(
-    children: [
-      Icon(icon, size: 13, color: _kMuted),
-      const SizedBox(width: 5),
-      Text(text, style: _inter(fontSize: 14, color: _kMuted)),
-    ],
-  );
-
   // ──────────────────────────────────────────────────────────────────────────
   // ⑦ COMPLAINTS & TRACKING ORDER SECTION
   // ──────────────────────────────────────────────────────────────────────────
@@ -3055,68 +3519,101 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
       key: _complaintsKey,
       color: _kBg,
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 20 : 48,
-        vertical: 56,
+        horizontal: isMobile ? 16 : 48,
+        vertical: isMobile ? 48 : 84,
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
+          constraints: const BoxConstraints(maxWidth: 1280),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'DISPUTE & GRIEVANCE REDRESSAL',
-                          style: _outfit(
-                            color: _kBrown,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Complaints & Tracking Order',
-                          style: _outfit(
-                            color: _kText,
-                            fontSize: isMobile ? 24 : 30,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Lodge an official grievance against cargo clearance delays, demurrage disputes, or broker misconduct — or track the live status of your existing complaint order in real time.',
-                          style: _inter(color: _kMuted, fontSize: 16),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 28),
-
               if (isMobile) ...[
+                Text(
+                  'DISPUTE & GRIEVANCE REDRESSAL',
+                  style: _outfit(
+                    color: _kAccent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Complaints & Tracking Order',
+                  style: _outfit(
+                    color: _kText,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.6,
+                    height: 1.12,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Lodge an official grievance or track your existing complaint status in real time.',
+                  style: _inter(color: _kMuted, fontSize: 15, height: 1.5),
+                ),
+                const SizedBox(height: 22),
                 _buildComplaintTrackingCard(isMobile),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 _buildLodgeComplaintCtaCard(isMobile),
               ] else ...[
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      flex: 6,
-                      child: _buildComplaintTrackingCard(isMobile),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
                       flex: 5,
-                      child: _buildLodgeComplaintCtaCard(isMobile),
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 48),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'DISPUTE & GRIEVANCE REDRESSAL',
+                              style: _outfit(
+                                color: _kAccent,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Complaints & Tracking Order',
+                              style: _outfit(
+                                color: _kText,
+                                fontSize: 38,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.9,
+                                height: 1.08,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 420),
+                              child: Text(
+                                'Lodge an official grievance regarding clearance delays, demurrage disputes, or broker conduct — or track the live status of an existing complaint.',
+                                style: _inter(
+                                  color: _kMuted,
+                                  fontSize: 16,
+                                  height: 1.6,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 7,
+                      child: Column(
+                        children: [
+                          _buildComplaintTrackingCard(isMobile),
+                          const SizedBox(height: 14),
+                          _buildLodgeComplaintCtaCard(isMobile),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -3175,133 +3672,181 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
 
   Widget _buildComplaintTrackingCard(bool isMobile) {
     return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(isMobile ? 20 : 26),
       decoration: BoxDecoration(
-        color: _kCardBg,
-        borderRadius: BorderRadius.circular(20),
+        color: _kCream,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _kBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(_globalIsDark ? 30 : 6),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
-      padding: EdgeInsets.all(isMobile ? 20 : 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _kBrown.withAlpha(18),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.track_changes_rounded,
-                  color: _kBrown,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          Text(
+            'Track Existing Complaint',
+            style: _outfit(
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+              color: _kText,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Enter your tracking reference ID for live status updates.',
+            style: _inter(fontSize: 14.5, color: _kMuted),
+          ),
+          const SizedBox(height: 16),
+
+          isMobile
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'Track Complaint Order Status',
-                      style: _outfit(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: _kText,
+                    Container(
+                      decoration: BoxDecoration(
+                        color: _kCardBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _kBorder),
+                      ),
+                      child: TextField(
+                        controller: _homeTrackCtrl,
+                        textCapitalization: TextCapitalization.characters,
+                        onSubmitted: (_) => _homeTrackComplaint(),
+                        style: _inter(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w700,
+                          color: _kText,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'e.g. CMP-2026-92945',
+                          hintStyle: _inter(
+                            fontSize: 14.5,
+                            color: _kMuted,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: _kBrown,
+                            size: 20,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 14,
+                          ),
+                        ),
                       ),
                     ),
-                    Text(
-                      'Enter your tracking ID for live investigation updates',
-                      style: _inter(fontSize: 14, color: _kMuted),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: _homeTracking ? null : _homeTrackComplaint,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _kBrown,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: _homeTracking
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                'Track Status',
+                                style: _outfit(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: _kCardBg,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: _kBorder),
+                        ),
+                        child: TextField(
+                          controller: _homeTrackCtrl,
+                          textCapitalization: TextCapitalization.characters,
+                          onSubmitted: (_) => _homeTrackComplaint(),
+                          style: _inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: _kText,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'e.g. CMP-2026-92945',
+                            hintStyle: _inter(
+                              fontSize: 15,
+                              color: _kMuted,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                            prefixIcon: Icon(
+                              Icons.search_rounded,
+                              color: _kBrown,
+                              size: 20,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 15,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _homeTracking ? null : _homeTrackComplaint,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _kBrown,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: _homeTracking
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                'Track Status',
+                                style: _outfit(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Tracking Input Bar
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: _kCream,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: _kBorder),
-                  ),
-                  child: TextField(
-                    controller: _homeTrackCtrl,
-                    textCapitalization: TextCapitalization.characters,
-                    onSubmitted: (_) => _homeTrackComplaint(),
-                    style: GoogleFonts.spaceMono(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: _kText,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'e.g. CMP-2026-92945',
-                      hintStyle: GoogleFonts.spaceMono(
-                        fontSize: 15,
-                        color: _kMuted,
-                      ),
-                      prefixIcon: Icon(
-                        Icons.search_rounded,
-                        color: _kBrown,
-                        size: 20,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 14,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              SizedBox(
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: _homeTracking ? null : _homeTrackComplaint,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _kBrown,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _homeTracking
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          'Track Order',
-                          style: _outfit(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15.5,
-                          ),
-                        ),
-                ),
-              ),
-            ],
-          ),
 
           if (_homeTrackError != null) ...[
             const SizedBox(height: 12),
@@ -3312,81 +3857,78 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
           ],
 
           if (_homeTrackResult != null) ...[
-            const SizedBox(height: 20),
-            Divider(color: _kBorder),
-            const SizedBox(height: 14),
-
-            // Live result preview
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _homeTrackResult!['complaint_id']?.toString() ?? '',
-                  style: GoogleFonts.spaceMono(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: _kBrown,
+            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: _kCardBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _kBorder),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _homeTrackResult!['complaint_id']?.toString() ?? '',
+                        style: _inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: _kBrown,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _kAccent.withAlpha(24),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          (_homeTrackResult!['status'] ?? 'Received').toString(),
+                          style: _outfit(
+                            color: _kAccent,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _kAccent.withAlpha(25),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    (_homeTrackResult!['status'] ?? 'Received')
-                        .toString()
-                        .toUpperCase(),
+                  const SizedBox(height: 8),
+                  Text(
+                    _homeTrackResult!['subject']?.toString() ?? '',
                     style: _outfit(
-                      color: _kAccent,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: _kText,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _homeTrackResult!['subject']?.toString() ?? '',
-              style: _outfit(
-                fontSize: 15.5,
-                fontWeight: FontWeight.bold,
-                color: _kText,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Port: ${_homeTrackResult!['port'] ?? 'GHA'} · Category: ${_homeTrackResult!['category'] ?? ''}',
-              style: _inter(fontSize: 14, color: _kMuted),
-            ),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => context.go(
-                  '/complaints/track/${_homeTrackResult!['complaint_id']}',
-                ),
-                icon: Icon(Icons.visibility_outlined, size: 16, color: _kBrown),
-                label: Text(
-                  'View Full Timeline & Evidence',
-                  style: _outfit(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: _kBrown,
+                  const SizedBox(height: 4),
+                  Text(
+                    'Category: ${_homeTrackResult!['category'] ?? 'General'}',
+                    style: _inter(fontSize: 14, color: _kMuted),
                   ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: _kBrown.withAlpha(120)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                  const SizedBox(height: 14),
+                  InkWell(
+                    onTap: () => context.go(
+                      '/complaints/track/${_homeTrackResult!['complaint_id']}',
+                    ),
+                    child: Text(
+                      'Open Full Complaint Timeline →',
+                      style: _outfit(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: _kBrown,
+                      ),
+                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                ),
+                ],
               ),
             ),
           ],
@@ -3397,107 +3939,56 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
 
   Widget _buildLodgeComplaintCtaCard(bool isMobile) {
     return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(isMobile ? 20 : 26),
       decoration: BoxDecoration(
-        color: _kCardBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(_globalIsDark ? 30 : 6),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        color: _kFooter,
+        borderRadius: BorderRadius.circular(16),
       ),
-      padding: EdgeInsets.all(isMobile ? 20 : 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _kAccent.withAlpha(25),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.track_changes_rounded,
-                  color: _kAccent,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Need to Lodge a Complaint?',
-                      style: _outfit(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: _kText,
-                      ),
-                    ),
-                    Text(
-                      'Direct Secretariat Grievance Redressal',
-                      style: _inter(fontSize: 14, color: _kMuted),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Text(
+            'Lodge a New Complaint',
+            style: _outfit(
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: -0.2,
+            ),
           ),
-          const SizedBox(height: 16),
-          _bulletPoint(
-            'Grievance investigation for customs tariff & demurrage disputes.',
+          const SizedBox(height: 6),
+          Text(
+            'Submit an official grievance for direct investigation by the CUBAG Secretariat.',
+            style: _inter(
+              fontSize: 14.5,
+              color: Colors.white.withAlpha(200),
+              height: 1.5,
+            ),
           ),
-          const SizedBox(height: 8),
-          _bulletPoint('Strict enforcement of CUBAG broker code of ethics.'),
-          const SizedBox(height: 8),
-          _bulletPoint(
-            'Instant Complaint ID issued for transparent order tracking.',
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           SizedBox(
-            width: double.infinity,
             height: 46,
-            child: ElevatedButton.icon(
+            width: isMobile ? double.infinity : null,
+            child: ElevatedButton(
               onPressed: () => context.go('/complaints'),
-              icon: const Icon(Icons.edit_note_rounded, size: 18),
-              label: Text(
-                'Lodge A Complaint Now',
-                style: _outfit(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _kAccent,
                 foregroundColor: Colors.white,
                 elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+              ),
+              child: Text(
+                'Lodge Official Complaint →',
+                style: _outfit(fontWeight: FontWeight.w700, fontSize: 15),
               ),
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _bulletPoint(String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(Icons.check_circle_outline_rounded, size: 16, color: _kAccent),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: _inter(fontSize: 14.5, color: _kMuted, height: 1.4),
-          ),
-        ),
-      ],
     );
   }
 
@@ -3530,26 +4021,13 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     required bool isLeft,
   }) {
     return Material(
-      color: Colors.transparent,
+      color: _kCardBg,
       child: InkWell(
-        borderRadius: BorderRadius.circular(24),
         onTap: onTap,
-        child: Container(
+        child: SizedBox(
           width: 44,
           height: 44,
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(235),
-            shape: BoxShape.circle,
-            border: Border.all(color: _kBorder),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(25),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Icon(icon, size: 20, color: _kBrown),
+          child: Icon(icon, size: 18, color: _kText),
         ),
       ),
     );
@@ -3582,17 +4060,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                   maxHeight: 720,
                 ),
                 child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(60),
-                        blurRadius: 30,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
+                  color: _kCardBg,
                   clipBehavior: Clip.antiAlias,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -3604,7 +4072,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                           horizontal: 20,
                           vertical: 14,
                         ),
-                        color: Colors.white,
+                        color: _kCardBg,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -3615,10 +4083,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                                     horizontal: 8,
                                     vertical: 3,
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: _kAccent.withAlpha(25),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
+                                  color: _kAccent.withAlpha(25),
                                   child: Text(
                                     sub,
                                     style: _outfit(
@@ -3631,13 +4096,19 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                                 const SizedBox(width: 10),
                                 Text(
                                   '${currentIdx + 1} / ${_galleryList.length}',
-                                  style: _inter(fontSize: 14, color: _kMuted),
+                                  style: _inter(
+                                    fontSize: 14,
+                                    color: _kMuted,
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures(),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
                             IconButton(
                               icon: Icon(
-                                Icons.close_rounded,
+                                Icons.close_sharp,
                                 size: 22,
                                 color: _kText,
                               ),
@@ -3646,7 +4117,6 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                           ],
                         ),
                       ),
-                      Divider(height: 1, color: _kBorder),
 
                       // Image with side arrows
                       Flexible(
@@ -3688,9 +4158,12 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                                     backgroundColor: Colors.black54,
                                     foregroundColor: Colors.white,
                                     padding: const EdgeInsets.all(10),
+                                    shape: const RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.zero,
+                                    ),
                                   ),
                                   icon: const Icon(
-                                    Icons.chevron_left_rounded,
+                                    Icons.chevron_left_sharp,
                                     size: 26,
                                   ),
                                   onPressed: () {
@@ -3711,9 +4184,12 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                                     backgroundColor: Colors.black54,
                                     foregroundColor: Colors.white,
                                     padding: const EdgeInsets.all(10),
+                                    shape: const RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.zero,
+                                    ),
                                   ),
                                   icon: const Icon(
-                                    Icons.chevron_right_rounded,
+                                    Icons.chevron_right_sharp,
                                     size: 26,
                                   ),
                                   onPressed: () {
@@ -3733,7 +4209,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                       // Caption bar
                       Container(
                         padding: const EdgeInsets.all(20),
-                        color: Colors.white,
+                        color: _kCardBg,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -3767,213 +4243,199 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // PUBLIC SURVEYS & POLLS SECTION (FOR GUESTS & MEMBERS)
+  // PUBLIC SURVEYS & POLLS SECTION
   // ──────────────────────────────────────────────────────────────────────────
   Widget _buildSurveysSection(bool isMobile) {
+    final surveyBody = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_publicSurveys.length > 1) ...[
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(_publicSurveys.length, (idx) {
+                final s = _publicSurveys[idx];
+                final isSelected = _activeSurveyIdx == idx;
+                final isVoted = _votedSurveyIds.contains(s['id']);
+                final surveyTitle =
+                    s['title']?.toString() ?? 'Survey ${idx + 1}';
+                final displayTitle = surveyTitle.length > 28
+                    ? '${surveyTitle.substring(0, 28)}...'
+                    : surveyTitle;
+
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () => setState(() => _activeSurveyIdx = idx),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? (_globalIsDark
+                                  ? const Color(0xFFFF5000)
+                                  : const Color(0xFF6B3E26))
+                            : _kCardBg,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isSelected ? Colors.transparent : _kBorder,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            displayTitle,
+                            style: _outfit(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14.5,
+                              color: isSelected ? Colors.white : _kText,
+                            ),
+                          ),
+                          if (isVoted) ...[
+                            const SizedBox(width: 6),
+                            Icon(
+                              Icons.check_rounded,
+                              size: 14,
+                              color: isSelected
+                                  ? Colors.white
+                                  : const Color(0xFF10b981),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          child: _loadingSurveys && _publicSurveys.isEmpty
+              ? Center(
+                  key: const ValueKey('loading_surveys'),
+                  child: Padding(
+                    padding: const EdgeInsets.all(48),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: _kAccent,
+                    ),
+                  ),
+                )
+              : _publicSurveys.isEmpty
+              ? _buildNoPublicSurveysCard(isMobile)
+              : _buildActiveSurveyCard(
+                  _publicSurveys[_activeSurveyIdx.clamp(
+                    0,
+                    _publicSurveys.length - 1,
+                  )],
+                  isMobile,
+                ),
+        ),
+      ],
+    );
+
     return Container(
       key: _surveysKey,
       color: _kCream,
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 20 : 48,
-        vertical: 64,
+        horizontal: isMobile ? 16 : 48,
+        vertical: isMobile ? 48 : 84,
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Section Header
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _kAccent.withValues(
-                              alpha: _globalIsDark ? 0.2 : 0.12,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: _kAccent.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.how_to_vote_rounded,
-                                size: 14,
-                                color: _kAccent,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'COMMUNITY OPINION & POLLS',
-                                style: _outfit(
-                                  color: _kAccent,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.0,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Have Your Say — Public Surveys',
-                          style: _outfit(
-                            color: _kText,
-                            fontSize: isMobile ? 26 : 34,
-                            fontWeight: FontWeight.w900,
-                            height: 1.15,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Open to general public guests and members. Help shape Ghana\'s trade, port logistics, and customs policies.',
-                          style: _inter(
-                            color: _kMuted,
-                            fontSize: isMobile ? 15 : 17,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 28),
-
-              // Multi-survey selector tabs if multiple polls exist
-              if (_publicSurveys.length > 1) ...[
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: List.generate(_publicSurveys.length, (idx) {
-                      final s = _publicSurveys[idx];
-                      final isSelected = _activeSurveyIdx == idx;
-                      final isVoted = _votedSurveyIds.contains(s['id']);
-                      final surveyTitle =
-                          s['title']?.toString() ?? 'Survey ${idx + 1}';
-                      final displayTitle = surveyTitle.length > 28
-                          ? '${surveyTitle.substring(0, 28)}...'
-                          : surveyTitle;
-
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: InkWell(
-                          onTap: () => setState(() => _activeSurveyIdx = idx),
-                          borderRadius: BorderRadius.circular(12),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? (_globalIsDark
-                                        ? const Color(0xFFFF5000)
-                                        : const Color(0xFF6B3E26))
-                                  : _kCardBg,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isSelected
-                                    ? (_globalIsDark
-                                          ? const Color(0xFFFF5000)
-                                          : const Color(0xFF6B3E26))
-                                    : _kBorder,
-                              ),
-                              boxShadow: isSelected
-                                  ? [
-                                      BoxShadow(
-                                        color:
-                                            (_globalIsDark
-                                                    ? const Color(0xFFFF5000)
-                                                    : const Color(0xFF6B3E26))
-                                                .withValues(alpha: 0.25),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ]
-                                  : [],
-                            ),
-                            child: Row(
-                              children: [
-                                Text(
-                                  displayTitle,
-                                  style: _outfit(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                    color: isSelected ? Colors.white : _kText,
-                                  ),
-                                ),
-                                if (isVoted) ...[
-                                  const SizedBox(width: 6),
-                                  Icon(
-                                    Icons.check_circle_rounded,
-                                    size: 14,
-                                    color: isSelected
-                                        ? Colors.white
-                                        : const Color(0xFF10b981),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-
-              // Content Area
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: _loadingSurveys && _publicSurveys.isEmpty
-                    ? Center(
-                        key: const ValueKey('loading_surveys'),
-                        child: Padding(
-                          padding: const EdgeInsets.all(48),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: _kAccent,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Loading active community polls...',
-                                style: _outfit(color: _kMuted, fontSize: 16),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : _publicSurveys.isEmpty
-                    ? _buildNoPublicSurveysCard(isMobile)
-                    : _buildActiveSurveyCard(
-                        _publicSurveys[_activeSurveyIdx.clamp(
-                          0,
-                          _publicSurveys.length - 1,
-                        )],
-                        isMobile,
+          constraints: const BoxConstraints(maxWidth: 1280),
+          child: isMobile
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'COMMUNITY OPINION & POLLS',
+                      style: _outfit(
+                        color: _kAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.1,
                       ),
-              ),
-            ],
-          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Have Your Say — Public Surveys',
+                      style: _outfit(
+                        color: _kText,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        height: 1.12,
+                        letterSpacing: -0.6,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Vote and voice your opinion on customs clearance, freight forwarding, and trade operations.',
+                      style: _inter(
+                        color: _kMuted,
+                        fontSize: 15,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    surveyBody,
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 48),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'COMMUNITY OPINION & POLLS',
+                              style: _outfit(
+                                color: _kAccent,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Have Your Say — Public Surveys',
+                              style: _outfit(
+                                color: _kText,
+                                fontSize: 38,
+                                fontWeight: FontWeight.w800,
+                                height: 1.08,
+                                letterSpacing: -0.9,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 420),
+                              child: Text(
+                                'Open to importers, exporters, and licensed customs brokers. Vote and voice your opinion on port operations, ICUMS workflows, and trade policy.',
+                                style: _inter(
+                                  color: _kMuted,
+                                  fontSize: 16,
+                                  height: 1.6,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(flex: 7, child: surveyBody),
+                  ],
+                ),
         ),
       ),
     );
@@ -3982,47 +4444,31 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
   Widget _buildNoPublicSurveysCard(bool isMobile) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(isMobile ? 24 : 40),
+      padding: EdgeInsets.all(isMobile ? 24 : 34),
       decoration: BoxDecoration(
         color: _kCardBg,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _kBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: _globalIsDark ? 0.2 : 0.03),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: _kAccent.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.poll_outlined, size: 36, color: _kAccent),
-          ),
-          const SizedBox(height: 16),
           Text(
-            'No Active Public Polls at the Moment',
+            'No Active Surveys Open',
             style: _outfit(
-              fontWeight: FontWeight.bold,
-              fontSize: isMobile ? 19 : 22,
+              fontWeight: FontWeight.w700,
+              fontSize: isMobile ? 19 : 21,
               color: _kText,
+              letterSpacing: -0.3,
             ),
-            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 500),
+            constraints: const BoxConstraints(maxWidth: 520),
             child: Text(
-              'Check back soon for new public consultations, stakeholder surveys, and industry votes.',
-              style: _inter(fontSize: 16, color: _kMuted, height: 1.4),
-              textAlign: TextAlign.center,
+              'New community polls and stakeholder surveys are published here when opened by the CUBAG Secretariat.',
+              style: _inter(fontSize: 15, color: _kMuted, height: 1.5),
             ),
           ),
         ],
@@ -4045,7 +4491,6 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     final isVoted = _votedSurveyIds.contains(surveyId);
     final isSubmitting = _submittingSurvey[surveyId] == true;
 
-    // Parse options
     List<dynamic> options = [];
     if (survey['options'] is List) {
       options = survey['options'] as List<dynamic>;
@@ -4069,170 +4514,112 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
 
     return Container(
       key: ValueKey('survey_$surveyId'),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: _kCardBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kBorder, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: _globalIsDark ? 0.25 : 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _kBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (coverImage != null && coverImage.isNotEmpty)
+            CachedNetworkImage(
+              imageUrl: coverImage,
+              width: double.infinity,
+              height: isMobile ? 150 : 190,
+              fit: BoxFit.cover,
+              errorWidget: (_, _, _) => const SizedBox.shrink(),
+            ),
+
+          Padding(
+            padding: EdgeInsets.all(isMobile ? 20 : 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _kBrown.withAlpha(18),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        type,
+                        style: _inter(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: _kBrown,
+                        ),
+                      ),
+                    ),
+                    if (deadline != null && deadline.isNotEmpty)
+                      Text(
+                        'Closes $deadline',
+                        style: _inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: _kMuted,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                Text(
+                  title,
+                  style: _outfit(
+                    fontWeight: FontWeight.w800,
+                    fontSize: isMobile ? 21 : 25,
+                    color: _kText,
+                    height: 1.18,
+                    letterSpacing: -0.4,
+                  ),
+                ),
+                if (desc.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    desc,
+                    style: _inter(
+                      fontSize: isMobile ? 15 : 16,
+                      color: _kMuted,
+                      height: 1.55,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 22),
+
+                if (isVoted)
+                  _buildSurveyLiveResults(
+                    survey,
+                    isMobile,
+                    totalVotes,
+                    tallies,
+                    avgStars,
+                    options,
+                  )
+                else
+                  _buildSurveyVoteForm(
+                    survey,
+                    isMobile,
+                    isYesNo,
+                    isStarRating,
+                    options,
+                    selectedOption,
+                    isSubmitting,
+                  ),
+              ],
+            ),
           ),
         ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(19),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Optional Cover Banner
-            if (coverImage != null && coverImage.isNotEmpty)
-              Stack(
-                children: [
-                  CachedNetworkImage(
-                    imageUrl: coverImage,
-                    width: double.infinity,
-                    height: isMobile ? 140 : 180,
-                    fit: BoxFit.cover,
-                    errorWidget: (_, _, _) => const SizedBox.shrink(),
-                  ),
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            _kCardBg.withValues(alpha: 0.9),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-            Padding(
-              padding: EdgeInsets.all(isMobile ? 20 : 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Top Tags Bar
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _kBrown.withValues(
-                            alpha: _globalIsDark ? 0.2 : 0.1,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: _kBrown.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Text(
-                          type.toUpperCase(),
-                          style: _outfit(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: _kBrown,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ),
-                      if (deadline != null && deadline.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _kMuted.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.calendar_today_rounded,
-                                size: 12,
-                                color: _kMuted,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Deadline: $deadline',
-                                style: _outfit(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: _kMuted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Survey Title & Description
-                  Text(
-                    title,
-                    style: _outfit(
-                      fontWeight: FontWeight.w900,
-                      fontSize: isMobile ? 22 : 28,
-                      color: _kText,
-                      height: 1.2,
-                    ),
-                  ),
-                  if (desc.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      desc,
-                      style: _inter(
-                        fontSize: isMobile ? 16 : 17,
-                        color: _kMuted,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  Divider(color: _kBorder.withValues(alpha: 0.6)),
-                  const SizedBox(height: 20),
-
-                  // Voting form vs Live Results
-                  if (isVoted)
-                    _buildSurveyLiveResults(
-                      survey,
-                      isMobile,
-                      totalVotes,
-                      tallies,
-                      avgStars,
-                      options,
-                    )
-                  else
-                    _buildSurveyVoteForm(
-                      survey,
-                      isMobile,
-                      isYesNo,
-                      isStarRating,
-                      options,
-                      selectedOption,
-                      isSubmitting,
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -4252,14 +4639,14 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Select your response to vote as a guest or member:',
+          'Select your response:',
           style: _outfit(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
             color: _kText,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
 
         if (isYesNo)
           Row(
@@ -4268,17 +4655,17 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                 child: _buildVoteChoiceTile(
                   surveyId: surveyId,
                   optionName: 'Yes',
-                  icon: Icons.thumb_up_alt_rounded,
+                  icon: Icons.check_rounded,
                   isSelected: selectedOption?.toLowerCase() == 'yes',
                   activeColor: const Color(0xFF10b981),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 10),
               Expanded(
                 child: _buildVoteChoiceTile(
                   surveyId: surveyId,
                   optionName: 'No',
-                  icon: Icons.thumb_down_alt_rounded,
+                  icon: Icons.close_rounded,
                   isSelected: selectedOption?.toLowerCase() == 'no',
                   activeColor: const Color(0xFFef4444),
                 ),
@@ -4297,46 +4684,42 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               final isSelected = selectedOption == name;
 
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: 10),
                 child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
                   onTap: () =>
                       setState(() => _selectedOptionMap[surveyId] = name),
-                  borderRadius: BorderRadius.circular(14),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
+                  child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 14,
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? _kAccent.withValues(
-                              alpha: _globalIsDark ? 0.15 : 0.08,
-                            )
-                          : _globalIsDark
-                          ? const Color(0xFF1A0F0A)
-                          : const Color(0xFFF8F4F0),
-                      borderRadius: BorderRadius.circular(14),
+                          ? (_globalIsDark
+                                ? const Color(0xFF332018)
+                                : const Color(0xFFEFE6DC))
+                          : _kCream,
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected ? _kAccent : _kBorder,
-                        width: isSelected ? 2 : 1,
                       ),
                     ),
                     child: Row(
                       children: [
                         if (photo != null && photo.isNotEmpty) ...[
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(8),
                             child: CachedNetworkImage(
                               imageUrl: photo,
                               width: 38,
                               height: 38,
                               fit: BoxFit.cover,
-                              errorWidget: (_, _, _) => CircleAvatar(
-                                radius: 19,
-                                backgroundColor: _kAccent.withValues(
-                                  alpha: 0.2,
-                                ),
+                              errorWidget: (_, _, _) => Container(
+                                width: 38,
+                                height: 38,
+                                color: _kAccent.withValues(alpha: 0.2),
+                                alignment: Alignment.center,
                                 child: Text(
                                   name.isNotEmpty ? name[0] : '?',
                                   style: _outfit(
@@ -4356,12 +4739,8 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                               fontWeight: isSelected
                                   ? FontWeight.w800
                                   : FontWeight.w600,
-                              fontSize: 17,
-                              color: isSelected
-                                  ? (_globalIsDark
-                                        ? Colors.white
-                                        : const Color(0xFF6B3E26))
-                                  : _kText,
+                              fontSize: 16,
+                              color: _kText,
                             ),
                           ),
                         ),
@@ -4369,18 +4748,15 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                           width: 22,
                           height: 22,
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isSelected ? _kAccent : Colors.transparent,
+                            color: isSelected ? _kAccent : _kCardBg,
+                            borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: isSelected
-                                  ? _kAccent
-                                  : _kMuted.withValues(alpha: 0.5),
-                              width: 2,
+                              color: isSelected ? _kAccent : _kBorder,
                             ),
                           ),
                           child: isSelected
                               ? const Icon(
-                                  Icons.check,
+                                  Icons.check_rounded,
                                   size: 14,
                                   color: Colors.white,
                                 )
@@ -4394,37 +4770,24 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
             }).toList(),
           ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
 
-        // Centered Submit Button
-        Center(
-          child: SizedBox(
-            height: 48,
-            width: isMobile ? double.infinity : 280,
-            child: ElevatedButton.icon(
-              onPressed: isSubmitting ? null : () => _submitGuestVote(survey),
-              icon: isSubmitting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.how_to_vote_rounded, size: 18),
-              label: Text(
-                isSubmitting ? 'Recording Vote...' : 'Submit Vote',
-                style: _outfit(fontWeight: FontWeight.w800, fontSize: 17),
+        SizedBox(
+          height: 48,
+          width: isMobile ? double.infinity : 240,
+          child: ElevatedButton(
+            onPressed: isSubmitting ? null : () => _submitGuestVote(survey),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _kAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kAccent,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                elevation: 0,
-              ),
+              elevation: 0,
+            ),
+            child: Text(
+              isSubmitting ? 'Submitting Vote...' : 'Submit Vote →',
+              style: _outfit(fontWeight: FontWeight.w700, fontSize: 15.5),
             ),
           ),
         ),
@@ -4440,32 +4803,29 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     required Color activeColor,
   }) {
     return InkWell(
+      borderRadius: BorderRadius.circular(12),
       onTap: () => setState(() => _selectedOptionMap[surveyId] = optionName),
-      borderRadius: BorderRadius.circular(14),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         decoration: BoxDecoration(
           color: isSelected
-              ? activeColor.withValues(alpha: _globalIsDark ? 0.2 : 0.1)
-              : (_globalIsDark
-                    ? const Color(0xFF1A0F0A)
-                    : const Color(0xFFF8F4F0)),
-          borderRadius: BorderRadius.circular(14),
+              ? activeColor.withValues(alpha: _globalIsDark ? 0.22 : 0.14)
+              : _kCream,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? activeColor : _kBorder,
-            width: isSelected ? 2 : 1,
           ),
         ),
-        child: Column(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 28, color: isSelected ? activeColor : _kMuted),
-            const SizedBox(height: 8),
+            Icon(icon, size: 20, color: isSelected ? activeColor : _kMuted),
+            const SizedBox(width: 8),
             Text(
               optionName,
               style: _outfit(
-                fontSize: 18,
-                fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
+                fontSize: 17,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
                 color: isSelected ? activeColor : _kText,
               ),
             ),
@@ -4480,10 +4840,8 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _globalIsDark
-            ? const Color(0xFF1A0F0A)
-            : const Color(0xFFF8F4F0),
-        borderRadius: BorderRadius.circular(14),
+        color: _kCream,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _kBorder),
       ),
       child: Column(
@@ -4494,11 +4852,11 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               final starNum = idx + 1;
               final filled = starNum <= currentVal;
               return IconButton(
-                iconSize: 36,
+                iconSize: 34,
                 onPressed: () =>
                     setState(() => _selectedOptionMap[surveyId] = '$starNum'),
                 icon: Icon(
-                  filled ? Icons.star_rounded : Icons.star_outline_rounded,
+                  filled ? Icons.star_rounded : Icons.star_border_rounded,
                   color: filled
                       ? const Color(0xFFf59e0b)
                       : _kMuted.withValues(alpha: 0.5),
@@ -4509,12 +4867,13 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
           const SizedBox(height: 6),
           Text(
             currentVal > 0
-                ? '$currentVal / 5 Stars Selected'
-                : 'Tap to rate from 1 to 5 stars',
-            style: _outfit(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: currentVal > 0 ? const Color(0xFFf59e0b) : _kMuted,
+                ? '$currentVal / 5 rating selected'
+                : 'Select 1 to 5 stars',
+            style: _inter(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w600,
+              color: currentVal > 0 ? _kText : _kMuted,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ],
@@ -4538,99 +4897,48 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     return Container(
       padding: EdgeInsets.all(isMobile ? 18 : 24),
       decoration: BoxDecoration(
-        color: _globalIsDark
-            ? const Color(0xFF1A0F0A)
-            : const Color(0xFFF8F4F0),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF10b981).withValues(alpha: 0.3),
-        ),
+        color: _kCream,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _kBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Banner
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF10b981),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check_rounded,
-                  size: 16,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Your response was recorded!',
-                      style: _outfit(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w900,
-                        color: const Color(0xFF10b981),
-                      ),
-                    ),
-                    Text(
-                      'Here are the live results from all voters.',
-                      style: _inter(fontSize: 14, color: _kMuted),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Text(
+            'Vote Recorded · Live Results ($totalVotes total)',
+            style: _outfit(
+              fontSize: 15.5,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF10b981),
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
           ),
-          const SizedBox(height: 20),
-          Divider(color: _kBorder.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
 
           if (avgStars > 0 && options.isEmpty) ...[
-            Center(
-              child: Column(
-                children: [
-                  Text(
-                    'Average Rating Score',
-                    style: _outfit(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: _kMuted,
-                    ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  avgStars.toStringAsFixed(1),
+                  style: _outfit(
+                    fontSize: 44,
+                    fontWeight: FontWeight.w800,
+                    color: _kText,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    avgStars.toStringAsFixed(1),
-                    style: _outfit(
-                      fontSize: 50,
-                      fontWeight: FontWeight.w900,
-                      color: const Color(0xFFf59e0b),
-                    ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '/ 5.0 average ($totalVotes ratings)',
+                  style: _inter(
+                    fontSize: 14.5,
+                    color: _kMuted,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(5, (i) {
-                      final filled = i < avgStars;
-                      return Icon(
-                        filled
-                            ? Icons.star_rounded
-                            : Icons.star_outline_rounded,
-                        color: const Color(0xFFf59e0b),
-                        size: 26,
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Based on $totalVotes ratings',
-                    style: _inter(fontSize: 14, color: _kMuted),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ] else ...[
             ...tallies.entries.map((entry) {
@@ -4647,65 +4955,39 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                   children: [
                     Row(
                       children: [
-                        if (isLeader) ...[
-                          const Icon(
-                            Icons.emoji_events_rounded,
-                            size: 16,
-                            color: Color(0xFFf59e0b),
-                          ),
-                          const SizedBox(width: 6),
-                        ],
                         Expanded(
                           child: Text(
                             optName,
                             style: _outfit(
-                              fontSize: 16,
+                              fontSize: 15.5,
                               fontWeight: isLeader
                                   ? FontWeight.w800
                                   : FontWeight.w600,
-                              color: isLeader
-                                  ? (_globalIsDark
-                                        ? const Color(0xFFFF5000)
-                                        : const Color(0xFF6B3E26))
-                                  : _kText,
+                              color: _kText,
                             ),
                           ),
                         ),
                         Text(
-                          '$count votes',
-                          style: _outfit(fontSize: 14, color: _kMuted),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _kAccent.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${(pct * 100).toStringAsFixed(1)}%',
-                            style: _outfit(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                              color: _kAccent,
-                            ),
+                          '$count  ·  ${(pct * 100).toStringAsFixed(1)}%',
+                          style: _inter(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                            color: isLeader ? _kAccent : _kMuted,
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 6),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(999),
                       child: LinearProgressIndicator(
                         value: barPct.clamp(0.0, 1.0),
-                        minHeight: 10,
-                        backgroundColor: _kMuted.withValues(alpha: 0.12),
+                        minHeight: 8,
+                        backgroundColor: _kCardBg,
                         color: isLeader
                             ? _kAccent
-                            : _kAccent.withValues(alpha: 0.45),
+                            : _kBrown.withValues(alpha: 0.45),
                       ),
                     ),
                   ],
@@ -4718,44 +5000,81 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     );
   }
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // ⑧ GALLERY SECTION — Full Color Photographic Cards
+  // ──────────────────────────────────────────────────────────────────────────
   Widget _buildGallerySection(bool isMobile) {
     return Container(
       key: _galleryKey,
       color: _kBg,
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 20 : 48,
-        vertical: 56,
+        horizontal: isMobile ? 16 : 48,
+        vertical: isMobile ? 48 : 84,
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
+          constraints: const BoxConstraints(maxWidth: 1280),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Gallery',
-                    style: _outfit(
-                      color: _kText,
-                      fontSize: isMobile ? 26 : 32,
-                      fontWeight: FontWeight.w900,
+              isMobile
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Gallery',
+                          style: _outfit(
+                            color: _kText,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.6,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Highlights from CUBAG events, training sessions, and community activities.',
+                          style: _inter(color: _kMuted, fontSize: 15),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          flex: 5,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 48),
+                            child: Text(
+                              'Gallery',
+                              style: _outfit(
+                                color: _kText,
+                                fontSize: 38,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.9,
+                                height: 1.08,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 7,
+                          child: Text(
+                            'Highlights from CUBAG general assemblies, CTI training cohorts, and community activities.',
+                            style: _inter(
+                              color: _kMuted,
+                              fontSize: 16,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'CUBAG events, training, and port operations.',
-                    style: _inter(color: _kMuted, fontSize: 16),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
 
               if (_loadingGallery && _galleryList.isEmpty)
                 Center(
                   child: Padding(
-                    padding: EdgeInsets.all(32),
+                    padding: const EdgeInsets.all(32),
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       color: _kAccent,
@@ -4765,10 +5084,11 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               else if (_galleryList.isEmpty)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(28),
                   decoration: BoxDecoration(
                     color: _kCream,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: _kBorder),
                   ),
                   child: Text(
                     'No gallery photos published at this time.',
@@ -4776,12 +5096,11 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                   ),
                 )
               else
-                // Horizontal scroll row with floating overlay arrows
                 Stack(
                   alignment: Alignment.center,
                   children: [
                     SizedBox(
-                      height: isMobile ? 190 : 230,
+                      height: isMobile ? 210 : 250,
                       child: ListView.separated(
                         controller: _galleryScrollCtrl,
                         scrollDirection: Axis.horizontal,
@@ -4796,7 +5115,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                           );
                           final Color g1 = AppColors.parseHexColor(
                             item['grad_end'],
-                            fallback: const Color(0xFF3E2418),
+                            fallback: const Color(0xFF2B211D),
                           );
                           return InkWell(
                             borderRadius: BorderRadius.circular(16),
@@ -4810,7 +5129,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                               gradStart: g0,
                               gradEnd: g1,
                               imageUrl: item['image_url']?.toString() ?? '',
-                              width: isMobile ? 200.0 : 280.0,
+                              width: isMobile ? 230.0 : 300.0,
                             ),
                           );
                         },
@@ -4818,17 +5137,17 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                     ),
                     if (_galleryList.length > 1) ...[
                       Positioned(
-                        left: 6,
+                        left: 8,
                         child: _floatingGalleryArrow(
-                          icon: Icons.arrow_back_ios_new_rounded,
+                          icon: Icons.arrow_back_rounded,
                           onTap: () => _scrollGallery(false),
                           isLeft: true,
                         ),
                       ),
                       Positioned(
-                        right: 6,
+                        right: 8,
                         child: _floatingGalleryArrow(
-                          icon: Icons.arrow_forward_ios_rounded,
+                          icon: Icons.arrow_forward_rounded,
                           onTap: () => _scrollGallery(true),
                           isLeft: false,
                         ),
@@ -4851,303 +5170,83 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     required String imageUrl,
     required double width,
   }) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: width,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [gradStart, gradEnd],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(12),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            if (imageUrl.isNotEmpty) ...[
-              Positioned.fill(
-                child: CorsImageWidget(
-                  url: ApiService.resolveImageUrl(imageUrl),
-                  fit: BoxFit.cover,
-                  errorWidget: const SizedBox(),
-                ),
-              ),
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withAlpha(40),
-                        Colors.transparent,
-                        Colors.black.withAlpha(200),
-                      ],
-                      stops: const [0.0, 0.35, 1.0],
-                    ),
-                  ),
-                ),
-              ),
-            ] else ...[
-              // Subtle texture dots only when no photo image is uploaded
-              Positioned.fill(
-                child: CustomPaint(painter: _GalleryNoisePainter()),
-              ),
-            ],
-            // Expand hover icon indicator at top right
-            Positioned(
-              top: 12,
-              right: 12,
-              child: Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: Colors.black.withAlpha(90),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.fullscreen_rounded,
-                  color: Colors.white,
-                  size: 16,
-                ),
-              ),
-            ),
-            // Caption at bottom only
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: 16,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(140),
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    child: Text(
-                      subtitle,
-                      style: _outfit(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    title,
-                    style: _outfit(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      height: 1.3,
-                      letterSpacing: 0.2,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // MERGED FOOTER & NEED HELP CONTACT
-  // ──────────────────────────────────────────────────────────────────────────
-  Widget _buildFooter(bool isMobile) {
     return Container(
-      key: _contactKey,
-      color: _kFooter,
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 20 : 48,
-        vertical: isMobile ? 44 : 64,
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Upper Merged "Need Help?" Action Section ─────────────────
-              Column(
-                crossAxisAlignment: isMobile
-                    ? CrossAxisAlignment.center
-                    : CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Need Help?',
-                    style: _outfit(
-                      color: Colors.white,
-                      fontSize: isMobile ? 28 : 34,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Our team is ready to assist with any queries about CUBAG services, membership, or training.',
-                    textAlign: isMobile ? TextAlign.center : TextAlign.start,
-                    style: _inter(
-                      color: Colors.white.withAlpha(220),
-                      fontSize: 16,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  if (isMobile)
-                    Column(
-                      children: [
-                        _footerContactCard(
-                          Icons.phone_outlined,
-                          'Call CUBAG',
-                          '+233 30 220 2345',
-                          'Mon–Fri, 8am–5pm',
-                        ),
-                        const SizedBox(height: 10),
-                        _footerContactCard(
-                          Icons.email_outlined,
-                          'Email CUBAG',
-                          'info@cubag.org.gh',
-                          'We respond within 24 hours',
-                        ),
-                        const SizedBox(height: 10),
-                        _footerContactCard(
-                          Icons.location_on_outlined,
-                          'Visit Secretariat',
-                          'CUBAG House, Tema Community 1',
-                          'Greater Accra, Ghana',
-                        ),
-                      ],
-                    )
-                  else
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _footerContactCard(
-                            Icons.phone_outlined,
-                            'Call CUBAG',
-                            '+233 30 220 2345',
-                            'Mon–Fri, 8am–5pm',
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _footerContactCard(
-                            Icons.email_outlined,
-                            'Email CUBAG',
-                            'info@cubag.org.gh',
-                            'We respond within 24 hours',
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _footerContactCard(
-                            Icons.location_on_outlined,
-                            'Visit Secretariat',
-                            'CUBAG House, Tema',
-                            'Community 1, Greater Accra',
-                          ),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-
-              const SizedBox(height: 48),
-              Divider(color: Colors.white.withAlpha(35), height: 1),
-              const SizedBox(height: 40),
-
-              // ── Middle Navigation & Information Columns ──────────────────
-              isMobile
-                  ? _buildMobileFooterAccordion()
-                  : _buildDesktopFooterColumns(),
-
-              const SizedBox(height: 40),
-              Divider(color: Colors.white.withAlpha(35), height: 1),
-              const SizedBox(height: 24),
-
-              // ── Bottom Copyright Bar ─────────────────────────────────────
-              Text(
-                '© ${DateTime.now().year} Customs Brokers Association of Ghana (CUBAG). All rights reserved.',
-                style: _inter(color: Colors.white.withAlpha(200), fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _footerContactCard(
-    IconData icon,
-    String label,
-    String value,
-    String subtext,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      width: width,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(22),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withAlpha(40)),
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [gradStart, gradEnd],
+        ),
       ),
-      child: Row(
+      child: Stack(
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: _kAccent.withAlpha(35),
-              borderRadius: BorderRadius.circular(10),
+          if (imageUrl.isNotEmpty) ...[
+            Positioned.fill(
+              child: CorsImageWidget(
+                url: ApiService.resolveImageUrl(imageUrl),
+                fit: BoxFit.cover,
+                errorWidget: const SizedBox(),
+              ),
             ),
-            child: Icon(icon, size: 20, color: _kAccent),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withAlpha(170),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ] else ...[
+            Positioned.fill(
+              child: CustomPaint(painter: _GalleryNoisePainter()),
+            ),
+          ],
+          Positioned(
+            left: 14,
+            right: 14,
+            bottom: 14,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF5000),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    subtitle,
+                    style: _inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
                 Text(
-                  label,
+                  title,
                   style: _outfit(
-                    color: Colors.white,
                     fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: _inter(
+                    fontWeight: FontWeight.w700,
                     color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+                    height: 1.25,
                   ),
-                ),
-                Text(
-                  subtext,
-                  style: _inter(
-                    color: Colors.white.withAlpha(190),
-                    fontSize: 13,
-                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -5157,234 +5256,146 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildDesktopFooterColumns() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Brand & About
-        Expanded(
-          flex: 4,
+  // ──────────────────────────────────────────────────────────────────────────
+  // ⑨ FOOTER — Clean CUBAG Footer (No Member Sign In button at bottom)
+  // ──────────────────────────────────────────────────────────────────────────
+  Widget _buildFooter(bool isMobile) {
+    const paperOnDark = Color(0xFFF8F4F0);
+    const mutedOnDark = Color(0xFFC4B6A8);
+
+    return Container(
+      key: _contactKey,
+      color: _kFooter,
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 20 : 48,
+        vertical: isMobile ? 48 : 76,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1280),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Top Row: Brand + Back to top ↑
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const AppLogo(size: 32, borderRadius: 8),
-                  const SizedBox(width: 10),
-                  Text(
-                    'CUBAG',
-                    style: _outfit(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
+                  Expanded(
+                    child: Row(
+                      children: [
+                        const AppLogo(size: 32, borderRadius: 8),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'CUBAG',
+                                style: _outfit(
+                                  color: paperOnDark,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              Text(
+                                'Customs Brokers Association of Ghana',
+                                style: _inter(
+                                  color: mutedOnDark,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () => _scrollController.animateTo(
+                      0,
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeOutCubic,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      child: Text(
+                        'Back to top ↑',
+                        style: _outfit(
+                          color: const Color(0xFFFF5000),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+
+              SizedBox(height: isMobile ? 32 : 48),
+
+              // Need Help? Contact section
               Text(
-                'Customs Brokers Association of Ghana',
+                'Need Help?',
                 style: _outfit(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFFFF5000),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
+              SelectableText(
+                'info@cubag.org.gh',
+                style: _outfit(
+                  color: paperOnDark,
+                  fontSize: isMobile ? 26 : 44,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: isMobile ? -0.6 : -1.2,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 6),
+              SelectableText(
+                '+233 30 220 2345',
+                style: _outfit(
+                  color: mutedOnDark,
+                  fontSize: isMobile ? 20 : 30,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.4,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+
+              SizedBox(height: isMobile ? 32 : 48),
+
+              Divider(color: Colors.white.withAlpha(24), height: 1),
+              const SizedBox(height: 24),
+
+              // Bottom copyright row (no Member Sign In, no Tema/Takoradi)
               Text(
-                'Dedicated to digitizing, validating, and accelerating the clearing and forwarding trade ecosystem in the Republic of Ghana.',
+                '© ${DateTime.now().year} Customs Brokers Association of Ghana (CUBAG). All rights reserved.',
                 style: _inter(
-                  color: Colors.white.withAlpha(210),
-                  fontSize: 15,
-                  height: 1.6,
+                  color: mutedOnDark,
+                  fontSize: 13.5,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
             ],
-          ),
-        ),
-        const SizedBox(width: 48),
-        // Quick Links
-        Expanded(
-          flex: 3,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _footerColTitle('Quick Links'),
-              const SizedBox(height: 16),
-              _footerLink(
-                'Find A Licensed Broker (Clearing Agent/Forwarder)',
-                () => _scrollTo(_servicesKey),
-              ),
-              _footerLink(
-                'Register A Course',
-                () => context.go('/guest-services/cti_training'),
-              ),
-              _footerLink(
-                'Complaints & Tracking',
-                () => context.go('/complaints'),
-              ),
-              _footerLink('Become a Member', () => context.go('/register')),
-              _footerLink('Renew Membership', () => context.go('/login')),
-              _footerLink('Member Directory', () => _scrollTo(_directoryKey)),
-            ],
-          ),
-        ),
-        const SizedBox(width: 48),
-        // Secretariat & Office
-        Expanded(
-          flex: 3,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _footerColTitle('Secretariat'),
-              const SizedBox(height: 16),
-              _footerLink('+233 30 220 2345', () {}),
-              _footerLink('info@cubag.org.gh', () {}),
-              _footerLink('CUBAG House, Tema Community 1', () {}),
-              _footerLink('Member Login', () => context.go('/login')),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMobileFooterAccordion() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _footerAccordion(
-          'About CUBAG',
-          _footerAboutExpanded,
-          () => setState(() => _footerAboutExpanded = !_footerAboutExpanded),
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: Text(
-              'Customs Brokers Association of Ghana (CUBAG) is dedicated to digitizing, validating, and accelerating the clearing and forwarding trade ecosystem in the Republic of Ghana.',
-              textAlign: TextAlign.left,
-              style: _inter(
-                color: Colors.white.withAlpha(220),
-                fontSize: 15,
-                height: 1.6,
-              ),
-            ),
-          ),
-        ),
-        _footerAccordion(
-          'Quick Links',
-          _footerLinksExpanded,
-          () => setState(() => _footerLinksExpanded = !_footerLinksExpanded),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _footerLink(
-                'Find a Clearing Agent',
-                () => _scrollTo(_servicesKey),
-              ),
-              _footerLink(
-                'CTI Short Courses',
-                () => context.go('/guest-services/cti_training'),
-              ),
-              _footerLink('Become a Member', () => context.go('/register')),
-              _footerLink('Member Directory', () => _scrollTo(_directoryKey)),
-              _footerLink('Member Login', () => context.go('/login')),
-            ],
-          ),
-        ),
-        _footerAccordion(
-          'Secretariat & Office',
-          _footerContactExpanded,
-          () =>
-              setState(() => _footerContactExpanded = !_footerContactExpanded),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _footerLink('Phone: +233 30 220 2345', () {}),
-              _footerLink('Email: info@cubag.org.gh', () {}),
-              _footerLink('Office: CUBAG House, Tema Community 1', () {}),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _footerAccordion(
-    String title,
-    bool isExpanded,
-    VoidCallback onToggle, {
-    required Widget child,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: onToggle,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: _outfit(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Icon(
-                  isExpanded
-                      ? Icons.keyboard_arrow_up_rounded
-                      : Icons.keyboard_arrow_right_rounded,
-                  color: Colors.white.withAlpha(200),
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (isExpanded) Align(alignment: Alignment.centerLeft, child: child),
-        Divider(color: Colors.white.withAlpha(25), height: 1),
-      ],
-    );
-  }
-
-  Widget _footerColTitle(String t) => Text(
-    t.toUpperCase(),
-    textAlign: TextAlign.left,
-    style: _outfit(
-      color: Colors.white,
-      fontSize: 14,
-      fontWeight: FontWeight.w900,
-      letterSpacing: 1.2,
-    ),
-  );
-
-  Widget _footerLink(String text, VoidCallback onTap) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: Align(
-      alignment: Alignment.centerLeft,
-      child: InkWell(
-        onTap: onTap,
-        child: Text(
-          text,
-          textAlign: TextAlign.left,
-          style: _inter(
-            color: Colors.white.withAlpha(230),
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 
   // ──────────────────────────────────────────────────────────────────────────
   // SHARED HELPERS
   // ──────────────────────────────────────────────────────────────────────────
 
-  /// Segmented pill control — brown bg / white text when active
+  /// Pill/rounded tonal switcher — brown bg / white text when active
   Widget _segmentedControl({
     required List<String> tabs,
     required int active,
@@ -5394,7 +5405,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: _kCream,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: _kBorder),
       ),
       child: Row(
@@ -5404,17 +5415,17 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
           return GestureDetector(
             onTap: () => onSelect(e.key),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
               decoration: BoxDecoration(
                 color: sel ? _kBrown : Colors.transparent,
-                borderRadius: BorderRadius.circular(9),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 e.value,
                 style: _outfit(
-                  fontSize: 15,
-                  fontWeight: sel ? FontWeight.bold : FontWeight.w600,
+                  fontSize: 14,
+                  fontWeight: sel ? FontWeight.w700 : FontWeight.w600,
                   color: sel ? Colors.white : _kMuted,
                 ),
               ),
@@ -5425,7 +5436,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
     );
   }
 
-  /// Orange arrow text CTA — used as section trailing action links
+  /// Arrow text CTA — used as section trailing action links
   Widget _textCta(String label, VoidCallback onTap) => TextButton(
     onPressed: onTap,
     style: TextButton.styleFrom(
@@ -5439,42 +5450,143 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
           label,
           style: _outfit(
             fontSize: 15,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
             color: _kBrown,
           ),
         ),
-        const SizedBox(width: 4),
-        Icon(Icons.arrow_forward_rounded, size: 14, color: _kBrown),
+        const SizedBox(width: 6),
+        Icon(Icons.arrow_forward_rounded, size: 16, color: _kBrown),
       ],
     ),
   );
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// CUSTOM PAINTERS
+// CUSTOM PAINTERS (GHANA FLAG SVG, GLOBE SVG, GALLERY NOISE)
 // ────────────────────────────────────────────────────────────────────────────
 
-/// Subtle diagonal port/route-inspired line pattern at ~4% opacity
-class _SubtleRoutePatternPainter extends CustomPainter {
+/// Crisp vector painter for the official Republic of Ghana Flag
+/// (Red #CE1126, Gold #FCD116, Green #006B3F + centered 5-pointed Black Star)
+class _GhanaFlagVectorPainter extends CustomPainter {
+  const _GhanaFlagVectorPainter();
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF6B3E26).withAlpha(10)
-      ..strokeWidth = 0.8
-      ..style = PaintingStyle.stroke;
+    final stripeHeight = size.height / 3.0;
 
-    const spacing = 44.0;
-    for (double i = -size.height; i < size.width + size.height; i += spacing) {
-      canvas.drawLine(
-        Offset(i, 0),
-        Offset(i + size.height, size.height),
-        paint,
-      );
+    // Top stripe: Red (#CE1126)
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, stripeHeight),
+      Paint()..color = const Color(0xFFCE1126),
+    );
+
+    // Middle stripe: Gold (#FCD116)
+    canvas.drawRect(
+      Rect.fromLTWH(0, stripeHeight, size.width, stripeHeight),
+      Paint()..color = const Color(0xFFFCD116),
+    );
+
+    // Bottom stripe: Green (#006B3F)
+    canvas.drawRect(
+      Rect.fromLTWH(0, stripeHeight * 2, size.width, stripeHeight),
+      Paint()..color = const Color(0xFF006B3F),
+    );
+
+    // Centered 5-pointed Black Star in the Gold stripe
+    final cx = size.width / 2.0;
+    final cy = size.height / 2.0;
+    final outerRadius = stripeHeight * 0.46;
+    final innerRadius = outerRadius * 0.382;
+    final starPath = Path();
+
+    for (int i = 0; i < 10; i++) {
+      final radius = i.isEven ? outerRadius : innerRadius;
+      final angle = -math.pi / 2 + (i * math.pi / 5);
+      final x = cx + radius * math.cos(angle);
+      final y = cy + radius * math.sin(angle);
+      if (i == 0) {
+        starPath.moveTo(x, y);
+      } else {
+        starPath.lineTo(x, y);
+      }
     }
+    starPath.close();
+
+    canvas.drawPath(
+      starPath,
+      Paint()
+        ..color = const Color(0xFF000000)
+        ..style = PaintingStyle.fill,
+    );
   }
 
   @override
-  bool shouldRepaint(_SubtleRoutePatternPainter old) => false;
+  bool shouldRepaint(covariant _GhanaFlagVectorPainter oldDelegate) => false;
+}
+
+/// Crisp vector painter for the International Trade Globe SVG icon
+class _GlobeVectorPainter extends CustomPainter {
+  final Color? color;
+  const _GlobeVectorPainter({this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) * 0.44;
+
+    // Ocean fill
+    final oceanPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF2EA8FF), Color(0xFF0B63CE)],
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+    canvas.drawCircle(center, radius, oceanPaint);
+
+    // Continents / meridian lines in crisp white/teal
+    final linePaint = Paint()
+      ..color = Colors.white.withAlpha(210)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.055;
+
+    // Outer rim
+    canvas.drawCircle(center, radius, linePaint);
+
+    // Equator & tropics
+    canvas.drawLine(
+      Offset(center.dx - radius, center.dy),
+      Offset(center.dx + radius, center.dy),
+      linePaint,
+    );
+    canvas.drawLine(
+      Offset(center.dx, center.dy - radius),
+      Offset(center.dx, center.dy + radius),
+      linePaint,
+    );
+
+    // Meridian oval
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: center,
+        width: radius * 1.05,
+        height: radius * 1.92,
+      ),
+      linePaint,
+    );
+
+    // Latitude oval
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: center,
+        width: radius * 1.92,
+        height: radius * 0.95,
+      ),
+      linePaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _GlobeVectorPainter oldDelegate) => false;
 }
 
 /// Very subtle noise texture for gallery photo cards
@@ -5570,44 +5682,19 @@ class _AllUpdatesDialogState extends State<_AllUpdatesDialog> {
           }).toList();
 
     // Process articles
-    final allArticles = widget.newsArticles.isNotEmpty
-        ? widget.newsArticles
-              .map(
-                (a) => {
-                  'title': a['title']?.toString() ?? '',
-                  'summary':
-                      a['summary']?.toString() ??
-                      a['description']?.toString() ??
-                      '',
-                  'source': a['source']?.toString() ?? 'CUBAG News',
-                  'date': a['pubDate']?.toString() ?? 'Recent',
-                },
-              )
-              .toList()
-        : [
-            {
-              'title': 'Ghana Revenue Authority Launches ICUMS 2.0 Automation',
-              'source': 'GRA Customs Circular',
-              'date': '17 Aug 2026',
-              'summary':
-                  'New customs clearance upgrades implemented at Tema Port for faster ICUMS processing.',
-            },
-            {
-              'title': 'GPHA Announces Port Fee Tariff Review for Q3 2026',
-              'source': 'GPHA Maritime',
-              'date': '16 Aug 2026',
-              'summary':
-                  'GPHA updates vessel handling tariffs across Tema and Takoradi port terminals.',
-            },
-            {
-              'title':
-                  'West Africa Maritime Trade Corridors Record 8.5% Growth',
-              'source': 'FreightWaves',
-              'date': '15 Aug 2026',
-              'summary':
-                  'Container throughput in agro-exports and raw goods sets record highs for the region.',
-            },
-          ];
+    final allArticles = widget.newsArticles
+        .map(
+          (a) => <String, String>{
+            'title': a['title']?.toString() ?? '',
+            'summary':
+                a['summary']?.toString() ??
+                a['description']?.toString() ??
+                '',
+            'source': a['source']?.toString() ?? 'CUBAG News',
+            'date': a['pubDate']?.toString() ?? 'Recent',
+          },
+        )
+        .toList();
 
     final filteredArticles = _query.isEmpty
         ? allArticles
@@ -6544,67 +6631,24 @@ class _AllCoursesDialogState extends State<_AllCoursesDialog> {
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
 
-    final allCourses = widget.coursesList.isNotEmpty
-        ? widget.coursesList
-              .map(
-                (c) => {
-                  'title': c['title']?.toString() ?? '',
-                  'code': c['code']?.toString() ?? 'CTI',
-                  'duration': c['duration']?.toString() ?? '4 Weeks',
-                  'mode': c['mode']?.toString() ?? 'Hybrid',
-                  'start_date':
-                      c['start_date']?.toString() ??
-                      c['date']?.toString() ??
-                      'Upcoming',
-                  'fee': c['fee']?.toString() ?? 'GHS 1,500',
-                  'description':
-                      c['description']?.toString() ??
-                      'Professional certification covering customs documentation, tariff classification, single window compliance, and international freight forwarding standards.',
-                },
-              )
-              .toList()
-        : [
-            {
-              'title': 'Customs Valuation & HS Tariff Classification',
-              'code': 'CTI-VAL',
-              'duration': '4 Weeks',
-              'mode': 'Hybrid',
-              'start_date': '15 Sep 2026',
-              'fee': 'GHS 1,800',
-              'description':
-                  'Master WTO valuation rules, harmonized system codes, rules of origin, and duty computation under ICUMS 2.0.',
-            },
-            {
-              'title': 'Port Logistics & Multimodal Freight Forwarding',
-              'code': 'CTI-LOG',
-              'duration': '3 Weeks',
-              'mode': 'In-Person',
-              'start_date': '22 Sep 2026',
-              'fee': 'GHS 1,500',
-              'description':
-                  'Comprehensive shipping container management, port terminal clearance procedures, and Incoterms 2020.',
-            },
-            {
-              'title': 'Dangerous Goods Handling & Safety (IMDG Code)',
-              'code': 'CTI-IMDG',
-              'duration': '2 Days',
-              'mode': 'Executive Workshop',
-              'start_date': '05 Oct 2026',
-              'fee': 'GHS 1,200',
-              'description':
-                  'Certified maritime safety standards for hazardous cargo storage, declaration, packaging, and transport.',
-            },
-            {
-              'title': 'ICUMS Advanced Declarations & Dispute Resolution',
-              'code': 'CTI-ICUMS',
-              'duration': '1 Week',
-              'mode': 'Online',
-              'start_date': '12 Oct 2026',
-              'fee': 'GHS 950',
-              'description':
-                  'Practical workflow training on handling post-clearance audits, amendment declarations, and customs dispute protocols.',
-            },
-          ];
+    final allCourses = widget.coursesList
+        .map(
+          (c) => <String, String>{
+            'title': c['title']?.toString() ?? '',
+            'code': c['code']?.toString() ?? 'CTI',
+            'duration': c['duration']?.toString() ?? '4 Weeks',
+            'mode': c['mode']?.toString() ?? 'Hybrid',
+            'start_date':
+                c['start_date']?.toString() ??
+                c['date']?.toString() ??
+                'Upcoming',
+            'fee': c['fee']?.toString() ?? 'GHS 1,500',
+            'description':
+                c['description']?.toString() ??
+                'Professional certification covering customs documentation, tariff classification, single window compliance, and international freight forwarding standards.',
+          },
+        )
+        .toList();
 
     final filteredCourses = _query.isEmpty
         ? allCourses

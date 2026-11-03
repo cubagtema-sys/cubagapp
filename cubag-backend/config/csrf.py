@@ -29,6 +29,8 @@ CSRF_EXEMPT_ENDPOINTS = {
     '/api/payments/public/initiate-momo',
     '/api/v1/members/public/initiate-momo',
     '/api/members/public/initiate-momo',
+    '/api/analytics/telemetry',
+    '/api/v1/analytics/telemetry',
     '/api/health',
     '/api/ping',
 }

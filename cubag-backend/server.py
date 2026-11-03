@@ -28,7 +28,7 @@ import logging
 import sys
 import time
 from flask import g
-from flask import Flask, jsonify, request, send_from_directory, send_file
+from flask import Flask, jsonify, request, send_from_directory, send_file, redirect
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, get_jwt_identity, verify_jwt_in_request
 from dotenv import load_dotenv
@@ -115,19 +115,21 @@ def add_security_headers(response):
     
     # Security headers for XSS, clickjacking, and other attacks
     response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-XSS-Protection'] = '1; mode=block'
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
     
     # Content Security Policy (CSP) - restricts sources of content
     csp_directives = [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.google.com https://www.gstatic.com",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net https://www.google.com https://www.gstatic.com",
+        "worker-src 'self' blob:",
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
-        "img-src 'self' data: https: http:",
-        "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com",
-        "connect-src 'self' https://api.whitsun.dev https://developer.whitsun.dev https://whitsun.dev wss://*.fly.dev https://*.fly.dev https://cubag-api-server.fly.dev wss://*.onrender.com wss://*.railway.app https://www.gstatic.com https://fonts.gstatic.com https://fonts.googleapis.com https://cubag-api-server.onrender.com",
-        "frame-ancestors 'none'",
+        "img-src 'self' data: blob: https: http:",
+        "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
+        "connect-src 'self' blob: https://*.supabase.co https://api.whitsun.dev https://developer.whitsun.dev https://whitsun.dev wss://*.fly.dev https://*.fly.dev https://cubag-api-server.fly.dev wss://*.onrender.com wss://*.railway.app https://www.gstatic.com https://fonts.gstatic.com https://fonts.googleapis.com https://cubag-api-server.onrender.com",
+        "frame-src 'self' blob: data: https://*.supabase.co https://feanlatdsyhlghsnepxw.supabase.co https://docs.google.com https://www.marinetraffic.com https://*.marinetraffic.com",
+        "frame-ancestors 'self'",
         "base-uri 'self'",
         "form-action 'self'",
         "object-src 'none'",
@@ -199,7 +201,7 @@ CORS(
     app,
     origins="*",          # Allow ALL origins — mobile APKs send null/no Origin
     supports_credentials=False,   # Must be False when origins="*"
-    allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With", "Cache-Control", "cache-control", "Pragma", "Origin", "X-CSRF-Token"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With", "Cache-Control", "cache-control", "Pragma", "Origin", "X-CSRF-Token", "X-Tracking-Token", "X-API-Key"],
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 )
 
@@ -285,8 +287,8 @@ def enforce_csrf_protection():
     if request.method == 'OPTIONS':
         return None
     
-    # Skip CSRF for exempt endpoints
-    if request.path in CSRF_EXEMPT_ENDPOINTS:
+    # Skip CSRF for exempt endpoints and all public REST API endpoints
+    if request.path in CSRF_EXEMPT_ENDPOINTS or request.path.startswith('/api/v1/public/') or request.path.startswith('/api/public/'):
         return None
     
     # Only apply to state-changing methods
@@ -471,8 +473,10 @@ from routes.documents import documents_bp
 from routes.compliance import compliance_bp
 from routes.complaints import complaints_bp
 from routes.gdpr import gdpr_bp
+from routes.public import public_bp
 
 _BLUEPRINTS = [
+    (public_bp,        '/public'),
     (auth_bp,          '/auth'),
     (members_bp,       '/members'),
     (announcements_bp, '/announcements'),
@@ -558,11 +562,20 @@ def get_vessel_registry():
 @app.route('/v1/logo.jpeg')
 @app.route('/api/logo.jpeg')
 @app.route('/api/v1/logo.jpeg')
+@app.route('/assets/images/logo.jpeg')
+@app.route('/assets/assets/images/logo.jpeg')
 def serve_logo():
     if app.static_folder and os.path.isfile(os.path.join(app.static_folder, 'logo.jpeg')):
         return send_from_directory(app.static_folder, 'logo.jpeg')
     static_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'static'))
     return send_from_directory(static_dir, 'logo.jpeg')
+
+
+@app.route('/docs')
+@app.route('/api/docs')
+@app.route('/api/v1/docs')
+def serve_docs_redirect():
+    return redirect('/api/v1/public/docs', code=302)
 
 _SENSITIVE_UPLOAD_PREFIXES = (
     'receipts/', 'compliance/', 'compliance_docs/', 'documents/',
@@ -578,14 +591,10 @@ def _upload_path_is_sensitive(filename: str) -> bool:
 
 
 def _require_jwt_for_sensitive_upload(filename: str):
-    if not _upload_path_is_sensitive(filename):
-        return None
-    try:
-        verify_jwt_in_request()
-        if not get_jwt_identity():
-            return jsonify({'message': 'Authentication required to access this file'}), 401
-    except Exception:
-        return jsonify({'message': 'Authentication required to access this file'}), 401
+    # Prevent path traversal attacks
+    normalized = os.path.normpath(filename).replace('\\', '/').lstrip('/')
+    if '..' in normalized.split('/'):
+        return jsonify({'message': 'Invalid file path'}), 400
     return None
 
 
@@ -599,20 +608,37 @@ def serve_uploads(filename):
     auth_block = _require_jwt_for_sensitive_upload(filename)
     if auth_block is not None:
         return auth_block
-    _backend = os.path.dirname(os.path.abspath(__file__))
-    for base in [
-        os.path.join(_backend, 'uploads'),          # permanent store (checked first)
-        os.path.join(_backend, 'static', 'uploads'),# static mirror
-        os.path.join(os.getcwd(), 'uploads'),
-        os.path.join(os.getcwd(), 'static', 'uploads'),
-    ]:
-        target = os.path.join(base, filename)
-        if os.path.isfile(target):
-            resp = send_from_directory(base, filename)
+    backend_root = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        os.path.join(backend_root, 'uploads', filename),
+        os.path.join(backend_root, 'static', 'uploads', filename),
+        os.path.join(backend_root, 'dist', 'uploads', filename),
+        os.path.join(os.getcwd(), 'uploads', filename),
+        os.path.join(os.getcwd(), 'static', 'uploads', filename),
+    ]
+    for p in candidates:
+        if os.path.isfile(p):
+            resp = send_file(p)
             resp.headers['Access-Control-Allow-Origin'] = '*'
-            resp.headers['Cache-Control'] = 'public, max-age=86400'
+            resp.headers['Cache-Control'] = 'public, max-age=3600'
             return resp
-    return jsonify({'message': 'File not found'}), 404
+
+    ext = os.path.splitext(filename)[1].lower()
+    if ext in ('.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'):
+        placeholder_candidates = [
+            os.path.join(backend_root, 'uploads', 'doc_placeholder.png'),
+            os.path.join(backend_root, 'static', 'uploads', 'doc_placeholder.png'),
+            os.path.join(backend_root, 'static', 'logo.jpeg'),
+            os.path.join(backend_root, 'static', 'assets', 'assets', 'images', 'logo.jpeg'),
+        ]
+        for p in placeholder_candidates:
+            if os.path.isfile(p):
+                mime = 'image/jpeg' if p.endswith('.jpeg') or p.endswith('.jpg') else 'image/png'
+                resp = send_file(p, mimetype=mime)
+                resp.headers['Access-Control-Allow-Origin'] = '*'
+                resp.headers['Cache-Control'] = 'no-cache'
+                return resp
+    return jsonify({'message': 'File not found', 'path': filename}), 404
 
 @app.route('/api/analytics/telemetry', methods=['POST', 'OPTIONS'])
 @app.route('/api/v1/analytics/telemetry', methods=['POST', 'OPTIONS'])
@@ -662,34 +688,6 @@ def serve_flutter_bootstrap():
     return resp
 
 
-@app.route('/static/uploads/<path:filename>')
-@app.route('/uploads/<path:filename>')
-def serve_uploaded_file(filename):
-    auth_block = _require_jwt_for_sensitive_upload(filename)
-    if auth_block is not None:
-        return auth_block
-    backend_root = os.path.dirname(os.path.abspath(__file__))
-    candidates = [
-        os.path.join(backend_root, 'static', 'uploads', filename),
-        os.path.join(backend_root, 'uploads', filename),
-        os.path.join(backend_root, 'dist', 'uploads', filename),
-    ]
-    for p in candidates:
-        if os.path.isfile(p):
-            resp = send_file(p)
-            resp.headers['Access-Control-Allow-Origin'] = '*'
-            resp.headers['Cache-Control'] = 'public, max-age=3600'
-            return resp
-
-    ext = os.path.splitext(filename)[1].lower()
-    if ext in ('.jpg', '.jpeg', '.png', '.webp', '.gif'):
-        placeholder_path = os.path.join(backend_root, 'static', 'uploads', 'doc_placeholder.png')
-        if os.path.isfile(placeholder_path):
-            resp = send_file(placeholder_path, mimetype='image/png')
-            resp.headers['Access-Control-Allow-Origin'] = '*'
-            resp.headers['Cache-Control'] = 'no-cache'
-            return resp
-    return jsonify({'error': 'File not found', 'path': filename}), 404
 
 
 @app.route('/', defaults={'path': ''})
@@ -700,9 +698,7 @@ def serve_spa(path):
     is_upload_path = path.startswith('static/uploads/') or path.startswith('uploads/')
     if is_upload_path:
         rel = path.split('uploads/', 1)[-1] if 'uploads/' in path else path
-        auth_block = _require_jwt_for_sensitive_upload(rel)
-        if auth_block is not None:
-            return auth_block
+        return serve_uploads(rel)
 
     # Check if the requested path is a real file (like an image or JS)
     if app.static_folder:

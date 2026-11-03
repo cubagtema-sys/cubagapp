@@ -139,6 +139,9 @@ class ApiService {
     final currentHost = activeHost;
 
     if (url.startsWith('http://') || url.startsWith('https://')) {
+      if (url.contains('jfypczfjycffsmivjjdn.supabase.co')) {
+        url = url.replaceFirst('jfypczfjycffsmivjjdn.supabase.co', 'feanlatdsyhlghsnepxw.supabase.co');
+      }
       for (final h in [
         'localhost:5005',
         '127.0.0.1:5005',

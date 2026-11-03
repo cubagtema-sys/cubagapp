@@ -12,7 +12,6 @@ import '../components/app_layout.dart';
 // Balanced CUBAG Brand Palette
 const _kBrown = Color(0xFF6B3E26); // Primary Brown
 const _kOrange = Color(0xFFFF5000); // Primary Orange CTA
-const _kDarkBrown = Color(0xFF3E2418); // Deep Dark Contrast
 const _kWhite = Color(0xFFFFFFFF); // White Surfaces
 const _kText = Color(0xFF2B211D); // Deep Body Text
 const _kMuted = Color(0xFF6F625B); // Secondary Muted Text
@@ -54,6 +53,13 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
   @override
   void initState() {
     super.initState();
+    final auth = AuthService();
+    _isPackageFeePaid = auth.isPackageFeePaid ||
+        auth.goodStanding ||
+        auth.membershipStatus == 'active' ||
+        (auth.membershipNumber?.isNotEmpty == true &&
+            !auth.membershipNumber!.toLowerCase().contains('pending'));
+    _isRegFeePaid = auth.isRegistrationFeePaid;
     _loadMemberServices();
     SocketService().socket?.on('member_updated', _onSocketUpdate);
     SocketService().socket?.on('payment_approved', _onSocketUpdate);
@@ -259,32 +265,44 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF281710) : _kWhite;
-    final textColor = isDark ? Colors.white : _kText;
-    final subTextColor = isDark ? Colors.white70 : _kMuted;
-    final borderColor = isDark ? const Color(0xFF4D2D20) : _kBorder;
+    final cardBg = isDark ? const Color(0xFF1E130D) : _kWhite;
+    final textColor = isDark ? const Color(0xFFFFF8F3) : _kText;
+    final subTextColor = isDark ? const Color(0xFFC8ADA0) : _kMuted;
+    final borderColor = isDark ? const Color(0xFF3D261C) : _kBorder;
 
-    final memberName = authService.userName ?? 'CUBAG Member';
-    final companyName = authService.userCompany ?? 'Licensed Freight Forwarder';
-    final bool isPkgPaid = _isPackageFeePaid;
-    final memNo = isPkgPaid
-        ? ((authService.membershipNumber?.isNotEmpty == true &&
-                !authService.membershipNumber!.toLowerCase().contains('pending'))
-            ? authService.membershipNumber!
-            : (_memberInfo['membership_number']?.toString().trim().isNotEmpty == true &&
-                    !_memberInfo['membership_number'].toString().toLowerCase().contains('pending')
-                ? _memberInfo['membership_number'].toString().trim()
-                : 'CUBAG-2026-${(_memberInfo['id'] ?? '001').toString().padLeft(4, '0')}'))
-        : 'PENDING DUES SETTLEMENT';
-    final rawMemberType = (_memberInfo['member_type'] ?? _memberInfo['memberType'] ?? '').toString().toLowerCase();
+    final memberName = authService.userName ?? (_memberInfo['name']?.toString() ?? 'CUBAG Member');
+    final companyName = authService.userCompany ?? (_memberInfo['company']?.toString() ?? 'Licensed Freight Forwarder');
+
+    final bool isPkgPaid = _isPackageFeePaid ||
+        authService.isPackageFeePaid ||
+        authService.goodStanding ||
+        authService.membershipStatus == 'active' ||
+        _memberInfo['package_fee_paid'] == true ||
+        _memberInfo['is_good_standing'] == true;
+
+    final String? resolvedMemNo = (authService.membershipNumber?.isNotEmpty == true &&
+            !authService.membershipNumber!.toLowerCase().contains('pending'))
+        ? authService.membershipNumber
+        : (_memberInfo['membership_number']?.toString().trim().isNotEmpty == true &&
+                !_memberInfo['membership_number'].toString().toLowerCase().contains('pending')
+            ? _memberInfo['membership_number'].toString().trim()
+            : null);
+
+    final memNo = resolvedMemNo ??
+        (isPkgPaid
+            ? 'CUBAG-2026-${(_memberInfo['id'] ?? '001').toString().padLeft(4, '0')}'
+            : (_loadingFees ? '—' : 'PENDING DUES SETTLEMENT'));
+
+    final rawMemberType = (_memberInfo['member_type'] ?? _memberInfo['memberType'] ?? authService.memberType ?? '').toString().toLowerCase();
     final isLicentiate = rawMemberType.contains('licentiate') || rawMemberType.contains('individual');
     final isAssociate = rawMemberType.contains('associate') || rawMemberType.contains('affiliate');
     final isCorporate = !isLicentiate && !isAssociate;
 
-    final scaleStr = _formatScale(
-      _memberInfo['company_scale'] ?? _memberInfo['member_scale'],
-    );
-    final verifyUrl = isPkgPaid ? 'https://cubag.org/verify-member?id=$memNo' : '';
+    final rawScale = _memberInfo['company_scale'] ?? _memberInfo['member_scale'] ?? authService.companyScale;
+    final scaleStr = rawScale != null ? _formatScale(rawScale) : (_loadingFees ? '—' : 'SME');
+    final verifyUrl = (resolvedMemNo != null && resolvedMemNo.isNotEmpty)
+        ? 'https://cubag-api-server.fly.dev/#/verify-member?id=$resolvedMemNo'
+        : (isPkgPaid && memNo != '—' && !memNo.contains('PENDING') ? 'https://cubag-api-server.fly.dev/#/verify-member?id=$memNo' : '');
 
     final rawExpiry = _memberInfo['license_expiry_date']?.toString();
     final expiry = (rawExpiry == null || rawExpiry == 'None' || rawExpiry == 'null' || rawExpiry.isEmpty) ? null : rawExpiry;
@@ -335,10 +353,10 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
             children: [
               // ── 1. Digital Membership & Profile Card ──────────────────────
               Text(
-                'DIGITAL MEMBERSHIP CARD',
+                'DIGITAL MEMBERSHIP CREDENTIAL',
                 style: GoogleFonts.outfit(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
                   letterSpacing: 1.2,
                   color: _kBrown,
                 ),
@@ -353,53 +371,60 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                     padding: EdgeInsets.all(isNarrow ? 20 : 28),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [_kBrown, _kDarkBrown],
+                        colors: [Color(0xFF381F14), Color(0xFF1E110A)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: _kDarkBrown.withAlpha(50),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF5A3522), width: 1.0),
                     ),
                     child: isNarrow
                         ? Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isGoodStanding
-                                          ? const Color(0xFF10b981).withAlpha(40)
-                                          : _kOrange.withAlpha(40),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isGoodStanding
+                                      ? const Color(0xFF10b981).withAlpha(30)
+                                      : _kOrange.withAlpha(30),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: isGoodStanding
+                                        ? const Color(0xFF10b981).withAlpha(120)
+                                        : _kOrange.withAlpha(120),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
                                         color: isGoodStanding
-                                            ? const Color(0xFF10b981).withAlpha(80)
-                                            : _kOrange.withAlpha(80),
+                                            ? const Color(0xFF10b981)
+                                            : _kOrange,
                                       ),
                                     ),
-                                    child: Text(
+                                    const SizedBox(width: 6),
+                                    Text(
                                       isGoodStanding
-                                          ? '🟢 ACTIVE GOOD STANDING'
-                                          : '🟡 PENDING PACKAGE SETTLEMENT',
+                                          ? 'ACTIVE IN GOOD STANDING'
+                                          : (_loadingFees ? 'CHECKING STATUS...' : 'PENDING PACKAGE SETTLEMENT'),
                                       style: GoogleFonts.outfit(
                                         color: Colors.white,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w900,
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.5,
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                               const SizedBox(height: 14),
                               Text(
@@ -431,7 +456,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         'MEMBERSHIP ID',
                                         style: GoogleFonts.outfit(
                                           color: _kOrange,
-                                          fontSize: 12,
+                                          fontSize: 11,
                                           fontWeight: FontWeight.bold,
                                           letterSpacing: 0.5,
                                         ),
@@ -441,8 +466,9 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         memNo,
                                         style: GoogleFonts.outfit(
                                           color: Colors.white,
-                                          fontSize: 16,
+                                          fontSize: 15,
                                           fontWeight: FontWeight.bold,
+                                          fontFeatures: const [FontFeature.tabularFigures()],
                                         ),
                                       ),
                                     ],
@@ -456,7 +482,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                           'CLASSIFICATION',
                                           style: GoogleFonts.outfit(
                                             color: _kOrange,
-                                            fontSize: 12,
+                                            fontSize: 11,
                                             fontWeight: FontWeight.bold,
                                             letterSpacing: 0.5,
                                           ),
@@ -475,7 +501,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                 ],
                               ),
                               const SizedBox(height: 20),
-                              const Divider(color: Colors.white24, height: 1),
+                              const Divider(color: Colors.white12, height: 1),
                               const SizedBox(height: 16),
                               Row(
                                 children: [
@@ -483,14 +509,29 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: QrImageView(
-                                      data: verifyUrl,
-                                      version: QrVersions.auto,
-                                      size: 72.0,
-                                      errorCorrectionLevel: QrErrorCorrectLevel.H,
-                                    ),
+                                    child: verifyUrl.isNotEmpty
+                                        ? QrImageView(
+                                            data: verifyUrl,
+                                            version: QrVersions.auto,
+                                            size: 72.0,
+                                            errorCorrectionLevel: QrErrorCorrectLevel.H,
+                                          )
+                                        : const SizedBox(
+                                            width: 72,
+                                            height: 72,
+                                            child: Center(
+                                              child: SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: _kOrange,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
                                   ),
                                   const SizedBox(width: 14),
                                   Expanded(
@@ -502,7 +543,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                           'OFFICIAL QR VERIFICATION',
                                           style: GoogleFonts.outfit(
                                             color: _kOrange,
-                                            fontSize: 13,
+                                            fontSize: 12,
                                             fontWeight: FontWeight.w800,
                                             letterSpacing: 0.5,
                                           ),
@@ -510,9 +551,9 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         const SizedBox(height: 2),
                                         Text(
                                           'Scan to verify member credentials and status in live directory',
-                                          style: GoogleFonts.outfit(
+                                          style: GoogleFonts.inter(
                                             color: Colors.white.withAlpha(200),
-                                            fontSize: 14,
+                                            fontSize: 13,
                                             height: 1.3,
                                           ),
                                         ),
@@ -530,38 +571,49 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: isGoodStanding
-                                                ? const Color(0xFF10b981).withAlpha(40)
-                                                : _kOrange.withAlpha(40),
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
-                                            border: Border.all(
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isGoodStanding
+                                            ? const Color(0xFF10b981).withAlpha(30)
+                                            : _kOrange.withAlpha(30),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: isGoodStanding
+                                              ? const Color(0xFF10b981).withAlpha(120)
+                                              : _kOrange.withAlpha(120),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            width: 6,
+                                            height: 6,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
                                               color: isGoodStanding
-                                                  ? const Color(0xFF10b981).withAlpha(80)
-                                                  : _kOrange.withAlpha(80),
+                                                  ? const Color(0xFF10b981)
+                                                  : _kOrange,
                                             ),
                                           ),
-                                          child: Text(
+                                          const SizedBox(width: 6),
+                                          Text(
                                             isGoodStanding
-                                                ? '🟢 ACTIVE IN GOOD STANDING'
-                                                : '🟡 PENDING PACKAGE SETTLEMENT',
+                                                ? 'ACTIVE IN GOOD STANDING'
+                                                : (_loadingFees ? 'CHECKING STATUS...' : 'PENDING PACKAGE SETTLEMENT'),
                                             style: GoogleFonts.outfit(
                                               color: Colors.white,
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w900,
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 0.5,
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
@@ -593,7 +645,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                               'MEMBERSHIP ID',
                                               style: GoogleFonts.outfit(
                                                 color: _kOrange,
-                                                fontSize: 12,
+                                                fontSize: 11,
                                                 fontWeight: FontWeight.bold,
                                                 letterSpacing: 0.5,
                                               ),
@@ -605,6 +657,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                                 color: Colors.white,
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.bold,
+                                                fontFeatures: const [FontFeature.tabularFigures()],
                                               ),
                                             ),
                                           ],
@@ -618,7 +671,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                                 'CLASSIFICATION',
                                                 style: GoogleFonts.outfit(
                                                   color: _kOrange,
-                                                  fontSize: 12,
+                                                  fontSize: 11,
                                                   fontWeight: FontWeight.bold,
                                                   letterSpacing: 0.5,
                                                 ),
@@ -649,21 +702,36 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: QrImageView(
-                                      data: verifyUrl,
-                                      version: QrVersions.auto,
-                                      size: 100.0,
-                                      errorCorrectionLevel: QrErrorCorrectLevel.H,
-                                    ),
+                                    child: verifyUrl.isNotEmpty
+                                        ? QrImageView(
+                                            data: verifyUrl,
+                                            version: QrVersions.auto,
+                                            size: 100.0,
+                                            errorCorrectionLevel: QrErrorCorrectLevel.H,
+                                          )
+                                        : const SizedBox(
+                                            width: 100,
+                                            height: 100,
+                                            child: Center(
+                                              child: SizedBox(
+                                                width: 26,
+                                                height: 26,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: _kOrange,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
                                     'SCAN TO VERIFY',
                                     style: GoogleFonts.outfit(
                                       color: Colors.white.withAlpha(180),
-                                      fontSize: 12,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.bold,
                                       letterSpacing: 0.5,
                                     ),
@@ -680,10 +748,10 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
 
               // ── 2. Registered Services & Dues Breakdown ───────────────────
               Text(
-                'YOUR REGISTERED SERVICES & DUES BREAKDOWN',
+                'REGISTERED SERVICES & DUES BREAKDOWN',
                 style: GoogleFonts.outfit(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
                   letterSpacing: 1.2,
                   color: _kBrown,
                 ),
@@ -703,8 +771,8 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                   elevation: 0,
                   color: cardBg,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    side: BorderSide(color: borderColor, width: 1.2),
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: borderColor, width: 1.0),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(24),
@@ -769,7 +837,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Registration Form & Dossier Fee',
+                                'Registration Form & Processing Fee',
                                 style: GoogleFonts.inter(
                                   fontSize: 15,
                                   color: textColor,
@@ -793,7 +861,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Total Registration Fee:',
+                              'Total:',
                               style: GoogleFonts.outfit(
                                 fontSize: 17,
                                 fontWeight: FontWeight.bold,
@@ -822,8 +890,8 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                   elevation: 0,
                   color: cardBg,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    side: BorderSide(color: borderColor, width: 1.2),
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: borderColor, width: 1.0),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(24),
@@ -914,7 +982,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Total New Membership Dues:',
+                              'Total:',
                               style: GoogleFonts.outfit(
                                 fontSize: 17,
                                 fontWeight: FontWeight.bold,
@@ -963,8 +1031,8 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                   elevation: 0,
                   color: cardBg,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    side: BorderSide(color: borderColor, width: 1.2),
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: borderColor, width: 1.0),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(24),
@@ -1216,7 +1284,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Total Annual Renewal Dues:',
+                                'Total:',
                                 style: GoogleFonts.outfit(
                                   fontSize: 17,
                                   fontWeight: FontWeight.bold,
@@ -1648,9 +1716,9 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: _kBrown,
                     side: const BorderSide(color: _kBrown, width: 1.5),
-                    minimumSize: const Size(0, 52),
+                    minimumSize: const Size(0, 48),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     textStyle: GoogleFonts.outfit(
                       fontWeight: FontWeight.bold,

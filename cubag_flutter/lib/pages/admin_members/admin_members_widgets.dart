@@ -32,45 +32,33 @@ class _KPICardState extends State<_KPICard> {
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        transform: _isHovered
-            ? Matrix4.translationValues(0.0, -4.0, 0.0)
-            : Matrix4.identity(),
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOut,
         decoration: BoxDecoration(
           color: widget.cardBg,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: _isHovered
                 ? widget.color.withValues(alpha: 0.5)
                 : widget.borderColor,
-            width: 1.5,
+            width: 1.0,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: _isHovered
-                  ? widget.color.withValues(alpha: 0.15)
-                  : Colors.black.withValues(alpha: 0.02),
-              blurRadius: _isHovered ? 12 : 4,
-              offset: _isHovered ? const Offset(0, 6) : const Offset(0, 2),
-            ),
-          ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(9),
                 decoration: BoxDecoration(
-                  color: widget.color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: widget.color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: widget.color.withValues(alpha: 0.15),
+                    color: widget.color.withValues(alpha: 0.25),
                     width: 1,
                   ),
                 ),
-                child: Icon(widget.icon, color: widget.color, size: 20),
+                child: Icon(widget.icon, color: widget.color, size: 19),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -80,28 +68,31 @@ class _KPICardState extends State<_KPICard> {
                   children: [
                     Text(
                       widget.label.toUpperCase(),
-                      style: GoogleFonts.outfit(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
                         color: isDark
-                            ? Colors.white38
-                            : const Color(0xFF64748b),
-                        letterSpacing: 0.8,
+                            ? const Color(0xFF9E8F84)
+                            : const Color(0xFF7A6B60),
+                        letterSpacing: 0.6,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
                         widget.value,
                         style: GoogleFonts.outfit(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
+                          fontSize: 21,
+                          fontWeight: FontWeight.w800,
                           color: isDark
                               ? Colors.white
-                              : const Color(0xFF1A0F0A),
+                              : const Color(0xFF1F1612),
+                          letterSpacing: -0.4,
+                        ).copyWith(
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
                     ),

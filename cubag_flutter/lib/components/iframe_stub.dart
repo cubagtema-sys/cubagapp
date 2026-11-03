@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 
-Widget buildIframe(String mmsi) {
+Widget buildIframe(
+  String mmsi, {
+  String? vesselName,
+  double? lat,
+  double? lon,
+  String? destination,
+  String? speed,
+}) {
   return const Center(
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,

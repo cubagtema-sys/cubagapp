@@ -18,6 +18,13 @@ _TRUSTED_HOPS = max(1, int(os.getenv('TRUSTED_PROXY_HOPS', '1') or '1'))
 
 
 def _client_ip():
+    # Fly.io edge proxy provides the validated client IP directly
+    fly_ip = request.headers.get('Fly-Client-IP')
+    if fly_ip and fly_ip.strip():
+        return fly_ip.strip()
+    cf_ip = request.headers.get('CF-Connecting-IP')
+    if cf_ip and cf_ip.strip():
+        return cf_ip.strip()
     forwarded = request.headers.get('X-Forwarded-For', '')
     if forwarded:
         parts = [p.strip() for p in forwarded.split(',') if p.strip()]
@@ -45,9 +52,17 @@ def rate_limit(scope: str, max_requests: int, window_seconds: int):
                 if not isinstance(rec, dict) or now - float(rec.get('start', 0)) >= window_seconds:
                     cache.set(key, {'n': 1, 'start': now}, timeout=window_seconds)
                 elif int(rec.get('n', 0)) >= max_requests:
-                    return jsonify({
-                        'message': 'Too many requests. Please wait a moment and try again.'
-                    }), 429
+                    remaining = max(1, window_seconds - (now - float(rec.get('start', now))))
+                    resp = jsonify({
+                        'success': False,
+                        'message': 'Too many requests. Please wait a moment and try again.',
+                        'error': 'Rate limit exceeded',
+                        'retry_after_seconds': int(remaining)
+                    })
+                    resp.status_code = 429
+                    resp.headers['Retry-After'] = str(int(remaining))
+                    resp.headers['Access-Control-Allow-Origin'] = '*'
+                    return resp
                 else:
                     rec['n'] = int(rec.get('n', 0)) + 1
                     remaining = window_seconds - (now - float(rec.get('start', now)))

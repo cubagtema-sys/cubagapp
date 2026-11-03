@@ -103,9 +103,9 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
       builder: (dlgCtx) => StatefulBuilder(
         builder: (context, setDlgState) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
-          final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-          final textCol = isDark ? Colors.white : const Color(0xFF0F172A);
-          final border = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
+          final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+          final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
+          final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
 
           return Dialog(
             backgroundColor: cardBg,
@@ -195,7 +195,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                           hintText: 'e.g. New Member Package: Clearing & Forwarding Only (SMEs)',
                           hintStyle: GoogleFonts.inter(fontSize: 16, color: const Color(0xFF94A3B8)),
                           filled: true,
-                          fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                          fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -219,7 +219,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                                     prefixText: 'GHS ',
                                     prefixStyle: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.bold, color: _kOrange),
                                     filled: true,
-                                    fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                                    fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
                                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -238,7 +238,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
                                   decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                                    color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(color: border),
                                   ),
@@ -275,7 +275,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                           hintText: 'e.g. Sub (120) + Vetting (750) + District (250) + C&F Scope (500)',
                           hintStyle: GoogleFonts.inter(fontSize: 15.5, color: const Color(0xFF94A3B8)),
                           filled: true,
-                          fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                          fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -430,11 +430,11 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC);
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final border = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark ? Colors.white70 : const Color(0xFF475569);
+    final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0);
+    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
+    final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
     // Grouping by categories:
     // 1. Corporate / Freight Forwarders (New onboarding membership packages)
@@ -558,7 +558,11 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                   Expanded(
                     child: RichText(
                       text: TextSpan(
-                        style: GoogleFonts.inter(fontSize: 13, color: isDark ? Colors.white70 : const Color(0xFF334155)),
+                        style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: isDark
+                                ? Colors.white70
+                                : const Color(0xFF6B5E55)),
                         children: [
                           const TextSpan(
                             text: 'Annual License Renewals: ',
@@ -569,7 +573,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                           ),
                           TextSpan(
                             text: 'Compliance Centre (#/admin/compliance)',
-                            style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                            style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1F1612)),
                           ),
                           const TextSpan(
                             text: '. This page manages New Registration & Entrance Package Tariffs.',
@@ -983,7 +987,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
       label: Text(label, style: GoogleFonts.outfit(fontSize: 15.5, fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600)),
       selected: isSelected,
       selectedColor: _kOrange,
-      labelStyle: TextStyle(color: isSelected ? Colors.white : const Color(0xFF64748B)),
+      labelStyle: TextStyle(color: isSelected ? Colors.white : const Color(0xFF6B5E55)),
       onSelected: (val) {
         if (val) setState(() => _subFilter = value);
       },
@@ -1057,7 +1061,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
               child: DataTable(
                 horizontalMargin: 20,
                 columnSpacing: 20,
-                headingRowColor: WidgetStateProperty.all(isDark ? const Color(0xFF4D2D20) : const Color(0xFFF8FAFC)),
+                headingRowColor: WidgetStateProperty.all(isDark ? const Color(0xFF22140E) : const Color(0xFFFAF6F0)),
                 headingTextStyle: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.5),
                 columns: const [
                   DataColumn(label: Text('CATEGORY / TARGET')),
@@ -1144,7 +1148,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             style: GoogleFonts.outfit(
                               fontSize: 16.5,
                               fontWeight: isSummary ? FontWeight.w800 : FontWeight.w600,
-                              color: isSummary ? (isDark ? Colors.white : const Color(0xFF0F172A)) : textPrimary,
+                              color: isSummary ? (isDark ? Colors.white : const Color(0xFF1F1612)) : textPrimary,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,

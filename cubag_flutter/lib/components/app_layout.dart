@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -34,9 +35,16 @@ class AppLayout extends StatefulWidget {
 
 class _AppLayoutState extends State<AppLayout> {
   bool _isSidebarCollapsed = false;
+  Timer? _sidebarInactivityTimer;
   static int _cachedComplianceBadge = 0;
   static DateTime? _lastBadgeFetch;
   int _complianceBadge = _cachedComplianceBadge;
+
+  @override
+  void dispose() {
+    _sidebarInactivityTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -168,33 +176,53 @@ class _AppLayoutState extends State<AppLayout> {
           if (isDesktop) _buildSidebar(context, authService.userRole),
           Expanded(
             child: isDesktop
-                ? Column(
-                    children: [
-                      _buildDesktopHeader(context, authService),
-                      Expanded(
-                        child: SelectionArea(
-                          child: widget.scrollable
-                              ? SingleChildScrollView(
-                                  padding: EdgeInsets.only(
-                                    left: 20,
-                                    right: 20,
-                                    top: 20,
-                                    bottom: 20 + MediaQuery.of(context).padding.bottom,
-                                  ),
-                                  child: widget.child,
-                                )
-                              : Padding(
-                                  padding: EdgeInsets.only(
-                                    left: 20,
-                                    right: 20,
-                                    top: 20,
-                                    bottom: 20 + MediaQuery.of(context).padding.bottom,
-                                  ),
-                                  child: widget.child,
-                                ),
-                        ),
+                ? MouseRegion(
+                    onEnter: (_) {
+                      if (!_isSidebarCollapsed) {
+                        _sidebarInactivityTimer?.cancel();
+                        _sidebarInactivityTimer = Timer(const Duration(milliseconds: 600), () {
+                          if (mounted && !_isSidebarCollapsed) {
+                            setState(() => _isSidebarCollapsed = true);
+                          }
+                        });
+                      }
+                    },
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: () {
+                        if (!_isSidebarCollapsed) {
+                          setState(() => _isSidebarCollapsed = true);
+                        }
+                      },
+                      child: Column(
+                        children: [
+                          _buildDesktopHeader(context, authService),
+                          Expanded(
+                            child: SelectionArea(
+                              child: widget.scrollable
+                                  ? SingleChildScrollView(
+                                      padding: EdgeInsets.only(
+                                        left: 20,
+                                        right: 20,
+                                        top: 20,
+                                        bottom: 20 + MediaQuery.of(context).padding.bottom,
+                                      ),
+                                      child: widget.child,
+                                    )
+                                  : Padding(
+                                      padding: EdgeInsets.only(
+                                        left: 20,
+                                        right: 20,
+                                        top: 20,
+                                        bottom: 20 + MediaQuery.of(context).padding.bottom,
+                                      ),
+                                      child: widget.child,
+                                    ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   )
                 : Container(
                     color: primary,
@@ -359,10 +387,10 @@ class _AppLayoutState extends State<AppLayout> {
               context.go(targetRoute);
             }
           },
-          itemBuilder: (context) {
+          itemBuilder: (popupContext) {
             final recent = notificationService.recentNotifications;
             final maxListHeight = () {
-              final h = MediaQuery.of(context).size.height * 0.45;
+              final h = MediaQuery.of(popupContext).size.height * 0.45;
               return h < 360 ? h : 360.0;
             }();
 
@@ -370,9 +398,15 @@ class _AppLayoutState extends State<AppLayout> {
               PopupMenuItem<String>(
                 enabled: false,
                 padding: EdgeInsets.zero,
-                child: SizedBox(
-                  width: 300,
-                  child: Column(
+                child: _NotificationAutoCloseTray(
+                  onExit: () {
+                    if (Navigator.of(popupContext).canPop()) {
+                      Navigator.of(popupContext).pop();
+                    }
+                  },
+                  child: SizedBox(
+                    width: 300,
+                    child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // ── Fixed header ──────────────────────────────────────
@@ -554,7 +588,8 @@ class _AppLayoutState extends State<AppLayout> {
                   ),
                 ),
               ),
-            ];
+            ),
+          ];
           },
         );
       },
@@ -926,10 +961,6 @@ class _AppLayoutState extends State<AppLayout> {
                 : 'Collapse Sidebar',
           ),
           const SizedBox(width: 8),
-          if (!isAdmin) ...[
-            const AppLogo(size: 32, borderRadius: 8, showShadow: false),
-            const SizedBox(width: 12),
-          ],
           Text(
             widget.title,
             style: GoogleFonts.outfit(
@@ -945,7 +976,7 @@ class _AppLayoutState extends State<AppLayout> {
               icon: Icon(Icons.search_rounded, color: iconColor),
               onPressed: () => showSearch(
                 context: context,
-                delegate: authService.userRole == 'admin'
+                delegate: isAdmin
                     ? AdminSearchDelegate()
                     : MemberSearchDelegate(),
               ),
@@ -1062,71 +1093,86 @@ class _AppLayoutState extends State<AppLayout> {
     final topPadding = MediaQuery.of(context).padding.top;
     final leftPadding = MediaQuery.of(context).padding.left;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeInOut,
-      width: _isSidebarCollapsed ? 76 : 260,
-      decoration: BoxDecoration(
-        color: sidebarBg,
-        border: Border(right: BorderSide(color: borderThemeColor, width: 1.5)),
-      ),
-      child: Column(
-        children: [
-          // Sidebar Header
-          Container(
-            height: 64 + topPadding,
-            padding: EdgeInsets.only(
-              top: topPadding,
-              left: 16 + leftPadding,
-              right: 16,
-            ),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: borderThemeColor, width: 1.5),
+    return MouseRegion(
+      onEnter: (_) {
+        _sidebarInactivityTimer?.cancel();
+      },
+      onExit: (_) {
+        if (!_isSidebarCollapsed) {
+          _sidebarInactivityTimer?.cancel();
+          _sidebarInactivityTimer = Timer(const Duration(milliseconds: 1200), () {
+            if (mounted && !_isSidebarCollapsed) {
+              setState(() => _isSidebarCollapsed = true);
+            }
+          });
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        width: _isSidebarCollapsed ? 76 : 260,
+        decoration: BoxDecoration(
+          color: sidebarBg,
+          border: Border(right: BorderSide(color: borderThemeColor, width: 1.5)),
+        ),
+        child: Column(
+          children: [
+            // Sidebar Header
+            Container(
+              height: 64 + topPadding,
+              padding: EdgeInsets.only(
+                top: topPadding,
+                left: 16 + leftPadding,
+                right: 16,
               ),
-            ),
-            child: _isSidebarCollapsed
-                ? const Center(
-                    child: AppLogo(
-                      size: 32,
-                      borderRadius: 8,
-                      showShadow: false,
-                    ),
-                  )
-                : Row(
-                    children: [
-                      const AppLogo(
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: borderThemeColor, width: 1.5),
+                ),
+              ),
+              child: _isSidebarCollapsed
+                  ? const Center(
+                      child: AppLogo(
                         size: 32,
                         borderRadius: 8,
                         showShadow: false,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'CUBAG',
-                              style: GoogleFonts.outfit(
-                                color: textColor,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            _buildRoleBadge(context, role),
-                          ],
+                    )
+                  : Row(
+                      children: [
+                        const AppLogo(
+                          size: 32,
+                          borderRadius: 8,
+                          showShadow: false,
                         ),
-                      ),
-                    ],
-                  ),
-          ),
-          // Sidebar Items
-          Expanded(child: _buildNavItems(context, role)),
-          // Sidebar Footer
-          _buildSidebarFooter(context, authService),
-        ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'CUBAG',
+                                style: GoogleFonts.outfit(
+                                  color: textColor,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              _buildRoleBadge(context, role),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+            // Sidebar Items
+            Expanded(child: _buildNavItems(context, role)),
+            // Sidebar Footer
+            _buildSidebarFooter(context, authService),
+          ],
+        ),
       ),
     );
   }
@@ -1761,18 +1807,20 @@ class _AppLayoutState extends State<AppLayout> {
         ],
       );
     }
+    final headerColor =
+        isDark ? const Color(0xFF9E8F84) : const Color(0xFF7A6B60);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 4),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
           child: Text(
             title,
             style: GoogleFonts.outfit(
-              fontSize: 11.5,
+              fontSize: 11,
               fontWeight: FontWeight.w800,
-              color: const Color(0xFF94a3b8),
-              letterSpacing: 1.2,
+              color: headerColor,
+              letterSpacing: 1.1,
             ),
           ),
         ),
@@ -1828,6 +1876,11 @@ class _AppLayoutState extends State<AppLayout> {
         borderRadius: BorderRadius.circular(8),
         child: InkWell(
           onTap: () {
+            if (!_isSidebarCollapsed) {
+              setState(() {
+                _isSidebarCollapsed = true;
+              });
+            }
             if (onTapOverride != null) {
               onTapOverride();
             } else {
@@ -1937,4 +1990,41 @@ class _NavItemData {
   final IconData icon;
   final String route;
   _NavItemData(this.title, this.icon, this.route);
+}
+
+class _NotificationAutoCloseTray extends StatefulWidget {
+  final VoidCallback onExit;
+  final Widget child;
+  const _NotificationAutoCloseTray({required this.onExit, required this.child});
+
+  @override
+  State<_NotificationAutoCloseTray> createState() => _NotificationAutoCloseTrayState();
+}
+
+class _NotificationAutoCloseTrayState extends State<_NotificationAutoCloseTray> {
+  Timer? _timer;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) {
+        _timer?.cancel();
+      },
+      onExit: (_) {
+        _timer?.cancel();
+        _timer = Timer(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            widget.onExit();
+          }
+        });
+      },
+      child: widget.child,
+    );
+  }
 }

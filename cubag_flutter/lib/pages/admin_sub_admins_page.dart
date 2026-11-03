@@ -14,7 +14,7 @@ const _kRed = Color(0xFFef4444);
 const _kAmber = Color(0xFFf59e0b);
 const _kPurple = Color(0xFF8b5cf6);
 const _kIndigo = Color(0xFF6366f1);
-const _kCardBg = Color(0xFF281710);
+const _kCardBg = Color(0xFF22140E);
 
 // All available permission modules — must match backend ALL_PERMISSIONS list.
 const _kAllPermissions = [
@@ -397,20 +397,20 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
     final auth = Provider.of<AuthService>(context, listen: false);
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? _kCardBg : Colors.white;
+    final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
     final borderCol = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
+        ? const Color(0xFF3D261C)
+        : const Color(0xFFE8DED6);
     final headerBg = isDark
-        ? const Color(0xFF1A0F0A).withAlpha(150)
-        : const Color(0xFFf8fafc);
-    final textCol = isDark ? const Color(0xFFf8fafc) : const Color(0xFF1A0F0A);
+        ? const Color(0xFF1A0F0A)
+        : const Color(0xFFFAF6F0);
+    final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
     final subTextCol = isDark
-        ? const Color(0xFF94a3b8)
-        : const Color(0xFF64748b);
+        ? const Color(0xFFB0A298)
+        : const Color(0xFF6B5E55);
     final inputBg = isDark
-        ? const Color(0xFF1A0F0A).withAlpha(120)
-        : const Color(0xFFf8fafc);
+        ? const Color(0xFF1A0F0A)
+        : const Color(0xFFFAF6F0);
 
     // Only full admins and super admins may access this page
     if (auth.userRole != 'admin' && auth.userRole != 'super_admin') {
@@ -1368,14 +1368,14 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? _kCardBg : Colors.white;
-    final textCol = isDark ? const Color(0xFFf8fafc) : const Color(0xFF1A0F0A);
+    final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
+    final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
     final subTextCol = isDark
-        ? const Color(0xFF94a3b8)
-        : const Color(0xFF64748b);
+        ? const Color(0xFFB0A298)
+        : const Color(0xFF6B5E55);
     final borderCol = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
+        ? const Color(0xFF3D261C)
+        : const Color(0xFFE8DED6);
     final name = widget.subAdmin['name']?.toString() ?? 'Sub-Admin';
     final email = widget.subAdmin['email']?.toString() ?? '';
 

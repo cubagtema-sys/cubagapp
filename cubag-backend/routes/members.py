@@ -157,11 +157,15 @@ def get_public_ports():
         conn.close()
 
 @members_bp.route('/public/verify-member', methods=['GET'])
+@rate_limit('verify_member', max_requests=30, window_seconds=60)
 def verify_member_public():
     """Public Member Verification — Non-disclosing dynamic evaluation of Good Standing."""
     query_str = request.args.get('query', '').strip()
-    if not query_str:
-        return jsonify({'verified': False, 'message': 'Please provide a membership number, license number, or company name.'}), 400
+    if not query_str or len(query_str) < 3:
+        return jsonify({
+            'verified': False, 
+            'message': 'Please provide a valid membership number (e.g. CUBAG-2026-0008), license number, or registered company name (minimum 3 characters).'
+        }), 400
 
     conn = get_db()
     try:
@@ -176,10 +180,16 @@ def verify_member_public():
                 WHERE (LOWER(COALESCE(membership_number, '')) = LOWER(%s)
                    OR LOWER(COALESCE(license_number, '')) = LOWER(%s)
                    OR LOWER(company) = LOWER(%s)
-                   OR LOWER(name) = LOWER(%s))
+                   OR LOWER(name) = LOWER(%s)
+                   OR LOWER('CUBAG-2026-00' || id) = LOWER(%s)
+                   OR LOWER('CUBAG-2026-0' || id) = LOWER(%s)
+                   OR LOWER('CUBAG-2026-' || id) = LOWER(%s)
+                   OR LOWER('LIC-CUBAG-2026-00' || id) = LOWER(%s)
+                   OR LOWER('LIC-CUBAG-2026-0' || id) = LOWER(%s)
+                   OR LOWER('LIC-CUBAG-2026-' || id) = LOWER(%s))
                   AND LOWER(status) IN ('active', 'approved')
                 LIMIT 1
-            """, (query_str, query_str, query_str, query_str))
+            """, (query_str, query_str, query_str, query_str, query_str, query_str, query_str, query_str, query_str, query_str))
             m = cursor.fetchone()
 
             if m:
@@ -191,12 +201,13 @@ def verify_member_public():
 
                 return jsonify({
                     'verified': True,
-                    'member_id': m['id'],
-                    'member_name': m.get('company') or m.get('name'),
+                    'standing_status': 'Good Standing' if is_good else 'Under Review',
+                    'good_standing': is_good,
+                    'company_name': m.get('company') or m.get('name'),
                     'membership_number': m.get('membership_number') or f"CUBAG-2026-{m['id']:04d}",
                     'license_number': m.get('license_number') or f"LIC-CUBAG-2026-{m['id']:04d}",
+                    'member_category': m.get('member_type') or 'Corporate Member',
                     'primary_port': m.get('primary_port') or 'Tema Port',
-                    'good_standing': is_good,
                     'valid_until': valid_until,
                     'verified_at': today_str,
                 }), 200

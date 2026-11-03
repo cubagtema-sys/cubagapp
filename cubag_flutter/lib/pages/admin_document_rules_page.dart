@@ -338,37 +338,36 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                       backgroundColor: _kOrange,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 12,
+                        horizontal: 16,
+                        vertical: 10,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      elevation: 2,
-                      shadowColor: _kOrange.withAlpha(80),
+                      elevation: 0,
                     ),
                     onPressed: () => _openAddEditDialog(),
                     icon: const Icon(Icons.add_rounded, size: 18),
                     label: Text(
                       'Add Rule',
                       style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         fontSize: 13,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: isDark ? Colors.white : const Color(0xFF1E293B),
-                      side: BorderSide(color: borderColor, width: 1.2),
+                      side: BorderSide(color: borderColor, width: 1.0),
                       backgroundColor: cardBg,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                        horizontal: 14,
+                        vertical: 10,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                     onPressed: _fetch,
@@ -376,7 +375,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                     label: Text(
                       'Refresh',
                       style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         fontSize: 13,
                       ),
                     ),
@@ -914,6 +913,8 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
               fontSize: 12,
               fontWeight: FontWeight.w800,
               color: color,
+            ).copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ],

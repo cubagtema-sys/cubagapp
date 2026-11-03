@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">CUBAG Mobile</string>
-    <string name="title_activity_main">CUBAG Mobile</string>
-    <string name="package_name">com.cubag.app</string>
-    <string name="custom_url_scheme">com.cubag.app</string>
-</resources>

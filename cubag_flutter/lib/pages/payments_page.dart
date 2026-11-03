@@ -221,26 +221,6 @@ class _PaymentsPageState extends State<PaymentsPage>
     return clean;
   }
 
-  String _detectNetworkFromPhone(String phone) {
-    final clean = _normalizeGhanaPhone(phone);
-    if (clean.length < 3) return '';
-    final prefix = clean.substring(0, 3);
-
-    // MTN: 024, 025, 053, 054, 055, 059
-    if (['024', '025', '053', '054', '055', '059'].contains(prefix)) {
-      return 'MTN';
-    }
-    // Telecel (Vodafone): 020, 050
-    if (['020', '050'].contains(prefix)) {
-      return 'Vodafone';
-    }
-    // AT (AirtelTigo): 026, 056, 027, 057
-    if (['026', '056', '027', '057'].contains(prefix)) {
-      return 'AirtelTigo';
-    }
-    return '';
-  }
-
   Future<void> _loadData() async {
     if (!mounted) return;
     setState(() => _loadingData = true);
@@ -479,6 +459,13 @@ class _PaymentsPageState extends State<PaymentsPage>
     if (amt <= 0) {
       setState(() {
         _errorMsg = 'Please enter a valid amount greater than 0.';
+        _showError = true;
+      });
+      return;
+    }
+    if (_method == 'momo' && _momoNetwork.trim().isEmpty) {
+      setState(() {
+        _errorMsg = 'Please select your Mobile Money carrier (MTN, Telecel, or AirtelTigo).';
         _showError = true;
       });
       return;
@@ -836,17 +823,12 @@ class _PaymentsPageState extends State<PaymentsPage>
 
 
 
+  bool get _requiresDocuments {
+    return _isComplianceReason(_reason);
+  }
+
   bool get _isNoDocPaymentReason {
-    if (_complianceAppId != null) return true;
-    final r = _reason.toLowerCase();
-    return r.contains('registration') ||
-        r.contains('new membership') ||
-        r.contains('membership dues') ||
-        r.contains('entrance') ||
-        r.contains('onboarding') ||
-        r.contains('cti') ||
-        r.contains('course') ||
-        r.contains('training');
+    return !_requiresDocuments;
   }
 
   bool _isComplianceReason(String? label) {
@@ -1304,12 +1286,12 @@ class _PaymentsPageState extends State<PaymentsPage>
             margin: const EdgeInsets.all(20),
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF281710) : Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              color: isDark ? const Color(0xFF1E130D) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isDark
-                    ? const Color(0xFF4D2D20)
-                    : const Color(0xFFe2e8f0),
+                    ? const Color(0xFF3D261C)
+                    : const Color(0xFFE8DED6),
                 width: 1,
               ),
               boxShadow: [
@@ -1373,13 +1355,13 @@ class _PaymentsPageState extends State<PaymentsPage>
                   child: Column(
                     children: [
                       Card(
-                        color: Colors.white,
+                        color: isDark ? const Color(0xFF1E130D) : Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(12),
                           side: BorderSide(
-                            color: const Color(0xFFcbd5e1).withAlpha(120),
-                            width: 1.5,
+                            color: isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6),
+                            width: 1.0,
                           ),
                         ),
                         child: Column(
@@ -1388,37 +1370,31 @@ class _PaymentsPageState extends State<PaymentsPage>
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFf8fafc),
+                                color: isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0),
                                 borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(20),
+                                  top: Radius.circular(12),
                                 ),
                                 border: Border(
                                   bottom: BorderSide(
-                                    color: const Color(
-                                      0xFFcbd5e1,
-                                    ).withAlpha(80),
-                                    width: 1.5,
+                                    color: isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6),
+                                    width: 1.0,
                                   ),
                                 ),
                               ),
                               child: Builder(
                                 builder: (ctx) {
-                                  final isNoDoc = _isNoDocPaymentReason;
-                                  final isRenewal = _reason.toLowerCase().contains('renewal');
-                                  final labels = isRenewal
-                                      ? ['Document (Step 1)', 'Official Bill', 'Method', 'Review', 'Verify']
-                                      : (isNoDoc
-                                          ? ['Type', 'Method', 'Review', 'Verify']
-                                          : ['Type', 'Document', 'Method', 'Review', 'Verify']);
-                                  final stepMap = isRenewal
-                                      ? {2: 0, 1: 1, 3: 2, 4: 3, 5: 4}
-                                      : (isNoDoc
-                                          ? {1: 0, 3: 1, 4: 2, 5: 3}
-                                          : {1: 0, 2: 1, 3: 2, 4: 3, 5: 4});
+                                  final reqDocs = _requiresDocuments;
+                                  final labels = reqDocs
+                                      ? ['Fee Details', 'Supporting Documents', 'Payment Method', 'Review & Pay', 'Verification']
+                                      : ['Fee Details', 'Payment Method', 'Review & Pay', 'Verification'];
+                                  final stepMap = reqDocs
+                                      ? {1: 0, 2: 1, 3: 2, 4: 3, 5: 4}
+                                      : {1: 0, 3: 1, 4: 2, 5: 3};
                                   final curIdx = stepMap[_step] ?? 0;
                                   final totalSteps = labels.length;
 
                                   return Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: List.generate(totalSteps, (i) {
                                       final isCompleted = curIdx > i;
                                       final isActive = curIdx == i;
@@ -1426,6 +1402,7 @@ class _PaymentsPageState extends State<PaymentsPage>
 
                                       return Expanded(
                                         child: Column(
+                                          mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Row(
                                               children: [
@@ -1501,17 +1478,23 @@ class _PaymentsPageState extends State<PaymentsPage>
                                                 ),
                                               ],
                                             ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              labels[i],
-                                              style: GoogleFonts.outfit(
-                                                 fontSize: 12,
-                                                color: isActive
-                                                    ? _kOrange
-                                                    : const Color(0xFF64748b),
-                                                fontWeight: FontWeight.w800,
-                                                letterSpacing: 0.2,
-                                              ),
+                                            const SizedBox(height: 8),
+                                            SizedBox(
+                                              height: 18,
+                                              child: isActive
+                                                  ? Text(
+                                                      labels[i],
+                                                      style: GoogleFonts.outfit(
+                                                        fontSize: 12,
+                                                        color: _kOrange,
+                                                        fontWeight: FontWeight.w800,
+                                                        letterSpacing: 0.1,
+                                                      ),
+                                                      textAlign: TextAlign.center,
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    )
+                                                  : const SizedBox.shrink(),
                                             ),
                                           ],
                                         ),
@@ -2205,7 +2188,10 @@ class _PaymentsPageState extends State<PaymentsPage>
                   child: TextFormField(
                     controller: _amountCtrl,
                     onChanged: (v) => setState(() {}),
-                    keyboardType: TextInputType.number,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                    ],
                     readOnly: (_reason.isNotEmpty && _reason != 'Other') &&
                         !(_reason.toLowerCase().contains('renewal') && _allowInstallments && _isInstallmentMode),
                     style: GoogleFonts.outfit(
@@ -2268,6 +2254,27 @@ class _PaymentsPageState extends State<PaymentsPage>
                     ),
                   );
                 }
+                if (minBal >= (maxBal - 0.01)) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6, left: 4),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline, size: 14, color: _kAmber),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Remaining balance due: GH₵ ${maxBal.toStringAsFixed(2)}',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: _kAmber,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
                 return Padding(
                   padding: const EdgeInsets.only(top: 6, left: 4),
                   child: Row(
@@ -2276,7 +2283,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          'Enter any installment between GH₵ ${minBal.toStringAsFixed(2)} and GH₵ ${maxBal.toStringAsFixed(2)}',
+                          'Enter an installment amount between GH₵ ${minBal.toStringAsFixed(2)} and GH₵ ${maxBal.toStringAsFixed(2)}',
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -2931,62 +2938,89 @@ class _PaymentsPageState extends State<PaymentsPage>
     }
 
     if (_step == 2) {
-      final isCompliance = _isComplianceReason(_reason);
+      if (!_requiresDocuments) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _step = 3);
+        });
+        return const SizedBox.shrink();
+      }
+
       final title = _complianceType == 'renewal'
-          ? 'Membership Renewal Application'
-          : 'Member ID Application';
+          ? 'Membership Renewal Documents'
+          : 'Customs Broker License Credentials';
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: primary.withAlpha(20),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  isCompliance
-                      ? Icons.verified_user_outlined
-                      : Icons.folder_open_rounded,
-                  color: primary,
-                  size: 20,
-                ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6),
+                width: 1.0,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isCompliance
-                          ? 'COMPLIANCE & DOCUMENTS'
-                          : 'SUPPORTING DOCUMENTS',
-                      style: GoogleFonts.outfit(
-                        fontSize: 13,
-                        color: const Color(0xFF64748b),
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    Text(
-                      isCompliance ? title : 'Supporting Documents',
-                      style: GoogleFonts.outfit(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1A0F0A),
-                      ),
-                    ),
-                  ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: _kOrange.withAlpha(25),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.verified_user_outlined,
+                    color: _kOrange,
+                    size: 22,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'STEP 2: SUPPORTING DOCUMENTS',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          color: _kOrange,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        title,
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : const Color(0xFF1A0F0A),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => context.go('/compliance'),
+                  icon: const Icon(Icons.open_in_new_rounded, size: 14),
+                  label: const Text('Compliance Centre'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: _kOrange,
+                    textStyle: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
-          if (isCompliance) ...[
+          if (true) ...[
             if (_appLoading)
               Container(
                 width: double.infinity,
@@ -3306,169 +3340,6 @@ class _PaymentsPageState extends State<PaymentsPage>
                 }).toList(),
               ),
             ],
-          ] else if (_reason.toLowerCase().contains('customs') ||
-              _reason.toLowerCase().contains('licence') ||
-              _reason.toLowerCase().contains('application fee')) ...[
-            // Application Fee verified documents card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFf0fdf4),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF86efac)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFdcfce7),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.check_circle_rounded,
-                          color: _kGreen,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '11 Application Documents Uploaded',
-                              style: GoogleFonts.outfit(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF1A0F0A),
-                              ),
-                            ),
-                            Text(
-                              'Submitted via Complete Your Application.',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                color: const Color(0xFF166534),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    'Your 11 required application documents have been uploaded and submitted for review. Click Continue below to proceed to payment method.',
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      color: const Color(0xFF4D2D20),
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ] else ...[
-            // Non-compliance standard payment document upload card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFe2e8f0)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: primary.withAlpha(20),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.file_present_rounded,
-                          color: primary,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Supporting Attachments',
-                              style: GoogleFonts.outfit(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF1A0F0A),
-                              ),
-                            ),
-                            Text(
-                              'Paperwork or invoice reference',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                color: const Color(0xFF64748b),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    'The required documents listed below on the payment page for step 2',
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      color: const Color(0xFF475569),
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    onPressed: () => context.go('/compliance'),
-                    icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                    label: Text(
-                      'Open Compliance Centre',
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: primary,
-                      side: BorderSide(color: primary.withAlpha(80)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ],
 
           const SizedBox(height: 24),
@@ -3481,7 +3352,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                 height: 50,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    if (isCompliance &&
+                    if (_isComplianceReason(_reason) &&
                         (_complianceStatus == 'draft' ||
                             _complianceStatus == 'revision_requested')) {
                       _submitComplianceApplication();
@@ -3515,7 +3386,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   onPressed: () => setState(() => _step = 1),
                   icon: const Icon(Icons.arrow_back_rounded, size: 16),
                   label: Text(
-                    'Back to Payment Type',
+                    'Back to Fee Details',
                     style: GoogleFonts.outfit(
                       fontWeight: FontWeight.w700,
                       fontSize: 15.5,
@@ -3664,6 +3535,82 @@ class _PaymentsPageState extends State<PaymentsPage>
 
           // ── CHANNEL A: MOBILE MONEY ──
           if (isMomo) ...[
+            Text(
+              'SELECT MOBILE CARRIER',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+                color: const Color(0xFF64748b),
+                letterSpacing: 0.6,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                for (final entry in const [
+                  {'id': 'MTN', 'label': 'MTN'},
+                  {'id': 'Telecel', 'label': 'Telecel'},
+                  {'id': 'AirtelTigo', 'label': 'AirtelTigo'},
+                ]) ...[
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        right: entry['id'] == 'AirtelTigo' ? 0 : 8,
+                      ),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _momoNetwork = entry['id']!),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: _momoNetwork == entry['id']
+                                ? _kOrange.withAlpha(18)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _momoNetwork == entry['id']
+                                  ? _kOrange
+                                  : const Color(0xFFcbd5e1),
+                              width: _momoNetwork == entry['id'] ? 2.0 : 1.2,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (_momoNetwork == entry['id']) ...[
+                                const Icon(
+                                  Icons.check_circle_rounded,
+                                  size: 15,
+                                  color: _kOrange,
+                                ),
+                                const SizedBox(width: 5),
+                              ],
+                              Flexible(
+                                child: Text(
+                                  entry['label']!,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 14,
+                                    fontWeight: _momoNetwork == entry['id']
+                                        ? FontWeight.w800
+                                        : FontWeight.w600,
+                                    color: _momoNetwork == entry['id']
+                                        ? _kOrange
+                                        : const Color(0xFF334155),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 18),
+
             Row(
               children: [
                 Text(
@@ -3746,14 +3693,9 @@ class _PaymentsPageState extends State<PaymentsPage>
                       initialValue: _momoPhone,
                       onChanged: (v) {
                         final clean = _normalizeGhanaPhone(v);
-                        _momoPhone = clean;
-                        final detected = _detectNetworkFromPhone(clean);
-                        if (detected.isNotEmpty) {
-                          _momoNetwork = detected;
-                        } else if (clean.length < 3) {
-                          _momoNetwork = '';
-                        }
-                        setState(() {});
+                        setState(() {
+                          _momoPhone = clean;
+                        });
                       },
                       keyboardType: TextInputType.phone,
                       maxLength: 10,
@@ -3785,17 +3727,17 @@ class _PaymentsPageState extends State<PaymentsPage>
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
-                _momoPhone.isEmpty
-                    ? 'Enter your 10-digit mobile number (MTN, Telecel, or AT).'
-                    : (_momoNetwork.isEmpty
-                        ? 'Type full 10 digits to auto-fill network carrier.'
+                _momoNetwork.isEmpty
+                    ? 'Please select your mobile carrier (MTN, Telecel, or AirtelTigo) above.'
+                    : (!isPhoneValid
+                        ? 'Enter your 10-digit ${_carrierName(_momoNetwork)} number.'
                         : '✓ ${_carrierName(_momoNetwork)} (Push prompt ready)'),
                 style: GoogleFonts.inter(
                   fontSize: 13.5,
-                  color: _momoNetwork.isNotEmpty
+                  color: (_momoNetwork.isNotEmpty && isPhoneValid)
                       ? _kOrange
                       : const Color(0xFF64748b),
-                  fontWeight: _momoNetwork.isNotEmpty
+                  fontWeight: (_momoNetwork.isNotEmpty && isPhoneValid)
                       ? FontWeight.w600
                       : FontWeight.normal,
                 ),
@@ -4253,7 +4195,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         ? (hasReceipt ? 'Continue to Invoice Review' : 'Upload Receipt to Continue')
                         : (_momoNetwork.isNotEmpty
                             ? 'Continue with ${_carrierName(_momoNetwork)}'
-                            : 'Review Payment Summary'),
+                            : 'Select Carrier to Continue'),
                     style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -4827,8 +4769,8 @@ class _PaymentsPageState extends State<PaymentsPage>
             String noticeText =
                 'If the prompt does not pop up, dial *170# → Option 6 (My Wallet) → Option 3 (My Approvals) on your phone to approve.';
 
-            if (_momoNetwork == 'Vodafone') {
-              noticeTitle = 'Telecel (Vodafone) Approval Notice';
+            if (_momoNetwork == 'Telecel' || _momoNetwork == 'Vodafone') {
+              noticeTitle = 'Telecel Cash Approval Notice';
               noticeText =
                   'If the prompt does not pop up, dial *110# → Option 4 (My Account) → Option 5 (Pending Approvals) on your phone to approve.';
             } else if (_momoNetwork == 'AirtelTigo') {
@@ -4991,7 +4933,7 @@ class _PaymentsPageState extends State<PaymentsPage>
 
   String _carrierName(String net) {
     if (net == 'MTN') return 'MTN MoMo';
-    if (net == 'Vodafone') return 'Telecel Cash';
+    if (net == 'Telecel' || net == 'Vodafone') return 'Telecel Cash';
     if (net == 'AirtelTigo') return 'AT Money';
     return 'Mobile Money';
   }

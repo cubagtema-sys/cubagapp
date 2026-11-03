@@ -1,5 +1,5 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
@@ -250,6 +250,29 @@ class _ProfilePageState extends State<ProfilePage> {
     return cleaned.isNotEmpty ? cleaned : 'KIA';
   }
 
+  String _portFullName(String code) {
+    switch (code) {
+      case 'KIA':
+        return 'KIA · Kotoka International Airport';
+      case 'TEMA':
+        return 'TEMA · Port of Tema';
+      case 'TKD':
+        return 'TKD · Port of Takoradi';
+      case 'AFLAO':
+        return 'AFLAO · Aflao Border Station';
+      case 'ELUBO':
+        return 'ELUBO · Elubo Border Station';
+      case 'PAGA':
+        return 'PAGA · Paga Border Station';
+      case 'KMS':
+        return 'KMS · Kumasi Inland Depot';
+      case 'SUN':
+        return 'SUN · Sunyani Station';
+      default:
+        return code;
+    }
+  }
+
   String _formatDate(String? str) {
     if (str == null) return '—';
     final d = DateTime.tryParse(str);
@@ -265,6 +288,8 @@ class _ProfilePageState extends State<ProfilePage> {
     final border = isDark ? const Color(0xFF281710) : const Color(0xFFE2E8F0);
     final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
     final textMuted = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final tileBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F4);
+    final isMobile = MediaQuery.of(context).size.width < 600;
 
     if (_isLoading) {
       return AppLayout(
@@ -313,17 +338,17 @@ class _ProfilePageState extends State<ProfilePage> {
       scrollable: true,
       child: Container(
         color: bg,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 20, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── 1. SIMPLE HERO BANNER ─────────────────────────────────────
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(isMobile ? 16 : 24),
               decoration: BoxDecoration(
                 color: cardBg,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: border),
                 boxShadow: [
                   BoxShadow(
@@ -419,7 +444,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           backgroundColor: _kOrange,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           elevation: 0,
                         ),
                         onPressed: () => _openDigitalIdDialog(tier, expiry, daysLeft, isGoodStanding, isPackagePending),
@@ -432,7 +457,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           foregroundColor: textPrimary,
                           side: BorderSide(color: border),
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
                         onPressed: () => context.go('/compliance'),
                         icon: const Icon(Icons.verified_user_outlined, size: 16, color: _kGreen),
@@ -445,28 +470,157 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const SizedBox(height: 16),
 
-            // ── 2. SIMPLE DETAILS CARD ────────────────────────────────────
+            // ── 2. EDITORIAL PARTICULARS CARD (RESPONSIVE & UNCOMPRESSED) ────────────────
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(isMobile ? 16 : 20),
               decoration: BoxDecoration(
                 color: cardBg,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Profile Particulars',
-                    style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.bold, color: textPrimary),
+                  Row(
+                    children: [
+                      Container(
+                        width: 3,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: _kOrange,
+                          borderRadius: BorderRadius.circular(1.5),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Profile Particulars',
+                        style: GoogleFonts.outfit(
+                          fontSize: 16.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.2,
+                          color: textPrimary,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 14),
-                  _itemRow('Membership ID', _membershipId, Icons.badge_outlined, textPrimary, textMuted),
-                  _itemRow('Email Address', _user['email']?.toString() ?? '—', Icons.email_outlined, textPrimary, textMuted),
-                  _itemRow('Phone Number', _user['phone']?.toString() ?? 'Not provided', Icons.phone_outlined, textPrimary, textMuted),
-                  _itemRow('Operating Port', portStr, Icons.anchor_outlined, textPrimary, textMuted),
-                  _itemRow('Compliance Score', '$complianceScore / 100', Icons.speed_rounded, textPrimary, textMuted, isLast: true),
+                  const SizedBox(height: 3),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 11),
+                    child: Text(
+                      'Official customs clearance credentials & verified broker registry',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: textMuted,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildParticularTile(
+                    context: context,
+                    label: 'Membership ID',
+                    value: _membershipId,
+                    icon: Icons.badge_outlined,
+                    textPrimary: textPrimary,
+                    textMuted: textMuted,
+                    tileBg: tileBg,
+                    border: border,
+                    isMono: true,
+                    trailingBadge: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                      decoration: BoxDecoration(
+                        color: _kOrange.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: _kOrange.withValues(alpha: 0.3)),
+                      ),
+                      child: Text(
+                        'OFFICIAL ID',
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.4,
+                          color: _kOrange,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildParticularTile(
+                    context: context,
+                    label: 'Email Address',
+                    value: _user['email']?.toString() ?? '—',
+                    icon: Icons.email_outlined,
+                    textPrimary: textPrimary,
+                    textMuted: textMuted,
+                    tileBg: tileBg,
+                    border: border,
+                  ),
+                  const SizedBox(height: 10),
+                  _buildParticularTile(
+                    context: context,
+                    label: 'Phone Number',
+                    value: _user['phone']?.toString() ?? 'Not provided',
+                    icon: Icons.phone_outlined,
+                    textPrimary: textPrimary,
+                    textMuted: textMuted,
+                    tileBg: tileBg,
+                    border: border,
+                  ),
+                  const SizedBox(height: 10),
+                  _buildParticularTile(
+                    context: context,
+                    label: 'Operating Port',
+                    value: _portFullName(portStr),
+                    icon: Icons.anchor_outlined,
+                    textPrimary: textPrimary,
+                    textMuted: textMuted,
+                    tileBg: tileBg,
+                    border: border,
+                    canCopy: false,
+                  ),
+                  const SizedBox(height: 10),
+                  _buildParticularTile(
+                    context: context,
+                    label: 'Compliance Score',
+                    value: '$complianceScore / 100',
+                    icon: Icons.speed_rounded,
+                    textPrimary: textPrimary,
+                    textMuted: textMuted,
+                    tileBg: tileBg,
+                    border: border,
+                    canCopy: false,
+                    trailingBadge: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                      decoration: BoxDecoration(
+                        color: (complianceScore >= 80 ? _kGreen : _kAmber).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: (complianceScore >= 80 ? _kGreen : _kAmber).withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            complianceScore >= 80 ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                            size: 11,
+                            color: complianceScore >= 80 ? _kGreen : _kAmber,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            complianceScore >= 80 ? 'EXCELLENT' : 'MONITORED',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.4,
+                              color: complianceScore >= 80 ? _kGreen : _kAmber,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -475,10 +629,10 @@ class _ProfilePageState extends State<ProfilePage> {
             // ── 3. TREND CHART ───────────────────────────────────────────
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(isMobile ? 16 : 20),
               decoration: BoxDecoration(
                 color: cardBg,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: border),
               ),
               child: Column(
@@ -486,7 +640,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   Text(
                     '30-Day Compliance Trend',
-                    style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.bold, color: textPrimary),
+                    style: GoogleFonts.outfit(fontSize: 16.5, fontWeight: FontWeight.bold, color: textPrimary),
                   ),
                   const SizedBox(height: 12),
                   TrendLineWidget(
@@ -515,26 +669,106 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       );
 
-  Widget _itemRow(String label, String value, IconData? icon, Color textPrimary, Color textMuted, {bool isLast = false}) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+  Widget _buildParticularTile({
+    required BuildContext context,
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color textPrimary,
+    required Color textMuted,
+    required Color tileBg,
+    required Color border,
+    bool isMono = false,
+    bool canCopy = true,
+    Widget? trailingBadge,
+  }) {
+    final hasValue = value != '—' && value != 'Not provided';
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: tileBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: border.withValues(alpha: 0.7), width: 1.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (icon != null) ...[
-            Icon(icon, size: 16, color: textMuted),
-            const SizedBox(width: 10),
-          ],
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(label, style: GoogleFonts.inter(fontSize: 14, color: textMuted, fontWeight: FontWeight.w500)),
-                Text(
-                  value,
-                  style: GoogleFonts.outfit(fontSize: 14.5, fontWeight: FontWeight.bold, color: textPrimary),
+          Row(
+            children: [
+              Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: _kOrange.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(4),
                 ),
-              ],
+                child: Center(
+                  child: Icon(icon, size: 12.5, color: _kOrange),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label.toUpperCase(),
+                  style: GoogleFonts.inter(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
+                    color: textMuted,
+                  ),
+                ),
+              ),
+              if (trailingBadge != null)
+                trailingBadge
+              else if (canCopy && hasValue)
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: value));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Copied $label: $value', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+                          duration: const Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.copy_rounded, size: 11.5, color: textMuted),
+                          const SizedBox(width: 4),
+                          Text(
+                            'COPY',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.4,
+                              color: textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 7),
+          SelectableText(
+            value,
+            style: GoogleFonts.outfit(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: textPrimary,
+              letterSpacing: isMono ? 0.4 : -0.2,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ],
@@ -826,7 +1060,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
                       ),
                       child: QrImageView(
-                        data: 'CUBAG:$_membershipId:${_user['id'] ?? ''}',
+                        data: 'https://cubag-api-server.fly.dev/#/verify-member?id=${_membershipId.isNotEmpty && _membershipId != 'Pending' ? _membershipId : (_user['id']?.toString() ?? '')}',
                         version: QrVersions.auto,
                         size: 52.0,
                         errorCorrectionLevel: QrErrorCorrectLevel.H,

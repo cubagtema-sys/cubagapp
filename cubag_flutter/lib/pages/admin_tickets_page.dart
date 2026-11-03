@@ -271,10 +271,10 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final border = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
+    final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
     return AppLayout(
       title: 'Support Tickets',
@@ -458,7 +458,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                         hintStyle: GoogleFonts.inter(fontSize: 12.5, color: textMuted),
                         prefixIcon: Icon(Icons.search_rounded, size: 16, color: textMuted),
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange, width: 1.2)),
@@ -542,7 +542,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                       dataRowMinHeight: 52,
                       dataRowMaxHeight: 56,
                       headingRowColor: WidgetStateProperty.all(
-                        isDark ? const Color(0xFF381F15) : const Color(0xFFF8FAFC),
+                        isDark ? const Color(0xFF22140E) : const Color(0xFFFAF6F0),
                       ),
                       headingTextStyle: GoogleFonts.outfit(
                         fontSize: 11.5,
@@ -783,7 +783,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
           color: isSel ? color.withValues(alpha: isDark ? 0.25 : 0.12) : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
-            color: isSel ? color : (isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0)),
+            color: isSel ? color : (isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6)),
           ),
         ),
         child: Text(
@@ -892,7 +892,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
           // Member Info Strip
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            color: isDark ? const Color(0xFF1A0F0A).withValues(alpha: 0.5) : const Color(0xFFF8FAFC),
+            color: isDark ? const Color(0xFF1A0F0A).withValues(alpha: 0.5) : const Color(0xFFFAF6F0),
             child: Row(
               children: [
                 Text('From: ', style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
@@ -966,7 +966,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                     hintText: 'Type administrative response or instructions...',
                     hintStyle: GoogleFonts.inter(fontSize: 12.5, color: textMuted),
                     filled: true,
-                    fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                    fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                     focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange, width: 1.2)),
@@ -1033,7 +1033,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
   }) {
     final bubbleBg = isAdmin
         ? (isDark ? const Color(0xFF4D2D20) : const Color(0xFFFFF7ED))
-        : (isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC));
+        : (isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0));
     final bubbleBorder = isAdmin ? _kOrange.withValues(alpha: 0.4) : border;
 
     return Container(

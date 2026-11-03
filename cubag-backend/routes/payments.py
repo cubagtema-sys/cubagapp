@@ -233,7 +233,7 @@ def public_initiate_momo():
         # Attempt to dispatch gateway prompt via WhitsunPay / MoMo API if configured
         network_map = {
             'MTN Mobile Money': 'mtn', 'MTN': 'mtn',
-            'Telecel Cash': 'vodafone', 'Vodafone': 'vodafone',
+            'Telecel Cash': 'vodafone', 'Telecel': 'vodafone', 'Vodafone': 'vodafone',
             'AT Money': 'airteltigo', 'AirtelTigo': 'airteltigo'
         }
         provider = network_map.get(network, 'mtn')
@@ -653,7 +653,7 @@ def create_payment():
 
         # ── 2. Handle MoMo via WhitsunPay ──
         if method == 'momo':
-            network_map = {'MTN': 'mtn', 'Vodafone': 'vodafone', 'AirtelTigo': 'airteltigo'}
+            network_map = {'MTN': 'mtn', 'Telecel': 'vodafone', 'Vodafone': 'vodafone', 'AirtelTigo': 'airteltigo'}
 
             # WhitsunPay requires international format without +: 233XXXXXXXXX
             clean_phone = ''.join(filter(str.isdigit, phone))
@@ -2309,36 +2309,39 @@ def admin_reject_payment(payment_id):
 # ─── GET /payments/public/verify-receipt — Public receipt verification via QR code ───────────────────────────────
 @payments_bp.route('/public/verify-receipt', methods=['GET'])
 @cross_origin()
+@rate_limit('verify_receipt', max_requests=25, window_seconds=60)
 def verify_receipt_public():
-    """Public Receipt Verification — for QR code scanning without authentication."""
-    ref = request.args.get('ref', '').strip()
+    """
+    Public Receipt Verification — Cryptographically secure, non-enumerable verification.
+    Requires a high-entropy verification token (minimum 16 chars) to prevent sequential scanning.
+    Never exposes payer personal details, bank accounts, or internal database IDs.
+    """
+    token = (request.args.get('token') or request.args.get('ref') or '').strip()
     amount = request.args.get('amount', '').strip()
     
-    if not ref:
+    if not token or len(token) < 16 or token.isdigit() or token.upper().startswith('TXN-'):
         return jsonify({
             'verified': False, 
-            'message': 'Please provide a transaction reference.'
+            'message': 'Invalid verification reference. Receipt verification requires a secure, high-entropy verification token (minimum 16 characters).'
         }), 400
     
     conn = get_db()
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
-                SELECT p.id, p.payment_ref, p.amount, p.description, p.status, p.created_at,
-                       p.payment_method, p.channel, p.network,
-                       m.name as member_name, m.company as member_company, 
-                       m.license_number, m.membership_number
+                SELECT p.amount, p.description, p.status, p.created_at, p.paid_at,
+                       p.verification_token, p.payment_ref
                 FROM payments p
-                LEFT JOIN members m ON p.member_id = m.id
-                WHERE p.payment_ref = %s
+                WHERE p.verification_token = %s
+                   OR p.payment_ref = %s
                 LIMIT 1
-            """, (ref,))
+            """, (token, token))
             payment = cursor.fetchone()
             
             if not payment:
                 return jsonify({
                     'verified': False,
-                    'message': 'Receipt not found. Please check the reference number.'
+                    'message': 'Receipt not found. Please verify the cryptographic token or scanning QR code.'
                 }), 404
             
             # Verify amount if provided
@@ -2346,28 +2349,32 @@ def verify_receipt_public():
                 try:
                     payment_amount = float(payment['amount'])
                     check_amount = float(amount)
-                    if abs(payment_amount - check_amount) > 0.01:  # Allow small rounding differences
+                    if abs(payment_amount - check_amount) > 0.01:
                         return jsonify({
                             'verified': False,
                             'message': 'Amount mismatch. Expected: ₵%.2f, Provided: ₵%.2f' % (payment_amount, check_amount)
                         }), 400
                 except (ValueError, TypeError):
-                    pass  # If amount parsing fails, skip amount verification
+                    pass
             
-            # Return receipt details
+            created_at_val = payment['created_at']
+            created_at_str = created_at_val.isoformat() if hasattr(created_at_val, 'isoformat') else (str(created_at_val) if created_at_val else None)
+
+            paid_at_val = payment.get('paid_at')
+            paid_at_str = paid_at_val.isoformat() if hasattr(paid_at_val, 'isoformat') and paid_at_val else created_at_str
+
+            from datetime import datetime as dt
             return jsonify({
                 'verified': True,
-                'payment_ref': payment['payment_ref'],
+                'verification_token': payment.get('verification_token') or payment.get('payment_ref'),
+                'status': (payment.get('status') or 'completed').lower(),
                 'amount': float(payment['amount']),
-                'description': payment['description'],
-                'status': payment['status'],
-                'created_at': payment['created_at'].isoformat() if payment['created_at'] else None,
-                'payment_method': payment['payment_method'] or payment['channel'] or payment['network'] or 'N/A',
-                'member_name': payment.get('member_name'),
-                'member_company': payment.get('member_company'),
-                'license_number': payment.get('license_number'),
-                'membership_number': payment.get('membership_number'),
-                'verified_at': datetime.now().isoformat()
+                'currency': 'GHS',
+                'description': payment.get('description') or 'CUBAG Official Payment Receipt',
+                'issued_at': created_at_str,
+                'paid_at': paid_at_str,
+                'issuing_authority': 'Customs Brokers Association Ghana (CUBAG)',
+                'verified_at': dt.now().isoformat()
             }), 200
             
     except Exception as e:

@@ -7,6 +7,7 @@ from config.db import get_db
 from utils import admin_required, log_admin_action, sub_admin_required, send_push_notification
 from socket_instance import socketio
 from config.cache import cache
+from config.rate_limit import rate_limit
 
 logger = logging.getLogger(__name__)
 events_bp = Blueprint('events', __name__)
@@ -17,6 +18,7 @@ surveys_bp = Blueprint('surveys', __name__)
 # ─────────────────────────────────────────────
 
 @events_bp.route('/public', methods=['GET'])
+@rate_limit('public_events', max_requests=40, window_seconds=60)
 def get_public_events():
     """Public endpoint for landing page to fetch upcoming events and meetings."""
     event_type = request.args.get('type', 'all').lower()
@@ -57,6 +59,7 @@ def get_public_events():
         conn.close()
 
 @events_bp.route('/public/courses', methods=['GET'])
+@rate_limit('public_courses', max_requests=40, window_seconds=60)
 def get_public_courses():
     """Public endpoint for landing page to fetch active CTI courses."""
     conn = get_db()
@@ -67,7 +70,7 @@ def get_public_courses():
                 FROM cti_courses
                 WHERE deleted_at IS NULL AND is_active = TRUE
                 ORDER BY id ASC
-                LIMIT 10
+                LIMIT 50
             """)
             courses = cursor.fetchall()
         return jsonify({'items': courses, 'total': len(courses)}), 200
@@ -78,6 +81,7 @@ def get_public_courses():
         conn.close()
 
 @events_bp.route('/public/gallery', methods=['GET'])
+@rate_limit('public_gallery', max_requests=40, window_seconds=60)
 def get_public_gallery():
     """Public endpoint for landing page to fetch active gallery photo items."""
     conn = get_db()
@@ -334,6 +338,7 @@ def get_attendees(event_id):
 # ─────────────────────────────────────────────
 
 @surveys_bp.route('/public/active', methods=['GET'])
+@rate_limit('public_surveys', max_requests=30, window_seconds=60)
 def get_public_active_surveys():
     """Public endpoint for landing page to fetch active surveys open to the public/guests."""
     conn = get_db()

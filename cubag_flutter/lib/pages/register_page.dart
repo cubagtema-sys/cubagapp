@@ -386,63 +386,100 @@ class _RegisterPageState extends State<RegisterPage> {
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [_kBrown, _kDarkBrown],
+        colors: [
+          const Color(0xFF2B211D),
+          _kBrown,
+          _kDarkBrown,
+        ],
       ),
     ),
     child: Stack(
       children: [
         Positioned(
-          right: -50,
-          bottom: -50,
+          right: -40,
+          bottom: -30,
           child: Icon(
-            Icons.directions_boat,
-            size: 300,
-            color: Colors.white.withAlpha(15),
+            Icons.directions_boat_rounded,
+            size: 260,
+            color: Colors.white.withAlpha(8),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(48),
+          padding: const EdgeInsets.symmetric(horizontal: 44, vertical: 48),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const AppLogo(size: 64, borderRadius: 16),
-              const SizedBox(height: 32),
+              const AppLogo(size: 48, borderRadius: 12),
+              const SizedBox(height: 28),
               Text(
                 'CUBAG',
                 style: GoogleFonts.outfit(
                   color: Colors.white,
-                  fontSize: 50,
+                  fontSize: 44,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: -1.5,
+                  letterSpacing: -1.2,
+                  height: 1.05,
                 ),
               ),
               const SizedBox(height: 8),
               Container(
-                width: 60,
-                height: 4,
+                width: 44,
+                height: 3,
                 decoration: BoxDecoration(
                   color: _kOrange,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
               Text(
                 'Customs Brokers Association of Ghana',
                 style: GoogleFonts.outfit(
-                  color: Colors.white.withAlpha(230),
+                  color: const Color(0xFFF8F4F0),
                   fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  height: 1.4,
+                  fontWeight: FontWeight.w700,
+                  height: 1.35,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Text(
                 'The official gateway for licensed customs clearing and logistics firms in Ghana.',
-                style: TextStyle(
-                  color: Colors.white.withAlpha(190),
-                  fontSize: 16,
+                style: GoogleFonts.inter(
+                  color: const Color(0xFFC8ADA0),
+                  fontSize: 15,
                   height: 1.6,
+                ),
+              ),
+              const SizedBox(height: 32),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(10),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.white.withAlpha(16)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ACCREDITED CORPORATE MEMBERSHIP',
+                      style: GoogleFonts.outfit(
+                        color: _kOrange,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'ICUMS access, port pass endorsement, legal counsel, and continuous professional CTI training.',
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -477,8 +514,8 @@ class _RegisterPageState extends State<RegisterPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (showLogo) ...[
-                const AppLogo(size: 60, borderRadius: 14, showShadow: true),
-                const SizedBox(height: 20),
+                const AppLogo(size: 48, borderRadius: 12, showShadow: true),
+                const SizedBox(height: 16),
               ],
               Text(
                 [
@@ -690,21 +727,6 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                   ),
                 ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        Center(
-          child: TextButton.icon(
-            onPressed: () => context.go('/'),
-            icon: Icon(Icons.home_outlined, size: 18, color: _kBrown),
-            label: Text(
-              'Return to CUBAG Homepage',
-              style: TextStyle(
-                color: _kBrown,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
               ),
             ),
           ),

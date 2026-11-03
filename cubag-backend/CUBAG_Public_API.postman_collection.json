@@ -1,0 +1,263 @@
+{
+  "info": {
+    "_postman_id": "cubag-public-api-v1",
+    "name": "CUBAG Public REST API v1.0",
+    "description": "Comprehensive Postman Collection for the Customs Brokers Association Ghana (CUBAG) Public REST API.\n\nDesigned for independent website developers building the public web portal, external aggregators, and regulatory systems.\n\nDefault Base URL: `https://cubag-api-server.fly.dev`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://cubag-api-server.fly.dev",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Composite & Portal",
+      "item": [
+        {
+          "name": "GET Portal Summary (Composite Homepage)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/portal-summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "public", "portal-summary"]
+            },
+            "description": "Fetches aggregated stats, indicative exchange rates, top news, circulars, events, CTI courses, and operating ports in a single round trip."
+          }
+        },
+        {
+          "name": "GET Key Association Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "public", "stats"]
+            },
+            "description": "Returns verified member count, licensed broker count, active ports, and CTI courses count."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Verification (Member & Receipt)",
+      "item": [
+        {
+          "name": "Verify Member Standing (Valid CUBAG ID)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/verify-member?query=CUBAG-2026-0008",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "public", "verify-member"],
+              "query": [
+                { "key": "query", "value": "CUBAG-2026-0008", "description": "Membership number or license number" }
+              ]
+            },
+            "description": "Non-disclosing verification of Good Standing. Returns only approved public accreditation attributes."
+          }
+        },
+        {
+          "name": "Verify Member (Company Name)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/verify-member?query=ANTWI NYAME",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "public", "verify-member"],
+              "query": [
+                { "key": "query", "value": "ANTWI NYAME" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify Payment Receipt (Cryptographic Token)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/verify-receipt?token=943d21ee5518af43ba4a9fa039b173ef",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "public", "verify-receipt"],
+              "query": [
+                { "key": "token", "value": "943d21ee5518af43ba4a9fa039b173ef", "description": "128-bit cryptographic verification token" },
+                { "key": "amount", "value": "1.00", "disabled": true }
+              ]
+            },
+            "description": "Cryptographically secure receipt verification for QR codes. Does not expose private payer identity or internal database IDs."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Grievances & Complaints",
+      "item": [
+        {
+          "name": "Submit Trade Grievance",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kwame Asante\",\n  \"email\": \"kwame.asante@example.com\",\n  \"phone\": \"+233244000111\",\n  \"category\": \"Port Demurrage Dispute\",\n  \"port\": \"Tema Port\",\n  \"target_entity\": \"Shipping Line Agency\",\n  \"subject\": \"Excess Detention Charge Assessment\",\n  \"description\": \"Container released within free days but detention invoices billed at gate out.\",\n  \"hp_field\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/complaints",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "public", "complaints"]
+            },
+            "description": "Public submission endpoint. Returns a complaint_id and a 128-bit tracking_token. Includes honeypot field hp_field for spam protection."
+          }
+        },
+        {
+          "name": "Track Grievance Progression (With Token)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/complaints/track/CMP-2026-80069?token=de64c421cadcb0cab55346be70171c1a",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "public", "complaints", "track", "CMP-2026-80069"],
+              "query": [
+                { "key": "token", "value": "de64c421cadcb0cab55346be70171c1a", "description": "128-bit cryptographic tracking secret token" }
+              ]
+            },
+            "description": "Returns live resolution timeline. Strips all personal contact details and private notes."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Directory & Ports",
+      "item": [
+        {
+          "name": "GET Members Directory",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/members?port=Tema Port",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "public", "members"],
+              "query": [{ "key": "port", "value": "Tema Port" }]
+            }
+          }
+        },
+        {
+          "name": "GET Operating Ports",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/ports",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "public", "ports"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Publications & Events",
+      "item": [
+        {
+          "name": "GET Public News & Press",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/news",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "public", "news"]
+            }
+          }
+        },
+        {
+          "name": "GET Port Bulletins",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/bulletins",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "public", "bulletins"]
+            }
+          }
+        },
+        {
+          "name": "GET Upcoming Events",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/events?type=all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "public", "events"],
+              "query": [{ "key": "type", "value": "all" }]
+            }
+          }
+        },
+        {
+          "name": "GET CTI Courses",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/courses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "public", "courses"]
+            }
+          }
+        },
+        {
+          "name": "GET Photo Gallery",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/gallery",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "public", "gallery"]
+            }
+          }
+        },
+        {
+          "name": "GET Active Public Surveys",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/surveys",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "public", "surveys"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+

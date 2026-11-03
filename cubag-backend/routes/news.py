@@ -281,27 +281,8 @@ _news_cache = []
 _cache_lock = threading.Lock()
 _cache_populated = threading.Event()
 
-# Fallback articles if all feeds fail
-_MOCK_ARTICLES = [
-    {
-        'title': 'CUBAG Digital Platform Optimization Complete',
-        'link': 'https://cubag.org',
-        'pubDate': 'Wed, 03 Jun 2026 08:00:00 GMT',
-        'description': 'The Secretariat is pleased to announce the successful migration of our enterprise platform to Flutter, providing enhanced performance and mobile support for all members.',
-        'thumbnail': '',
-        'source': 'CUBAG Official',
-        'sourceColor': '#FF5000',
-    },
-    {
-        'title': 'West Africa Maritime Traffic Overview',
-        'link': 'https://cubag.org',
-        'pubDate': 'Wed, 03 Jun 2026 07:30:00 GMT',
-        'description': 'Maritime activity in the Gulf of Guinea remains steady. Member firms are advised to monitor live vessel movements via the CUBAG Intelligence Hub.',
-        'thumbnail': '',
-        'source': 'Logistics Hub',
-        'sourceColor': '#1a6b3c',
-    }
-]
+# Fallback articles if all feeds fail (empty — never serve mock news)
+_MOCK_ARTICLES = []
 
 def _refresh_cache():
     """Fetch all feeds and update the in-memory cache."""

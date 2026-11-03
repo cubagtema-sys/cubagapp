@@ -385,8 +385,8 @@ class _MessagingPageState extends State<MessagingPage> {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               color: inputBg,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: borderCol, width: 1.2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: borderCol, width: 1.0),
             ),
             child: TextField(
               controller: _searchCtrl,
@@ -494,7 +494,7 @@ class _MessagingPageState extends State<MessagingPage> {
                       color: isActive && isWide
                           ? primary.withAlpha(isDark ? 30 : 12)
                           : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: ListTile(
                       onTap: () => _openChat(Map<String, dynamic>.from(conv)),
@@ -724,28 +724,21 @@ class _MessagingPageState extends State<MessagingPage> {
                                   decoration: BoxDecoration(
                                     color: isMe ? primary : receivedBubbleBg,
                                     borderRadius: BorderRadius.only(
-                                      topLeft: const Radius.circular(16),
-                                      topRight: const Radius.circular(16),
+                                      topLeft: const Radius.circular(10),
+                                      topRight: const Radius.circular(10),
                                       bottomLeft: isMe
-                                          ? const Radius.circular(16)
-                                          : const Radius.circular(4),
+                                          ? const Radius.circular(10)
+                                          : const Radius.circular(3),
                                       bottomRight: isMe
-                                          ? const Radius.circular(4)
-                                          : const Radius.circular(16),
+                                          ? const Radius.circular(3)
+                                          : const Radius.circular(10),
                                     ),
                                     border: isMe
                                         ? null
                                         : Border.all(
                                             color: receivedBubbleBorder,
-                                            width: 1.2,
+                                            width: 1.0,
                                           ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withAlpha(3),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
                                   ),
                                   child: Column(
                                     crossAxisAlignment: isMe
@@ -817,8 +810,8 @@ class _MessagingPageState extends State<MessagingPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
                     color: inputFieldBg,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: inputFieldBorder, width: 1.2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: inputFieldBorder, width: 1.0),
                   ),
                   child: TextField(
                     controller: _msgCtrl,

@@ -315,10 +315,10 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
               ),
             ),
             TextButton.icon(
-              onPressed: () => context.go('/'),
-              icon: const Icon(Icons.home_outlined, size: 16, color: _kOrange),
+              onPressed: () => context.go('/login'),
+              icon: const Icon(Icons.arrow_back, size: 16, color: _kOrange),
               label: const Text(
-                'Home',
+                'Sign In',
                 style: TextStyle(
                   color: _kOrange,
                   fontWeight: FontWeight.bold,
@@ -493,10 +493,10 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
         const SizedBox(height: 16),
         Center(
           child: TextButton.icon(
-            onPressed: () => context.go('/'),
-            icon: const Icon(Icons.home_outlined, size: 18, color: _kBrown),
+            onPressed: () => context.go('/login'),
+            icon: const Icon(Icons.arrow_back, size: 18, color: _kBrown),
             label: const Text(
-              'Return to CUBAG Homepage',
+              'Back to Sign In',
               style: TextStyle(
                 color: _kBrown,
                 fontWeight: FontWeight.bold,

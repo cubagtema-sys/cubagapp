@@ -279,16 +279,16 @@ class _State extends State<AdminIntelligencePage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
+    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
     final borderColor = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
+        ? const Color(0xFF3D261C)
+        : const Color(0xFFE8DED6);
     final textColor = isDark
-        ? const Color(0xFFf8fafc)
-        : const Color(0xFF1A0F0A);
+        ? Colors.white
+        : const Color(0xFF1F1612);
     final subTextColor = isDark
-        ? const Color(0xFF94a3b8)
-        : const Color(0xFF64748b);
+        ? const Color(0xFFB0A298)
+        : const Color(0xFF6B5E55);
 
     return AppLayout(
       title: 'Intelligence Hub',
@@ -549,8 +549,8 @@ class _State extends State<AdminIntelligencePage> {
                         height: 44,
                         decoration: BoxDecoration(
                           color: isDark
-                              ? const Color(0xFF4D2D20)
-                              : const Color(0xFFf1f5f9),
+                              ? const Color(0xFF3D261C)
+                              : const Color(0xFFFAF6F0),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -1065,21 +1065,21 @@ class _State extends State<AdminIntelligencePage> {
                 ),
                 hintText: '0.00',
                 filled: true,
-                fillColor: isDark ? const Color(0xFF281710) : Colors.white,
+                fillColor: isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(6),
                   borderSide: BorderSide(
                     color: isDark
-                        ? const Color(0xFF4D2D20)
-                        : const Color(0xFFcbd5e1),
+                        ? const Color(0xFF3D261C)
+                        : const Color(0xFFE8DED6),
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(6),
                   borderSide: BorderSide(
                     color: isDark
-                        ? const Color(0xFF4D2D20)
-                        : const Color(0xFFcbd5e1),
+                        ? const Color(0xFF3D261C)
+                        : const Color(0xFFE8DED6),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(

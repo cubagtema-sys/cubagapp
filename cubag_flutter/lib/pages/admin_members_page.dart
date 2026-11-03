@@ -352,18 +352,16 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           return st == 'pending' || st == 'pending_review';
         })
         .length;
+    final suspended = _members
+        .where((m) => m['status']?.toString().toLowerCase() == 'suspended')
+        .length;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final borderColor = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
-    final textColor = isDark
-        ? const Color(0xFFf8fafc)
-        : const Color(0xFF1A0F0A);
-    final subTextColor = isDark
-        ? const Color(0xFFcbd5e1)
-        : const Color(0xFF64748b);
+    final cardBg = isDark ? kAdminPaperDark : kAdminPaperLight;
+    final borderColor = isDark ? kAdminBorderDark : kAdminBorderLight;
+    final textColor = isDark ? Colors.white : kAdminInk;
+    final subTextColor =
+        isDark ? const Color(0xFF9E8F84) : const Color(0xFF6B5E55);
 
     final filtered = _members.where((m) {
       final q = _search.toLowerCase();
@@ -438,36 +436,17 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AdminStatCard(
-                        icon: Icons.group_rounded,
-                        color: kAdminBlue,
-                        label: 'Total Members',
-                        value: '$total',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AdminStatCard(
-                        icon: Icons.verified_user_rounded,
-                        color: kAdminGreen,
-                        label: 'Active Standing',
-                        value: '$active',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AdminStatCard(
-                        icon: Icons.pending_actions_rounded,
-                        color: kAdminAmber,
-                        label: 'Pending Approval',
-                        value: '$pending',
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 16),
+                _buildTypographicMembersLedger(
+                  total: total,
+                  active: active,
+                  pending: pending,
+                  suspended: suspended,
+                  isDark: isDark,
+                  borderCol: borderColor,
+                  cardBg: cardBg,
+                  textInk: textColor,
+                  subInk: subTextColor,
                 ),
                 const SizedBox(height: 16),
                 AdminToolbar(
@@ -1208,6 +1187,151 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
     );
   }
 
+  Widget _buildTypographicMembersLedger({
+    required int total,
+    required int active,
+    required int pending,
+    required int suspended,
+    required bool isDark,
+    required Color borderCol,
+    required Color cardBg,
+    required Color textInk,
+    required Color subInk,
+  }) {
+    final items = [
+      {
+        'label': 'TOTAL MEMBERS',
+        'value': '$total',
+        'badge': 'Accredited Roll',
+        'badgeColor': const Color(0xFF6B3E26),
+      },
+      {
+        'label': 'ACTIVE STANDING',
+        'value': '$active',
+        'badge': 'In Good Standing',
+        'badgeColor': const Color(0xFF10b981),
+      },
+      {
+        'label': 'PENDING VETTING',
+        'value': '$pending',
+        'badge': pending > 0 ? 'Requires Audit' : 'Queue Clear',
+        'badgeColor': pending > 0 ? kAdminOrange : const Color(0xFF10b981),
+      },
+      {
+        'label': 'SUSPENDED',
+        'value': '$suspended',
+        'badge': suspended > 0 ? 'Sanctioned' : 'Zero Infractions',
+        'badgeColor':
+            suspended > 0 ? const Color(0xFFEF4444) : const Color(0xFF10b981),
+      },
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderCol, width: 1.0),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isSmall = constraints.maxWidth < 800;
+          if (isSmall) {
+            return Column(
+              children: items.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final it = entry.value;
+                return Column(
+                  children: [
+                    _buildLedgerItem(it, textInk, subInk),
+                    if (idx < items.length - 1)
+                      Divider(height: 1, color: borderCol, thickness: 1),
+                  ],
+                );
+              }).toList(),
+            );
+          }
+
+          return Row(
+            children: items.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final it = entry.value;
+              return Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: idx < items.length - 1
+                        ? Border(right: BorderSide(color: borderCol, width: 1.0))
+                        : null,
+                  ),
+                  child: _buildLedgerItem(it, textInk, subInk),
+                ),
+              );
+            }).toList(),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLedgerItem(
+    Map<String, dynamic> it,
+    Color textInk,
+    Color subInk,
+  ) {
+    final badgeColor = it['badgeColor'] as Color;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                it['label'] as String,
+                style: GoogleFonts.outfit(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: subInk,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                decoration: BoxDecoration(
+                  color: badgeColor.withAlpha(20),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  it['badge'] as String,
+                  style: GoogleFonts.outfit(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w800,
+                    color: badgeColor,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Text(
+            it['value'] as String,
+            style: GoogleFonts.outfit(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: textInk,
+              letterSpacing: -0.4,
+            ).copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMembersTable(
     List<dynamic> members,
     Color primary,
@@ -1222,18 +1346,11 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
       width: double.infinity,
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor, width: 1.0),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(11),
         child: LayoutBuilder(
           builder: (context, constraints) {
             const minTableWidth = 950.0;
@@ -1250,15 +1367,15 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     // Table Header Row
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 14,
+                        horizontal: 16,
+                        vertical: 12,
                       ),
                       decoration: BoxDecoration(
                         color: isDark
-                            ? const Color(0xFF1A0F0A)
-                            : const Color(0xFFf8fafc),
+                            ? const Color(0xFF170C08)
+                            : const Color(0xFFF4EFEA),
                         border: Border(
-                          bottom: BorderSide(color: borderColor, width: 1.5),
+                          bottom: BorderSide(color: borderColor, width: 1.0),
                         ),
                       ),
                       child: Row(
@@ -1381,43 +1498,34 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   child: Row(
                     children: [
                       Container(
-                        width: 40,
-                        height: 40,
+                        width: 38,
+                        height: 38,
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [c, c.withValues(alpha: 0.7)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: c.withValues(alpha: 0.25),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                          color: c.withAlpha(25),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: c.withAlpha(60), width: 1.0),
                         ),
                         alignment: Alignment.center,
                         child:
                             m['profile_photo'] != null &&
                                 m['profile_photo'].toString().isNotEmpty
-                            ? ClipOval(
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(7),
                                 child: CachedNetworkImage(
                                   imageUrl: m['profile_photo'].toString(),
-                                  width: 40,
-                                  height: 40,
-                                  memCacheWidth: 80,
-                                  memCacheHeight: 80,
+                                  width: 38,
+                                  height: 38,
+                                  memCacheWidth: 76,
+                                  memCacheHeight: 76,
                                   fit: BoxFit.cover,
                                 ),
                               )
                             : Text(
                                 _initials(m['name']?.toString() ?? ''),
                                 style: GoogleFonts.outfit(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 17,
+                                  color: c,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
                                 ),
                               ),
                       ),
@@ -1430,17 +1538,18 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                             Text(
                               m['name']?.toString() ?? '',
                               style: GoogleFonts.outfit(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
                                 color: textColor,
+                                letterSpacing: -0.2,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 2),
                             Text(
                               m['email']?.toString() ?? '',
-                              style: GoogleFonts.outfit(
-                                fontSize: 16,
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
                                 color: subTextColor,
                               ),
                               overflow: TextOverflow.ellipsis,
@@ -1458,11 +1567,11 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   child: Row(
                     children: [
                       Container(
-                        width: 8,
-                        height: 8,
+                        width: 7,
+                        height: 7,
                         decoration: BoxDecoration(
                           color: c,
-                          shape: BoxShape.circle,
+                          borderRadius: BorderRadius.circular(2),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -1470,7 +1579,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                         child: Text(
                           m['member_type']?.toString() ?? 'General Member',
                           style: GoogleFonts.outfit(
-                            fontSize: 17,
+                            fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: textColor.withValues(alpha: 0.9),
                           ),
@@ -1491,48 +1600,52 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                       Row(
                         children: [
                           const Icon(
-                            Icons.star,
-                            color: Color(0xFFFFD700),
-                            size: 16,
+                            Icons.star_rounded,
+                            color: Color(0xFFFFB800),
+                            size: 15,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             '${starRating.toStringAsFixed(1)} / 5.0',
                             style: GoogleFonts.outfit(
-                              fontSize: 17,
+                              fontSize: 14,
                               fontWeight: FontWeight.w800,
                               color: textColor,
+                            ).copyWith(
+                              fontFeatures: const [FontFeature.tabularFigures()],
                             ),
                           ),
                           const SizedBox(width: 6),
                           Text(
                             '($score%)',
-                            style: GoogleFonts.outfit(
-                              fontSize: 15,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
                               color: subTextColor,
                               fontWeight: FontWeight.w600,
+                            ).copyWith(
+                              fontFeatures: const [FontFeature.tabularFigures()],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
+                          horizontal: 6,
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
                           color: tier.color.withValues(
                             alpha: isDark ? 0.2 : 0.12,
                           ),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           tier.label,
                           style: GoogleFonts.outfit(
-                            fontSize: 14,
+                            fontSize: 11,
                             color: tier.color,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -1547,14 +1660,14 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     alignment: Alignment.centerLeft,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
+                        horizontal: 8,
+                        vertical: 3,
                       ),
                       decoration: BoxDecoration(
                         color: (ss['bg'] as Color).withValues(
                           alpha: isDark ? 0.25 : 0.15,
                         ),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(6),
                         border: Border.all(
                           color: (ss['color'] as Color).withValues(alpha: 0.3),
                           width: 1,
@@ -1563,10 +1676,10 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                       child: Text(
                         (ss['label'] as String).toUpperCase(),
                         style: GoogleFonts.outfit(
-                          fontSize: 14,
+                          fontSize: 11,
                           color: ss['color'] as Color,
                           fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
+                          letterSpacing: 0.4,
                         ),
                       ),
                     ),

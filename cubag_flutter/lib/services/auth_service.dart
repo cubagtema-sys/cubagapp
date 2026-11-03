@@ -1,4 +1,3 @@
-import 'dart:async' show unawaited;
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../utils/session_storage.dart';
@@ -28,9 +27,13 @@ class AuthService extends ChangeNotifier {
   String? _licenseNumber;
   String _membershipStatus = 'none';
   bool _goodStanding = false;
+  bool _packageFeePaid = false;
   bool _registrationFeePaid = false;
+  String? _companyScale;
+  String? _memberType;
   List<String> _permissions = [];
   bool _notificationsInitialized = false;
+  Future<void>? _authInitFuture;
 
   bool get isAuthenticated => _isAuthenticated;
   String? get userRole => _userRole;
@@ -44,7 +47,10 @@ class AuthService extends ChangeNotifier {
   String? get licenseNumber => _licenseNumber;
   String get membershipStatus => _membershipStatus;
   bool get goodStanding => _goodStanding;
+  bool get isPackageFeePaid => _packageFeePaid;
   bool get isRegistrationFeePaid => _registrationFeePaid;
+  String? get companyScale => _companyScale;
+  String? get memberType => _memberType;
   List<String> get permissions => _permissions;
 
   // 3 Access Levels & Role Hierarchy getters
@@ -73,7 +79,15 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> checkAuthStatus() async {
+  Future<void> checkAuthStatus() {
+    _authInitFuture ??= _performAuthCheck();
+    return _authInitFuture!;
+  }
+
+  Future<void> ensureInitialized() => checkAuthStatus();
+
+  Future<void> _performAuthCheck() async {
+    await SessionStorage.instance.init();
     final results = await Future.wait([
       SessionStorage.instance.getString('cubag_token'),
       SessionStorage.instance.getString('cubag_role'),
@@ -84,6 +98,13 @@ class AuthService extends ChangeNotifier {
       SessionStorage.instance.getString('cubag_status'),
       SessionStorage.instance.getString('cubag_registration_fee_paid'),
       SessionStorage.instance.getStringList('cubag_permissions'),
+      SessionStorage.instance.getString('cubag_company'),
+      SessionStorage.instance.getString('cubag_membership_number'),
+      SessionStorage.instance.getString('cubag_license_number'),
+      SessionStorage.instance.getString('cubag_package_fee_paid'),
+      SessionStorage.instance.getString('cubag_good_standing'),
+      SessionStorage.instance.getString('cubag_company_scale'),
+      SessionStorage.instance.getString('cubag_member_type'),
     ]);
 
     final token = results[0] as String?;
@@ -96,13 +117,22 @@ class AuthService extends ChangeNotifier {
     _membershipStatus = (memberStatus ?? status ?? 'none').toLowerCase().trim();
     _registrationFeePaid = (results[7] as String?) == 'true';
     _permissions = (results[8] as List<String>?) ?? [];
+    _userCompany = results[9] as String?;
+    _membershipNumber = results[10] as String?;
+    _licenseNumber = results[11] as String?;
+    _packageFeePaid = (results[12] as String?) == 'true';
+    _goodStanding = (results[13] as String?) == 'true';
+    _companyScale = results[14] as String?;
+    _memberType = results[15] as String?;
 
-    if (token != null) {
+    if (token != null && token.isNotEmpty) {
       _isAuthenticated = true;
       _initServices();
       if (_userRole == 'member') {
-        // Refresh profile status non-blockingly so cold startup is instant
-        unawaited(_refreshMemberStatusFromProfile());
+        await _refreshMemberStatusFromProfile().timeout(
+          const Duration(seconds: 3),
+          onTimeout: () {},
+        );
       }
     }
     notifyListeners();
@@ -145,16 +175,28 @@ class AuthService extends ChangeNotifier {
             res.data['application_fee_paid'] == true;
         _membershipStatus = status;
         _goodStanding = isGood;
+        _packageFeePaid = isPkgPaid;
         _registrationFeePaid = regPaid;
-        _userCompany = res.data['company']?.toString();
+        _userCompany = res.data['company']?.toString() ?? res.data['company_name']?.toString();
         _membershipNumber = res.data['membership_number']?.toString();
         _licenseNumber = res.data['license_number']?.toString();
+        _companyScale = res.data['company_scale']?.toString() ?? res.data['member_scale']?.toString();
+        _memberType = res.data['member_type']?.toString() ?? res.data['memberType']?.toString();
 
         await SessionStorage.instance.setString('cubag_member_status', status);
         await SessionStorage.instance.setString('cubag_status', status);
         await SessionStorage.instance.setString('cubag_registration_fee_paid', regPaid.toString());
         await SessionStorage.instance.setString('cubag_package_fee_paid', isPkgPaid.toString());
         await SessionStorage.instance.setString('cubag_good_standing', isGood.toString());
+        if (_userCompany != null) {
+          await SessionStorage.instance.setString('cubag_company', _userCompany!);
+        }
+        if (_companyScale != null) {
+          await SessionStorage.instance.setString('cubag_company_scale', _companyScale!);
+        }
+        if (_memberType != null) {
+          await SessionStorage.instance.setString('cubag_member_type', _memberType!);
+        }
         if (_membershipNumber != null) {
           await SessionStorage.instance.setString('cubag_membership_number', _membershipNumber!);
         }
@@ -219,9 +261,11 @@ class AuthService extends ChangeNotifier {
     );
     _userName = user['name']?.toString();
     _userEmail = user['email']?.toString();
-    _userCompany = user['company']?.toString();
+    _userCompany = user['company']?.toString() ?? user['company_name']?.toString();
     _membershipNumber = user['membership_number']?.toString() ?? user['membershipNumber']?.toString();
     _licenseNumber = user['license_number']?.toString() ?? user['licenseNumber']?.toString();
+    _companyScale = user['company_scale']?.toString() ?? user['member_scale']?.toString();
+    _memberType = user['member_type']?.toString() ?? user['memberType']?.toString();
 
     await SessionStorage.instance.setString('cubag_registration_fee_paid', regPaid.toString());
     await SessionStorage.instance.setString('cubag_package_fee_paid', isPkgPaid.toString());
@@ -235,6 +279,15 @@ class AuthService extends ChangeNotifier {
       SessionStorage.instance.setString('cubag_status', status),
       SessionStorage.instance.setStringList('cubag_permissions', perms),
     ];
+    if (_userCompany != null) {
+      futures.add(SessionStorage.instance.setString('cubag_company', _userCompany!));
+    }
+    if (_companyScale != null) {
+      futures.add(SessionStorage.instance.setString('cubag_company_scale', _companyScale!));
+    }
+    if (_memberType != null) {
+      futures.add(SessionStorage.instance.setString('cubag_member_type', _memberType!));
+    }
     if (_membershipNumber != null) {
       futures.add(
         SessionStorage.instance.setString('cubag_membership_number', _membershipNumber!),

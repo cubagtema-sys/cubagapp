@@ -2,18 +2,26 @@ import 'dart:async' show unawaited;
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../utils/session_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../components/app_layout.dart';
 import '../components/skeleton_loader.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
+import '../services/theme_service.dart';
+import '../utils/session_storage.dart';
 
-// Balanced CUBAG Brand Palette
+// Balanced CUBAG Brand Palette & Editorial Tokens
+bool get _isDark => ThemeService.instance.isDark;
 const _kBrown = Color(0xFF6B3E26); // Primary Brown
 const _kOrange = Color(0xFFFF5000); // Primary Orange CTA
-const _kDarkBrown = Color(0xFF3E2418); // Deep Dark Contrast
+const _kGreen = Color(0xFF10B981); // Emerald Green
+Color get _kCardBg => _isDark ? const Color(0xFF1E130D) : const Color(0xFFFFFFFF);
+Color get _kSurfaceRaised => _isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
+Color get _kBorder => _isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+Color get _kText => _isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
+Color get _kMuted => _isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B);
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -31,10 +39,10 @@ class _DashboardPageState extends State<DashboardPage> {
   List<dynamic> _tasks = [];
   List<dynamic> _surveys = [];
   Map<String, String> _forex = {
-    'USD': '15.45',
-    'EUR': '16.80',
-    'GBP': '19.50',
-    'CNY': '2.15',
+    'USD': '—',
+    'EUR': '—',
+    'GBP': '—',
+    'CNY': '—',
   };
   Map<String, dynamic> _user = {};
   static String? _lastShownBillId;
@@ -608,10 +616,10 @@ class _DashboardPageState extends State<DashboardPage> {
           data['forex'] != null &&
           data['forex'] is Map) {
         final forexMap = data['forex'] as Map;
-        final usd = forexMap['USD']?.toString() ?? '15.45';
-        final eur = forexMap['EUR']?.toString() ?? '16.80';
-        final gbp = forexMap['GBP']?.toString() ?? '19.50';
-        final cny = forexMap['CNY']?.toString() ?? '2.15';
+        final usd = forexMap['USD']?.toString() ?? '—';
+        final eur = forexMap['EUR']?.toString() ?? '—';
+        final gbp = forexMap['GBP']?.toString() ?? '—';
+        final cny = forexMap['CNY']?.toString() ?? '—';
         setState(() {
           _forex = {'USD': usd, 'EUR': eur, 'GBP': gbp, 'CNY': cny};
         });
@@ -656,13 +664,18 @@ class _DashboardPageState extends State<DashboardPage> {
         : 'PENDING SETTLEMENT';
 
     String statusText;
+    String statusBadge;
+    Color statusBadgeBg;
+    Color statusBadgeInk;
     String btnLabel;
     IconData btnIcon;
     VoidCallback btnAction;
 
     if (isPackagePending) {
-      statusText =
-          '🟡 Registration Fee Paid • Membership Entrance Package Pending Settlement ($memNo)';
+      statusBadge = 'PACKAGE SETTLEMENT REQUIRED';
+      statusBadgeBg = const Color(0xFFFEF3C7);
+      statusBadgeInk = const Color(0xFF92400E);
+      statusText = 'Registration fee settled. Finalize membership entrance package to activate voting & good standing.';
       if (!_loadingTasks && pending.isNotEmpty) {
         btnLabel = 'View Tasks (${pending.length})';
         btnIcon = Icons.assignment_turned_in_outlined;
@@ -673,39 +686,40 @@ class _DashboardPageState extends State<DashboardPage> {
         btnAction = () => context.go('/payments?fee=Membership%20Entrance%20Package');
       }
     } else if (daysLeft != null && daysLeft < 0) {
-      statusText =
-          '🔴 Membership Expired: Your annual membership expired on ${_formatDate(expiry)}. Submit renewal documents to begin verification.';
+      statusBadge = 'MEMBERSHIP EXPIRED';
+      statusBadgeBg = const Color(0xFFFEE2E2);
+      statusBadgeInk = const Color(0xFF991B1B);
+      statusText = 'Annual membership expired on ${_formatDate(expiry)}. Submit renewal documents for compliance verification.';
       btnLabel = 'Submit Renewal (Step 1)';
       btnIcon = Icons.warning_amber_rounded;
       btnAction = () => context.go('/compliance');
     } else if (daysLeft != null && daysLeft <= 30) {
-      statusText =
-          '🔴 Urgent Reminder: Only $daysLeft days remaining until membership expires on ${_formatDate(expiry)}! Submit renewal application now.';
-      btnLabel = 'Submit Renewal (Step 1)';
-      btnIcon = Icons.autorenew_rounded;
-      btnAction = () => context.go('/compliance');
-    } else if (daysLeft != null && daysLeft <= 60) {
-      statusText =
-          '🟠 Formal Notice: Approx. 2 months ($daysLeft days) remaining until membership expires on ${_formatDate(expiry)}. Please submit renewal.';
+      statusBadge = 'EXPIRES IN $daysLeft DAYS';
+      statusBadgeBg = const Color(0xFFFEE2E2);
+      statusBadgeInk = const Color(0xFF991B1B);
+      statusText = 'Urgent: $daysLeft days remaining until membership expires on ${_formatDate(expiry)}. Submit renewal now.';
       btnLabel = 'Submit Renewal (Step 1)';
       btnIcon = Icons.autorenew_rounded;
       btnAction = () => context.go('/compliance');
     } else if (daysLeft != null && daysLeft <= 90) {
-      statusText =
-          '🟡 Early Notice: Your annual membership expires in 3 months ($daysLeft days). The renewal window is open.';
-      btnLabel = 'Renew Membership (Step 1)';
+      statusBadge = 'RENEWAL WINDOW OPEN';
+      statusBadgeBg = const Color(0xFFFEF3C7);
+      statusBadgeInk = const Color(0xFF92400E);
+      statusText = 'Annual membership renewal window is open. Expiring on ${_formatDate(expiry)} ($daysLeft days remaining).';
+      btnLabel = 'Renew Membership';
       btnIcon = Icons.autorenew_rounded;
       btnAction = () => context.go('/compliance');
     } else {
-      // Stable Good Standing Identity
-      statusText =
-          '🟢 Active in Good Standing • Membership ID: $memNo ${expiry != null ? '• Valid until ${_formatDate(expiry)}' : ''}';
+      statusBadge = 'ACTIVE IN GOOD STANDING';
+      statusBadgeBg = const Color(0xFFDCFCE7);
+      statusBadgeInk = const Color(0xFF166534);
+      statusText = 'Verified Customs Broker & Freight Forwarder • Official Secretariat Roll';
       if (!_loadingTasks && pending.isNotEmpty) {
         btnLabel = 'View Tasks (${pending.length})';
         btnIcon = Icons.assignment_turned_in_outlined;
         btnAction = () => context.go('/tasks');
       } else {
-        btnLabel = 'View Profile';
+        btnLabel = 'Member Profile';
         btnIcon = Icons.badge_outlined;
         btnAction = () => context.go('/profile');
       }
@@ -713,18 +727,15 @@ class _DashboardPageState extends State<DashboardPage> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      padding: EdgeInsets.all(isMobile ? 18 : 24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [_kBrown, _kDarkBrown],
-        ),
-        borderRadius: BorderRadius.circular(18),
+        color: _kCardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _kBorder, width: 1),
         boxShadow: [
           BoxShadow(
-            color: _kDarkBrown.withAlpha(45),
-            blurRadius: 12,
+            color: Colors.black.withAlpha(_isDark ? 30 : 6),
+            blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
@@ -733,123 +744,452 @@ class _DashboardPageState extends State<DashboardPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(40),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withAlpha(80),
-                    width: 1.5,
-                  ),
+                  color: _kBrown,
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   firstName.isNotEmpty ? firstName[0].toUpperCase() : 'M',
                   style: GoogleFonts.outfit(
                     color: Colors.white,
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Good day, $firstName!',
-                      style: GoogleFonts.outfit(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    if (role.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(30),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          role.toUpperCase(),
-                          style: GoogleFonts.outfit(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'Welcome back, $firstName',
+                            style: GoogleFonts.outfit(
+                              color: _kText,
+                              fontSize: isMobile ? 18 : 22,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.4,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (role.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _kBrown.withAlpha(20),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: _kBrown.withAlpha(40), width: 0.8),
+                            ),
+                            child: Text(
+                              role.toUpperCase(),
+                              style: GoogleFonts.outfit(
+                                color: _kBrown,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: statusBadgeBg,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            statusBadge,
+                            style: GoogleFonts.outfit(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: statusBadgeInk,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        if (memNo.isNotEmpty)
+                          Text(
+                            'ID: $memNo',
+                            style: GoogleFonts.outfit(
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: _kMuted,
+                            ),
+                          ),
+                        if (expiry != null)
+                          Text(
+                            '• Valid until ${_formatDate(expiry)}',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: _kMuted,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      statusText,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: _kMuted,
+                        height: 1.4,
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ),
+              if (!isMobile) ...[
+                const SizedBox(width: 16),
+                ElevatedButton.icon(
+                  onPressed: btnAction,
+                  icon: Icon(btnIcon, size: 15),
+                  label: Text(btnLabel),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _kOrange,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    textStyle: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13.5,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
-          const SizedBox(height: 14),
-          Text(
-            statusText,
-            style: GoogleFonts.outfit(
-              color: Colors.white.withAlpha(230),
-              fontSize: 15.5,
-              fontWeight: FontWeight.w600,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 14),
-          ElevatedButton.icon(
-            onPressed: btnAction,
-            icon: Icon(btnIcon, size: 15),
-            label: Text(btnLabel),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _kOrange,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              textStyle: GoogleFonts.outfit(
-                fontWeight: FontWeight.w800,
-                fontSize: 14.5,
+          if (isMobile) ...[
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: btnAction,
+                icon: Icon(btnIcon, size: 15),
+                label: Text(btnLabel),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _kOrange,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  textStyle: GoogleFonts.outfit(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13.5,
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildPackageSettlementPromptCard() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildKpiLedgerGrid(List<dynamic> pending, bool isMobile) {
+    final bool isPkgPaid = _user['package_fee_paid'] == true;
+    final bool isGoodStanding = isPkgPaid &&
+        (_user['is_good_standing'] == true ||
+            _user['good_standing'] == true ||
+            _user['status'] == 'active' ||
+            _user['status'] == 'approved');
+    final activeSurveys = _surveys.where(_isSurveyActive).length;
 
+    final items = [
+      {
+        'title': 'ROLL STATUS',
+        'value': isGoodStanding ? 'Good Standing' : 'Pending',
+        'sub': isGoodStanding ? 'Secretariat Verified' : 'Dues Required',
+        'color': isGoodStanding ? _kGreen : _kOrange,
+        'icon': isGoodStanding ? Icons.verified_user_outlined : Icons.shield_outlined,
+        'isStatus': true,
+        'isGood': isGoodStanding,
+        'action': () => context.go('/profile'),
+      },
+      {
+        'title': 'PRIORITY TASKS',
+        'value': '${pending.length}',
+        'sub': pending.isEmpty ? 'All tasks complete' : '${pending.length} pending items',
+        'color': pending.isEmpty ? _kMuted : _kOrange,
+        'icon': Icons.task_alt_outlined,
+        'isStatus': false,
+        'isGood': pending.isEmpty,
+        'action': () => context.go('/tasks'),
+      },
+      {
+        'title': 'OFFICIAL USD/GHS',
+        'value': _forex['USD'] != null && _forex['USD'] != '—' ? '${_forex['USD']}' : '—',
+        'sub': 'Bank of Ghana Indicative',
+        'color': _kBrown,
+        'icon': Icons.currency_exchange_rounded,
+        'isStatus': false,
+        'isGood': true,
+        'action': () => context.go('/live-data'),
+      },
+      {
+        'title': 'ACTIVE BALLOTS',
+        'value': '$activeSurveys',
+        'sub': activeSurveys > 0 ? '$activeSurveys polls open' : 'No active votes',
+        'color': activeSurveys > 0 ? const Color(0xFF8B5CF6) : _kMuted,
+        'icon': Icons.how_to_vote_outlined,
+        'isStatus': false,
+        'isGood': true,
+        'action': () => context.go('/surveys'),
+      },
+    ];
+
+    final gridContent = isMobile
+        ? GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 4,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 1.28,
+            ),
+            itemBuilder: (ctx, i) => _kpiTile(items[i], isMobile: true),
+          )
+        : Row(
+            children: items.map((it) {
+              final isLast = it == items.last;
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: isLast ? 0 : 12),
+                  child: _kpiTile(it, isMobile: false),
+                ),
+              );
+            }).toList(),
+          );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: (isGoodStanding ? _kGreen : _kOrange).withAlpha(24),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Icon(
+                Icons.speed_rounded,
+                size: 14,
+                color: isGoodStanding ? _kGreen : _kOrange,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'MEMBER STATUS & OVERSIGHT',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w800,
+                fontSize: 11.5,
+                letterSpacing: 0.8,
+                color: _kText,
+              ),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: isGoodStanding
+                    ? _kGreen.withAlpha(18)
+                    : _kOrange.withAlpha(18),
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(
+                  color: isGoodStanding
+                      ? _kGreen.withAlpha(45)
+                      : _kOrange.withAlpha(45),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: isGoodStanding ? _kGreen : _kOrange,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    isGoodStanding ? 'Verified Active' : 'Action Needed',
+                    style: GoogleFonts.inter(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      color: isGoodStanding ? _kGreen : _kOrange,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        gridContent,
+      ],
+    );
+  }
+
+  Widget _kpiTile(Map<String, dynamic> item, {bool isMobile = false}) {
+    final isStatus = item['isStatus'] == true;
+    final color = item['color'] as Color? ?? _kText;
+    final isGood = item['isGood'] == true;
+
+    return InkWell(
+      onTap: item['action'] as VoidCallback?,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 12 : 16,
+          vertical: isMobile ? 12 : 14,
+        ),
+        decoration: BoxDecoration(
+          color: _isDark ? const Color(0xFF1C130E) : const Color(0xFFFBF8F5),
+          borderRadius: BorderRadius.circular(10),
+          border: Border(
+            left: BorderSide(
+              color: isStatus
+                  ? (isGood ? _kGreen : _kOrange)
+                  : color,
+              width: 3.5,
+            ),
+            top: BorderSide(
+              color: isStatus && isGood ? _kGreen.withAlpha(60) : _kBorder.withAlpha(130),
+              width: 1,
+            ),
+            right: BorderSide(
+              color: isStatus && isGood ? _kGreen.withAlpha(60) : _kBorder.withAlpha(130),
+              width: 1,
+            ),
+            bottom: BorderSide(
+              color: isStatus && isGood ? _kGreen.withAlpha(60) : _kBorder.withAlpha(130),
+              width: 1,
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(_isDark ? 20 : 4),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(
+              children: [
+                if (item['icon'] != null) ...[
+                  Icon(item['icon'] as IconData, size: 12, color: color),
+                  const SizedBox(width: 5),
+                ],
+                Expanded(
+                  child: Text(
+                    item['title'] as String,
+                    style: GoogleFonts.outfit(
+                      color: _kMuted,
+                      fontSize: isMobile ? 10 : 10.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.7,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (isStatus) ...[
+                    Icon(
+                      isGood ? Icons.verified_rounded : Icons.pending_rounded,
+                      size: isMobile ? 15 : 17,
+                      color: isGood ? _kGreen : _kOrange,
+                    ),
+                    const SizedBox(width: 5),
+                  ],
+                  Text(
+                    item['value'] as String,
+                    style: GoogleFonts.outfit(
+                      color: isStatus && isGood ? _kGreen : _kText,
+                      fontSize: isStatus ? (isMobile ? 15.5 : 17) : (isMobile ? 19 : 20),
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: isStatus ? -0.2 : -0.5,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                    maxLines: 1,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              item['sub'] as String,
+              style: GoogleFonts.inter(
+                color: _kMuted,
+                fontSize: isMobile ? 10.5 : 11,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPackageSettlementPromptCard() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF4D2D20), const Color(0xFF281710)]
-              : [const Color(0xFFFFF8F2), Colors.white],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _kOrange, width: 1.8),
+        color: _kCardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _kOrange, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: _kOrange.withAlpha(isDark ? 40 : 25),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+            color: _kOrange.withAlpha(_isDark ? 30 : 15),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -859,15 +1199,15 @@ class _DashboardPageState extends State<DashboardPage> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
-                  color: _kOrange.withAlpha(30),
-                  borderRadius: BorderRadius.circular(10),
+                  color: _kOrange.withAlpha(25),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Icon(
-                  Icons.notification_important_rounded,
+                  Icons.receipt_long_rounded,
                   color: _kOrange,
-                  size: 22,
+                  size: 20,
                 ),
               ),
               const SizedBox(width: 12),
@@ -879,17 +1219,16 @@ class _DashboardPageState extends State<DashboardPage> {
                       'MEMBERSHIP ENTRANCE PACKAGE REQUIRED',
                       style: GoogleFonts.outfit(
                         color: _kOrange,
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.8,
                       ),
                     ),
-                    const SizedBox(height: 2),
                     Text(
                       'Upfront Registration Fee Paid • Settle Entrance Dues',
                       style: GoogleFonts.inter(
-                        color: isDark ? Colors.white70 : const Color(0xFF475569),
-                        fontSize: 14,
+                        color: _kMuted,
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -898,39 +1237,36 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Text(
-            'Your upfront registration fee is settled! Settle your New Membership Dues package to unlock your official Membership ID and activate full Active Good Standing privileges.',
+            'Your upfront registration fee is settled! Please complete your New Membership Dues package to receive your official Membership ID and activate Active Good Standing privileges.',
             style: GoogleFonts.inter(
-              color: isDark ? Colors.white : const Color(0xFF1E293B),
-              fontSize: 15,
+              color: _kText,
+              fontSize: 14,
               height: 1.45,
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => context.go('/payments?fee=New%20Membership%20Dues'),
-                  icon: const Icon(Icons.payment_rounded, size: 18),
-                  label: const Text('Pay New Membership Dues Now'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _kOrange,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(0, 46),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    textStyle: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15.5,
-                    ),
-                  ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => context.go('/payments?fee=New%20Membership%20Dues'),
+              icon: const Icon(Icons.payment_rounded, size: 16),
+              label: const Text('Pay New Membership Dues Now'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kOrange,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(0, 44),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                textStyle: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14.5,
                 ),
               ),
-            ],
+            ),
           ),
         ],
       ),
@@ -938,32 +1274,16 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildPriorityTasksSection(List<dynamic> pending, Color primary) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final borderColor = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
-    final textColor = isDark
-        ? const Color(0xFFf8fafc)
-        : const Color(0xFF1A0F0A);
-    final subTextColor = isDark
-        ? const Color(0xFF94a3b8)
-        : const Color(0xFF475569);
-    final dividerColor = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFf1f5f9);
-    final itemBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFf8fafc);
-
     return Container(
       decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor, width: 1.5),
+        color: _kCardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _kBorder, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(6),
+            color: Colors.black.withAlpha(_isDark ? 20 : 4),
             blurRadius: 10,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -971,34 +1291,58 @@ class _DashboardPageState extends State<DashboardPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: _kOrange.withAlpha(20),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.task_alt_rounded,
-                    color: _kOrange,
-                    size: 18,
+                Text(
+                  'PRIORITY TASKS',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 13,
+                    color: _kText,
+                    letterSpacing: 0.8,
                   ),
                 ),
-                const SizedBox(width: 10),
-                Text(
-                  'Priority Tasks',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18,
-                    color: textColor,
+                if (pending.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: _kOrange.withAlpha(20),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${pending.length}',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 11,
+                        color: _kOrange,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ),
+                ],
+                const Spacer(),
+                TextButton(
+                  onPressed: () => context.go('/tasks'),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    foregroundColor: _kBrown,
+                  ),
+                  child: Text(
+                    'View All →',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          Divider(height: 1, color: dividerColor),
+          Divider(height: 1, color: _kBorder),
           if (_loadingTasks && _tasks.isEmpty)
             const Column(
               children: [
@@ -1015,36 +1359,29 @@ class _DashboardPageState extends State<DashboardPage> {
           else if (pending.isEmpty)
             Center(
               child: Padding(
-                padding: const EdgeInsets.all(40),
+                padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
                 child: Column(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: itemBg,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.check_circle_outline_rounded,
-                        size: 36,
-                        color: Color(0xFFcbd5e1),
-                      ),
+                    Icon(
+                      Icons.check_circle_outline_rounded,
+                      size: 32,
+                      color: _kGreen,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     Text(
-                      'No pending tasks!',
+                      'All tasks completed',
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                        color: subTextColor,
+                        fontSize: 15,
+                        color: _kText,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'You are completely up to date.',
-                      style: TextStyle(
-                        color: isDark ? const Color(0xFF64748b) : Colors.grey,
-                        fontSize: 14,
+                      'Your filings and membership compliance are up to date.',
+                      style: GoogleFonts.inter(
+                        color: _kMuted,
+                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -1056,29 +1393,20 @@ class _DashboardPageState extends State<DashboardPage> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: pending.length,
-              separatorBuilder: (context, i) =>
-                  Divider(height: 1, color: dividerColor),
+              separatorBuilder: (context, i) => Divider(height: 1, color: _kBorder),
               itemBuilder: (context, i) {
                 final task = pending[i];
-                bool overdue =
-                    task['due_date'] != null &&
-                    DateTime.tryParse(
-                          task['due_date'].toString(),
-                        )?.isBefore(DateTime.now()) ==
-                        true;
+                final bool overdue = task['due_date'] != null &&
+                    DateTime.tryParse(task['due_date'].toString())?.isBefore(DateTime.now()) == true;
                 return InkWell(
                   onTap: () async {
                     final router = GoRouter.of(context);
                     final rawUrl = task['action_url']?.toString().trim();
                     if (rawUrl != null && rawUrl.isNotEmpty) {
-                      if (rawUrl.startsWith('http://') ||
-                          rawUrl.startsWith('https://')) {
+                      if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
                         final uri = Uri.tryParse(rawUrl);
                         if (uri != null && await canLaunchUrl(uri)) {
-                          await launchUrl(
-                            uri,
-                            mode: LaunchMode.externalApplication,
-                          );
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
                           return;
                         }
                       } else if (rawUrl.startsWith('/')) {
@@ -1096,37 +1424,27 @@ class _DashboardPageState extends State<DashboardPage> {
                     router.go('/tasks');
                   },
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 14,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Container(
-                          width: 40,
-                          height: 40,
+                          width: 34,
+                          height: 34,
                           decoration: BoxDecoration(
-                            color: overdue
-                                ? (isDark
-                                      ? Colors.red.shade900.withAlpha(60)
-                                      : Colors.red.shade50)
-                                : itemBg,
-                            borderRadius: BorderRadius.circular(10),
+                            color: overdue ? const Color(0xFFFEE2E2) : _kSurfaceRaised,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: overdue ? const Color(0xFFFCA5A5) : _kBorder,
+                            ),
                           ),
                           child: Icon(
-                            overdue
-                                ? Icons.warning_amber_rounded
-                                : Icons.receipt_long_outlined,
-                            color: overdue
-                                ? (isDark
-                                      ? Colors.red.shade300
-                                      : Colors.red.shade600)
-                                : _kOrange,
-                            size: 20,
+                            overdue ? Icons.warning_amber_rounded : Icons.receipt_long_outlined,
+                            color: overdue ? const Color(0xFFDC2626) : _kBrown,
+                            size: 18,
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1135,79 +1453,32 @@ class _DashboardPageState extends State<DashboardPage> {
                                 task['title'] ?? '',
                                 style: GoogleFonts.outfit(
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 15,
-                                  color: textColor,
-                                  height: 1.3,
+                                  fontSize: 14,
+                                  color: _kText,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                overdue
+                                    ? 'Overdue • ${task['due_date']}'
+                                    : 'Due: ${task['due_date'] ?? 'No deadline'}',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: overdue ? FontWeight.bold : FontWeight.w500,
+                                  color: overdue ? const Color(0xFFDC2626) : _kMuted,
+                                  fontFeatures: const [FontFeature.tabularFigures()],
                                 ),
                               ),
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.access_time_rounded,
-                                    size: 13,
-                                    color: overdue
-                                        ? (isDark
-                                              ? Colors.red.shade300
-                                              : Colors.red.shade600)
-                                        : subTextColor,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    overdue
-                                        ? 'Overdue: ${task['due_date']}'
-                                        : 'Due: ${task['due_date'] ?? 'No deadline'}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: overdue
-                                          ? (isDark
-                                                ? Colors.red.shade300
-                                                : Colors.red.shade600)
-                                          : subTextColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (task['action_label'] != null &&
-                                  task['action_label'].toString().isNotEmpty) ...[
-                                const SizedBox(height: 10),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: _kOrange.withAlpha(25),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: _kOrange.withAlpha(70),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        task['action_label'].toString(),
-                                        style: GoogleFonts.outfit(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: _kOrange,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      const Icon(
-                                        Icons.arrow_forward_rounded,
-                                        size: 13,
-                                        color: _kOrange,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
                             ],
                           ),
+                        ),
+                        const SizedBox(width: 10),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 13,
+                          color: _kMuted,
                         ),
                       ],
                     ),
@@ -1221,213 +1492,154 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-
-
-
-
   Widget _buildForexSection(ThemeData theme, Color primary) {
-    final isDark = theme.brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final borderColor = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
-    final textColor = isDark
-        ? const Color(0xFFf8fafc)
-        : const Color(0xFF1A0F0A);
-    final subTextColor = isDark
-        ? const Color(0xFF94a3b8)
-        : const Color(0xFF475569);
-
     return Container(
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor, width: 1.5),
+        color: _kCardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _kBorder, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(6),
+            color: Colors.black.withAlpha(_isDark ? 20 : 4),
             blurRadius: 10,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10b981).withAlpha(15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.trending_up_rounded,
-                  color: Color(0xFF10b981),
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Official Forex Rates',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            child: Row(
+              children: [
+                Text(
+                  'OFFICIAL FOREX RATES',
                   style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18,
-                    color: textColor,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 13,
+                    color: _kText,
+                    letterSpacing: 0.8,
                   ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              const Icon(
-                Icons.verified_rounded,
-                size: 14,
-                color: Color(0xFF10b981),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'OFFICIAL',
-                style: GoogleFonts.outfit(
-                  fontSize: 12,
-                  color: subTextColor,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _kGreen.withAlpha(20),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'BOG INDICATIVE',
+                    style: GoogleFonts.outfit(
+                      fontSize: 10,
+                      color: _kGreen,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _forexRow(
-            '\$',
-            'USD/GHS',
-            _forex['USD'] ?? '15.45',
-            isDark ? const Color(0xFFf59e0b) : _kBrown,
-            'US Dollar',
-          ),
-          const SizedBox(height: 10),
-          _forexRow(
-            '€',
-            'EUR/GHS',
-            _forex['EUR'] ?? '16.80',
-            const Color(0xFF3b82f6),
-            'Euro',
-          ),
-          const SizedBox(height: 10),
-          _forexRow(
-            '£',
-            'GBP/GHS',
-            _forex['GBP'] ?? '19.50',
-            const Color(0xFF8b5cf6),
-            'British Pound',
-          ),
-          const SizedBox(height: 10),
-          _forexRow(
-            '¥',
-            'CNY/GHS',
-            _forex['CNY'] ?? '2.15',
-            const Color(0xFFec4899),
-            'Chinese Yuan',
-          ),
-          const SizedBox(height: 16),
-          OutlinedButton(
-            onPressed: () => context.go('/live-data'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-              side: BorderSide(color: borderColor, width: 1.5),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              textStyle: GoogleFonts.outfit(
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-              ),
-              foregroundColor: subTextColor,
+              ],
             ),
-            child: const Text('View Full Data Hub'),
+          ),
+          Divider(height: 1, color: _kBorder),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              children: [
+                _forexRow('\$', 'USD/GHS', _forex['USD'] ?? '—', 'US Dollar'),
+                const SizedBox(height: 8),
+                _forexRow('€', 'EUR/GHS', _forex['EUR'] ?? '—', 'Euro'),
+                const SizedBox(height: 8),
+                _forexRow('£', 'GBP/GHS', _forex['GBP'] ?? '—', 'British Pound'),
+                const SizedBox(height: 8),
+                _forexRow('¥', 'CNY/GHS', _forex['CNY'] ?? '—', 'Chinese Yuan'),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.go('/live-data'),
+                    icon: const Icon(Icons.analytics_outlined, size: 16),
+                    label: Text(
+                      'Trade Intelligence Hub →',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
+                      side: BorderSide(color: _kBorder, width: 1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      foregroundColor: _kText,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _forexRow(
-    String symbol,
-    String pair,
-    String rate,
-    Color color,
-    String name,
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final itemBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFf8fafc);
-    final borderColor = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFf1f5f9);
-    final textColor = isDark
-        ? const Color(0xFFf8fafc)
-        : const Color(0xFF1A0F0A);
-
+  Widget _forexRow(String symbol, String pair, String rate, String name) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: itemBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor, width: 1),
+        color: _kSurfaceRaised,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _kBorder, width: 0.8),
       ),
       child: Row(
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
-              color: color.withAlpha(20),
-              shape: BoxShape.circle,
+              color: _kCardBg,
+              borderRadius: BorderRadius.circular(5),
+              border: Border.all(color: _kBorder, width: 0.6),
             ),
             alignment: Alignment.center,
             child: Text(
               symbol,
-              style: TextStyle(
-                fontSize: 16,
+              style: GoogleFonts.outfit(
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: color,
+                color: _kBrown,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   pair,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.outfit(
                     fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    color: textColor,
+                    fontSize: 13.5,
+                    color: _kText,
                   ),
                 ),
-                const SizedBox(height: 2),
                 Text(
                   name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF94a3b8)),
+                  style: GoogleFonts.inter(fontSize: 11, color: _kMuted),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
           Text(
             rate,
             style: GoogleFonts.outfit(
               fontWeight: FontWeight.w800,
-              fontSize: 18,
-              color: color,
+              fontSize: 16,
+              color: _kText,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ],
@@ -1436,131 +1648,258 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildQuickActionsGrid(bool isMobile) {
-    final isPkgPaid = _user['package_fee_paid'] == true || _user['package_fee_paid'] == 1 || _user['membership_status'] == 'active';
+    final isPkgPaid = _user['package_fee_paid'] == true ||
+        _user['package_fee_paid'] == 1 ||
+        _user['membership_status'] == 'active';
+
+    final actions = [
+      {
+        'icon': Icons.school_outlined,
+        'label': 'CTI Courses',
+        'sub': 'Accredited training cohorts',
+        'route': '/courses',
+        'badge': 'ACCREDITED',
+        'highlight': true,
+      },
+      {
+        'icon': Icons.payments_outlined,
+        'label': 'Pay Dues',
+        'sub': isPkgPaid ? 'Annual renewal dues' : 'Entrance dues package',
+        'route': '/payments',
+        'badge': isPkgPaid ? 'ANNUAL' : 'PACKAGE',
+        'highlight': false,
+      },
+      {
+        'icon': Icons.how_to_vote_outlined,
+        'label': 'Surveys & Polls',
+        'sub': 'Stakeholder ballots',
+        'route': '/surveys',
+        'badge': 'ELECTIONS',
+        'highlight': false,
+      },
+      {
+        'icon': Icons.receipt_long_outlined,
+        'label': 'Statement',
+        'sub': 'Audited payment receipts',
+        'route': '/payment-history',
+        'badge': 'RECEIPTS',
+        'highlight': false,
+      },
+      {
+        'icon': Icons.headset_mic_outlined,
+        'label': 'Support Desk',
+        'sub': 'Inquiries & dispute tickets',
+        'route': '/engagement',
+        'badge': 'HELPDESK',
+        'highlight': false,
+      },
+      {
+        'icon': Icons.badge_outlined,
+        'label': 'Broker Network',
+        'sub': 'Accredited clearing roll',
+        'route': '/networking',
+        'badge': 'DIRECTORY',
+        'highlight': false,
+      },
+    ];
+
+    final gridContent = GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: actions.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        childAspectRatio: isMobile ? 1.4 : 1.55,
+      ),
+      itemBuilder: (ctx, i) {
+        final a = actions[i];
+        final isHL = a['highlight'] == true;
+        return InkWell(
+          onTap: () => context.go(a['route'] as String),
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            decoration: BoxDecoration(
+              color: isHL
+                  ? _kOrange.withAlpha(_isDark ? 28 : 12)
+                  : (_isDark ? const Color(0xFF140D09) : Colors.white),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isHL
+                    ? _kOrange
+                    : _kBorder.withAlpha(_isDark ? 100 : 160),
+                width: isHL ? 1.2 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(_isDark ? 22 : 5),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: isHL
+                            ? _kOrange.withAlpha(28)
+                            : _kBrown.withAlpha(16),
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      child: Icon(
+                        a['icon'] as IconData,
+                        size: 17,
+                        color: isHL ? _kOrange : _kBrown,
+                      ),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isHL
+                                ? _kOrange.withAlpha(25)
+                                : _kSurfaceRaised,
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: isHL
+                                  ? _kOrange.withAlpha(80)
+                                  : _kBorder,
+                              width: 0.6,
+                            ),
+                          ),
+                          child: Text(
+                            a['badge'] as String,
+                            style: GoogleFonts.outfit(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: isHL ? _kOrange : _kMuted,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 10,
+                          color: isHL
+                              ? _kOrange
+                              : _kMuted.withAlpha(130),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      a['label'] as String,
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: _kText,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      a['sub'] as String,
+                      style: GoogleFonts.inter(
+                        fontSize: 10.5,
+                        color: _kMuted,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Row 1: CTI Courses (Featured warm accent) & Pay Dues (Emerald badge)
         Row(
           children: [
-            Expanded(
-              flex: 5,
-              child: _quickAction(
-                context,
-                Icons.school_rounded,
-                'CTI Courses',
-                '/courses',
-                color: const Color(0xFFFF5000),
-                badgeText: 'ACCREDITED',
-                subtext: 'Certifications',
-                isFeatured: true,
+            Container(
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: _kOrange.withAlpha(24),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Icon(
+                Icons.bolt_rounded,
+                size: 15,
+                color: _kOrange,
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 5,
-              child: _quickAction(
-                context,
-                Icons.payments_outlined,
-                'Pay Dues',
-                '/payments',
-                color: const Color(0xFF10b981),
-                badgeText: isPkgPaid ? 'ANNUAL' : 'PACKAGE',
-                subtext: isPkgPaid ? 'Membership renewal dues' : 'New membership entrance dues',
+            const SizedBox(width: 8),
+            Text(
+              'QUICK ACTIONS & SERVICES',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w800,
+                fontSize: 11.5,
+                letterSpacing: 0.8,
+                color: _kText,
+              ),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: _kSurfaceRaised,
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: _kBorder),
+              ),
+              child: Text(
+                '${actions.length} Portals',
+                style: GoogleFonts.inter(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: _kMuted,
+                ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-
-        // Row 2: Surveys & Polls & Statement Receipts
-        Row(
-          children: [
-            Expanded(
-              child: _quickAction(
-                context,
-                Icons.how_to_vote_rounded,
-                'Surveys & Polls',
-                '/surveys',
-                color: const Color(0xFF8b5cf6),
-                badgeText: 'ELECTIONS',
-                subtext: 'Cast your ballot',
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _quickAction(
-                context,
-                Icons.receipt_long_outlined,
-                'Statement',
-                '/payment-history',
-                color: const Color(0xFFef4444),
-                badgeText: 'RECEIPTS',
-                subtext: 'Audit transaction log',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // Row 3: Support Hub & Networking Directory
-        Row(
-          children: [
-            Expanded(
-              child: _quickAction(
-                context,
-                Icons.support_agent_rounded,
-                'Support Hub',
-                '/engagement',
-                color: const Color(0xFF0284c7),
-                badgeText: '24/7 HELPDESK',
-                subtext: 'Submit inquiry ticket',
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _quickAction(
-                context,
-                Icons.group_rounded,
-                'Network',
-                '/networking',
-                color: const Color(0xFF0d9488),
-                badgeText: 'DIRECTORY',
-                subtext: 'Find broker members',
-              ),
-            ),
-          ],
-        ),
+        const SizedBox(height: 10),
+        gridContent,
       ],
     );
   }
 
   Widget _buildActiveSurveysSection(Color primary) {
     final activeSurveys = _surveys.where(_isSurveyActive).toList();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final borderColor = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
-    final textColor = isDark
-        ? const Color(0xFFf8fafc)
-        : const Color(0xFF1A0F0A);
-    final subTextColor = isDark
-        ? const Color(0xFF94a3b8)
-        : const Color(0xFF475569);
-    final dividerColor = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFf1f5f9);
 
     return Container(
       decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor, width: 1.5),
+        color: _kCardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _kBorder, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(6),
+            color: Colors.black.withAlpha(_isDark ? 20 : 4),
             blurRadius: 10,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -1568,48 +1907,58 @@ class _DashboardPageState extends State<DashboardPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF5000).withAlpha(20),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.how_to_vote_rounded,
-                    color: Color(0xFF8b5cf6),
-                    size: 18,
+                Text(
+                  'ASSOCIATION POLLS & SURVEYS',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 13,
+                    color: _kText,
+                    letterSpacing: 0.8,
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Active Surveys & Elections${activeSurveys.isNotEmpty ? ' (${activeSurveys.length})' : ''}',
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                      color: textColor,
+                if (activeSurveys.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8B5CF6).withAlpha(20),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${activeSurveys.length}',
+                      style: GoogleFonts.outfit(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF8B5CF6),
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                     ),
                   ),
-                ),
-                TextButton.icon(
+                ],
+                const Spacer(),
+                TextButton(
                   onPressed: () => context.go('/surveys'),
-                  icon: const Icon(Icons.arrow_forward_rounded, size: 14),
-                  label: const Text('View All'),
                   style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF8b5cf6),
-                    textStyle: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    foregroundColor: _kBrown,
+                  ),
+                  child: Text(
+                    'View All →',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          Divider(height: 1, color: dividerColor),
+          Divider(height: 1, color: _kBorder),
           if (_loadingSurveys && _surveys.isEmpty)
             const Column(
               children: [
@@ -1625,7 +1974,7 @@ class _DashboardPageState extends State<DashboardPage> {
             )
           else if (activeSurveys.isEmpty)
             Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1633,25 +1982,24 @@ class _DashboardPageState extends State<DashboardPage> {
                     Icon(
                       Icons.how_to_vote_outlined,
                       size: 32,
-                      color: subTextColor.withAlpha(120),
+                      color: _kMuted,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Text(
-                      'No active association polls right now.',
+                      'No active association polls right now',
                       style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         fontSize: 15,
-                        color: textColor,
+                        color: _kText,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Upcoming elections and surveys will be listed here.',
+                      'Upcoming elections and surveys will appear here.',
                       style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: subTextColor,
+                        fontSize: 13,
+                        color: _kMuted,
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
@@ -1662,135 +2010,109 @@ class _DashboardPageState extends State<DashboardPage> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: activeSurveys.take(3).length,
-              separatorBuilder: (context, i) =>
-                  Divider(height: 1, color: dividerColor),
+              separatorBuilder: (context, i) => Divider(height: 1, color: _kBorder),
               itemBuilder: (context, i) {
                 final s = activeSurveys[i];
                 final type = (s['type'] ?? 'Survey').toString().toUpperCase();
                 final title = s['title']?.toString() ?? 'Community Survey';
                 final deadline = s['deadline']?.toString();
-                final hasVoted =
-                    s['has_voted'] == true || s['has_responded'] == true;
+                final hasVoted = s['has_voted'] == true || s['has_responded'] == true;
 
-                return Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => context.go('/surveys'),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 14,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color:
-                                  (hasVoted
-                                          ? const Color(0xFF10b981)
-                                          : const Color(0xFF8b5cf6))
-                                      .withAlpha(20),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              hasVoted
-                                  ? Icons.check_circle_outline_rounded
-                                  : Icons.how_to_vote_outlined,
-                              color: hasVoted
-                                  ? const Color(0xFF10b981)
-                                  : const Color(0xFF8b5cf6),
-                              size: 20,
-                            ),
+                return InkWell(
+                  onTap: () => context.go('/surveys'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: hasVoted
+                                ? _kGreen.withAlpha(20)
+                                : const Color(0xFF8B5CF6).withAlpha(20),
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2,
+                          child: Icon(
+                            hasVoted ? Icons.check_circle_outline_rounded : Icons.how_to_vote_outlined,
+                            color: hasVoted ? _kGreen : const Color(0xFF8B5CF6),
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF8B5CF6).withAlpha(20),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      type,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF8B5CF6),
                                       ),
+                                    ),
+                                  ),
+                                  if (hasVoted) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                                       decoration: BoxDecoration(
-                                        color: const Color(
-                                          0xFF8b5cf6,
-                                        ).withAlpha(20),
+                                        color: _kGreen.withAlpha(20),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
-                                        type,
+                                        'VOTED',
                                         style: GoogleFonts.outfit(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w900,
-                                          color: const Color(0xFF8b5cf6),
-                                          letterSpacing: 0.5,
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: _kGreen,
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 6),
-                                    if (hasVoted)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: const Color(
-                                            0xFF10b981,
-                                          ).withAlpha(20),
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'VOTED',
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w900,
-                                            color: const Color(0xFF10b981),
-                                          ),
-                                        ),
-                                      ),
-                                    if (deadline != null &&
-                                        deadline.isNotEmpty) ...[
-                                      const Spacer(),
-                                      Text(
-                                        'Closes $deadline',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 13,
-                                          color: subTextColor,
-                                        ),
-                                      ),
-                                    ],
                                   ],
+                                  if (deadline != null && deadline.isNotEmpty) ...[
+                                    const Spacer(),
+                                    Text(
+                                      'Closes $deadline',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11.5,
+                                        color: _kMuted,
+                                        fontFeatures: const [FontFeature.tabularFigures()],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                  color: _kText,
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.outfit(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 16,
-                                    color: textColor,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            color: subTextColor.withAlpha(120),
-                            size: 20,
-                          ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 13,
+                          color: _kMuted,
+                        ),
+                      ],
                     ),
                   ),
                 );
@@ -1802,116 +2124,9 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _quickAction(
-    BuildContext context,
-    IconData icon,
-    String label,
-    String route, {
-    required Color color,
-    String? badgeText,
-    String? subtext,
-    bool isFeatured = false,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? const Color(0xFFf8fafc) : const Color(0xFF1A0F0A);
-    final subTextColor = isDark ? const Color(0xFF94a3b8) : const Color(0xFF64748b);
-    final cardBg = isDark
-        ? Color.lerp(const Color(0xFF1A0F0A), color, 0.12)!
-        : Color.lerp(Colors.white, color, 0.05)!;
-
-    return InkWell(
-      onTap: () => context.go(route),
-      borderRadius: BorderRadius.circular(18),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: color.withAlpha(isDark ? 90 : 50),
-            width: isFeatured ? 1.8 : 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: color.withAlpha(isDark ? 25 : 12),
-              blurRadius: isFeatured ? 12 : 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withAlpha(isDark ? 35 : 22),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: color.withAlpha(60)),
-                  ),
-                  child: Icon(icon, color: color, size: 19),
-                ),
-                if (badgeText != null)
-                  Flexible(
-                    child: Container(
-                      margin: const EdgeInsets.only(left: 6),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                      decoration: BoxDecoration(
-                        color: color.withAlpha(isDark ? 35 : 20),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: color.withAlpha(70)),
-                      ),
-                      child: Text(
-                        badgeText,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.outfit(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w900,
-                          color: color,
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: GoogleFonts.outfit(
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-                color: textColor,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (subtext != null) ...[
-              const SizedBox(height: 2),
-              Text(
-                subtext,
-                style: GoogleFonts.inter(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w500,
-                  color: subTextColor,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    Provider.of<ThemeService>(context);
     final theme = Theme.of(context);
     final primary = theme.primaryColor;
     final firstName = (_user['name'] as String? ?? 'Member').split(' ').first;
@@ -1936,95 +2151,60 @@ class _DashboardPageState extends State<DashboardPage> {
                     constraints: const BoxConstraints(maxWidth: 1200),
                     child: Padding(
                       padding: EdgeInsets.symmetric(
-                        horizontal: MediaQuery.sizeOf(context).width < 600 ? 0 : 16,
-                        vertical: MediaQuery.sizeOf(context).width < 600 ? 0 : 16,
+                        horizontal: MediaQuery.sizeOf(context).width < 600 ? 12 : 16,
+                        vertical: MediaQuery.sizeOf(context).width < 600 ? 12 : 16,
                       ),
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           final isWide = constraints.maxWidth > 950;
 
-                          if (isWide) {
-                            return Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  flex: 6,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      _buildWelcomeBanner(
-                                        firstName,
-                                        role,
-                                        pending,
-                                        primary,
-                                        false,
-                                      ),
-                                      if (isPackagePending) ...[
-                                        const SizedBox(height: 16),
-                                        _buildPackageSettlementPromptCard(),
-                                      ],
-                                      const SizedBox(height: 20),
-                                      _buildPriorityTasksSection(
-                                        pending,
-                                        primary,
-                                      ),
-                                      const SizedBox(height: 20),
-                                      _buildActiveSurveysSection(primary),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 20),
-                                Expanded(
-                                  flex: 4,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      _buildForexSection(theme, primary),
-                                      const SizedBox(height: 20),
-                                      Text(
-                                        'QUICK ACTIONS',
-                                        style: GoogleFonts.outfit(
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 14,
-                                          color: const Color(0xFF64748b),
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      _buildQuickActionsGrid(false),
-                                    ],
-                                  ),
-                                ),
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildWelcomeBanner(
+                                firstName,
+                                role,
+                                pending,
+                                primary,
+                                !isWide,
+                              ),
+                              const SizedBox(height: 14),
+                              _buildKpiLedgerGrid(pending, !isWide),
+                              const SizedBox(height: 22),
+                              if (isPackagePending) ...[
+                                _buildPackageSettlementPromptCard(),
+                                const SizedBox(height: 22),
                               ],
-                            );
-                          } else {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildWelcomeBanner(
-                                  firstName,
-                                  role,
-                                  pending,
-                                  primary,
-                                  true,
+                              if (isWide) ...[
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      flex: 62,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          _buildPriorityTasksSection(pending, primary),
+                                          const SizedBox(height: 20),
+                                          _buildActiveSurveysSection(primary),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 20),
+                                    Expanded(
+                                      flex: 38,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          _buildQuickActionsGrid(false),
+                                          const SizedBox(height: 20),
+                                          _buildForexSection(theme, primary),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                if (isPackagePending) ...[
-                                  const SizedBox(height: 16),
-                                  _buildPackageSettlementPromptCard(),
-                                ],
-                                const SizedBox(height: 20),
-                                Text(
-                                  'QUICK ACTIONS',
-                                  style: GoogleFonts.outfit(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 12,
-                                    color: const Color(0xFF64748b),
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
+                              ] else ...[
                                 _buildQuickActionsGrid(true),
                                 const SizedBox(height: 20),
                                 _buildPriorityTasksSection(pending, primary),
@@ -2033,8 +2213,8 @@ class _DashboardPageState extends State<DashboardPage> {
                                 const SizedBox(height: 20),
                                 _buildForexSection(theme, primary),
                               ],
-                            );
-                          }
+                            ],
+                          );
                         },
                       ),
                     ),

@@ -129,11 +129,11 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final inputBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC);
-    final border = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark ? Colors.white70 : const Color(0xFF64748B);
+    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+    final inputBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0);
+    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
+    final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
     return AppLayout(
       title: 'Payment & Settlement Settings',
@@ -429,7 +429,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF4D2D20) : const Color(0xFFF8FAFC),
+              color: isDark ? const Color(0xFF3D261C) : const Color(0xFFFAF6F0),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
               border: Border(bottom: BorderSide(color: border)),
             ),

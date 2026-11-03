@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
@@ -15,17 +14,21 @@ class LiveDataPage extends StatefulWidget {
 class _LiveDataPageState extends State<LiveDataPage> {
   final _api = ApiService();
   Map<String, String> _forex = {
-    'USD': '15.45',
-    'EUR': '16.80',
-    'GBP': '19.50',
-    'CNY': '2.15',
+    'USD': '—',
+    'EUR': '—',
+    'GBP': '—',
+    'CNY': '—',
   };
-  bool _forexLoading = false;
+  bool _forexLoading = true;
   bool _newsLoading = true;
   List<Map<String, String>> _news = [];
   String _lastUpdated = '';
   int _newsPage = 1;
   static const int _newsPerPage = 10;
+
+  static const _kBrown = Color(0xFF6B3E26);
+  static const _kOrange = Color(0xFFFF5000);
+  static const _kGreen = Color(0xFF10B981);
 
   String _formatTime() {
     final now = DateTime.now();
@@ -56,10 +59,10 @@ class _LiveDataPageState extends State<LiveDataPage> {
         final forexMap = data['forex'] as Map;
         setState(() {
           _forex = {
-            'USD': forexMap['USD']?.toString() ?? '15.45',
-            'EUR': forexMap['EUR']?.toString() ?? '16.80',
-            'GBP': forexMap['GBP']?.toString() ?? '19.50',
-            'CNY': forexMap['CNY']?.toString() ?? '2.15',
+            'USD': forexMap['USD']?.toString() ?? '—',
+            'EUR': forexMap['EUR']?.toString() ?? '—',
+            'GBP': forexMap['GBP']?.toString() ?? '—',
+            'CNY': forexMap['CNY']?.toString() ?? '—',
           };
           _forexLoading = false;
         });
@@ -111,7 +114,13 @@ class _LiveDataPageState extends State<LiveDataPage> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1E130D) : Colors.white;
+    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final text = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
+    final muted = isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B);
+    final surfaceRaised = isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
+
     final totalPages = (_news.length / _newsPerPage).ceil().clamp(1, 999);
     final pageItems = _news
         .skip((_newsPage - 1) * _newsPerPage)
@@ -125,37 +134,41 @@ class _LiveDataPageState extends State<LiveDataPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+            padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Live indicator header
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const _BlinkingDot(color: Color(0xFF10b981)),
-                    const SizedBox(width: 6),
-                    Text(
-                      'LIVE INTELLIGENCE',
-                      style: GoogleFonts.outfit(
-                        fontSize: 12,
-                        color: const Color(0xFF10b981),
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
-                      ),
+                    Row(
+                      children: [
+                        const _BlinkingDot(color: _kGreen),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'LIVE INTELLIGENCE STREAM',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: _kGreen,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
                     Text(
-                      'Synced at $_lastUpdated',
-                      style: GoogleFonts.outfit(
-                        fontSize: 12.5,
-                        color: const Color(0xFF94a3b8),
-                        fontWeight: FontWeight.w700,
+                      'Synced $_lastUpdated',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: muted,
+                        fontWeight: FontWeight.w500,
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
                 Expanded(
                   child: RefreshIndicator(
@@ -163,235 +176,189 @@ class _LiveDataPageState extends State<LiveDataPage> {
                       await _loadForex();
                       await _loadNews();
                     },
-                    color: primary,
+                    color: _kOrange,
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           // Forex Card
-                          Card(
-                            color: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              side: BorderSide(
-                                color: const Color(0xFFcbd5e1).withAlpha(120),
-                                width: 1.5,
-                              ),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: cardBg,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: border, width: 1.0),
                             ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.currency_exchange_rounded,
-                                        color: primary,
-                                        size: 20,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.currency_exchange_rounded,
+                                      color: _kBrown,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Official Customs Forex Rates',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15.5,
+                                        color: text,
+                                        letterSpacing: -0.2,
                                       ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Official Forex Rates',
-                                        style: GoogleFonts.outfit(
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 17,
-                                          color: const Color(0xFF281710),
-                                        ),
-                                      ),
-                                      const Spacer(),
-                                      Container(
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+                                if (_forexLoading)
+                                  GridView.count(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    crossAxisCount: 2,
+                                    mainAxisSpacing: 10,
+                                    crossAxisSpacing: 10,
+                                    childAspectRatio: 2.4,
+                                    children: List.generate(
+                                      4,
+                                      (i) => const ShimmerListTile(),
+                                    ),
+                                  )
+                                else
+                                  GridView.count(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    crossAxisCount: 2,
+                                    mainAxisSpacing: 10,
+                                    crossAxisSpacing: 10,
+                                    childAspectRatio: 2.4,
+                                    children: _forex.entries.map((e) {
+                                      final symbols = {
+                                        'USD': '\$',
+                                        'EUR': '€',
+                                        'GBP': '£',
+                                        'CNY': '¥',
+                                      };
+                                      final symbol = symbols[e.key] ?? '';
+
+                                      return Container(
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 3,
+                                          vertical: 8,
+                                          horizontal: 12,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: primary.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
+                                          color: surfaceRaised,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: border,
+                                            width: 1.0,
                                           ),
                                         ),
-                                        child: Text(
-                                          'CUBAG Admin Rate',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                            color: primary,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  if (_forexLoading)
-                                    GridView.count(
-                                      shrinkWrap: true,
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      crossAxisCount: 2,
-                                      mainAxisSpacing: 12,
-                                      crossAxisSpacing: 12,
-                                      childAspectRatio: 2.3,
-                                      children: List.generate(
-                                        4,
-                                        (i) => const ShimmerListTile(),
-                                      ),
-                                    )
-                                  else
-                                    GridView.count(
-                                      shrinkWrap: true,
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      crossAxisCount: 2,
-                                      mainAxisSpacing: 12,
-                                      crossAxisSpacing: 12,
-                                      childAspectRatio: 2.3,
-                                      children: _forex.entries.map((e) {
-                                        final symbols = {
-                                          'USD': '\$',
-                                          'EUR': '€',
-                                          'GBP': '£',
-                                          'CNY': '¥',
-                                        };
-                                        final symbol = symbols[e.key] ?? '';
-                                        final colors = {
-                                          'USD': const Color(0xFF3b82f6),
-                                          'EUR': const Color(0xFF10b981),
-                                          'GBP': const Color(0xFF8b5cf6),
-                                          'CNY': const Color(0xFFf59e0b),
-                                        };
-                                        final symbolBg =
-                                            colors[e.key]?.withAlpha(15) ??
-                                            const Color(0xFFf1f5f9);
-                                        final symbolColor =
-                                            colors[e.key] ??
-                                            const Color(0xFF64748b);
-
-                                        return Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 8,
-                                            horizontal: 12,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFf8fafc),
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                            border: Border.all(
-                                              color: const Color(
-                                                0xFFcbd5e1,
-                                              ).withAlpha(100),
-                                              width: 1.2,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                width: 32,
-                                                height: 32,
-                                                decoration: BoxDecoration(
-                                                  color: symbolBg,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: Center(
-                                                  child: Text(
-                                                    symbol,
-                                                    style: GoogleFonts.outfit(
-                                                      color: symbolColor,
-                                                      fontSize: 18,
-                                                      fontWeight:
-                                                          FontWeight.w900,
-                                                    ),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              width: 32,
+                                              height: 32,
+                                              decoration: BoxDecoration(
+                                                color: cardBg,
+                                                borderRadius: BorderRadius.circular(6),
+                                                border: Border.all(color: border, width: 1.0),
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                  symbol,
+                                                  style: TextStyle(
+                                                    color: text,
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w700,
                                                   ),
                                                 ),
                                               ),
-                                              const SizedBox(width: 10),
-                                              Expanded(
-                                                child: Column(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      '${e.key} / GHS',
-                                                      style: GoogleFonts.outfit(
-                                                        fontSize: 12,
-                                                        color: const Color(
-                                                          0xFF64748b,
-                                                        ),
-                                                        fontWeight:
-                                                            FontWeight.w800,
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    '${e.key} / GHS',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: muted,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  FittedBox(
+                                                    fit: BoxFit.scaleDown,
+                                                    child: Text(
+                                                      e.value,
+                                                      style: TextStyle(
+                                                        fontWeight: FontWeight.w700,
+                                                        fontSize: 16.5,
+                                                        color: text,
+                                                        letterSpacing: -0.3,
+                                                        fontFeatures: const [
+                                                          FontFeature.tabularFigures(),
+                                                        ],
                                                       ),
                                                     ),
-                                                    const SizedBox(height: 2),
-                                                    FittedBox(
-                                                      fit: BoxFit.scaleDown,
-                                                      child: Text(
-                                                        e.value,
-                                                        style:
-                                                            GoogleFonts.outfit(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w900,
-                                                              fontSize: 17.5,
-                                                              color:
-                                                                  const Color(
-                                                                    0xFF281710,
-                                                                  ),
-                                                            ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
+                                                  ),
+                                                ],
                                               ),
-                                            ],
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ),
-                                ],
-                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 20),
 
                           // News Section Header
                           Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.directions_boat_rounded,
-                                color: const Color(0xFF3b82f6),
-                                size: 22,
+                                color: _kBrown,
+                                size: 19,
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 'Maritime & Customs Intelligence',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                  color: const Color(0xFF281710),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: text,
+                                  letterSpacing: -0.2,
                                 ),
                               ),
                               const Spacer(),
                               if (!_newsLoading)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
+                                    horizontal: 7,
+                                    vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFf1f5f9),
-                                    borderRadius: BorderRadius.circular(6),
+                                    color: surfaceRaised,
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: border, width: 1.0),
                                   ),
                                   child: Text(
                                     '${_news.length} articles',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 12.5,
-                                      color: const Color(0xFF64748b),
-                                      fontWeight: FontWeight.w800,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: muted,
+                                      fontWeight: FontWeight.w600,
+                                      fontFeatures: const [FontFeature.tabularFigures()],
                                     ),
                                   ),
                                 ),
@@ -400,13 +367,13 @@ class _LiveDataPageState extends State<LiveDataPage> {
                           const SizedBox(height: 4),
                           Text(
                             'gCaptain · Hellenic Shipping · Splash247 · FreightWaves · CUBAG Updates',
-                            style: GoogleFonts.outfit(
-                              fontSize: 13,
-                              color: const Color(0xFF94a3b8),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: muted,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
 
                           // News Feed Content
                           if (_newsLoading)
@@ -415,63 +382,19 @@ class _LiveDataPageState extends State<LiveDataPage> {
                               physics: const NeverScrollableScrollPhysics(),
                               itemCount: 4,
                               separatorBuilder: (context, index) =>
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 10),
                               itemBuilder: (context, index) =>
                                   const ShimmerListTile(),
                             )
                           else ...[
                             ...pageItems.map((news) {
-                              Color? srcColor;
-                              final hexStr = news['sourceColor'];
-                              if (hexStr != null) {
-                                try {
-                                  final cleanHex = hexStr.replaceAll('#', '');
-                                  srcColor = Color(
-                                    int.parse('FF$cleanHex', radix: 16),
-                                  );
-                                } catch (e, st) {
-                                  AppLogger.error('live_data_page', e, st);
-                                }
-                              }
-                              final displayColor = srcColor ?? primary;
-
                               return Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(16),
+                                margin: const EdgeInsets.only(bottom: 10),
+                                padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border(
-                                    left: BorderSide(
-                                      color: displayColor,
-                                      width: 4.5,
-                                    ),
-                                    top: BorderSide(
-                                      color: const Color(
-                                        0xFFcbd5e1,
-                                      ).withAlpha(120),
-                                      width: 1.5,
-                                    ),
-                                    right: BorderSide(
-                                      color: const Color(
-                                        0xFFcbd5e1,
-                                      ).withAlpha(120),
-                                      width: 1.5,
-                                    ),
-                                    bottom: BorderSide(
-                                      color: const Color(
-                                        0xFFcbd5e1,
-                                      ).withAlpha(120),
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withAlpha(4),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
+                                  color: cardBg,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: border, width: 1.0),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -480,22 +403,20 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                       children: [
                                         Container(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 3,
+                                            horizontal: 7,
+                                            vertical: 2,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: displayColor.withAlpha(20),
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
+                                            color: surfaceRaised,
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(color: border, width: 1.0),
                                           ),
                                           child: Text(
-                                            (news['source'] ?? '')
-                                                .toUpperCase(),
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 11.5,
-                                              color: displayColor,
-                                              fontWeight: FontWeight.w900,
+                                            (news['source'] ?? '').toUpperCase(),
+                                            style: const TextStyle(
+                                              fontSize: 10.5,
+                                              color: _kBrown,
+                                              fontWeight: FontWeight.w700,
                                               letterSpacing: 0.3,
                                             ),
                                           ),
@@ -503,36 +424,38 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                         const SizedBox(width: 8),
                                         Text(
                                           news['date'] ?? '',
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 13,
-                                            color: const Color(0xFF94a3b8),
-                                            fontWeight: FontWeight.w600,
+                                          style: TextStyle(
+                                            fontSize: 11.5,
+                                            color: muted,
+                                            fontFeatures: const [FontFeature.tabularFigures()],
                                           ),
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 10),
+                                    const SizedBox(height: 8),
                                     Text(
                                       news['title'] ?? '',
-                                      style: GoogleFonts.outfit(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 16.5,
-                                        color: const Color(0xFF281710),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15,
+                                        color: text,
                                         height: 1.3,
+                                        letterSpacing: -0.2,
                                       ),
                                     ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      news['description'] ?? '',
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 14.5,
-                                        color: const Color(0xFF64748b),
-                                        height: 1.4,
-                                        fontWeight: FontWeight.w500,
+                                    if ((news['description'] ?? '').isNotEmpty) ...[
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        news['description'] ?? '',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: muted,
+                                          height: 1.4,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                                    ],
                                   ],
                                 ),
                               );
@@ -541,7 +464,7 @@ class _LiveDataPageState extends State<LiveDataPage> {
                             if (totalPages > 1)
                               Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
+                                  vertical: 14,
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -549,87 +472,60 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                     IconButton(
                                       icon: const Icon(
                                         Icons.arrow_back_ios_new_rounded,
-                                        size: 14,
+                                        size: 13,
                                       ),
                                       onPressed: _newsPage > 1
-                                          ? () => setState(() {
-                                              _newsPage--;
-                                            })
+                                          ? () => setState(() => _newsPage--)
                                           : null,
-                                      color: const Color(0xFF64748b),
-                                      disabledColor: const Color(0xFFcbd5e1),
+                                      color: text,
+                                      disabledColor: muted.withValues(alpha: 0.4),
                                     ),
-                                    const SizedBox(width: 8),
+                                    const SizedBox(width: 6),
                                     ...List.generate(
                                       totalPages,
                                       (i) => i + 1,
                                     ).map((n) {
                                       final isSelected = _newsPage == n;
                                       return GestureDetector(
-                                        onTap: () =>
-                                            setState(() => _newsPage = n),
-                                        child: AnimatedContainer(
-                                          duration: const Duration(
-                                            milliseconds: 200,
-                                          ),
+                                        onTap: () => setState(() => _newsPage = n),
+                                        child: Container(
                                           margin: const EdgeInsets.symmetric(
-                                            horizontal: 4,
+                                            horizontal: 3,
                                           ),
-                                          width: 32,
-                                          height: 32,
+                                          width: 30,
+                                          height: 30,
                                           alignment: Alignment.center,
                                           decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? primary
-                                                : Colors.white,
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
+                                            color: isSelected ? _kBrown : cardBg,
+                                            borderRadius: BorderRadius.circular(6),
                                             border: Border.all(
-                                              color: isSelected
-                                                  ? primary
-                                                  : const Color(0xFFcbd5e1),
-                                              width: 1.5,
+                                              color: isSelected ? _kBrown : border,
+                                              width: 1.0,
                                             ),
-                                            boxShadow: isSelected
-                                                ? [
-                                                    BoxShadow(
-                                                      color: primary.withAlpha(
-                                                        40,
-                                                      ),
-                                                      blurRadius: 6,
-                                                      offset: const Offset(
-                                                        0,
-                                                        2,
-                                                      ),
-                                                    ),
-                                                  ]
-                                                : null,
                                           ),
                                           child: Text(
                                             '$n',
-                                            style: GoogleFonts.outfit(
-                                              color: isSelected
-                                                  ? Colors.white
-                                                  : const Color(0xFF64748b),
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 14.5,
+                                            style: TextStyle(
+                                              color: isSelected ? Colors.white : text,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 13,
+                                              fontFeatures: const [FontFeature.tabularFigures()],
                                             ),
                                           ),
                                         ),
                                       );
                                     }),
-                                    const SizedBox(width: 8),
+                                    const SizedBox(width: 6),
                                     IconButton(
                                       icon: const Icon(
                                         Icons.arrow_forward_ios_rounded,
-                                        size: 14,
+                                        size: 13,
                                       ),
                                       onPressed: _newsPage < totalPages
                                           ? () => setState(() => _newsPage++)
                                           : null,
-                                      color: const Color(0xFF64748b),
-                                      disabledColor: const Color(0xFFcbd5e1),
+                                      color: text,
+                                      disabledColor: muted.withValues(alpha: 0.4),
                                     ),
                                   ],
                                 ),

@@ -103,7 +103,16 @@ def serve_gallery_image(filename):
             resp.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
             return resp
 
-    return jsonify({'message': 'Image not found'}), 404
+    # Fallback transparent 1x1 image so client image widgets don't throw 404 network errors
+    TRANSPARENT_PNG = (
+        b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06'
+        b'\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01'
+        b'\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82'
+    )
+    return Response(TRANSPARENT_PNG, mimetype='image/png', headers={
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache',
+    })
 
 
 @uploads_bp.route('/proxy', methods=['GET'])

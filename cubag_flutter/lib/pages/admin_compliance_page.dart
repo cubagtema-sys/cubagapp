@@ -19,9 +19,9 @@ const _kGreen = Color(0xFF10b981);
 const _kAmber = Color(0xFFf59e0b);
 const _kRed = Color(0xFFef4444);
 const _kDarkBg = Color(0xFF1A0F0A);
-const _kCardDark = Color(0xFF281710);
-const _kBorderDark = Color(0xFF4D2D20);
-const _kTextDark = Color(0xFF2B211D);
+const _kCardDark = Color(0xFF22140E);
+const _kBorderDark = Color(0xFF3D261C);
+const _kTextDark = Color(0xFF1F1612);
 
 Color _statusColor(String? s) {
   switch (s) {
@@ -229,21 +229,34 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 16, color: isSelected ? color : (isDark ? Colors.white60 : const Color(0xFF64748B))),
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected
+                    ? color
+                    : (isDark ? Colors.white60 : const Color(0xFF7A6B60)),
+              ),
               const SizedBox(width: 8),
               Text(
                 label,
                 style: GoogleFonts.outfit(
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  color: isSelected ? (isDark ? Colors.white : color) : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                  color: isSelected
+                      ? (isDark ? Colors.white : color)
+                      : (isDark ? Colors.white70 : const Color(0xFF6B5E55)),
                 ),
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isSelected ? color : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                  color: isSelected
+                      ? color
+                      : (isDark
+                          ? Colors.white12
+                          : const Color(0xFFE8DED6)),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -251,7 +264,11 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                   style: GoogleFonts.outfit(
                     fontSize: 11.5,
                     fontWeight: FontWeight.bold,
-                    color: isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark
+                            ? Colors.white70
+                            : const Color(0xFF6B5E55)),
                   ),
                 ),
               ),
@@ -281,28 +298,28 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
           color: isSel ? activeColor.withAlpha(isDark ? 40 : 25) : (isDark ? _kCardDark : Colors.white),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSel ? activeColor : (isDark ? _kBorderDark : const Color(0xFFE2E8F0)),
+            color: isSel ? activeColor : (isDark ? _kBorderDark : const Color(0xFFE8DED6)),
             width: isSel ? 1.5 : 1,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: isSel ? activeColor : (isDark ? Colors.white60 : const Color(0xFF64748B))),
+            Icon(icon, size: 14, color: isSel ? activeColor : (isDark ? Colors.white60 : const Color(0xFF7A6B60))),
             const SizedBox(width: 6),
             Text(
               label,
               style: GoogleFonts.outfit(
                 fontSize: 13,
                 fontWeight: isSel ? FontWeight.w700 : FontWeight.w600,
-                color: isSel ? activeColor : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                color: isSel ? activeColor : (isDark ? Colors.white70 : const Color(0xFF6B5E55)),
               ),
             ),
             const SizedBox(width: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
               decoration: BoxDecoration(
-                color: isSel ? activeColor : (isDark ? Colors.white12 : const Color(0xFFF1F5F9)),
+                color: isSel ? activeColor : (isDark ? Colors.white12 : const Color(0xFFEDE5DC)),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -310,7 +327,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                 style: GoogleFonts.outfit(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF64748B)),
+                  color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF7A6B60)),
                 ),
               ),
             ),
@@ -323,11 +340,11 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? _kDarkBg : const Color(0xFFF8FAFC);
-    final cardBg = isDark ? _kCardDark : Colors.white;
-    final borderColor = isDark ? _kBorderDark : const Color(0xFFE2E8F0);
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final bg = isDark ? _kDarkBg : const Color(0xFFFAF6F0);
+    final cardBg = isDark ? _kCardDark : const Color(0xFFFBF8F3);
+    final borderColor = isDark ? _kBorderDark : const Color(0xFFE8DED6);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
+    final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
     final corpApps = _getAppsForCategory('corporate');
     final licApps = _getAppsForCategory('licentiate');
@@ -416,7 +433,9 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: isDark ? _kCardDark : const Color(0xFFF1F5F9),
+                  color: isDark
+                      ? _kCardDark
+                      : const Color(0xFFEDE5DC),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: borderColor),
                 ),
@@ -2668,7 +2687,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
       title: pageTitle,
       scrollable: true,
       child: Container(
-        color: isDark ? _kDarkBg : const Color(0xFFF8FAFC),
+        color: isDark ? _kDarkBg : const Color(0xFFFAF6F0),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: _loading
             ? Align(
@@ -2784,11 +2803,11 @@ class _MemberInfoCard extends StatelessWidget {
       paymentStatusVal = 'Pending (Unpaid)';
       paymentStatusCol = const Color(0xFF94A3B8);
     }
-    final cardBg = isDark ? _kCardDark : Colors.white;
-    final borderColor = isDark ? _kBorderDark : const Color(0xFFE2E8F0);
-    final fieldBg = isDark ? _kDarkBg : const Color(0xFFF8FAFC);
+    final cardBg = isDark ? _kCardDark : const Color(0xFFFBF8F3);
+    final borderColor = isDark ? _kBorderDark : const Color(0xFFE8DED6);
+    final fieldBg = isDark ? _kDarkBg : const Color(0xFFFAF6F0);
     final textColor = isDark ? Colors.white : _kTextDark;
-    final mutedText = isDark ? Colors.white70 : const Color(0xFF64748B);
+    final mutedText = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -3302,25 +3321,42 @@ class _AdminDocRowState extends State<_AdminDocRow> {
 
           if (uploaded && !widget.isResolved) ...[
             const SizedBox(height: 8),
-            Row(
-              children: [
-                if (status != 'approved')
+            if (status == 'approved')
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: _kGreen.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: _kGreen.withValues(alpha: 0.35)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.verified_rounded, size: 13, color: _kGreen),
+                    const SizedBox(width: 4),
+                    Text('Approved', style: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.bold, color: _kGreen)),
+                  ],
+                ),
+              )
+            else
+              Row(
+                children: [
                   _DocAction(
                     label: 'Approve',
                     color: _kGreen,
                     icon: Icons.check_rounded,
                     onTap: widget.onApprove,
                   ),
-                const SizedBox(width: 8),
-                if (status != 'rejected')
-                  _DocAction(
-                    label: 'Reject',
-                    color: _kRed,
-                    icon: Icons.close_rounded,
-                    onTap: widget.onReject,
-                  ),
-              ],
-            ),
+                  const SizedBox(width: 8),
+                  if (status != 'rejected')
+                    _DocAction(
+                      label: 'Reject',
+                      color: _kRed,
+                      icon: Icons.close_rounded,
+                      onTap: widget.onReject,
+                    ),
+                ],
+              ),
           ],
         ],
       ),

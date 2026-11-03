@@ -13,25 +13,25 @@ import '../services/theme_service.dart';
 bool get _isDark => ThemeService.instance.isDark;
 Color get _kBg => _isDark
     ? const Color(0xFF1A0F0A)
-    : const Color(0xFFFFFFFF); // deep espresso chocolate
+    : const Color(0xFFFAF6F0); // stone ground
 Color get _kCream => _isDark
-    ? const Color(0xFF281710)
-    : const Color(0xFFF8F4F0); // warm velvet chocolate
+    ? const Color(0xFF22140E)
+    : const Color(0xFFFBF8F3); // warm ivory
 Color get _kCardBg => _isDark
-    ? const Color(0xFF281710)
-    : Colors.white; // chocolate cards & surfaces
+    ? const Color(0xFF22140E)
+    : const Color(0xFFFBF8F3); // warm ivory paper card
 Color get _kBrown => _isDark
     ? const Color(0xFFFF5000)
-    : const Color(0xFF6B3E26); // shining caramel gold / brand
+    : const Color(0xFF1F1612); // deep espresso ink / accent
 Color get _kAccent => const Color(0xFFFF5000); // primary CTA & highlights
 Color get _kText => _isDark
     ? const Color(0xFFFFF8F3)
-    : const Color(0xFF2B211D); // warm ivory / body text
+    : const Color(0xFF1F1612); // deep espresso text
 Color get _kMuted => _isDark
-    ? const Color(0xFFC8ADA0)
-    : const Color(0xFF6F625B); // cocoa tan / secondary text
+    ? const Color(0xFFB0A298)
+    : const Color(0xFF6B5E55); // secondary editorial ink
 Color get _kBorder => _isDark
-    ? const Color(0xFF4D2D20)
+    ? const Color(0xFF3D261C)
     : const Color(0xFFE8DED6); // warm bronze borders
 Color get _kGreen => const Color(0xFF10B981); // verified/success
 
@@ -266,27 +266,8 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
     if (mounted) setState(() => _submitting = false);
   }
 
-  String _detectCarrier(String phone) {
-    final clean = phone.replaceAll(RegExp(r'\D'), '');
-    if (clean.length < 3) return 'MTN Mobile Money';
-    final prefix = clean.substring(0, 3);
-    // MTN: 024, 025, 053, 054, 055, 059
-    if (['024', '025', '053', '054', '055', '059'].contains(prefix)) {
-      return 'MTN Mobile Money';
-    }
-    // Telecel (Vodafone): 020, 050
-    if (['020', '050'].contains(prefix)) {
-      return 'Telecel Cash';
-    }
-    // AT (AirtelTigo): 026, 056, 027, 057
-    if (['026', '056', '027', '057'].contains(prefix)) {
-      return 'AT Money';
-    }
-    return 'MTN Mobile Money';
-  }
-
   void _showCoursePaymentDialog() {
-    String selectedNetwork = _detectCarrier(_phoneCtrl.text.trim());
+    String selectedNetwork = '';
     final momoPhoneCtrl = TextEditingController(text: _phoneCtrl.text.trim());
     bool processingPayment = false;
     String paymentStep = 'input'; // 'input' or 'waiting_approval'
@@ -357,7 +338,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                               'If the prompt does not pop up, dial *170# → Option 6 (My Wallet) → Option 3 (My Approvals) on your phone to approve.';
 
                           if (selectedNetwork.contains('Telecel') || selectedNetwork.contains('Vodafone')) {
-                            noticeTitle = 'Telecel (Vodafone) Approval Notice';
+                            noticeTitle = 'Telecel Cash Approval Notice';
                             noticeText =
                                 'If the prompt does not pop up, dial *110# → Option 4 (My Account) → Option 5 (Pending Approvals) on your phone to approve.';
                           } else if (selectedNetwork.contains('AT') || selectedNetwork.contains('Airtel')) {
@@ -649,7 +630,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         const SizedBox(height: 18),
 
                         Text(
-                          'Mobile Money Network',
+                          'Select Mobile Carrier',
                           style: GoogleFonts.outfit(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -658,21 +639,23 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         ),
                         const SizedBox(height: 10),
 
-                        // Payment method chips (MoMo networks only - auto selected by phone number)
+                        // Payment method chips (user explicitly selects carrier)
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: [
-                            'MTN Mobile Money',
-                            'Telecel Cash',
-                            'AT Money',
-                          ].map((network) {
-                            final selected = selectedNetwork == network;
+                          children: const [
+                            {'id': 'MTN', 'label': 'MTN MoMo'},
+                            {'id': 'Telecel', 'label': 'Telecel Cash'},
+                            {'id': 'AirtelTigo', 'label': 'AT (AirtelTigo)'},
+                          ].map((entry) {
+                            final networkId = entry['id']!;
+                            final networkLabel = entry['label']!;
+                            final selected = selectedNetwork == networkId;
                             return ChoiceChip(
                               avatar: selected
                                   ? const Icon(Icons.check_circle_rounded, size: 16, color: Colors.white)
                                   : null,
-                              label: Text(network),
+                              label: Text(networkLabel),
                               selected: selected,
                               selectedColor: _kAccent,
                               backgroundColor: _kCream,
@@ -686,7 +669,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                 width: 1.5,
                               ),
                               onSelected: (val) {
-                                if (val) setDlgState(() => selectedNetwork = network);
+                                if (val) setDlgState(() => selectedNetwork = networkId);
                               },
                             );
                           }).toList(),
@@ -706,11 +689,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           controller: momoPhoneCtrl,
                           keyboardType: TextInputType.phone,
                           maxLength: 10,
-                          onChanged: (val) {
-                            setDlgState(() {
-                              selectedNetwork = _detectCarrier(val);
-                            });
-                          },
+                          onChanged: (_) => setDlgState(() {}),
                           inputFormatters: [
                             FilteringTextInputFormatter.digitsOnly,
                             LengthLimitingTextInputFormatter(10),
@@ -720,17 +699,19 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                             hintText: 'e.g. 0244123456',
                             hintStyle: GoogleFonts.inter(fontSize: 13, color: _kMuted),
                             prefixIcon: Icon(Icons.phone_android_rounded, size: 18, color: _kBrown),
-                            suffixIcon: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                              child: Text(
-                                selectedNetwork.split(' ').first,
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: _kAccent,
-                                ),
-                              ),
-                            ),
+                            suffixIcon: selectedNetwork.isNotEmpty
+                                ? Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                    child: Text(
+                                      selectedNetwork,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: _kAccent,
+                                      ),
+                                    ),
+                                  )
+                                : null,
                             filled: true,
                             fillColor: _kCream,
                             counterText: '',
@@ -774,6 +755,14 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                             onPressed: processingPayment
                                 ? null
                                 : () async {
+                                    if (selectedNetwork.isEmpty) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Please select your mobile carrier (MTN, Telecel, or AirtelTigo)'),
+                                        ),
+                                      );
+                                      return;
+                                    }
                                     final phoneVal = momoPhoneCtrl.text.trim();
                                     if (phoneVal.length != 10) {
                                       ScaffoldMessenger.of(context).showSnackBar(
@@ -1196,8 +1185,8 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           minHeight: 36,
                         ),
                         onPressed: () =>
-                            context.canPop() ? context.pop() : context.go('/'),
-                        tooltip: 'Return to Home',
+                            context.canPop() ? context.pop() : context.go('/login'),
+                        tooltip: 'Return to Portal',
                       ),
                       const SizedBox(width: 6),
 
@@ -1220,22 +1209,21 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                     fontWeight: FontWeight.w900,
                                   ),
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 1.5,
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: _kAccent.withAlpha(25),
-                                    borderRadius: BorderRadius.circular(5),
+                                    color: _kAccent.withAlpha(22),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: _kAccent.withAlpha(50), width: 0.5),
                                   ),
                                   child: Text(
-                                    'PUBLIC DESK',
+                                    _serviceType == 'cti_training' ? 'CTI PORTAL' : 'BROKER DESK',
                                     style: GoogleFonts.outfit(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w800,
                                       color: _kAccent,
-                                      fontSize: 8.5,
-                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.4,
                                     ),
                                   ),
                                 ),
@@ -1330,15 +1318,8 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
     return Container(
       decoration: BoxDecoration(
         color: _kCardBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(_isDark ? 40 : 8),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _kBorder, width: 1.0),
       ),
       padding: EdgeInsets.all(isMobile ? 20 : 32),
       child: Form(
@@ -1439,15 +1420,116 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
               ],
             ],
 
-            // ── Port / Customs Station Selector ─────────────────────────────
-            _formLabel('Primary Port of Cargo Operation *'),
-            const SizedBox(height: 8),
-            _customDropdownButton(
-              icon: Icons.anchor_rounded,
-              title: _primaryPort,
-              subtitle:
-                  'Select destination port, border post, or air cargo station',
-              onTap: () {
+            // ── CTI Course Ledger Summary (Shown for CTI Training) ─────────
+            if (_serviceType == 'cti_training') ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _isDark ? const Color(0xFF1F120B) : const Color(0xFFFBF8F3),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: _kBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: _kAccent.withAlpha(25),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'OFFICIAL CTI COHORT',
+                            style: GoogleFonts.outfit(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: _kAccent,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          _currentCourseFee,
+                          style: GoogleFonts.outfit(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: _kAccent,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _courseCtrl.text.isNotEmpty
+                          ? _courseCtrl.text
+                          : 'Customs & Logistics Professional Certification',
+                      style: GoogleFonts.outfit(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: _kText,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 14,
+                      runSpacing: 6,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.calendar_today_rounded, size: 13, color: _kMuted),
+                            const SizedBox(width: 5),
+                            Text(
+                              _currentCourseStartDate,
+                              style: GoogleFonts.inter(fontSize: 12.5, color: _kMuted),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.access_time_rounded, size: 13, color: _kMuted),
+                            const SizedBox(width: 5),
+                            Text(
+                              _currentCourseDurationMode,
+                              style: GoogleFonts.inter(fontSize: 12.5, color: _kMuted),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.verified_outlined, size: 13, color: _kGreen),
+                            const SizedBox(width: 5),
+                            Text(
+                              'Accredited Certificate',
+                              style: GoogleFonts.inter(fontSize: 12.5, color: _kGreen, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+
+            // ── Port / Customs Station Selector (Only for Cargo Clearance) ──
+            if (_serviceType == 'clearing_agent') ...[
+              _formLabel('Primary Port of Cargo Operation *'),
+              const SizedBox(height: 8),
+              _customDropdownButton(
+                icon: Icons.anchor_rounded,
+                title: _primaryPort,
+                subtitle:
+                    'Select destination port, border post, or air cargo station',
+                onTap: () {
                 final portItems = _availablePorts.isNotEmpty
                     ? _availablePorts
                           .map(
@@ -1507,6 +1589,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
               },
             ),
             const SizedBox(height: 20),
+            ],
 
             // ── Full Name & Company Row ────────────────────────────────────
             if (isMobile) ...[
@@ -1991,15 +2074,8 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
         Container(
           decoration: BoxDecoration(
             color: _kCardBg,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _kBorder),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(_isDark ? 40 : 8),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _kBorder, width: 1.0),
           ),
           padding: EdgeInsets.all(isMobile ? 20 : 28),
           child: Column(
@@ -2456,7 +2532,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
             const SizedBox(width: 14),
             Expanded(
               child: ElevatedButton(
-                onPressed: () => context.go('/'),
+                onPressed: () => context.canPop() ? context.pop() : context.go('/login'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _kBrown,
                   foregroundColor: Colors.white,
@@ -2466,7 +2542,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                   ),
                 ),
                 child: Text(
-                  'Return to Home',
+                  'Back to Portal',
                   style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
                 ),
               ),

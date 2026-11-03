@@ -175,8 +175,11 @@ class _SplashPageState extends State<SplashPage>
     if (!mounted || _navigated) return;
     _navigated = true;
 
-    final token = SessionStorage.instance.getStringSync('cubag_token');
     final auth = AuthService();
+    await auth.ensureInitialized();
+    if (!mounted) return;
+
+    final token = SessionStorage.instance.getStringSync('cubag_token');
     final bool loggedIn = (token != null && token.isNotEmpty) || auth.isAuthenticated;
 
     if (loggedIn) {
@@ -200,7 +203,7 @@ class _SplashPageState extends State<SplashPage>
       return;
     }
 
-    context.go('/');
+    context.go('/login');
   }
 
   void _proceedAfterLogin(AuthService auth) {
@@ -617,7 +620,7 @@ class _SplashPageState extends State<SplashPage>
                   TextButton(
                     onPressed: () async {
                       await AuthService().logout();
-                      if (context.mounted) context.go('/');
+                      if (context.mounted) context.go('/login');
                     },
                     child: Text(
                       'Sign in with another account',

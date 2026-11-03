@@ -2,6 +2,7 @@ import os
 import logging
 import random
 import string
+import secrets
 from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
@@ -10,6 +11,7 @@ import resend
 from flask import Blueprint, jsonify, request
 from config.db import get_db
 from flask_jwt_extended import jwt_required, get_jwt
+from config.rate_limit import rate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -261,12 +263,27 @@ def _generate_complaint_id():
 
 
 @complaints_bp.route('/submit', methods=['POST'])
+@rate_limit('complaint_submit', max_requests=5, window_seconds=3600)
 def submit_complaint():
     """
     Public endpoint for filing a trade / customs / broker grievance or complaint.
-    Returns a unique tracking ID and sends a confirmation email to complainant.
+    Returns a unique tracking ID and a 128-bit cryptographic tracking secret.
+    Enforces honeypot spam protection.
     """
     data = request.get_json(silent=True) or {}
+    
+    # Honeypot Anti-Spam Check: bots fill hidden decoy fields
+    honeypot = data.get('hp_field') or data.get('website') or data.get('fax_number')
+    if honeypot:
+        logger.warning("[SPAM] Blocked automated bot complaint submission targeting honeypot: %s", honeypot)
+        # Return fake 201 to prevent automated bots from adapting
+        return jsonify({
+            'success': True,
+            'message': 'Complaint lodged successfully. Keep your tracking token secure to monitor grievance status.',
+            'complaint_id': 'CMP-2026-99999',
+            'tracking_token': '00000000000000000000000000000000'
+        }), 201
+
     name = (data.get('name') or '').strip()
     email = (data.get('email') or '').strip().lower()
     phone = (data.get('phone') or '').strip()
@@ -278,6 +295,8 @@ def submit_complaint():
 
     if not name or not email or not phone or not subject or not description:
         return jsonify({'success': False, 'message': 'Please fill in all required fields (Name, Email, Phone, Subject, and Description).'}), 400
+
+    tracking_secret = secrets.token_hex(16)  # 128-bit cryptographically secure tracking secret
 
     conn = get_db()
     try:
@@ -291,11 +310,11 @@ def submit_complaint():
 
             cursor.execute("""
                 INSERT INTO complaints (
-                    complaint_id, name, email, phone, category, port, target_entity, subject, description, status, assigned_to
+                    complaint_id, name, email, phone, category, port, target_entity, subject, description, status, assigned_to, tracking_secret, created_at, updated_at
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Received', 'Secretariat Grievance Committee'
-                ) RETURNING id, complaint_id, name, email, phone, category, port, target_entity, subject, status, created_at
-            """, (comp_id, name, email, phone, category, port, target_entity, subject, description))
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Received', 'Secretariat Grievance Committee', %s, NOW(), NOW()
+                ) RETURNING complaint_id, category, port, status, created_at
+            """, (comp_id, name, email, phone, category, port, target_entity, subject, description, tracking_secret))
             row = cursor.fetchone()
             conn.commit()
 
@@ -314,21 +333,20 @@ def submit_complaint():
         except Exception as em_err:
             logger.warning(f"Failed to dispatch complaint confirmation email: {em_err}")
 
+        created_dt = row.get('created_at') if row else datetime.utcnow()
+        created_str = created_dt.isoformat() if hasattr(created_dt, 'isoformat') and created_dt else datetime.utcnow().isoformat()
+
         res_payload = jsonify({
             'success': True,
-            'message': 'Complaint lodged successfully. A confirmation email with your Tracking ID has been sent.',
+            'message': 'Complaint lodged successfully. Keep your tracking token secure; both complaint_id and tracking_token are required to view grievance status.',
             'complaint_id': comp_id,
+            'tracking_token': tracking_secret,
             'data': {
                 'complaint_id': comp_id,
-                'name': name,
-                'email': email,
-                'phone': phone,
                 'category': category,
                 'port': port,
-                'target_entity': target_entity,
-                'subject': subject,
                 'status': 'Received',
-                'created_at': row['created_at'].isoformat() if hasattr(row['created_at'], 'isoformat') else str(row['created_at']),
+                'created_at': created_str,
             }
         })
         try:
@@ -346,32 +364,49 @@ def submit_complaint():
         conn.close()
 
 @complaints_bp.route('/track/<complaint_id>', methods=['GET'])
+@rate_limit('complaint_track', max_requests=20, window_seconds=60)
 def track_complaint(complaint_id):
     """
-    Public tracking endpoint. Returns the live status and timeline of a complaint by its ID.
+    Public tracking endpoint. Requires the 128-bit tracking secret to prevent enumeration
+    and information leakage. Never returns private complainant or party details.
     """
     cid = (complaint_id or '').strip().upper()
     if not cid:
         return jsonify({'success': False, 'message': 'Complaint ID is required.'}), 400
+
+    token = (request.args.get('token') or request.args.get('tracking_token') or request.headers.get('X-Tracking-Token') or '').strip()
+    if not token:
+        return jsonify({
+            'success': False,
+            'message': 'Tracking secret token is required. Please supply ?token=<secret> or header X-Tracking-Token.'
+        }), 401
 
     conn = get_db()
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT 
-                    id, complaint_id, name, email, phone, category, port, 
-                    target_entity, subject, description, status, resolution_notes, 
-                    assigned_to, priority, created_at, updated_at
+                    complaint_id, category, port, status, resolution_notes, 
+                    created_at, updated_at
                 FROM complaints 
-                WHERE UPPER(complaint_id) = %s OR UPPER(complaint_id) = %s
-            """, (cid, cid.replace(' ', '')))
+                WHERE UPPER(complaint_id) = %s AND tracking_secret = %s
+            """, (cid, token))
             comp = cursor.fetchone()
 
         if not comp:
-            return jsonify({'success': False, 'message': f'No complaint found with ID: {cid}. Please check the reference number and try again.'}), 404
+            return jsonify({
+                'success': False, 
+                'message': 'No grievance found matching this complaint ticket and tracking token.'
+            }), 404
 
         # Build tracking timeline based on current status
-        status = comp['status'] or 'Received'
+        status = comp.get('status') or 'Received'
+        created_at_dt = comp.get('created_at')
+        updated_at_dt = comp.get('updated_at') or created_at_dt
+
+        created_str = created_at_dt.strftime('%d %b %Y, %I:%M %p') if hasattr(created_at_dt, 'strftime') and created_at_dt else 'Recent'
+        updated_str = updated_at_dt.strftime('%d %b %Y') if hasattr(updated_at_dt, 'strftime') and updated_at_dt else 'In Progress'
+
         timeline = [
             {
                 'step': 1,
@@ -379,7 +414,7 @@ def track_complaint(complaint_id):
                 'desc': 'Formal grievance logged into CUBAG Central Secretariat Registry.',
                 'done': True,
                 'active': status == 'Received',
-                'date': comp['created_at'].strftime('%d %b %Y, %I:%M %p') if hasattr(comp['created_at'], 'strftime') else str(comp['created_at'])
+                'date': created_str
             },
             {
                 'step': 2,
@@ -387,44 +422,35 @@ def track_complaint(complaint_id):
                 'desc': 'Assigned to the Grievance & Disciplinary Standing Committee for preliminary merit assessment.',
                 'done': status in ('Under Review', 'Investigating', 'Resolved', 'Closed'),
                 'active': status == 'Under Review',
-                'date': comp['updated_at'].strftime('%d %b %Y') if (status in ('Under Review', 'Investigating', 'Resolved', 'Closed') and hasattr(comp['updated_at'], 'strftime')) else 'Pending'
+                'date': updated_str if status in ('Under Review', 'Investigating', 'Resolved', 'Closed') else 'Pending'
             },
             {
                 'step': 3,
                 'title': 'Port & Stakeholder Investigation',
-                'desc': f"Evidence verification and stakeholder engagement at {comp['port'] or 'Port'}.",
+                'desc': f"Evidence verification and stakeholder engagement at {comp.get('port') or 'Port'}.",
                 'done': status in ('Investigating', 'Resolved', 'Closed'),
                 'active': status == 'Investigating',
-                'date': comp['updated_at'].strftime('%d %b %Y') if (status in ('Investigating', 'Resolved', 'Closed') and hasattr(comp['updated_at'], 'strftime')) else 'Pending'
+                'date': updated_str if status in ('Investigating', 'Resolved', 'Closed') else 'Pending'
             },
             {
                 'step': 4,
                 'title': 'Resolution & Official Action',
-                'desc': comp['resolution_notes'] or 'Formal resolution notice issued by CUBAG Executive Committee.',
+                'desc': comp.get('resolution_notes') or 'Formal resolution notice issued by CUBAG Executive Committee.',
                 'done': status in ('Resolved', 'Closed'),
                 'active': status in ('Resolved', 'Closed'),
-                'date': comp['updated_at'].strftime('%d %b %Y') if (status in ('Resolved', 'Closed') and hasattr(comp['updated_at'], 'strftime')) else 'Pending'
+                'date': updated_str if status in ('Resolved', 'Closed') else 'Pending'
             }
         ]
 
         return jsonify({
             'success': True,
             'data': {
-                'complaint_id': comp['complaint_id'],
-                'name': comp['name'],
-                'email': comp['email'],
-                'phone': comp['phone'],
-                'category': comp['category'],
-                'port': comp['port'],
-                'target_entity': comp['target_entity'],
-                'subject': comp['subject'],
-                'description': comp['description'],
-                'status': comp['status'],
-                'resolution_notes': comp['resolution_notes'],
-                'assigned_to': comp['assigned_to'],
-                'priority': comp['priority'],
-                'created_at': comp['created_at'].isoformat() if hasattr(comp['created_at'], 'isoformat') else str(comp['created_at']),
-                'updated_at': comp['updated_at'].isoformat() if hasattr(comp['updated_at'], 'isoformat') else str(comp['updated_at']),
+                'complaint_id': comp.get('complaint_id'),
+                'category': comp.get('category'),
+                'port': comp.get('port'),
+                'status': comp.get('status'),
+                'created_at': created_at_dt.isoformat() if hasattr(created_at_dt, 'isoformat') and created_at_dt else None,
+                'updated_at': updated_at_dt.isoformat() if hasattr(updated_at_dt, 'isoformat') and updated_at_dt else None,
                 'timeline': timeline
             }
         }), 200

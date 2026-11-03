@@ -1,0 +1,498 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CUBAG Public REST API",
+    "description": "Production REST API for the Customs Brokers Association Ghana (CUBAG) public web portal. Designed for independent website developers, external aggregators, and regulatory portals. Provides public homepage composition (`portal-summary`), verified broker lookups, cryptographic receipt verification, grievance submission/tracking, industry bulletins, accredited CTI courses, and indicative forex rates.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "CUBAG Secretariat Technical Operations",
+      "email": "eaap2026@eventslabs.org"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://cubag-api-server.fly.dev",
+      "description": "Production API Server (Fly.io)"
+    },
+    {
+      "url": "http://localhost:8080",
+      "description": "Local Development Server"
+    }
+  ],
+  "tags": [
+    { "name": "Composite & Portal", "description": "High-performance aggregated homepage endpoints" },
+    { "name": "Verification", "description": "Cryptographically secure member and payment receipt verification" },
+    { "name": "Directory & Ports", "description": "Accredited broker directory and operating maritime/air/border ports" },
+    { "name": "Grievance & Complaints", "description": "Public trade grievance filing and token-protected tracking" },
+    { "name": "Publications & Events", "description": "Official press, circulars, industry events, and CTI courses" }
+  ],
+  "paths": {
+    "/api/v1/public/portal-summary": {
+      "get": {
+        "tags": ["Composite & Portal"],
+        "summary": "Consolidated Homepage Portal Summary",
+        "description": "High-performance aggregated payload for the public website homepage. Returns active stats, indicative exchange rates, top 4 news items, port bulletins, upcoming events, CTI courses, and operating ports in a single round-trip. Cached on the edge and server for 60 seconds. Rate limited to 60 requests/minute per IP.",
+        "responses": {
+          "200": {
+            "description": "Composite homepage data payload",
+            "headers": {
+              "X-Cache": { "schema": { "type": "string", "example": "HIT" } },
+              "Cache-Control": { "schema": { "type": "string", "example": "public, max-age=60" } }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "stats": {
+                      "type": "object",
+                      "properties": {
+                        "active_members": { "type": "integer", "example": 8 },
+                        "licensed_brokers": { "type": "integer", "example": 7 },
+                        "operating_ports": { "type": "integer", "example": 6 },
+                        "cti_courses": { "type": "integer", "example": 3 }
+                      }
+                    },
+                    "exchange_rates": {
+                      "type": "object",
+                      "properties": {
+                        "usd_ghs": { "type": "number", "example": 15.0 },
+                        "eur_ghs": { "type": "number", "example": 16.0 },
+                        "gbp_ghs": { "type": "number", "example": 19.0 },
+                        "cny_ghs": { "type": "number", "example": 2.0 },
+                        "source": { "type": "string", "example": "Bank of Ghana Indicative Rates" },
+                        "effective_date": { "type": "string", "example": "2026-10-13T08:03:41.840853" }
+                      }
+                    },
+                    "latest_news": { "type": "array", "items": { "$ref": "#/components/schemas/NewsItem" } },
+                    "bulletins": { "type": "array", "items": { "$ref": "#/components/schemas/PortBulletin" } },
+                    "upcoming_events": { "type": "array", "items": { "$ref": "#/components/schemas/PublicEvent" } },
+                    "cti_courses": { "type": "array", "items": { "$ref": "#/components/schemas/CTICourse" } },
+                    "ports": { "type": "array", "items": { "$ref": "#/components/schemas/PortItem" } },
+                    "timestamp": { "type": "string", "example": "2026-11-02T21:40:00Z" }
+                  }
+                }
+              }
+            }
+          },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/api/v1/public/stats": {
+      "get": {
+        "tags": ["Composite & Portal"],
+        "summary": "Key Association Statistics",
+        "description": "Returns counts of verified active members, licensed customs brokers, active ports, and accredited CTI courses. Cached for 120 seconds.",
+        "responses": {
+          "200": {
+            "description": "Current association statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "active_members": { "type": "integer", "example": 8 },
+                    "licensed_brokers": { "type": "integer", "example": 7 },
+                    "operating_ports": { "type": "integer", "example": 6 },
+                    "cti_courses": { "type": "integer", "example": 3 }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/verify-member": {
+      "get": {
+        "tags": ["Verification"],
+        "summary": "Verify Customs Broker Standing",
+        "description": "Non-disclosing verification of a customs broker or corporate member's current legal standing and license. Does not permit sequential enumeration by internal integer IDs. Returns only approved public accreditation details.",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "description": "Membership number (e.g. `CUBAG-2026-0008`), Customs Broker license (e.g. `CUBAG-LIC-2026-0008`), or registered company name.",
+            "schema": { "type": "string", "example": "CUBAG-2026-0008" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verification result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "verified": { "type": "boolean", "example": true },
+                    "standing_status": { "type": "string", "example": "Good Standing" },
+                    "good_standing": { "type": "boolean", "example": true },
+                    "company_name": { "type": "string", "example": "ANTWI NYAME ENTERPRISE" },
+                    "membership_number": { "type": "string", "example": "CUBAG-2026-0008" },
+                    "license_number": { "type": "string", "example": "CUBAG-LIC-2026-0008" },
+                    "member_category": { "type": "string", "example": "Corporate Member" },
+                    "primary_port": { "type": "string", "example": "Tema Port" },
+                    "valid_until": { "type": "string", "example": "31 Dec 2026" },
+                    "verified_at": { "type": "string", "example": "02 Nov 2026" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Missing or query too short (< 3 characters)" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/api/v1/public/verify-receipt": {
+      "get": {
+        "tags": ["Verification"],
+        "summary": "Cryptographically Verify Payment Receipt",
+        "description": "Secure receipt verification intended for QR code scans on physical or digital receipts. Requires a 128-bit cryptographic verification token (`token` or `ref`). Sequential/predictable lookups (e.g. `ref=1` or `ref=TXN-000001`) are rejected with HTTP 400. Does not expose private payer identity, banking details, or internal database IDs.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "description": "128-bit cryptographic verification token (minimum 16 characters).",
+            "schema": { "type": "string", "example": "demo_receipt_token_7a8b9c0d1e2f" }
+          },
+          {
+            "name": "amount",
+            "in": "query",
+            "required": false,
+            "description": "Optional expected payment amount for dual verification matching.",
+            "schema": { "type": "number", "example": 100.00 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Receipt validity and official status confirmation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "verified": { "type": "boolean", "example": true },
+                    "verification_token": { "type": "string", "example": "demo_receipt_token_7a8b9c0d1e2f" },
+                    "status": { "type": "string", "example": "paid" },
+                    "amount": { "type": "number", "example": 100.0 },
+                    "currency": { "type": "string", "example": "GHS" },
+                    "description": { "type": "string", "example": "Annual Practicing License Renewal" },
+                    "issued_at": { "type": "string", "example": "2026-10-15T12:00:00" },
+                    "paid_at": { "type": "string", "example": "2026-10-15T12:05:00" },
+                    "issuing_authority": { "type": "string", "example": "Customs Brokers Association Ghana (CUBAG)" },
+                    "verified_at": { "type": "string", "example": "2026-11-02T21:40:00.123456" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid, missing, or predictable token (minimum 16 chars required)" },
+          "404": { "description": "No receipt matching token" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/api/v1/public/complaints": {
+      "post": {
+        "tags": ["Grievance & Complaints"],
+        "summary": "Submit Trade Grievance or Port Complaint",
+        "description": "Public submission endpoint for trade, customs, or broker complaints. Protected by honeypot anti-spam verification (`hp_field`). Returns an official grievance ticket ID and a 128-bit cryptographic tracking token. Rate limited to 5 submissions/hour per IP.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "phone", "subject", "description"],
+                "properties": {
+                  "name": { "type": "string", "example": "Kofi Mensah" },
+                  "email": { "type": "string", "format": "email", "example": "kofi.mensah@example.com" },
+                  "phone": { "type": "string", "example": "+233244123456" },
+                  "category": { "type": "string", "example": "Customs Valuation Delay" },
+                  "port": { "type": "string", "example": "Tema Port" },
+                  "target_entity": { "type": "string", "example": "Terminal Operator MPS" },
+                  "subject": { "type": "string", "example": "Excess Demurrage Assessment" },
+                  "description": { "type": "string", "example": "Clearance delay incurred due to ICUMS transmission error at MPS Gate 2." },
+                  "hp_field": { "type": "string", "description": "Honeypot field — MUST leave empty. Filled values are flagged as spam." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Grievance lodged successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Complaint lodged successfully. Keep your tracking token secure..." },
+                    "complaint_id": { "type": "string", "example": "CMP-2026-80069" },
+                    "tracking_token": { "type": "string", "example": "demo_tracking_token_4f5e6d7c8b9a" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "complaint_id": { "type": "string", "example": "CMP-2026-80069" },
+                        "category": { "type": "string", "example": "Customs Valuation Delay" },
+                        "port": { "type": "string", "example": "Tema Port" },
+                        "status": { "type": "string", "example": "Received" },
+                        "created_at": { "type": "string", "example": "2026-11-02T21:40:00Z" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Missing required fields" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/api/v1/public/complaints/track/{complaint_id}": {
+      "get": {
+        "tags": ["Grievance & Complaints"],
+        "summary": "Track Grievance Secretariat Progression",
+        "description": "Enquiry endpoint for tracking the resolution progress of a filed grievance. Protected against enumeration: requires the matching 128-bit cryptographic tracking secret token (`?token=...` or `X-Tracking-Token` header). Strips all private complainant PII and target entity internal remarks.",
+        "parameters": [
+          {
+            "name": "complaint_id",
+            "in": "path",
+            "required": true,
+            "description": "Ticket ID returned at submission (e.g. `CMP-2026-80069`).",
+            "schema": { "type": "string", "example": "CMP-2026-80069" }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "description": "128-bit tracking secret issued at submission.",
+            "schema": { "type": "string", "example": "demo_tracking_token_4f5e6d7c8b9a" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Live grievance progress timeline",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "complaint_id": { "type": "string", "example": "CMP-2026-80069" },
+                        "category": { "type": "string", "example": "Customs Valuation Delay" },
+                        "port": { "type": "string", "example": "Tema Port" },
+                        "status": { "type": "string", "example": "Received" },
+                        "created_at": { "type": "string", "example": "2026-11-02T21:40:00Z" },
+                        "updated_at": { "type": "string", "example": "2026-11-02T21:40:00Z" },
+                        "timeline": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "step": { "type": "integer", "example": 1 },
+                              "title": { "type": "string", "example": "Complaint Lodged" },
+                              "desc": { "type": "string", "example": "Formal grievance logged into CUBAG Central Secretariat Registry." },
+                              "done": { "type": "boolean", "example": true },
+                              "active": { "type": "boolean", "example": true },
+                              "date": { "type": "string", "example": "02 Nov 2026, 09:30 PM" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Missing tracking secret token" },
+          "404": { "description": "Grievance not found or invalid token" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/api/v1/public/members": {
+      "get": {
+        "tags": ["Directory & Ports"],
+        "summary": "Public Directory of Customs Brokers",
+        "description": "Paginated directory of active and licensed customs brokers and freight forwarding firms registered with CUBAG.",
+        "parameters": [
+          { "name": "search", "in": "query", "description": "Search by firm name, contact person, or license", "schema": { "type": "string" } },
+          { "name": "port", "in": "query", "description": "Filter by operating port", "schema": { "type": "string" } },
+          { "name": "member_type", "in": "query", "description": "Filter by membership category (Corporate, Associate, Licentiate)", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "List of active broker entities" }
+        }
+      }
+    },
+    "/api/v1/public/ports": {
+      "get": {
+        "tags": ["Directory & Ports"],
+        "summary": "Operating Ports & Border Posts",
+        "description": "List of all active seaports, international airports, and land border customs clearing stations in Ghana.",
+        "responses": {
+          "200": { "description": "Active port stations" }
+        }
+      }
+    },
+    "/api/v1/public/news": {
+      "get": {
+        "tags": ["Publications & Events"],
+        "summary": "Official Press Releases & News",
+        "description": "Public trade circulars, leadership announcements, and maritime policy updates.",
+        "responses": {
+          "200": { "description": "Latest news feed" }
+        }
+      }
+    },
+    "/api/v1/public/bulletins": {
+      "get": {
+        "tags": ["Publications & Events"],
+        "summary": "Port Operational Bulletins",
+        "description": "Real-time port operational status, berth delays, congestion notices, and ICUMS system advisories.",
+        "responses": {
+          "200": { "description": "Port operational bulletins" }
+        }
+      }
+    },
+    "/api/v1/public/events": {
+      "get": {
+        "tags": ["Publications & Events"],
+        "summary": "Industry Events & General Meetings",
+        "description": "Upcoming maritime industry conferences, stakeholder forums, and AGM sessions.",
+        "parameters": [
+          { "name": "type", "in": "query", "description": "Filter by 'all', 'event', or 'meeting'", "schema": { "type": "string", "default": "all" } }
+        ],
+        "responses": {
+          "200": { "description": "Upcoming events list" }
+        }
+      }
+    },
+    "/api/v1/public/courses": {
+      "get": {
+        "tags": ["Publications & Events"],
+        "summary": "Accredited CTI Professional Courses",
+        "description": "Customs Technical Institute (CTI) professional certification programs, freight forwarding diploma modules, and upcoming cohort dates.",
+        "responses": {
+          "200": { "description": "Available CTI courses" }
+        }
+      }
+    },
+    "/api/v1/public/gallery": {
+      "get": {
+        "tags": ["Publications & Events"],
+        "summary": "Public Photo Gallery",
+        "description": "High-resolution curated imagery from association conferences, award ceremonies, and port inaugurations.",
+        "responses": {
+          "200": { "description": "Gallery photos" }
+        }
+      }
+    },
+    "/api/v1/public/surveys": {
+      "get": {
+        "tags": ["Publications & Events"],
+        "summary": "Active Public & Stakeholder Surveys",
+        "description": "Active policy sentiment and port operational feedback surveys open to public and industry participants.",
+        "responses": {
+          "200": { "description": "Active survey questionnaires" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "NewsItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "title": { "type": "string", "example": "CUBAG & ICUMS 2.0 Joint Framework on Port Clearance Expedited Process" },
+          "summary": { "type": "string", "example": "The Customs Brokers Association Ghana (CUBAG) in partnership with the GRA..." },
+          "image_url": { "type": "string", "example": "https://images.unsplash.com/photo-1578575437130-527eed3abbec" },
+          "source": { "type": "string", "example": "CUBAG Official Press" },
+          "published_at": { "type": "string", "example": "2026-10-31T18:00:00" }
+        }
+      },
+      "PortBulletin": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "port_name": { "type": "string", "example": "Tema Port - MPS Terminal 3" },
+          "code": { "type": "string", "example": "TMP" },
+          "status": { "type": "string", "example": "Normal Operations" },
+          "notice": { "type": "string", "example": "Average gate turnaround under 45 minutes; ICUMS clearance 100% operational." },
+          "status_color": { "type": "string", "example": "green" }
+        }
+      },
+      "PublicEvent": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "title": { "type": "string", "example": "Annual Maritime Logistics & Customs Clearance Summit 2026" },
+          "description": { "type": "string", "example": "National convention bringing together GPHA, GRA Customs Division, and licensed freight forwarders." },
+          "date": { "type": "string", "example": "2026-11-20" },
+          "time": { "type": "string", "example": "09:00 AM" },
+          "location": { "type": "string", "example": "Tema Port Maritime Centre" },
+          "capacity": { "type": "integer", "example": 350 }
+        }
+      },
+      "CTICourse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "title": { "type": "string", "example": "Freight Forwarding Fundamentals & HS Classification" },
+          "start_date": { "type": "string", "example": "15 Dec 2026" },
+          "duration": { "type": "string", "example": "4 Weeks" },
+          "mode": { "type": "string", "example": "In-Person / Online" },
+          "fee": { "type": "number", "example": 850.0 },
+          "currency": { "type": "string", "example": "GHS" },
+          "cohort_status": { "type": "string", "example": "Enrollment Open" },
+          "description": { "type": "string", "example": "Foundational curriculum covering tariff schedules and customs clearance procedures." },
+          "accredited": { "type": "boolean", "example": true }
+        }
+      },
+      "PortItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "name": { "type": "string", "example": "Tema Port" },
+          "code": { "type": "string", "example": "TMP" }
+        }
+      }
+    },
+    "responses": {
+      "TooManyRequests": {
+        "description": "Rate limit exceeded (HTTP 429)",
+        "headers": {
+          "Retry-After": { "schema": { "type": "integer", "example": 45 } }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean", "example": false },
+                "message": { "type": "string", "example": "Too many requests. Please wait a moment and try again." },
+                "error": { "type": "string", "example": "Rate limit exceeded" },
+                "retry_after_seconds": { "type": "integer", "example": 45 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

@@ -161,6 +161,13 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     final interBold =
         pw.Font.ttf(await rootBundle.load('assets/fonts/Inter-700.ttf'));
 
+    // Load CUBAG official seal / logo
+    pw.MemoryImage? logoImage;
+    try {
+      final logoBytes = await rootBundle.load('assets/images/logo.jpeg');
+      logoImage = pw.MemoryImage(logoBytes.buffer.asUint8List());
+    } catch (_) {}
+
     final pdf = pw.Document(
       theme: pw.ThemeData.withFont(base: interRegular, bold: interBold),
     );
@@ -183,25 +190,39 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                 // Header
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
                   children: [
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    pw.Row(
+                      crossAxisAlignment: pw.CrossAxisAlignment.center,
                       children: [
-                        pw.Text(
-                          'CUBAG',
-                          style: pw.TextStyle(
-                            fontSize: 24,
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColor.fromInt(0xFF6B3E26),
+                        if (logoImage != null) ...[
+                          pw.Container(
+                            width: 46,
+                            height: 46,
+                            margin: const pw.EdgeInsets.only(right: 12),
+                            child: pw.Image(logoImage),
                           ),
-                        ),
-                        pw.SizedBox(height: 4),
-                        pw.Text(
-                          'Customs Brokers Association of Ghana',
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            color: PdfColor.fromInt(0xFF6F625B),
-                          ),
+                        ],
+                        pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text(
+                              'CUBAG',
+                              style: pw.TextStyle(
+                                fontSize: 24,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColor.fromInt(0xFF6B3E26),
+                              ),
+                            ),
+                            pw.SizedBox(height: 3),
+                            pw.Text(
+                              'Customs Brokers Association of Ghana',
+                              style: pw.TextStyle(
+                                fontSize: 11.5,
+                                color: PdfColor.fromInt(0xFF6F625B),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -466,7 +487,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     final dateStr = _formatDateTime(payment['created_at']);
     final desc =
         payment['description']?.toString() ?? 'General Membership Dues';
-    final verifyUrl = 'https://cubag.org/api/payments/public/verify-receipt?ref=$ref&amount=${_fmt(amount)}';
+    final verifyUrl = 'https://cubag-api-server.fly.dev/#/verify-payment?ref=$ref&amount=${_fmt(amount)}';
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dialogBg = isDark ? const Color(0xFF281710) : Colors.white;
@@ -486,7 +507,10 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: borderCol, width: 1.0),
+        ),
         backgroundColor: dialogBg,
         insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: ConstrainedBox(
@@ -855,33 +879,33 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                               minimumSize: const Size(0, 48),
                               padding: const EdgeInsets.symmetric(horizontal: 12),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              textStyle: GoogleFonts.outfit(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
+                              textStyle: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13.5,
                               ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     ElevatedButton.icon(
                       onPressed: () => Navigator.pop(ctx),
-                      icon: const Icon(Icons.check_rounded, size: 16),
+                      icon: const Icon(Icons.check_rounded, size: 15),
                       label: const Text('Done'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _kOrange,
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        minimumSize: const Size(double.infinity, 48),
+                        minimumSize: const Size(double.infinity, 44),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        textStyle: GoogleFonts.outfit(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
+                        textStyle: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13.5,
                         ),
                       ),
                     ),
@@ -1054,21 +1078,15 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
               // ── 1. Financial Ledger Banner ──────────────────────────────────
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(28),
+                padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [_kBrown, _kDarkBrown],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _kDarkBrown.withAlpha(50),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: borderCol, width: 1.0),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1083,42 +1101,43 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                             children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
+                                  horizontal: 8,
+                                  vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: _kOrange.withAlpha(30),
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: _kOrange.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(4),
                                   border: Border.all(
-                                    color: _kOrange.withAlpha(60),
+                                    color: _kOrange.withValues(alpha: 0.4),
+                                    width: 1.0,
                                   ),
                                 ),
-                                child: Text(
+                                child: const Text(
                                   'OFFICIAL FINANCIAL STATEMENT',
-                                  style: GoogleFonts.outfit(
+                                  style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.5,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.4,
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 14),
+                              const SizedBox(height: 10),
                               Text(
                                 'Member Dues & Payment Ledger',
-                                style: GoogleFonts.outfit(
+                                style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: isDesktop ? 28 : 24,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.5,
+                                  fontSize: isDesktop ? 22 : 18,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.3,
                                 ),
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 4),
                               Text(
-                                'Track your verified association dues, practice license renewals, and official receipts.',
-                                style: GoogleFonts.inter(
-                                  color: Colors.white.withAlpha(200),
-                                  fontSize: 15,
+                                'Track verified association dues, practice license renewals, and official treasury receipts.',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  fontSize: 13.5,
                                   height: 1.4,
                                 ),
                               ),
@@ -1130,8 +1149,8 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                           tooltip: 'Refresh Statement',
                           icon: _loading
                               ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
+                                  width: 18,
+                                  height: 18,
                                   child: CircularProgressIndicator(
                                     color: Colors.white,
                                     strokeWidth: 2,
@@ -1140,56 +1159,57 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                               : const Icon(
                                   Icons.refresh_rounded,
                                   color: Colors.white,
+                                  size: 20,
                                 ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 18),
                     Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
+                      spacing: 10,
+                      runSpacing: 10,
                       children: [
                         ElevatedButton.icon(
                           onPressed: () => context.go('/payments'),
-                          icon: const Icon(Icons.payment_rounded, size: 16),
+                          icon: const Icon(Icons.payment_rounded, size: 15),
                           label: const Text('Make a Payment / Settle Dues'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _kOrange,
                             foregroundColor: Colors.white,
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 14,
+                              horizontal: 16,
+                              vertical: 10,
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            textStyle: GoogleFonts.outfit(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15,
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13.5,
                             ),
                           ),
                         ),
                         OutlinedButton.icon(
                           onPressed: () => context.go('/membership-services'),
-                          icon: const Icon(Icons.badge_outlined, size: 16),
+                          icon: const Icon(Icons.badge_outlined, size: 15),
                           label: const Text('View Digital License Card'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
                             side: BorderSide(
-                              color: Colors.white.withAlpha(150),
-                              width: 1.5,
+                              color: Colors.white.withValues(alpha: 0.6),
+                              width: 1.0,
                             ),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 14,
+                              horizontal: 16,
+                              vertical: 10,
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            textStyle: GoogleFonts.outfit(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15,
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13.5,
                             ),
                           ),
                         ),
@@ -1253,11 +1273,11 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
 
               // ── 3. Search and Category Filter Toolbar ──────────────────────
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: cardBg,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: borderCol),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: borderCol, width: 1.0),
                 ),
                 child: isDesktop
                     ? Row(
@@ -1267,8 +1287,8 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                             child: TextFormField(
                               controller: _searchCtrl,
                               onChanged: _onSearchChanged,
-                              style: GoogleFonts.inter(
-                                fontSize: 16,
+                              style: TextStyle(
+                                fontSize: 14,
                                 color: textCol,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -1276,19 +1296,19 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                                 hintText:
                                     'Search by reference, fee description, or date...',
                                 hintStyle: TextStyle(
-                                  color: mutedCol.withAlpha(160),
-                                  fontSize: 15,
+                                  color: mutedCol.withValues(alpha: 0.7),
+                                  fontSize: 13.5,
                                 ),
                                 prefixIcon: Icon(
                                   Icons.search_rounded,
                                   color: titleCol,
-                                  size: 20,
+                                  size: 18,
                                 ),
                                 suffixIcon: _searchQuery.isNotEmpty
                                     ? IconButton(
                                         icon: Icon(
                                           Icons.clear_rounded,
-                                          size: 18,
+                                          size: 16,
                                           color: mutedCol,
                                         ),
                                         onPressed: () {
@@ -1303,28 +1323,28 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                                 filled: true,
                                 fillColor: surfaceBg,
                                 border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: borderCol),
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: borderCol, width: 1.0),
                                 ),
                                 enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: borderCol),
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: borderCol, width: 1.0),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(8),
                                   borderSide: const BorderSide(
-                                    color: _kOrange,
-                                    width: 2,
+                                    color: _kBrown,
+                                    width: 1.5,
                                   ),
                                 ),
                                 contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 14,
+                                  horizontal: 14,
+                                  vertical: 11,
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 14),
+                          const SizedBox(width: 12),
                           Expanded(
                             flex: 2,
                             child: _buildDropdownFilter(isDark),
@@ -1336,7 +1356,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                           TextFormField(
                             controller: _searchCtrl,
                             onChanged: _onSearchChanged,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 14,
                               color: textCol,
                               fontWeight: FontWeight.w600,
@@ -1344,19 +1364,19 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                             decoration: InputDecoration(
                               hintText: 'Search transactions...',
                               hintStyle: TextStyle(
-                                color: mutedCol.withAlpha(160),
-                                fontSize: 13,
+                                color: mutedCol.withValues(alpha: 0.7),
+                                fontSize: 13.5,
                               ),
                               prefixIcon: Icon(
                                 Icons.search_rounded,
                                 color: titleCol,
-                                size: 20,
+                                size: 18,
                               ),
                               suffixIcon: _searchQuery.isNotEmpty
                                   ? IconButton(
                                       icon: Icon(
                                         Icons.clear_rounded,
-                                        size: 18,
+                                        size: 16,
                                         color: mutedCol,
                                       ),
                                       onPressed: () {
@@ -1371,33 +1391,33 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                               filled: true,
                               fillColor: surfaceBg,
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: borderCol),
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: borderCol, width: 1.0),
                               ),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: borderCol),
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: borderCol, width: 1.0),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(8),
                                 borderSide: const BorderSide(
-                                  color: _kOrange,
-                                  width: 2,
+                                  color: _kBrown,
+                                  width: 1.5,
                                 ),
                               ),
                               contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
+                                horizontal: 14,
+                                vertical: 11,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 10),
                           _buildDropdownFilter(isDark),
                         ],
                       ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               // ── 4. Transaction Ledger List ──────────────────────────────────
               if (_loading && paginated.isEmpty)
@@ -1405,76 +1425,78 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: 4,
-                  separatorBuilder: (ctx, i) => const SizedBox(height: 12),
+                  separatorBuilder: (ctx, i) => const SizedBox(height: 10),
                   itemBuilder: (ctx, i) => const ShimmerListTile(),
                 )
               else if (paginated.isEmpty)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
-                    vertical: 60,
-                    horizontal: 24,
+                    vertical: 48,
+                    horizontal: 20,
                   ),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: cardBg,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: borderCol),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: borderCol, width: 1.0),
                   ),
                   child: Column(
                     children: [
                       Container(
-                        width: 72,
-                        height: 72,
+                        width: 52,
+                        height: 52,
                         decoration: BoxDecoration(
                           color: surfaceBg,
-                          shape: BoxShape.circle,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: borderCol, width: 1.0),
                         ),
                         child: Icon(
                           Icons.receipt_long_rounded,
-                          size: 36,
+                          size: 26,
                           color: titleCol,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                       Text(
                         _searchQuery.isNotEmpty
                             ? 'No transactions match "$_searchQuery"'
                             : (_filter == 'all'
                                   ? 'Your payment ledger is currently empty.'
                                   : 'No $_filter transactions found.'),
-                        style: GoogleFonts.outfit(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
                           color: textCol,
+                          letterSpacing: -0.2,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Text(
                         'When you settle association dues or service invoices, receipts will appear here automatically.',
-                        style: GoogleFonts.inter(fontSize: 15, color: mutedCol),
+                        style: TextStyle(fontSize: 13.5, color: mutedCol),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 18),
                       ElevatedButton.icon(
                         onPressed: () => context.go('/payments'),
-                        icon: const Icon(Icons.add_rounded, size: 16),
+                        icon: const Icon(Icons.add_rounded, size: 15),
                         label: const Text('Make a Payment'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _kOrange,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
+                            horizontal: 16,
+                            vertical: 10,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          textStyle: GoogleFonts.outfit(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                          textStyle: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13.5,
                           ),
                         ),
                       ),
@@ -1486,7 +1508,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: paginated.length,
-                  separatorBuilder: (ctx, i) => const SizedBox(height: 12),
+                  separatorBuilder: (ctx, i) => const SizedBox(height: 10),
                   itemBuilder: (ctx, i) {
                     final pay = paginated[i] as Map<String, dynamic>;
                     final status =
@@ -1505,18 +1527,11 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                         'General Association Dues';
 
                     return Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: cardBg,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: borderCol),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(4),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: borderCol, width: 1.0),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1526,19 +1541,20 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                width: 44,
-                                height: 44,
+                                width: 38,
+                                height: 38,
                                 decoration: BoxDecoration(
                                   color: config['bg'] as Color,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
-                                    color: config['border'] as Color,
+                                    color: (config['border'] as Color).withValues(alpha: 0.5),
+                                    width: 1.0,
                                   ),
                                 ),
                                 child: Icon(
                                   config['icon'] as IconData,
                                   color: config['color'] as Color,
-                                  size: 22,
+                                  size: 19,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -1553,10 +1569,11 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                                         Expanded(
                                           child: Text(
                                             desc,
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 17,
-                                              fontWeight: FontWeight.w800,
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
                                               color: textCol,
+                                              letterSpacing: -0.2,
                                             ),
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
@@ -1565,10 +1582,14 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                                         const SizedBox(width: 8),
                                         Text(
                                           'GH₵ ${_fmt(amount)}',
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w900,
+                                          style: TextStyle(
+                                            fontSize: 16.5,
+                                            fontWeight: FontWeight.w700,
                                             color: titleCol,
+                                            letterSpacing: -0.3,
+                                            fontFeatures: const [
+                                              FontFeature.tabularFigures(),
+                                            ],
                                           ),
                                         ),
                                       ],
@@ -1578,24 +1599,24 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                                       children: [
                                         Container(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
+                                            horizontal: 7,
                                             vertical: 2,
                                           ),
                                           decoration: BoxDecoration(
                                             color: config['bg'] as Color,
-                                            borderRadius: BorderRadius.circular(
-                                              6,
-                                            ),
+                                            borderRadius: BorderRadius.circular(4),
                                             border: Border.all(
-                                              color: config['border'] as Color,
+                                              color: (config['border'] as Color).withValues(alpha: 0.5),
+                                              width: 1.0,
                                             ),
                                           ),
                                           child: Text(
                                             config['label'] as String,
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 11.5,
-                                              fontWeight: FontWeight.w800,
+                                            style: TextStyle(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w700,
                                               color: config['color'] as Color,
+                                              letterSpacing: 0.4,
                                             ),
                                           ),
                                         ),
@@ -1603,10 +1624,13 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                                         Expanded(
                                           child: Text(
                                             'Ref: $ref',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 13,
+                                            style: TextStyle(
+                                              fontSize: 12.5,
                                               color: mutedCol,
-                                              fontWeight: FontWeight.w600,
+                                              fontWeight: FontWeight.w500,
+                                              fontFeatures: const [
+                                                FontFeature.tabularFigures(),
+                                              ],
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -1619,11 +1643,11 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                             ],
                           ),
 
-                          const SizedBox(height: 12),
-                          Divider(color: borderCol.withAlpha(120), height: 1),
                           const SizedBox(height: 10),
+                          Divider(color: borderCol, height: 1.0),
+                          const SizedBox(height: 8),
 
-                          // Footer: Date on left, and actions on right or wrapped below
+                          // Footer: Date on left, and actions on right
                           Wrap(
                             alignment: WrapAlignment.spaceBetween,
                             crossAxisAlignment: WrapCrossAlignment.center,
@@ -1641,185 +1665,189 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                                   const SizedBox(width: 4),
                                   Text(
                                     dateStr,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13,
+                                    style: TextStyle(
+                                      fontSize: 12,
                                       color: mutedCol,
+                                      fontFeatures: const [
+                                        FontFeature.tabularFigures(),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
                               Wrap(
-                                spacing: 8,
+                                spacing: 6,
                                 runSpacing: 6,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  if (status == 'pending')
-                                    InkWell(
-                                      onTap: _verifyingId == pay['id']
-                                          ? null
-                                          : () async {
-                                              setState(
-                                                () => _verifyingId = pay['id'],
-                                              );
-                                              try {
-                                                final res = await ApiService().get(
-                                                  '/payments/verify/${pay['payment_ref']}',
-                                                );
-                                                if (res.data['status'] ==
-                                                    'success') {
-                                                  _fetch();
-                                                }
-                                              } catch (e, st) {
-                                                AppLogger.error(
-                                                  'payment_history_page',
-                                                  e,
-                                                  st,
-                                                );
-                                              }
-                                              setState(
-                                                () => _verifyingId = null,
-                                              );
-                                            },
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 5,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: _kOrange.withAlpha(20),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          border: Border.all(
-                                            color: _kOrange.withAlpha(60),
-                                          ),
-                                        ),
-                                        child: _verifyingId == pay['id']
-                                            ? const SizedBox(
-                                                width: 12,
-                                                height: 12,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: _kOrange,
-                                                    ),
-                                              )
-                                            : Text(
-                                                'Verify Status',
-                                                style: GoogleFonts.outfit(
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: _kOrange,
-                                                ),
-                                              ),
+                              if (status == 'pending') ...[
+                                InkWell(
+                                  onTap: _verifyingId == pay['id']
+                                      ? null
+                                      : () async {
+                                          setState(
+                                            () => _verifyingId = pay['id'],
+                                          );
+                                          try {
+                                            final res = await ApiService().get(
+                                              '/payments/verify/${pay['payment_ref']}',
+                                            );
+                                            if (res.data['status'] ==
+                                                'success') {
+                                              _fetch();
+                                            }
+                                          } catch (e, st) {
+                                            AppLogger.error(
+                                              'payment_history_page',
+                                              e,
+                                              st,
+                                            );
+                                          }
+                                          setState(
+                                            () => _verifyingId = null,
+                                          );
+                                        },
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 9,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _kOrange.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: _kOrange.withValues(alpha: 0.4),
+                                        width: 1.0,
                                       ),
                                     ),
-                                  InkWell(
-                                    onTap: () =>
-                                        _showReceiptDialog(context, pay),
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: surfaceBg,
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: borderCol),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.receipt_rounded,
-                                            size: 13,
-                                            color: titleCol,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'View Receipt',
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                              color: titleCol,
+                                    child: _verifyingId == pay['id']
+                                        ? const SizedBox(
+                                            width: 11,
+                                            height: 11,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: _kOrange,
+                                            ),
+                                          )
+                                        : const Text(
+                                            'Verify Status',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: _kOrange,
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    ),
                                   ),
-                                  InkWell(
-                                    onTap: () async {
-                                      final status = (pay['status']?.toString().toLowerCase()) ?? 'pending';
-                                      final config = _statusConfigs[status] ?? _statusConfigs['pending']!;
-                                      final amount = double.tryParse(pay['amount']?.toString() ?? '0') ?? 0.0;
-                                      final ref = pay['payment_ref']?.toString() ?? 'TXN-${pay['id'] ?? '0000'}';
-                                      final dateStr = _formatDateTime(pay['created_at']);
-                                      final desc = pay['description']?.toString() ?? 'General Association Dues';
-                                      final momoTxId = pay['momo_tx_id']?.toString();
-                                      final paymentMethod = pay['payment_method']?.toString() ?? pay['channel']?.toString() ?? pay['network']?.toString();
-                                      final payerPhone = pay['phone']?.toString() ?? pay['payer_phone']?.toString();
-                                      final adminNote = pay['admin_note']?.toString();
-                                      final verifyUrl = 'https://cubag.org/api/payments/public/verify-receipt?ref=$ref&amount=${_fmt(amount)}';
-                                      final auth = Provider.of<AuthService>(context, listen: false);
+                                ),
+                                const SizedBox(width: 6),
+                              ],
+                              InkWell(
+                                onTap: () => _showReceiptDialog(context, pay),
+                                borderRadius: BorderRadius.circular(6),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 9,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: surfaceBg,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: borderCol, width: 1.0),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.receipt_rounded,
+                                        size: 12,
+                                        color: titleCol,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Receipt',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: titleCol,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              InkWell(
+                                onTap: () async {
+                                  final status = (pay['status']?.toString().toLowerCase()) ?? 'pending';
+                                  final config = _statusConfigs[status] ?? _statusConfigs['pending']!;
+                                  final amount = double.tryParse(pay['amount']?.toString() ?? '0') ?? 0.0;
+                                  final ref = pay['payment_ref']?.toString() ?? 'TXN-${pay['id'] ?? '0000'}';
+                                  final dateStr = _formatDateTime(pay['created_at']);
+                                  final desc = pay['description']?.toString() ?? 'General Association Dues';
+                                  final momoTxId = pay['momo_tx_id']?.toString();
+                                  final paymentMethod = pay['payment_method']?.toString() ?? pay['channel']?.toString() ?? pay['network']?.toString();
+                                  final payerPhone = pay['phone']?.toString() ?? pay['payer_phone']?.toString();
+                                  final adminNote = pay['admin_note']?.toString();
+                                  final verifyUrl = 'https://cubag-api-server.fly.dev/#/verify-payment?ref=$ref&amount=${_fmt(amount)}';
+                                  final auth = Provider.of<AuthService>(context, listen: false);
 
-                                      await _generateAndDownloadPdfReceipt(
-                                        pay,
-                                        ref,
-                                        amount,
-                                        dateStr,
-                                        desc,
-                                        config['label'] as String,
-                                        paymentMethod,
-                                        payerPhone,
-                                        momoTxId,
-                                        adminNote,
-                                        verifyUrl,
-                                        auth.userName ?? '',
-                                        auth.userCompany ?? '',
-                                        auth.licenseNumber ?? '',
-                                      );
-                                    },
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: surfaceBg,
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: borderCol),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.download_rounded,
-                                            size: 13,
-                                            color: titleCol,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'Download PDF',
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                              color: titleCol,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+                                  await _generateAndDownloadPdfReceipt(
+                                    pay,
+                                    ref,
+                                    amount,
+                                    dateStr,
+                                    desc,
+                                    config['label'] as String,
+                                    paymentMethod,
+                                    payerPhone,
+                                    momoTxId,
+                                    adminNote,
+                                    verifyUrl,
+                                    auth.userName ?? '',
+                                    auth.userCompany ?? '',
+                                    auth.licenseNumber ?? '',
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(6),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 9,
+                                    vertical: 4,
                                   ),
-                                ],
+                                  decoration: BoxDecoration(
+                                    color: surfaceBg,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: borderCol, width: 1.0),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.download_rounded,
+                                        size: 12,
+                                        color: titleCol,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'PDF',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: titleCol,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ],
                           ),
                         ],
                       ),
-                    );
+                    ],
+                  ),
+                );
                   },
                 ),
 
@@ -1890,19 +1918,16 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     required String value,
     bool isDark = false,
   }) {
+    final borderCol = isDark ? const Color(0xFF3D261C) : _kBorder;
+    final cardColor = isDark ? const Color(0xFF1E130D) : _kWhite;
+    final textColor = isDark ? const Color(0xFFFFF8F3) : _kText;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF281710) : _kWhite,
-        border: Border.all(color: isDark ? const Color(0xFF4D2D20) : _kBorder),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 20 : 6),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: cardColor,
+        border: Border.all(color: borderCol, width: 1.0),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1912,28 +1937,28 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
                   color: bg,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                child: Icon(icon, color: color, size: 20),
+                child: Icon(icon, color: color, size: 17),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
                   color: bg,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: color.withAlpha(40), width: 1),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: color.withValues(alpha: 0.3), width: 1.0),
                 ),
                 child: Text(
                   label,
-                  style: GoogleFonts.inter(
-                    fontSize: 10.5,
+                  style: TextStyle(
+                    fontSize: 10,
                     color: color,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.4,
                   ),
                 ),
               ),
@@ -1948,11 +1973,12 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   value,
-                  style: GoogleFonts.outfit(
-                    fontSize: 21,
-                    fontWeight: FontWeight.w900,
-                    color: isDark ? Colors.white : _kText,
-                    letterSpacing: -0.5,
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                    letterSpacing: -0.3,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ),

@@ -295,10 +295,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           ),
           const SizedBox(height: 16),
           TextButton.icon(
-            onPressed: () => context.go('/'),
-            icon: const Icon(Icons.home_outlined, size: 18, color: _kBrown),
+            onPressed: () => context.go('/login'),
+            icon: const Icon(Icons.arrow_back, size: 18, color: _kBrown),
             label: const Text(
-              'Return to CUBAG Homepage',
+              'Back to Sign In',
               style: TextStyle(
                 color: _kBrown,
                 fontWeight: FontWeight.bold,
@@ -395,10 +395,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               ),
             ),
             TextButton.icon(
-              onPressed: () => context.go('/'),
-              icon: const Icon(Icons.home_outlined, size: 16, color: _kOrange),
+              onPressed: () => context.go('/login'),
+              icon: const Icon(Icons.arrow_back, size: 16, color: _kOrange),
               label: const Text(
-                'Home',
+                'Sign In',
                 style: TextStyle(
                   color: _kOrange,
                   fontWeight: FontWeight.bold,
@@ -581,7 +581,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     ),
                   )
                 : const Text(
-                    'Update Password',
+                    'Update',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
           ),
@@ -608,10 +608,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         const SizedBox(height: 8),
         Center(
           child: TextButton.icon(
-            onPressed: () => context.go('/'),
-            icon: const Icon(Icons.home_outlined, size: 18, color: _kBrown),
+            onPressed: () => context.go('/login'),
+            icon: const Icon(Icons.arrow_back, size: 18, color: _kBrown),
             label: const Text(
-              'Return to CUBAG Homepage',
+              'Back to Sign In',
               style: TextStyle(
                 color: _kBrown,
                 fontWeight: FontWeight.bold,

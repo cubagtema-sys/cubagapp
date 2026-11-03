@@ -565,7 +565,11 @@ class _CargoSchedulesPageState extends State<CargoSchedulesPage> {
                   border: Border.all(color: Theme.of(context).dividerColor),
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: IframeWidget(mmsi: _searchQuery),
+                child: IframeWidget(
+                  mmsi: _searchQuery,
+                  vesselName: activeVessel?['vessel']?.toString() ?? activeVessel?['name']?.toString(),
+                  destination: activeVessel?['destination']?.toString(),
+                ),
               ),
               const SizedBox(height: 16),
 

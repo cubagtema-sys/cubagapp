@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// ── Shared Admin Design System Palette ──────────────────────────────────────
-const Color kAdminOrange = Color(0xFFFF5000); // Primary CTA Orange
+// ── Shared Admin Design System Palette (Editorial Stone & Ink) ───────────────
+const Color kAdminOrange = Color(0xFFFF5000); // Primary Accent Orange
 const Color kAdminBrown = Color(0xFF6B3E26); // Primary Brand Brown
 const Color kAdminDarkBrown = Color(0xFF3E2418); // Deep Background / Dark Text
-const Color kAdminGreen = Color(0xFF10B981); // Success / Active Emerald
-const Color kAdminBlue = Color(0xFF2563EB); // Information / Corporate Blue
-const Color kAdminPurple = Color(0xFF8B5CF6); // Election / Role Purple
-const Color kAdminAmber = Color(0xFFF59E0B); // Pending / Warning Amber
-const Color kAdminRed = Color(0xFFEF4444); // Expired / Suspended Red
-const Color kAdminBorder = Color(0xFFE2E8F0); // Subtle Slate Border
+const Color kAdminInk = Color(0xFF1F1612); // Deep Espresso Ink
+const Color kAdminPaperLight = Color(0xFFFBF8F3); // Warm Ivory Paper
+const Color kAdminPaperDark = Color(0xFF22140E); // Dark Paper Tile
+const Color kAdminGroundLight = Color(0xFFF4EFEA); // Stone Ground
+const Color kAdminGroundDark = Color(0xFF1A0F0A); // Dark Ground
+const Color kAdminBorderLight = Color(0xFFE8DED6); // Warm Stone Border
+const Color kAdminBorderDark = Color(0xFF3D261C); // Warm Dark Border
+const Color kAdminGreen = Color(0xFF10B981); // Emerald Active / Approved
+const Color kAdminBlue = Color(0xFF2563EB); // Information Blue
+const Color kAdminPurple = Color(0xFF8B5CF6); // Electoral / Compliance Purple
+const Color kAdminAmber = Color(0xFFF59E0B); // Pending / Attention Amber
+const Color kAdminRed = Color(0xFFEF4444); // Suspended / Delinquent Red
+const Color kAdminBorder = Color(0xFFE8DED6); // Default Subtle Border
 
 /// Standardized top header section across all CUBAG Admin pages
 class AdminHeader extends StatelessWidget {
@@ -29,48 +36,93 @@ class AdminHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? Colors.white : kAdminInk;
+    final subtitleColor = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
     final hasActions = actions != null && actions!.isNotEmpty;
     final hasLeading = leading != null;
 
-    if (!hasActions && !hasLeading) {
-      return const SizedBox.shrink();
-    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isSmall = constraints.maxWidth < 700;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isSmall = constraints.maxWidth < 650;
-        if (isSmall) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                if (hasLeading) leading!,
-                if (hasActions) ...actions!,
-              ],
-            ),
-          );
-        }
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          final titleBlock = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              if (hasLeading) leading! else const SizedBox.shrink(),
-              if (hasActions)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (hasLeading) ...[
+                    leading!,
+                    const SizedBox(width: 10),
+                  ],
+                  Flexible(
+                    child: Text(
+                      title,
+                      style: GoogleFonts.outfit(
+                        fontSize: isSmall ? 22 : 26,
+                        fontWeight: FontWeight.w800,
+                        color: titleColor,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (subtitle != null && subtitle!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  subtitle!,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: subtitleColor,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ],
+          );
+
+          if (isSmall) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                titleBlock,
+                if (hasActions) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: actions!,
+                  ),
+                ],
+              ],
+            );
+          }
+
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(child: titleBlock),
+              if (hasActions) ...[
+                const SizedBox(width: 16),
                 Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
+                  spacing: 8,
+                  runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: actions!,
                 ),
+              ],
             ],
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
@@ -97,45 +149,36 @@ class AdminStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF1A0F0A) : Colors.white;
-    final borderColor = isDark
-        ? const Color(0xFF3E2418)
-        : const Color(0xFFE2E8F0);
-    final textColor = isDark ? Colors.white : const Color(0xFF1A0F0A);
-    final subTextColor = isDark ? Colors.white70 : const Color(0xFF64748B);
+    final cardBg = isDark ? kAdminPaperDark : kAdminPaperLight;
+    final borderColor = isDark ? kAdminBorderDark : kAdminBorderLight;
+    final textColor = isDark ? Colors.white : kAdminInk;
+    final subTextColor = isDark ? const Color(0xFF9E8F84) : const Color(0xFF7A6B60);
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: cardBg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: borderColor, width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(isDark ? 30 : 6),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor, width: 1.0),
           ),
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: color.withAlpha(25),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: color.withAlpha(60), width: 1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: color.withAlpha(50), width: 1),
                 ),
-                child: Icon(icon, color: color, size: 22),
+                child: Icon(icon, color: color, size: 20),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,10 +187,12 @@ class AdminStatCard extends StatelessWidget {
                     Text(
                       value,
                       style: GoogleFonts.outfit(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
                         color: textColor,
-                        letterSpacing: -0.3,
+                        letterSpacing: -0.4,
+                      ).copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -155,9 +200,9 @@ class AdminStatCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       label,
-                      style: GoogleFonts.outfit(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                         color: subTextColor,
                         letterSpacing: 0.2,
                       ),
@@ -200,12 +245,11 @@ class AdminToolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF1A0F0A) : Colors.white;
-    final borderColor = isDark
-        ? const Color(0xFF3E2418)
-        : const Color(0xFFE2E8F0);
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subTextColor = isDark ? Colors.white70 : const Color(0xFF64748B);
+    final cardBg = isDark ? kAdminPaperDark : kAdminPaperLight;
+    final borderColor = isDark ? kAdminBorderDark : kAdminBorderLight;
+    final textColor = isDark ? Colors.white : kAdminInk;
+    final subTextColor = isDark ? const Color(0xFF9E8F84) : const Color(0xFF7A6B60);
+    final fieldBg = isDark ? const Color(0xFF170C08) : Colors.white;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -214,24 +258,20 @@ class AdminToolbar extends StatelessWidget {
         final searchField =
             searchWidget ??
             Container(
-              height: 46,
+              height: 42,
               decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withAlpha(8)
-                    : const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
-                ),
+                color: fieldBg,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: borderColor, width: 1.0),
               ),
               child: TextField(
                 controller: searchController,
                 onChanged: onSearchChanged,
-                style: GoogleFonts.outfit(fontSize: 15, color: textColor),
+                style: GoogleFonts.outfit(fontSize: 14, color: textColor),
                 decoration: InputDecoration(
                   hintText: searchHint,
                   hintStyle: GoogleFonts.outfit(
-                    fontSize: 15,
+                    fontSize: 14,
                     color: subTextColor,
                   ),
                   prefixIcon: Icon(
@@ -257,26 +297,19 @@ class AdminToolbar extends StatelessWidget {
                       : null,
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
+                    horizontal: 12,
+                    vertical: 11,
                   ),
                 ),
               ),
             );
 
         return Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: cardBg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: borderColor, width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(isDark ? 25 : 5),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor, width: 1.0),
           ),
           child: isSmall
               ? Column(
@@ -284,7 +317,7 @@ class AdminToolbar extends StatelessWidget {
                   children: [
                     searchField,
                     if (filters != null && filters!.isNotEmpty) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
@@ -293,7 +326,7 @@ class AdminToolbar extends StatelessWidget {
                       ),
                     ],
                     if (trailing != null) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
                       trailing!,
                     ],
                   ],
@@ -302,7 +335,7 @@ class AdminToolbar extends StatelessWidget {
                   children: [
                     Expanded(flex: 5, child: searchField),
                     if (filters != null && filters!.isNotEmpty) ...[
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
@@ -311,7 +344,7 @@ class AdminToolbar extends StatelessWidget {
                       ),
                     ],
                     if (trailing != null) ...[
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       trailing!,
                     ],
                   ],
@@ -344,26 +377,25 @@ class AdminFilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final unselectedBg = isDark
-        ? Colors.white.withAlpha(8)
-        : const Color(0xFFF1F5F9);
+    final unselectedBg = isDark ? const Color(0xFF170C08) : Colors.white;
     final borderColor = isSelected
         ? selectedColor
-        : (isDark ? Colors.white12 : const Color(0xFFE2E8F0));
+        : (isDark ? kAdminBorderDark : kAdminBorderLight);
     final textColor = isSelected
         ? Colors.white
-        : (isDark ? Colors.white70 : const Color(0xFF64748B));
+        : (isDark ? const Color(0xFFD4C8BE) : kAdminInk);
 
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        height: 38,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        duration: const Duration(milliseconds: 150),
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
           color: isSelected ? selectedColor : unselectedBg,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: borderColor, width: 1.2),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: borderColor, width: 1.0),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -375,27 +407,29 @@ class AdminFilterChip extends StatelessWidget {
             Text(
               label,
               style: GoogleFonts.outfit(
-                fontSize: 14,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: textColor,
               ),
             ),
             if (count != null) ...[
               const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? Colors.white.withAlpha(40)
-                      : (isDark ? Colors.white12 : Colors.black.withAlpha(15)),
-                  borderRadius: BorderRadius.circular(8),
+                      : (isDark ? Colors.white12 : Colors.black.withAlpha(12)),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   '$count',
                   style: GoogleFonts.outfit(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
                     color: textColor,
+                  ).copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ),
@@ -425,10 +459,10 @@ class AdminBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
       decoration: BoxDecoration(
         color: color.withAlpha(25),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(
           color: color.withAlpha(isOutlined ? 120 : 60),
           width: 1,
@@ -444,11 +478,97 @@ class AdminBadge extends StatelessWidget {
           Text(
             label,
             style: GoogleFonts.outfit(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
               color: color,
-              letterSpacing: 0.3,
+              letterSpacing: 0.2,
+            ).copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Standardized Section Card for Admin Pages
+class AdminSectionCard extends StatelessWidget {
+  final String? title;
+  final String? subtitle;
+  final Widget? trailing;
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  const AdminSectionCard({
+    super.key,
+    this.title,
+    this.subtitle,
+    this.trailing,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? kAdminPaperDark : kAdminPaperLight;
+    final borderColor = isDark ? kAdminBorderDark : kAdminBorderLight;
+    final titleColor = isDark ? Colors.white : kAdminInk;
+    final subtitleColor = isDark ? const Color(0xFF9E8F84) : const Color(0xFF7A6B60);
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor, width: 1.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (title != null) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title!,
+                          style: GoogleFonts.outfit(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: titleColor,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        if (subtitle != null && subtitle!.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle!,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: subtitleColor,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  ?trailing,
+                ],
+              ),
+            ),
+            Divider(height: 1, thickness: 1, color: borderColor),
+          ],
+          Padding(
+            padding: padding,
+            child: child,
           ),
         ],
       ),
@@ -474,42 +594,40 @@ class AdminEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF1A0F0A) : Colors.white;
-    final borderColor = isDark
-        ? const Color(0xFF3E2418)
-        : const Color(0xFFE2E8F0);
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final subTextColor = isDark ? Colors.white70 : const Color(0xFF64748B);
+    final cardBg = isDark ? kAdminPaperDark : kAdminPaperLight;
+    final borderColor = isDark ? kAdminBorderDark : kAdminBorderLight;
+    final textColor = isDark ? Colors.white : kAdminInk;
+    final subTextColor = isDark ? const Color(0xFF9E8F84) : const Color(0xFF7A6B60);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor, width: 1.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor, width: 1.0),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withAlpha(8)
-                  : const Color(0xFFF1F5F9),
-              shape: BoxShape.circle,
+              color: isDark ? const Color(0xFF170C08) : Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: borderColor, width: 1.0),
             ),
-            child: Icon(icon, size: 40, color: subTextColor),
+            child: Icon(icon, size: 36, color: subTextColor),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Text(
             title,
             textAlign: TextAlign.center,
             style: GoogleFonts.outfit(
               fontWeight: FontWeight.w800,
-              fontSize: 18,
+              fontSize: 17,
               color: textColor,
+              letterSpacing: -0.2,
             ),
           ),
           if (subtitle != null && subtitle!.isNotEmpty) ...[
@@ -520,16 +638,17 @@ class AdminEmptyState extends StatelessWidget {
                 subtitle!,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
-                  fontSize: 15,
+                  fontSize: 13,
                   color: subTextColor,
                   height: 1.4,
                 ),
               ),
             ),
           ],
-          if (action != null) ...[const SizedBox(height: 20), action!],
+          if (action != null) ...[const SizedBox(height: 18), action!],
         ],
       ),
     );
   }
 }
+
