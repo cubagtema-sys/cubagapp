@@ -231,6 +231,22 @@ class _SplashPageState extends State<SplashPage>
     }
   }
 
+  void _onSkip() {
+    if (!mounted) return;
+    _controller.stop();
+    _navigated = true;
+
+    final token = SessionStorage.instance.getStringSync('cubag_token');
+    final auth = AuthService();
+    final bool loggedIn = (token != null && token.isNotEmpty) || auth.isAuthenticated;
+
+    if (loggedIn) {
+      _proceedAfterLogin(auth);
+    } else {
+      context.go('/login');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const double totalSize = 140.0;
@@ -239,22 +255,23 @@ class _SplashPageState extends State<SplashPage>
     return Scaffold(
       backgroundColor: const Color(0xFF1A0F0A),
       body: GestureDetector(
-        onTap: _navigateNext,
+        onTap: _onSkip,
         behavior: HitTestBehavior.opaque,
         child: Stack(
           children: [
             // ── Fast Skip Button ──────────────────────────────────────────
             Positioned(
-              top: MediaQuery.of(context).padding.top + 14,
-              right: 20,
+              top: MediaQuery.of(context).padding.top + 10,
+              right: 16,
               child: GestureDetector(
-                onTap: _navigateNext,
+                behavior: HitTestBehavior.opaque,
+                onTap: _onSkip,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(25),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withAlpha(35)),
+                    color: Colors.white.withAlpha(35),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: Colors.white.withAlpha(55)),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
@@ -263,13 +280,13 @@ class _SplashPageState extends State<SplashPage>
                         'Skip',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
                           letterSpacing: 0.5,
                         ),
                       ),
                       SizedBox(width: 4),
-                      Icon(Icons.arrow_forward_ios, size: 10, color: Colors.white70),
+                      Icon(Icons.arrow_forward_ios, size: 11, color: Colors.white),
                     ],
                   ),
                 ),

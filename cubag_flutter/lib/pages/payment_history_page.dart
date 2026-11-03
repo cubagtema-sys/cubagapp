@@ -1066,7 +1066,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     final titleCol = isDark ? _kOrange : _kBrown;
 
     return AppLayout(
-      title: 'Payment History & Ledger',
+      title: 'Payment History',
       hideSearch: false,
       scrollable: true,
       child: Center(
@@ -1518,9 +1518,6 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                     final amount =
                         double.tryParse(pay['amount']?.toString() ?? '0') ??
                         0.0;
-                    final ref =
-                        pay['payment_ref']?.toString() ??
-                        'TXN-${pay['id'] ?? '0000'}';
                     final dateStr = _formatDateTime(pay['created_at']);
                     final desc =
                         pay['description']?.toString() ??
@@ -1618,21 +1615,6 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                                               color: config['color'] as Color,
                                               letterSpacing: 0.4,
                                             ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            'Ref: $ref',
-                                            style: TextStyle(
-                                              fontSize: 12.5,
-                                              color: mutedCol,
-                                              fontWeight: FontWeight.w500,
-                                              fontFeatures: const [
-                                                FontFeature.tabularFigures(),
-                                              ],
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
                                       ],

@@ -465,14 +465,14 @@ class _PaymentsPageState extends State<PaymentsPage>
     }
     if (_method == 'momo' && _momoNetwork.trim().isEmpty) {
       setState(() {
-        _errorMsg = 'Please select your Mobile Money carrier (MTN, Telecel, or AirtelTigo).';
+        _errorMsg = 'Please select your MoMo carrier (MTN, Telecel, or AirtelTigo).';
         _showError = true;
       });
       return;
     }
     if (_method == 'momo' && _momoPhone.trim().isEmpty) {
       setState(() {
-        _errorMsg = 'Please enter your Mobile Money phone number.';
+        _errorMsg = 'Please enter your MoMo phone number.';
         _showError = true;
       });
       return;
@@ -1347,7 +1347,7 @@ class _PaymentsPageState extends State<PaymentsPage>
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
             child: Stack(
               children: [
                 SingleChildScrollView(
@@ -3468,7 +3468,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         const SizedBox(width: 8),
                         Flexible(
                           child: Text(
-                            'Mobile Money',
+                            'MoMo',
                             style: GoogleFonts.outfit(
                               fontWeight: isMomo ? FontWeight.w800 : FontWeight.w600,
                               fontSize: 15,
@@ -3515,7 +3515,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         const SizedBox(width: 8),
                         Flexible(
                           child: Text(
-                            'Bank Transfer',
+                            'Bank',
                             style: GoogleFonts.outfit(
                               fontWeight: isBank ? FontWeight.w800 : FontWeight.w600,
                               fontSize: 15,
@@ -3614,7 +3614,7 @@ class _PaymentsPageState extends State<PaymentsPage>
             Row(
               children: [
                 Text(
-                  'MOBILE MONEY NUMBER',
+                  'MOMO NUMBER',
                   style: GoogleFonts.outfit(
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
@@ -4258,14 +4258,14 @@ class _PaymentsPageState extends State<PaymentsPage>
       final banks = _getBankList(bank);
       final selectedIdx = (_selectedBankIndex >= 0 && _selectedBankIndex < banks.length) ? _selectedBankIndex : 0;
       final curBank = banks[selectedIdx];
-      final bName = (curBank['bankName'] ?? curBank['bank_name'] ?? 'Bank Transfer').toString();
+      final bName = (curBank['bankName'] ?? curBank['bank_name'] ?? 'Bank').toString();
       final aNum = (curBank['accountNumber'] ?? curBank['account_number'] ?? '').toString();
 
       final methodLabel = isBank
-          ? 'BANK TRANSFER'
+          ? 'BANK'
           : (_momoNetwork.isNotEmpty
-              ? 'MOBILE MONEY (${_momoNetwork.toUpperCase()})'
-              : 'MOBILE MONEY');
+              ? 'MOMO (${_momoNetwork.toUpperCase()})'
+              : 'MOMO');
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -4602,7 +4602,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Channel:', style: GoogleFonts.inter(color: const Color(0xFF64748b), fontSize: 14)),
-                      Text('Bank Transfer ($bName)', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 14)),
+                      Text('Bank ($bName)', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 14)),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -4755,7 +4755,7 @@ class _PaymentsPageState extends State<PaymentsPage>
           ),
           const SizedBox(height: 8),
           Text(
-            'A Mobile Money prompt has been sent to $_momoPhone.\nOpen your phone and enter your PIN to approve.',
+            'A MoMo prompt has been sent to $_momoPhone.\nOpen your phone and enter your PIN to approve.',
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Color(0xFF64748b),
@@ -4935,6 +4935,6 @@ class _PaymentsPageState extends State<PaymentsPage>
     if (net == 'MTN') return 'MTN MoMo';
     if (net == 'Telecel' || net == 'Vodafone') return 'Telecel Cash';
     if (net == 'AirtelTigo') return 'AT Money';
-    return 'Mobile Money';
+    return 'MoMo';
   }
 }

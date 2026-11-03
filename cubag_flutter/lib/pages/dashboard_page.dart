@@ -713,7 +713,7 @@ class _DashboardPageState extends State<DashboardPage> {
       statusBadge = 'ACTIVE IN GOOD STANDING';
       statusBadgeBg = const Color(0xFFDCFCE7);
       statusBadgeInk = const Color(0xFF166534);
-      statusText = 'Verified Customs Broker & Freight Forwarder • Official Secretariat Roll';
+      statusText = 'Verified Customs Broker & Freight Forwarder';
       if (!_loadingTasks && pending.isNotEmpty) {
         btnLabel = 'View Tasks (${pending.length})';
         btnIcon = Icons.assignment_turned_in_outlined;
@@ -768,19 +768,29 @@ class _DashboardPageState extends State<DashboardPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      'Welcome back,',
+                      style: GoogleFonts.inter(
+                        color: _kMuted,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Flexible(
                           child: Text(
-                            'Welcome back, $firstName',
+                            firstName,
                             style: GoogleFonts.outfit(
                               color: _kText,
-                              fontSize: isMobile ? 18 : 22,
+                              fontSize: isMobile ? 20 : 24,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.4,
                             ),
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),

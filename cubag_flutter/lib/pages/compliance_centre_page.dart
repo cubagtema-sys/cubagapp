@@ -442,46 +442,12 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                     const SizedBox(height: 16),
                   ],
 
-                  // ── Type Selector ───────────────────────────────────────
-                  Text(
-                    'Compliance Application Tracking',
-                    style: GoogleFonts.outfit(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white70 : const Color(0xFF475569),
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: isDark ? _kDarkBg : const Color(0xFFf8fafc),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isDark
-                            ? _kBorderDark
-                            : const Color(0xFFcbd5e1).withAlpha(120),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Text(
-                      'Manage statutory vetting records, annual membership renewals, and customs broker credentials. Start a new application or select an active record below to view details and upload documents.',
-                      style: GoogleFonts.inter(
-                        fontSize: 15,
-                        color: isDark
-                            ? Colors.white70
-                            : const Color(0xFF475569),
-                        height: 1.6,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 36),
-
                   // ── Applications List ───────────────────────────────────
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 12,
+                    runSpacing: 10,
                     children: [
                       Text(
                         'My Applications',

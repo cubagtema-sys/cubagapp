@@ -937,13 +937,16 @@ class _LoginPageState extends State<LoginPage> {
                     tooltip: defaultTargetPlatform == TargetPlatform.iOS
                         ? 'Sign in with Face ID'
                         : 'Sign in with Biometrics',
-                    icon: Icon(
-                      defaultTargetPlatform == TargetPlatform.iOS
-                          ? Icons.face_rounded
-                          : Icons.fingerprint_rounded,
-                      color: _kBrown,
-                      size: isMobile ? 20 : 22,
-                    ),
+                    icon: defaultTargetPlatform == TargetPlatform.iOS
+                        ? FaceIdIcon(
+                            size: isMobile ? 20 : 22,
+                            color: _kBrown,
+                          )
+                        : Icon(
+                            Icons.fingerprint_rounded,
+                            color: _kBrown,
+                            size: isMobile ? 20 : 22,
+                          ),
                     onPressed: _loading ? null : _handleBiometricLogin,
                   ),
                 IconButton(
@@ -991,32 +994,15 @@ class _LoginPageState extends State<LoginPage> {
                       onTap: !_loading
                           ? () => setState(() => _rememberMe = !_rememberMe)
                           : null,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              'Keep me signed in',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: isMobile ? 12.5 : 14.5,
-                                fontWeight: FontWeight.w600,
-                                color: _loading ? _kMuted : _kText,
-                              ),
-                            ),
-                          ),
-                          if (_bioAvailable && !kIsWeb) ...[
-                            const SizedBox(width: 4),
-                            Icon(
-                              defaultTargetPlatform == TargetPlatform.iOS
-                                  ? Icons.face_rounded
-                                  : Icons.fingerprint_rounded,
-                              size: 14,
-                              color: _rememberMe ? _kOrange : _kMuted,
-                            ),
-                          ],
-                        ],
+                      child: Text(
+                        'Keep me signed in',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: isMobile ? 12.5 : 14.5,
+                          fontWeight: FontWeight.w600,
+                          color: _loading ? _kMuted : _kText,
+                        ),
                       ),
                     ),
                   ),
@@ -1173,4 +1159,113 @@ class _LoginPageState extends State<LoginPage> {
       fontSize: isMobile ? 13.5 : 15,
     ),
   );
+}
+
+/// Authentic Apple Face ID Vector Icon
+class FaceIdIcon extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const FaceIdIcon({
+    super.key,
+    this.size = 22,
+    this.color = const Color(0xFF6B3E26),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: _FaceIdPainter(color: color),
+      ),
+    );
+  }
+}
+
+class _FaceIdPainter extends CustomPainter {
+  final Color color;
+
+  _FaceIdPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final strokeWidth = (w * 0.08).clamp(1.5, 2.4);
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final cornerLen = w * 0.24;
+    final r = w * 0.12;
+
+    // 1. Top-Left Corner
+    final tl = Path()
+      ..moveTo(0, cornerLen)
+      ..lineTo(0, r)
+      ..quadraticBezierTo(0, 0, r, 0)
+      ..lineTo(cornerLen, 0);
+    canvas.drawPath(tl, paint);
+
+    // 2. Top-Right Corner
+    final tr = Path()
+      ..moveTo(w - cornerLen, 0)
+      ..lineTo(w - r, 0)
+      ..quadraticBezierTo(w, 0, w, r)
+      ..lineTo(w, cornerLen);
+    canvas.drawPath(tr, paint);
+
+    // 3. Bottom-Left Corner
+    final bl = Path()
+      ..moveTo(0, h - cornerLen)
+      ..lineTo(0, h - r)
+      ..quadraticBezierTo(0, h, r, h)
+      ..lineTo(cornerLen, h);
+    canvas.drawPath(bl, paint);
+
+    // 4. Bottom-Right Corner
+    final br = Path()
+      ..moveTo(w - cornerLen, h)
+      ..lineTo(w - r, h)
+      ..quadraticBezierTo(w, h, w, h - r)
+      ..lineTo(w, h - cornerLen);
+    canvas.drawPath(br, paint);
+
+    // 5. Left Eye
+    canvas.drawLine(
+      Offset(w * 0.35, h * 0.34),
+      Offset(w * 0.35, h * 0.44),
+      paint,
+    );
+
+    // 6. Right Eye
+    canvas.drawLine(
+      Offset(w * 0.65, h * 0.34),
+      Offset(w * 0.65, h * 0.44),
+      paint,
+    );
+
+    // 7. Nose
+    final nose = Path()
+      ..moveTo(w * 0.50, h * 0.40)
+      ..lineTo(w * 0.50, h * 0.57)
+      ..lineTo(w * 0.58, h * 0.57);
+    canvas.drawPath(nose, paint);
+
+    // 8. Smile
+    final smile = Path()
+      ..moveTo(w * 0.33, h * 0.69)
+      ..quadraticBezierTo(w * 0.50, h * 0.81, w * 0.67, h * 0.69);
+    canvas.drawPath(smile, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _FaceIdPainter oldDelegate) =>
+      oldDelegate.color != color;
 }

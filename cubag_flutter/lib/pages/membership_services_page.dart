@@ -261,6 +261,13 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
     return '${d.day} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.month - 1]} ${d.year}';
   }
 
+  String _stripMembershipCategories(String input) {
+    return input
+        .replaceAll(RegExp(r'\b(Associate|Licentiate|Corporate)\b', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\s{2,}'), ' ')
+        .trim();
+  }
+
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
@@ -342,7 +349,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
         authService.membershipStatus == 'active';
 
     return AppLayout(
-      title: 'Membership Services',
+      title: 'Membership Hub',
       hideSearch: false,
       scrollable: true,
       child: Center(
@@ -836,13 +843,16 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Registration Form & Processing Fee',
-                                style: GoogleFonts.inter(
-                                  fontSize: 15,
-                                  color: textColor,
+                              Expanded(
+                                child: Text(
+                                  'Registration Form Fee',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 15,
+                                    color: textColor,
+                                  ),
                                 ),
                               ),
+                              const SizedBox(width: 8),
                               Text(
                                 'GHS $_registrationFeeAmount',
                                 style: GoogleFonts.outfit(
@@ -1046,9 +1056,9 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                             Expanded(
                               child: Text(
                                 showRenewalFigures
-                                    ? (_renewalTitle.trim().isNotEmpty &&
-                                            !_renewalTitle.toLowerCase().contains('annual renewal dues')
-                                        ? '3. ANNUAL RENEWAL DUES: ${_renewalTitle.toUpperCase()}'
+                                    ? (_stripMembershipCategories(_renewalTitle).isNotEmpty &&
+                                            !_stripMembershipCategories(_renewalTitle).toLowerCase().contains('annual renewal dues')
+                                        ? '3. ANNUAL RENEWAL DUES: ${_stripMembershipCategories(_renewalTitle).toUpperCase()}'
                                         : '3. ANNUAL RENEWAL DUES')
                                     : '3. ANNUAL RENEWAL DUES',
                                 style: GoogleFonts.outfit(
@@ -1253,18 +1263,24 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                           const Divider(height: 1),
                           const SizedBox(height: 8),
                           ..._renewalBreakdown.map((item) {
+                            final rawLabel = item['label']?.toString() ?? '';
+                            final cleaned = _stripMembershipCategories(rawLabel);
+                            final displayLabel = cleaned.isNotEmpty ? cleaned : 'Annual Renewal Fee';
                             return Padding(
                               padding: const EdgeInsets.symmetric(vertical: 6),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    item['label']?.toString() ?? '',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 15,
-                                      color: textColor,
+                                  Expanded(
+                                    child: Text(
+                                      displayLabel,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 15,
+                                        color: textColor,
+                                      ),
                                     ),
                                   ),
+                                  const SizedBox(width: 8),
                                   Text(
                                     'GHS ${item['amount']?.toString() ?? ''}',
                                     style: GoogleFonts.outfit(

@@ -262,8 +262,8 @@ class _NetworkingPageState extends State<NetworkingPage> {
                     Text(
                       name,
                       style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15.5,
                         color: textColor,
                         letterSpacing: -0.2,
                       ),
@@ -285,9 +285,9 @@ class _NetworkingPageState extends State<NetworkingPage> {
                           child: Text(
                             mType.toUpperCase(),
                             style: const TextStyle(
-                              fontSize: 10,
+                              fontSize: 10.5,
                               color: _kBrown,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
                               letterSpacing: 0.3,
                             ),
                           ),
@@ -297,9 +297,9 @@ class _NetworkingPageState extends State<NetworkingPage> {
                           child: Text(
                             regId.toString(),
                             style: TextStyle(
-                              fontSize: 11,
-                              color: mutedColor,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                              color: textColor,
+                              fontWeight: FontWeight.w700,
                               fontFeatures: const [FontFeature.tabularFigures()],
                             ),
                             overflow: TextOverflow.ellipsis,
@@ -317,33 +317,33 @@ class _NetworkingPageState extends State<NetworkingPage> {
           const SizedBox(height: 6),
           Row(
             children: [
-              Icon(Icons.business_rounded, size: 13, color: mutedColor),
+              Icon(Icons.business_rounded, size: 14, color: mutedColor),
               const SizedBox(width: 5),
               Expanded(
                 child: Text(
                   company,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     color: textColor,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 4),
           Row(
             children: [
-              Icon(Icons.anchor_rounded, size: 13, color: mutedColor),
+              Icon(Icons.anchor_rounded, size: 14, color: mutedColor),
               const SizedBox(width: 5),
               Expanded(
                 child: Text(
                   port.toString(),
                   style: TextStyle(
-                    fontSize: 11.5,
+                    fontSize: 12,
                     color: mutedColor,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -765,7 +765,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
     return AppLayout(
       title: 'Member Directory',
       hideSearch: false,
-      scrollable: false,
+      scrollable: true,
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1000),
@@ -804,8 +804,8 @@ class _NetworkingPageState extends State<NetworkingPage> {
                             Text(
                               'National Register of Customs Brokers',
                               style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15.5,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
                                 color: textColor,
                                 letterSpacing: -0.2,
                               ),
@@ -828,9 +828,9 @@ class _NetworkingPageState extends State<NetworkingPage> {
                     controller: _searchCtrl,
                     onChanged: _onSearchChanged,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.5,
                       color: textColor,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                     ),
                     decoration: InputDecoration(
                       hintText:
@@ -838,6 +838,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                       hintStyle: TextStyle(
                         color: _kMuted.withValues(alpha: 0.7),
                         fontSize: 13.5,
+                        fontWeight: FontWeight.w500,
                       ),
                       prefixIcon: const Icon(
                         Icons.search_rounded,
@@ -888,8 +889,8 @@ class _NetworkingPageState extends State<NetworkingPage> {
                     child: Text(
                       'SHOWING ${filtered.length} ACTIVE PRACTITIONERS',
                       style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
                         color: _kBrown,
                         letterSpacing: 0.5,
                         fontFeatures: [FontFeature.tabularFigures()],
@@ -899,67 +900,65 @@ class _NetworkingPageState extends State<NetworkingPage> {
                 const SizedBox(height: 8),
 
                 // ── 3. Grid / List View ───────────────────────────────────────
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: _fetch,
-                    color: _kOrange,
-                    child: _loading && filtered.isEmpty
-                        ? ListView.separated(
-                            itemCount: 6,
-                            separatorBuilder: (ctx, i) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (ctx, i) => const ShimmerListTile(),
-                          )
-                        : filtered.isEmpty
-                        ? _buildEmptyState()
-                        : LayoutBuilder(
-                            builder: (context, constraints) {
-                              final width = constraints.maxWidth;
-                              final isWide = width > 600;
-                              if (isWide) {
-                                final int crossAxisCount = width >= 1200
-                                    ? 4
-                                    : (width >= 850 ? 3 : 2);
-                                return GridView.builder(
-                                  physics:
-                                      const AlwaysScrollableScrollPhysics(),
-                                  gridDelegate:
-                                      SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: crossAxisCount,
-                                        crossAxisSpacing: 12,
-                                        mainAxisSpacing: 12,
-                                        mainAxisExtent: 168,
-                                      ),
-                                  itemCount: filtered.length,
-                                  itemBuilder: (context, i) {
-                                    return _buildMemberCard(
-                                      filtered[i] as Map<String, dynamic>,
-                                      isDark,
-                                    );
-                                  },
-                                );
-                              } else {
-                                return ListView.separated(
-                                  physics:
-                                      const AlwaysScrollableScrollPhysics(),
-                                  itemCount: filtered.length,
-                                  separatorBuilder: (ctx, i) =>
-                                      const SizedBox(height: 12),
-                                  itemBuilder: (context, i) {
-                                    return SizedBox(
-                                      height: 172,
-                                      child: _buildMemberCard(
-                                        filtered[i] as Map<String, dynamic>,
-                                        isDark,
-                                      ),
-                                    );
-                                  },
-                                );
-                              }
-                            },
-                          ),
+                if (_loading && filtered.isEmpty)
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: 6,
+                    separatorBuilder: (ctx, i) =>
+                        const SizedBox(height: 12),
+                    itemBuilder: (ctx, i) => const ShimmerListTile(),
+                  )
+                else if (filtered.isEmpty)
+                  _buildEmptyState()
+                else
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final width = constraints.maxWidth;
+                      final isWide = width > 600;
+                      if (isWide) {
+                        final int crossAxisCount = width >= 1200
+                            ? 4
+                            : (width >= 850 ? 3 : 2);
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: crossAxisCount,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                mainAxisExtent: 178,
+                              ),
+                          itemCount: filtered.length,
+                          itemBuilder: (context, i) {
+                            return _buildMemberCard(
+                              filtered[i] as Map<String, dynamic>,
+                              isDark,
+                            );
+                          },
+                        );
+                      } else {
+                        return ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: filtered.length,
+                          separatorBuilder: (ctx, i) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, i) {
+                            return SizedBox(
+                              height: 178,
+                              child: _buildMemberCard(
+                                filtered[i] as Map<String, dynamic>,
+                                isDark,
+                              ),
+                            );
+                          },
+                        );
+                      }
+                    },
                   ),
-                ),
+                const SizedBox(height: 24),
               ],
             ),
           ),
