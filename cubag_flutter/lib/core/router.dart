@@ -108,7 +108,7 @@ Future<void> preloadAdminLibraries() async {}
 
 // ── Router ───────────────────────────────────────────────────────────────────
 final GoRouter appRouter = GoRouter(
-  initialLocation: kIsWeb ? '/login' : '/splash',
+  initialLocation: '/splash',
   refreshListenable: AuthService(),
   observers: [TelemetryRouteObserver()],
   redirect: (context, state) {
@@ -122,10 +122,10 @@ final GoRouter appRouter = GoRouter(
 
     final bool isAdminRole = role == 'admin' || role == 'sub_admin' || role == 'super_admin';
 
-    // Unauthenticated root, landing, or protected routes always go directly to /login
+    // Unauthenticated root, landing, or protected routes
     if (!loggedIn) {
       if (loc == '/' || loc == '/landing' || loc == '/public-services') {
-        return '/login';
+        return '/splash';
       }
       if (!_isPublic(loc)) {
         return '/login';
@@ -227,7 +227,7 @@ final GoRouter appRouter = GoRouter(
         final auth = AuthService();
         final token = storage.getStringSync('cubag_token');
         final bool loggedIn = (token != null && token.isNotEmpty) || auth.isAuthenticated;
-        if (!loggedIn) return '/login';
+        if (!loggedIn) return '/splash';
         final role = storage.getStringSync('cubag_role') ?? auth.userRole;
         if (role == 'admin' || role == 'sub_admin' || role == 'super_admin') {
           return '/admin/dashboard';
