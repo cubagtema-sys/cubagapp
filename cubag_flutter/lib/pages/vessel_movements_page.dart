@@ -528,7 +528,7 @@ class _VesselMovementsPageState extends State<VesselMovementsPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'DEPARTURE PORT',
+                            'DEPARTURE',
                             style: TextStyle(
                               fontSize: 11,
                               color: muted,
@@ -566,7 +566,7 @@ class _VesselMovementsPageState extends State<VesselMovementsPage> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            'REPORTED DESTINATION',
+                            'DESTINATION',
                             style: TextStyle(
                               fontSize: 11,
                               color: muted,

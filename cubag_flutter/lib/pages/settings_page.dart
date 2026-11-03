@@ -577,7 +577,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 title: Text(
-                  'Terms of Service & Code of Conduct',
+                  'Terms of Service',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,

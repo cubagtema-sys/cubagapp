@@ -405,7 +405,7 @@ class _AppLayoutState extends State<AppLayout> {
                     }
                   },
                   child: SizedBox(
-                    width: 300,
+                    width: 360,
                     child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -687,8 +687,8 @@ class _AppLayoutState extends State<AppLayout> {
           PopupMenuItem<String>(
             enabled: false,
             child: Container(
-              width: 170,
-              padding: const EdgeInsets.symmetric(vertical: 4),
+              width: 250,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               child: Row(
                 children: [
                   SizedBox(
@@ -763,8 +763,8 @@ class _AppLayoutState extends State<AppLayout> {
             PopupMenuItem<String>(
               onTap: () => context.go('/application-documents'),
               child: Container(
-                width: 170,
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                width: 250,
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
                 child: Row(
                   children: [
                     Container(
@@ -797,8 +797,8 @@ class _AppLayoutState extends State<AppLayout> {
             PopupMenuItem<String>(
               onTap: () => context.go('/profile'),
               child: Container(
-                width: 170,
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                width: 250,
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
                 child: Row(
                   children: [
                     Container(
@@ -836,8 +836,8 @@ class _AppLayoutState extends State<AppLayout> {
                     : '/settings',
               ),
               child: Container(
-                width: 170,
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                width: 250,
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
                 child: Row(
                   children: [
                     Container(
@@ -880,8 +880,8 @@ class _AppLayoutState extends State<AppLayout> {
               }
             },
             child: Container(
-              width: 170,
-              padding: const EdgeInsets.symmetric(vertical: 4),
+              width: 250,
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
               child: Row(
                 children: [
                   Container(
@@ -1733,7 +1733,7 @@ class _AppLayoutState extends State<AppLayout> {
           ]),
           _buildSection(context, 'RESOURCES', currentRoute, [
             _NavItemData(
-                'Live Logistics', Icons.analytics_rounded, '/live-data'),
+                'Intelligence Hub', Icons.analytics_rounded, '/live-data'),
             _NavItemData(
               'Vessel Movements',
               Icons.directions_boat_rounded,

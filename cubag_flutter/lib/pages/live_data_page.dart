@@ -37,6 +37,30 @@ class _LiveDataPageState extends State<LiveDataPage> {
     return "$hour:$minute";
   }
 
+  String _formatNewsDate(String? raw) {
+    if (raw == null || raw.isEmpty) return '';
+    try {
+      final dt = DateTime.tryParse(raw);
+      if (dt != null) {
+        final local = dt.toLocal();
+        const months = [
+          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        ];
+        final m = months[local.month - 1];
+        final h = local.hour.toString().padLeft(2, '0');
+        final min = local.minute.toString().padLeft(2, '0');
+        return '$m ${local.day}, $h:$min';
+      }
+    } catch (_) {}
+    return raw
+        .replaceAll(RegExp(r':\d{2}\.\d+.*'), '')
+        .replaceAll(RegExp(r':\d{2}\s*(\+.*|Z)?$'), '')
+        .replaceAll(RegExp(r'\s*\+0000$'), '')
+        .replaceAll(RegExp(r'\s*GMT$'), '')
+        .trim();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -422,12 +446,16 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                           ),
                                         ),
                                         const SizedBox(width: 8),
-                                        Text(
-                                          news['date'] ?? '',
-                                          style: TextStyle(
-                                            fontSize: 11.5,
-                                            color: muted,
-                                            fontFeatures: const [FontFeature.tabularFigures()],
+                                        Flexible(
+                                          child: Text(
+                                            _formatNewsDate(news['date']),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 11.5,
+                                              color: muted,
+                                              fontFeatures: const [FontFeature.tabularFigures()],
+                                            ),
                                           ),
                                         ),
                                       ],

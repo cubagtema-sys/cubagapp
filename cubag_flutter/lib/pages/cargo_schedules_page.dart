@@ -665,7 +665,7 @@ class _CargoSchedulesPageState extends State<CargoSchedulesPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  'DEPARTURE PORT',
+                                  'DEPARTURE',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey,
@@ -705,7 +705,7 @@ class _CargoSchedulesPageState extends State<CargoSchedulesPage> {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 const Text(
-                                  'REPORTED DESTINATION',
+                                  'DESTINATION',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey,

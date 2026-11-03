@@ -124,34 +124,6 @@ class PushNotificationService {
         });
       }
 
-      // ── Register FCM token with backend (with iOS APNs retry) ─────────────
-      Future<void> syncFcmToken() async {
-        try {
-          if (defaultTargetPlatform == TargetPlatform.iOS) {
-            String? apns = await _messaging.getAPNSToken();
-            if (apns == null) {
-              debugPrint('Waiting for iOS APNs token from Apple...');
-              await Future.delayed(const Duration(seconds: 2));
-              apns = await _messaging.getAPNSToken();
-            }
-            if (apns == null) {
-              debugPrint('APNs token not yet available. Token will sync via onTokenRefresh.');
-              return;
-            }
-          }
-
-          final token = await _messaging.getToken();
-          debugPrint('FCM Token: $token');
-          if (token != null) {
-            await ApiService()
-                .putData('auth/fcm-token', {'fcm_token': token})
-                .catchError((e) => debugPrint('Failed to save FCM token: $e'));
-          }
-        } catch (e) {
-          debugPrint('FCM token acquisition deferred: $e');
-        }
-      }
-
       unawaited(syncFcmToken());
 
       // Refresh token when it rotates or when APNs token arrives
@@ -163,6 +135,84 @@ class PushNotificationService {
       });
     } catch (e) {
       debugPrint('Push notification init failed (non-fatal): $e');
+    }
+  }
+
+  /// Explicitly prompts the user for push notification permissions on iOS and Android
+  /// and synchronizes the FCM token with the backend.
+  Future<void> requestPermissionsAndSyncToken() async {
+    if (kIsWeb) return;
+    try {
+      // 1. Request Darwin (iOS) notifications permission
+      final iosPlugin = _localNotifications
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      await iosPlugin?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      // 2. Request Android 13+ runtime notification permissions
+      final androidPlugin = _localNotifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      await androidPlugin?.requestNotificationsPermission();
+
+      // 3. Request Firebase Messaging permissions
+      final settings = await _messaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+      debugPrint('Explicit FCM permission status: ${settings.authorizationStatus}');
+
+      await _messaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      // 4. Sync FCM token with backend
+      await syncFcmToken();
+    } catch (e) {
+      debugPrint('Push notification permission request error: $e');
+    }
+  }
+
+  /// Registers or refreshes the FCM device token with the CUBAG backend
+  Future<void> syncFcmToken() async {
+    if (kIsWeb) return;
+    try {
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        String? apns = await _messaging.getAPNSToken();
+        int attempts = 0;
+        while (apns == null && attempts < 4) {
+          debugPrint('Waiting for iOS APNs token from Apple ($attempts)...');
+          await Future.delayed(const Duration(seconds: 1));
+          apns = await _messaging.getAPNSToken();
+          attempts++;
+        }
+        if (apns == null) {
+          debugPrint('APNs token not yet available. Token will sync via onTokenRefresh.');
+        }
+      }
+
+      final token = await _messaging.getToken();
+      debugPrint('FCM Token: $token');
+      if (token != null && token.isNotEmpty) {
+        await ApiService()
+            .putData('auth/fcm-token', {'fcm_token': token})
+            .catchError((e) => debugPrint('Failed to save FCM token: $e'));
+      }
+    } catch (e) {
+      debugPrint('FCM token acquisition deferred: $e');
     }
   }
 

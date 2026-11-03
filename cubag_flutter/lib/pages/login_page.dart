@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../services/biometric_service.dart';
+import '../services/push_notification_service.dart';
 import '../components/app_logo.dart';
 import '../core/router.dart';
 import '../services/theme_service.dart';
@@ -317,6 +319,9 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
+    // Prompt push notifications permission and sync FCM device token
+    unawaited(PushNotificationService().requestPermissionsAndSyncToken());
+
     if (mounted) {
       final role = authService.userRole;
       if (role == 'admin' || role == 'sub_admin' || role == 'super_admin') {
@@ -395,6 +400,9 @@ class _LoginPageState extends State<LoginPage> {
       }
       return;
     }
+
+    // Prompt push notifications permission and sync FCM device token
+    unawaited(PushNotificationService().requestPermissionsAndSyncToken());
 
     if (mounted) {
       final role = authService.userRole;

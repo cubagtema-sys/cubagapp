@@ -60,8 +60,20 @@ class NotificationService extends ChangeNotifier {
             'read': item['read_at'] != null || item['is_read'] == true || item['read'] == true,
           };
         }).toList();
-        
-        _recentNotifications = List<Map<String, dynamic>>.from(list.take(5));
+
+        // Sort descending: latest announcements/notifications start at the top
+        list.sort((a, b) {
+          final da = DateTime.tryParse(a['created_at']?.toString() ?? '');
+          final db = DateTime.tryParse(b['created_at']?.toString() ?? '');
+          if (da != null && db != null) {
+            return db.compareTo(da);
+          }
+          final idA = int.tryParse(a['id']?.toString() ?? '') ?? 0;
+          final idB = int.tryParse(b['id']?.toString() ?? '') ?? 0;
+          return idB.compareTo(idA);
+        });
+
+        _recentNotifications = List<Map<String, dynamic>>.from(list.take(8));
         
         final count = list.where((n) => n['read'] != true).length;
         setUnreadCount(count);

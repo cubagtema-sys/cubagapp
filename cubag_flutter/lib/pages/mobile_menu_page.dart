@@ -323,7 +323,7 @@ class MobileMenuPage extends StatelessWidget {
             ),
           ]),
           _buildSection(context, 'RESOURCES', [
-            _MenuItem('Live Logistics', Icons.analytics_rounded, '/live-data'),
+            _MenuItem('Intelligence Hub', Icons.analytics_rounded, '/live-data'),
             _MenuItem(
               'Vessel Movements',
               Icons.directions_boat_rounded,

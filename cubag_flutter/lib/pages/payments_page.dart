@@ -73,6 +73,13 @@ class _PaymentsPageState extends State<PaymentsPage>
   bool _isInstallmentMode = false;
   List<dynamic> _installments = [];
 
+  String _cleanFeeLabel(String raw) {
+    return raw
+        .replaceAll(RegExp(r'\b(Associate|Licentiate|Corporate)\b', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\s{2,}'), ' ')
+        .trim();
+  }
+
   // Bank transfer receipt state
   String? _receiptUrl;
   String? _receiptFileName;
@@ -1385,8 +1392,8 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 builder: (ctx) {
                                   final reqDocs = _requiresDocuments;
                                   final labels = reqDocs
-                                      ? ['Fee Details', 'Supporting Documents', 'Payment Method', 'Review & Pay', 'Verification']
-                                      : ['Fee Details', 'Payment Method', 'Review & Pay', 'Verification'];
+                                      ? ['Details', 'Documents', 'Method', 'Review', 'Verify']
+                                      : ['Details', 'Method', 'Review', 'Verify'];
                                   final stepMap = reqDocs
                                       ? {1: 0, 2: 1, 3: 2, 4: 3, 5: 4}
                                       : {1: 0, 3: 1, 4: 2, 5: 3};
@@ -2443,7 +2450,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       Expanded(
                         child: Text(
                           _regFeeCategoryTitle.isNotEmpty
-                              ? 'FEE BREAKDOWN: NEW MEMBERSHIP DUES (${_regFeeCategoryTitle.toUpperCase()})'
+                              ? 'FEE BREAKDOWN: NEW MEMBERSHIP DUES (${_cleanFeeLabel(_regFeeCategoryTitle).toUpperCase()})'
                               : 'NEW MEMBERSHIP DUES BREAKDOWN',
                           style: GoogleFonts.outfit(
                             fontSize: 13,
@@ -2458,20 +2465,24 @@ class _PaymentsPageState extends State<PaymentsPage>
                   ),
                   const Divider(height: 16),
                   ..._regFeeBreakdown.map((item) {
+                    final rawLabel = item['label']?.toString() ?? '';
+                    final cleanLabel = _cleanFeeLabel(rawLabel);
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 3),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            item['label']?.toString() ?? '',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: isDark
-                                  ? Colors.white70
-                                  : const Color(0xFF334155),
+                          Expanded(
+                            child: Text(
+                              cleanLabel,
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: isDark
+                                    ? Colors.white70
+                                    : const Color(0xFF334155),
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Text(
                             'GHS ${item['amount']?.toString() ?? ''}',
                             style: GoogleFonts.outfit(
@@ -2576,34 +2587,59 @@ class _PaymentsPageState extends State<PaymentsPage>
                   ),
                   const SizedBox(height: 12),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('TOTAL BILLED', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFF64748b))),
-                          const SizedBox(height: 2),
-                          Text(
-                            'GHS ${((_renewalFeeAmount != null && _renewalFeeAmount! > 0) ? _renewalFeeAmount! : (_renewalAmountPaid + _renewalBalanceDue)).toStringAsFixed(2)}',
-                            style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
-                          ),
-                        ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('TOTAL BILLED', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFF64748b))),
+                            const SizedBox(height: 2),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'GHS ${((_renewalFeeAmount != null && _renewalFeeAmount! > 0) ? _renewalFeeAmount! : (_renewalAmountPaid + _renewalBalanceDue)).toStringAsFixed(2)}',
+                                style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text('PAID TO DATE', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFF059669))),
-                          const SizedBox(height: 2),
-                          Text('GHS ${_renewalAmountPaid.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF059669))),
-                        ],
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text('PAID TO DATE', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFF059669))),
+                            const SizedBox(height: 2),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.center,
+                              child: Text(
+                                'GHS ${_renewalAmountPaid.toStringAsFixed(2)}',
+                                style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF059669)),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text('OUTSTANDING BALANCE', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFFD97706))),
-                          const SizedBox(height: 2),
-                          Text('GHS ${_renewalBalanceDue.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFFD97706))),
-                        ],
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text('BALANCE DUE', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xFFD97706))),
+                            const SizedBox(height: 2),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                'GHS ${_renewalBalanceDue.toStringAsFixed(2)}',
+                                style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFFD97706)),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -2650,7 +2686,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       Expanded(
                         child: Text(
                           _renewalFeeCategoryTitle.isNotEmpty
-                              ? 'RENEWAL BREAKDOWN: ${_renewalFeeCategoryTitle.toUpperCase()}'
+                              ? 'RENEWAL BREAKDOWN: ${_cleanFeeLabel(_renewalFeeCategoryTitle).toUpperCase()}'
                               : 'EXISTING MEMBERSHIP RENEWAL',
                           style: GoogleFonts.outfit(
                             fontSize: 13,
@@ -2665,20 +2701,24 @@ class _PaymentsPageState extends State<PaymentsPage>
                   ),
                   const Divider(height: 16),
                   ..._renewalFeeBreakdown.map((item) {
+                    final rawLabel = item['label']?.toString() ?? '';
+                    final cleanLabel = _cleanFeeLabel(rawLabel);
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 3),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            item['label']?.toString() ?? '',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: isDark
-                                  ? Colors.white70
-                                  : const Color(0xFF334155),
+                          Expanded(
+                            child: Text(
+                              cleanLabel,
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: isDark
+                                    ? Colors.white70
+                                    : const Color(0xFF334155),
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Text(
                             'GHS ${item['amount']?.toString() ?? ''}',
                             style: GoogleFonts.outfit(

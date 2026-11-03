@@ -3,14 +3,20 @@ import 'package:google_fonts/google_fonts.dart';
 
 class InAppLegalViewer {
   static void show(BuildContext context, {required String title, required String subtitle, required List<Map<String, String>> sections}) {
+    final screenSize = MediaQuery.of(context).size;
+    final dialogWidth = screenSize.width > 680 ? 640.0 : screenSize.width * 0.94;
+    final dialogHeight = screenSize.height * 0.85;
+
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         backgroundColor: Colors.white,
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
-          padding: const EdgeInsets.all(24),
+          width: dialogWidth,
+          height: dialogHeight,
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -37,10 +43,11 @@ class InAppLegalViewer {
                             color: const Color(0xFF1A0F0A),
                           ),
                         ),
+                        const SizedBox(height: 2),
                         Text(
                           subtitle,
                           style: GoogleFonts.inter(
-                            fontSize: 13.5,
+                            fontSize: 13,
                             color: const Color(0xFF64748b),
                           ),
                         ),
@@ -48,7 +55,7 @@ class InAppLegalViewer {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded),
+                    icon: const Icon(Icons.close_rounded, color: Color(0xFF64748b)),
                     onPressed: () => Navigator.pop(ctx),
                   ),
                 ],
@@ -56,8 +63,10 @@ class InAppLegalViewer {
               const Divider(height: 24),
               Expanded(
                 child: ListView.separated(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
                   itemCount: sections.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 16),
+                  separatorBuilder: (_, _) => const SizedBox(height: 18),
                   itemBuilder: (context, index) {
                     final section = sections[index];
                     return Column(
@@ -66,17 +75,17 @@ class InAppLegalViewer {
                         Text(
                           section['heading'] ?? '',
                           style: GoogleFonts.outfit(
-                            fontSize: 15.5,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF1A0F0A),
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
+                        const SizedBox(height: 6),
+                        SelectableText(
                           section['body'] ?? '',
                           style: GoogleFonts.inter(
-                            fontSize: 14,
-                            height: 1.5,
+                            fontSize: 14.5,
+                            height: 1.6,
                             color: const Color(0xFF475569),
                           ),
                         ),
@@ -85,7 +94,7 @@ class InAppLegalViewer {
                   },
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -152,7 +161,7 @@ class InAppLegalViewer {
       sections: [
         {
           'heading': '1. Acceptance of Terms',
-          'body': 'By downloading, registering, or accessing the CUBAG Mobile Platform, you agree to be bound by these Terms of Service, all applicable association bylaws, and professional code of conduct regulations.'
+          'body': 'By downloading, registering, or accessing the CUBAG Mobile Platform, you agree to be bound by these Terms of Service and all applicable association bylaws.'
         },
         {
           'heading': '2. Membership & Licensing Obligations',
@@ -163,15 +172,11 @@ class InAppLegalViewer {
           'body': 'Annual renewal dues, registration fees, and entrance packages must be paid in accordance with official CUBAG tariff schedules. All payments submitted via Mobile Money or Bank Transfer receipts are subject to secretariat verification.'
         },
         {
-          'heading': '4. Code of Conduct & Platform Integrity',
-          'body': 'Users agree not to misrepresent credentials, upload fraudulent documents, attempt unauthorized access to restricted administrative modules, or disrupt real-time communication channels.'
-        },
-        {
-          'heading': '5. Account Suspension & Termination',
+          'heading': '4. Account Suspension & Termination',
           'body': 'Violation of association bylaws, fraudulent submissions, or lapse in statutory compliance may result in suspension of good standing or revocation of membership privileges.'
         },
         {
-          'heading': '6. Secretariat Support',
+          'heading': '5. Secretariat Support',
           'body': 'For inquiries or assistance, please contact the CUBAG Secretariat directly through the member engagement portal.'
         },
       ],

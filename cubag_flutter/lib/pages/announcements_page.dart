@@ -57,6 +57,20 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
     }
   }
 
+  void _sortAlerts(List<dynamic> items) {
+    items.sort((a, b) {
+      if (a is! Map || b is! Map) return 0;
+      final da = DateTime.tryParse(a['created_at']?.toString() ?? a['date']?.toString() ?? '');
+      final db = DateTime.tryParse(b['created_at']?.toString() ?? b['date']?.toString() ?? '');
+      if (da != null && db != null) {
+        return db.compareTo(da);
+      }
+      final idA = int.tryParse(a['id']?.toString() ?? '') ?? 0;
+      final idB = int.tryParse(b['id']?.toString() ?? '') ?? 0;
+      return idB.compareTo(idA);
+    });
+  }
+
   Future<void> _fetch({bool refresh = false}) async {
     if (refresh) {
       setState(() {
@@ -74,7 +88,9 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
         if (mounted && data != null) {
           setState(() {
             _loading = false;
-            _alerts = ApiService.ensureList(data);
+            final items = ApiService.ensureList(data);
+            _sortAlerts(items);
+            _alerts = items;
             if (data is Map && data.containsKey('total')) {
               _total = data['total'];
               _hasMore = _alerts.length < _total;
@@ -98,6 +114,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
         final newItems = ApiService.ensureList(data);
         setState(() {
           _alerts.addAll(newItems);
+          _sortAlerts(_alerts);
           if (data is Map && data.containsKey('total')) {
             _hasMore = _alerts.length < data['total'];
           } else {
@@ -693,7 +710,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
     final iconData = _categoryIcon(category);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: isRead ? Colors.white : _kOrange.withAlpha(8),
         borderRadius: BorderRadius.circular(14),
@@ -709,13 +726,13 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
           borderRadius: BorderRadius.circular(14),
           onTap: () => _showAnnouncementDetail(a),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                // Category Icon Avatar (matching skeleton tile size)
+                // Category Icon Avatar
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: (isRead
                         ? const Color(0xFFf1f5f9)
@@ -725,38 +742,40 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                   child: Icon(
                     iconData,
                     color: isRead ? const Color(0xFF64748b) : _kOrange,
-                    size: 20,
+                    size: 22,
                   ),
                 ),
-                const SizedBox(width: 12),
-                // Compact Title & Subtitle Stack
+                const SizedBox(width: 14),
+                // Decompressed Title & Subtitle Stack
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: Text(
                               a['title'] ?? '',
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.outfit(
-                                fontSize: 18,
+                                fontSize: 17,
                                 fontWeight: isRead
                                     ? FontWeight.w600
                                     : FontWeight.w800,
                                 color: const Color(0xFF1A0F0A),
+                                height: 1.25,
                               ),
                             ),
                           ),
                           if (dateStr.isNotEmpty) ...[
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 10),
                             Text(
                               dateStr,
                               style: GoogleFonts.inter(
-                                fontSize: 15,
+                                fontSize: 13,
                                 color: const Color(0xFF94a3b8),
                                 fontWeight: FontWeight.w500,
                               ),
@@ -764,18 +783,18 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                           ],
                         ],
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 6),
                       Row(
                         children: [
                           _categoryBadge(category),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               a['body'] ?? a['content'] ?? '',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
-                                fontSize: 16,
+                                fontSize: 14.5,
                                 color: const Color(0xFF64748b),
                               ),
                             ),
@@ -785,11 +804,11 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Icon(
                   Icons.chevron_right_rounded,
                   color: Colors.grey.shade400,
-                  size: 20,
+                  size: 22,
                 ),
               ],
             ),

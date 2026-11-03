@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../components/app_layout.dart';
 import '../components/skeleton_loader.dart';
 import '../services/api_service.dart';
+import '../services/push_notification_service.dart';
 import '../services/socket_service.dart';
 import '../services/theme_service.dart';
 import '../utils/session_storage.dart';
@@ -50,6 +51,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
+    unawaited(PushNotificationService().requestPermissionsAndSyncToken());
     final cachedName = SessionStorage.instance.getStringSync('cubag_name');
     if (cachedName != null && cachedName.isNotEmpty) {
       final isPkgPaid = SessionStorage.instance.getStringSync('cubag_package_fee_paid') == 'true';
