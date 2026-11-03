@@ -996,11 +996,7 @@ class _LoginPageState extends State<LoginPage> {
                         children: [
                           Flexible(
                             child: Text(
-                              _bioAvailable && !kIsWeb
-                                  ? (defaultTargetPlatform == TargetPlatform.iOS
-                                      ? 'Keep me signed in (Face ID)'
-                                      : 'Keep me signed in (Biometric)')
-                                  : 'Keep me signed in',
+                              'Keep me signed in',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(

@@ -368,20 +368,21 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildMobileLayout() => SafeArea(
     child: Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+        physics: const ClampingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 460),
+          constraints: const BoxConstraints(maxWidth: 440),
           child: Container(
-            padding: const EdgeInsets.all(28),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
             decoration: BoxDecoration(
               color: _kWhite,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(color: _kBorder),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withAlpha(6),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
+                  blurRadius: 16,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
@@ -525,8 +526,12 @@ class _RegisterPageState extends State<RegisterPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (showLogo) ...[
-                const AppLogo(size: 48, borderRadius: 12, showShadow: true),
-                const SizedBox(height: 16),
+                AppLogo(
+                  size: isMobile ? 38 : 48,
+                  borderRadius: isMobile ? 10 : 12,
+                  showShadow: true,
+                ),
+                SizedBox(height: isMobile ? 8 : 16),
               ],
               Text(
                 [
@@ -537,13 +542,13 @@ class _RegisterPageState extends State<RegisterPage> {
                 ][_step - 1],
                 textAlign: TextAlign.center,
                 style: GoogleFonts.outfit(
-                  fontSize: 32,
+                  fontSize: isMobile ? 23 : 32,
                   fontWeight: FontWeight.w900,
                   color: _kText,
                   letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: isMobile ? 2 : 8),
               Text(
                 [
                   'Provide contact information to register.',
@@ -552,12 +557,16 @@ class _RegisterPageState extends State<RegisterPage> {
                   'Choose a secure password for your account.',
                 ][_step - 1],
                 textAlign: TextAlign.center,
-                style: TextStyle(color: _kMuted, fontSize: 17, height: 1.4),
+                style: TextStyle(
+                  color: _kMuted,
+                  fontSize: isMobile ? 13.5 : 17,
+                  height: 1.3,
+                ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 28),
+        SizedBox(height: _compact ? 14 : 28),
 
         // Step Progress Indicator
         if (isMobile) ...[
@@ -568,7 +577,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 'Step $_step of 4',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 15,
+                  fontSize: 12.5,
                   color: _kMuted,
                 ),
               ),
@@ -576,18 +585,18 @@ class _RegisterPageState extends State<RegisterPage> {
                 stepLabels[_step - 1],
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  fontSize: 15,
+                  fontSize: 12.5,
                   color: _kOrange,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 5),
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: _step / 4.0,
-              minHeight: 6,
+              minHeight: 4,
               backgroundColor: _kBorder,
               valueColor: AlwaysStoppedAnimation<Color>(_kOrange),
             ),
@@ -675,7 +684,7 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
           ),
         ],
-        const SizedBox(height: 28),
+        SizedBox(height: _compact ? 14 : 28),
 
         if (_error.isNotEmpty)
           Container(
@@ -714,7 +723,7 @@ class _RegisterPageState extends State<RegisterPage> {
         if (_step == 3) _buildStep3(),
         if (_step == 4) _buildStep4(),
 
-        const SizedBox(height: 24),
+        SizedBox(height: _compact ? 12 : 24),
         Center(
           child: GestureDetector(
             onTap: () => context.go('/login'),
@@ -725,7 +734,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     text: "Already have an account? ",
                     style: TextStyle(
                       color: _kMuted,
-                      fontSize: 17,
+                      fontSize: _compact ? 14 : 17,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -734,7 +743,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     style: TextStyle(
                       color: _kOrange,
                       fontWeight: FontWeight.w800,
-                      fontSize: 17,
+                      fontSize: _compact ? 14 : 17,
                     ),
                   ),
                 ],
@@ -746,9 +755,15 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  bool get _compact => MediaQuery.sizeOf(context).width <= 700;
+
   Widget _inputLabel(String text) => Text(
     text,
-    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: _kText),
+    style: TextStyle(
+      fontWeight: FontWeight.w700,
+      fontSize: _compact ? 13 : 16,
+      color: _kText,
+    ),
   );
 
   InputDecoration _inputDecoration({
@@ -757,20 +772,26 @@ class _RegisterPageState extends State<RegisterPage> {
     Widget? suffix,
   }) => InputDecoration(
     hintText: hint,
-    prefixIcon: Icon(icon, color: _kBrown, size: 20),
+    prefixIcon: Icon(icon, color: _kBrown, size: _compact ? 18 : 20),
     suffixIcon: suffix,
     filled: true,
     fillColor: _kWhite,
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: _kBorder, width: 1.5),
+      borderRadius: BorderRadius.circular(_compact ? 12 : 14),
+      borderSide: BorderSide(color: _kBorder, width: _compact ? 1.2 : 1.5),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: _kOrange, width: 2),
+      borderRadius: BorderRadius.circular(_compact ? 12 : 14),
+      borderSide: BorderSide(color: _kOrange, width: _compact ? 1.8 : 2),
     ),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-    hintStyle: TextStyle(color: _kMuted.withAlpha(180)),
+    contentPadding: EdgeInsets.symmetric(
+      horizontal: _compact ? 14 : 16,
+      vertical: _compact ? 11 : 18,
+    ),
+    hintStyle: TextStyle(
+      color: _kMuted.withAlpha(180),
+      fontSize: _compact ? 13.5 : null,
+    ),
   );
 
   Widget _field(
@@ -785,7 +806,7 @@ class _RegisterPageState extends State<RegisterPage> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       _inputLabel(label),
-      const SizedBox(height: 8),
+      SizedBox(height: _compact ? 4 : 8),
       TextFormField(
         controller: ctrl,
         keyboardType: type,
@@ -793,7 +814,7 @@ class _RegisterPageState extends State<RegisterPage> {
         textCapitalization: textCapitalization,
         style: TextStyle(
           color: _kText,
-          fontSize: 16,
+          fontSize: _compact ? 14.5 : 16,
           fontWeight: FontWeight.w600,
         ),
         decoration: _inputDecoration(
@@ -801,7 +822,7 @@ class _RegisterPageState extends State<RegisterPage> {
           icon: icon ?? Icons.text_fields,
         ),
       ),
-      const SizedBox(height: 18),
+      SizedBox(height: _compact ? 10 : 18),
     ],
   );
 
@@ -814,9 +835,9 @@ class _RegisterPageState extends State<RegisterPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _inputLabel('Membership Type'),
-            const SizedBox(height: 10),
+            SizedBox(height: _compact ? 6 : 10),
             _buildMemberTypeCards(),
-            const SizedBox(height: 18),
+            SizedBox(height: _compact ? 10 : 18),
           ],
         ),
         if (isCorporate) ...[
@@ -831,7 +852,7 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 8),
               _buildCompanyClassificationDropdown(),
-              const SizedBox(height: 16),
+              SizedBox(height: _compact ? 10 : 16),
             ],
           ),
           Column(
@@ -845,7 +866,7 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 8),
               _buildCompanyCategoryDropdown(),
-              const SizedBox(height: 18),
+              SizedBox(height: _compact ? 10 : 18),
             ],
           ),
           _field(
@@ -884,10 +905,10 @@ class _RegisterPageState extends State<RegisterPage> {
             LengthLimitingTextInputFormatter(10),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: _compact ? 8 : 12),
         SizedBox(
           width: double.infinity,
-          height: 56,
+          height: _compact ? 46 : 56,
           child: ElevatedButton(
             onPressed: _step1Next,
             style: ElevatedButton.styleFrom(
@@ -940,8 +961,11 @@ class _RegisterPageState extends State<RegisterPage> {
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeInOut,
             width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            margin: EdgeInsets.only(bottom: _compact ? 8 : 12),
+            padding: EdgeInsets.symmetric(
+              horizontal: _compact ? 12 : 16,
+              vertical: _compact ? 9 : 16,
+            ),
             decoration: BoxDecoration(
               color: selected ? _kCream : _kWhite,
               borderRadius: BorderRadius.circular(16),
@@ -962,7 +986,7 @@ class _RegisterPageState extends State<RegisterPage> {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(_compact ? 6 : 8),
                   decoration: BoxDecoration(
                     color: selected
                         ? _kOrange.withAlpha(25)
@@ -972,10 +996,10 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: Icon(
                     t['icon'] as IconData,
                     color: selected ? _kBrown : _kMuted,
-                    size: 22,
+                    size: _compact ? 18 : 22,
                   ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: _compact ? 10 : 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -984,14 +1008,14 @@ class _RegisterPageState extends State<RegisterPage> {
                         t['label'] as String,
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
-                          fontSize: 16,
+                          fontSize: _compact ? 14 : 16,
                           color: selected ? _kBrown : _kText,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: _compact ? 1 : 4),
                       Text(
                         t['desc'] as String,
-                        style: TextStyle(fontSize: 14, color: _kMuted),
+                        style: TextStyle(fontSize: _compact ? 12 : 14, color: _kMuted),
                       ),
                     ],
                   ),
@@ -1495,12 +1519,12 @@ class _RegisterPageState extends State<RegisterPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _inputLabel('Primary Port of Operation'),
-            const SizedBox(height: 10),
+            SizedBox(height: _compact ? 6 : 10),
             _buildPortCards(),
-            const SizedBox(height: 18),
+            SizedBox(height: _compact ? 10 : 18),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: _compact ? 8 : 12),
         Row(
           children: [
             Expanded(
@@ -1512,7 +1536,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  minimumSize: const Size(0, 56),
+                  minimumSize: Size(0, _compact ? 46 : 56),
                 ),
                 child: Text(
                   'Back',
@@ -1535,7 +1559,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  minimumSize: const Size(0, 56),
+                  minimumSize: Size(0, _compact ? 46 : 56),
                   elevation: 0,
                 ),
                 child: _loading
@@ -1575,13 +1599,13 @@ class _RegisterPageState extends State<RegisterPage> {
           child: Icon(Icons.mark_email_read, color: _kBrown, size: 36),
         ),
       ),
-      const SizedBox(height: 24),
+      SizedBox(height: _compact ? 12 : 24),
       Text(
         'Check your inbox for a 6-digit verification code.',
         textAlign: TextAlign.center,
         style: TextStyle(color: _kMuted, fontSize: 17),
       ),
-      const SizedBox(height: 32),
+      SizedBox(height: _compact ? 14 : 32),
       TextFormField(
         controller: _otpCtrl,
         keyboardType: TextInputType.number,
@@ -1621,7 +1645,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
-                minimumSize: const Size(0, 56),
+                minimumSize: Size(0, _compact ? 46 : 56),
               ),
               child: Text(
                 'Back',
@@ -1644,7 +1668,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
-                minimumSize: const Size(0, 56),
+                minimumSize: Size(0, _compact ? 46 : 56),
                 elevation: 0,
               ),
               child: _loading
@@ -1700,7 +1724,7 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: _compact ? 12 : 20),
           _inputLabel('Confirm Password'),
           const SizedBox(height: 8),
           TextFormField(
@@ -1728,7 +1752,7 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ],
       ),
-      const SizedBox(height: 32),
+      SizedBox(height: _compact ? 14 : 32),
       Row(
         children: [
           Expanded(
@@ -1740,7 +1764,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
-                minimumSize: const Size(0, 56),
+                minimumSize: Size(0, _compact ? 46 : 56),
               ),
               child: Text(
                 'Back',
@@ -1763,7 +1787,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
-                minimumSize: const Size(0, 56),
+                minimumSize: Size(0, _compact ? 46 : 56),
                 elevation: 0,
               ),
               child: _loading
