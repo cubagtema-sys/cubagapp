@@ -1810,7 +1810,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                     )
                   : const Text(
-                      'Complete Registration',
+                      'Complete',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 18,
