@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -314,9 +315,18 @@ class _RegisterPageState extends State<RegisterPage> {
       } else {
         _err(res.data['message'] ?? 'Registration failed.');
       }
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      _err('Connection error. Please try again.');
+      String msg = 'Registration failed. Please try again.';
+      if (e is DioException) {
+        if (e.response?.data is Map && e.response?.data['message'] != null) {
+          msg = e.response!.data['message'].toString();
+        } else if (e.type == DioExceptionType.connectionTimeout ||
+                   e.type == DioExceptionType.connectionError) {
+          msg = 'Connection error. Please check your internet connection.';
+        }
+      }
+      _err(msg);
     }
     if (mounted) setState(() => _loading = false);
   }
