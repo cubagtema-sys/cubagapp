@@ -21,8 +21,21 @@ CSRF_PROTECTED_METHODS = {'POST', 'PUT', 'DELETE', 'PATCH'}
 # Endpoints that are exempt from CSRF protection (public endpoints, webhooks, etc.)
 CSRF_EXEMPT_ENDPOINTS = {
     '/api/v1/auth/login',
+    '/api/auth/login',
     '/api/v1/auth/register',
+    '/api/auth/register',
     '/api/v1/auth/send-otp',
+    '/api/auth/send-otp',
+    '/api/v1/auth/verify-email',
+    '/api/auth/verify-email',
+    '/api/v1/auth/verify-otp',
+    '/api/auth/verify-otp',
+    '/api/v1/auth/resend-otp',
+    '/api/auth/resend-otp',
+    '/api/v1/auth/forgot-password',
+    '/api/auth/forgot-password',
+    '/api/v1/auth/reset-password',
+    '/api/auth/reset-password',
     '/api/v1/payments/webhook',
     '/api/payments/webhook',
     '/api/v1/payments/public/initiate-momo',
@@ -32,7 +45,9 @@ CSRF_EXEMPT_ENDPOINTS = {
     '/api/analytics/telemetry',
     '/api/v1/analytics/telemetry',
     '/api/health',
+    '/api/v1/health',
     '/api/ping',
+    '/api/v1/ping',
 }
 
 
@@ -49,8 +64,16 @@ def validate_csrf_token():
     if not CSRF_ENABLED:
         return True, None
     
-    # Check if endpoint is exempt
-    if request.path in CSRF_EXEMPT_ENDPOINTS:
+    # Check if endpoint is exempt or public authentication / portal route
+    norm_path = request.path.rstrip('/')
+    if (
+        norm_path in CSRF_EXEMPT_ENDPOINTS
+        or request.path in CSRF_EXEMPT_ENDPOINTS
+        or norm_path.startswith('/api/v1/auth')
+        or norm_path.startswith('/api/auth')
+        or norm_path.startswith('/api/v1/public')
+        or norm_path.startswith('/api/public')
+    ):
         return True, None
     
     # Only check CSRF for state-changing methods

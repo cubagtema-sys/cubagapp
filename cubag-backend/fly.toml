@@ -25,7 +25,7 @@ primary_region = "fra"
   SMTP_HOST = "smtp.gmail.com"
   SMTP_PORT = "465"
   SMTP_SECURE = "true"
-  SMTP_USER = "eaap2026@eventslabs.org"
+  SMTP_USER = "Supportteam@cryptoplextrades.com"
   SMTP_SENDER_NAME = "CUBAG Support"
 
 [http_service]

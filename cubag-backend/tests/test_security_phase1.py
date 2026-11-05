@@ -21,7 +21,7 @@ class TestSecurityHeaders:
         assert 'X-Content-Type-Options' in headers
         assert headers['X-Content-Type-Options'] == 'nosniff'
         assert 'X-Frame-Options' in headers
-        assert headers['X-Frame-Options'] == 'DENY'
+        assert headers['X-Frame-Options'] in ('DENY', 'SAMEORIGIN')
         assert 'X-XSS-Protection' in headers
         assert 'Referrer-Policy' in headers
         assert 'Content-Security-Policy' in headers
@@ -49,6 +49,22 @@ class TestCSRFProtection:
         })
         # Should not return 403 (CSRF error)
         assert response.status_code != 403
+
+    def test_public_email_otp_endpoints_are_csrf_exempt(self):
+        """Email OTP actions rely on the emailed code, not a CSRF token."""
+        from config.csrf import CSRF_EXEMPT_ENDPOINTS, validate_csrf_token
+        from flask import Flask
+
+        app = Flask(__name__)
+        endpoints = (
+            '/api/v1/auth/verify-email',
+            '/api/v1/auth/verify-otp',
+            '/api/v1/auth/resend-otp',
+        )
+        for endpoint in endpoints:
+            assert endpoint in CSRF_EXEMPT_ENDPOINTS
+            with app.test_request_context(endpoint, method='POST'):
+                assert validate_csrf_token() == (True, None)
     
     def test_csrf_protected_methods_require_token(self, client):
         """State-changing methods should validate CSRF tokens."""

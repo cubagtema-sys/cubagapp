@@ -287,8 +287,16 @@ def enforce_csrf_protection():
     if request.method == 'OPTIONS':
         return None
     
-    # Skip CSRF for exempt endpoints and all public REST API endpoints
-    if request.path in CSRF_EXEMPT_ENDPOINTS or request.path.startswith('/api/v1/public/') or request.path.startswith('/api/public/'):
+    norm_path = request.path.rstrip('/')
+    # Skip CSRF for exempt endpoints and all public REST API / auth endpoints
+    if (
+        norm_path in CSRF_EXEMPT_ENDPOINTS
+        or request.path in CSRF_EXEMPT_ENDPOINTS
+        or norm_path.startswith('/api/v1/public')
+        or norm_path.startswith('/api/public')
+        or norm_path.startswith('/api/v1/auth')
+        or norm_path.startswith('/api/auth')
+    ):
         return None
     
     # Only apply to state-changing methods
