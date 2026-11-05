@@ -176,6 +176,7 @@ class ApiService {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          options.headers['X-CSRF-Token'] ??= 'cubag_app_client_mobile_csrf_token_v1';
           final token =
               SessionStorage.instance.getStringSync('cubag_token') ??
               await SessionStorage.instance.getString('cubag_token');
@@ -228,10 +229,45 @@ class ApiService {
     );
   }
 
+  static String _cleanCachePath(String p) => p.startsWith('/') ? p.substring(1) : p;
+
   String _path(String p) => p.startsWith('/') ? p.substring(1) : p;
 
-  Future<Response<dynamic>> get(String path, {Options? options}) =>
-      _dio.get(_path(path), options: options);
+  /// Synchronously retrieves cached JSON data from Hive for 0ms instant UI painting on initState.
+  static dynamic getCachedSync(String path) {
+    if (kIsWeb) return null;
+    try {
+      if (Hive.isBoxOpen('api_cache')) {
+        final box = Hive.box('api_cache');
+        final raw = box.get('cache_v1_${_cleanCachePath(path)}');
+        if (raw != null) {
+          if (raw is Map || raw is List) return raw;
+          return jsonDecode(raw.toString());
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Synchronously stores JSON data into Hive cache.
+  static void putCachedSync(String path, dynamic data) {
+    if (kIsWeb || data == null) return;
+    try {
+      if (Hive.isBoxOpen('api_cache')) {
+        final box = Hive.box('api_cache');
+        box.put('cache_v1_${_cleanCachePath(path)}', jsonEncode(data));
+      }
+    } catch (_) {}
+  }
+
+  Future<Response<dynamic>> get(String path, {Options? options}) async {
+    final clean = _path(path);
+    final res = await _dio.get(clean, options: options);
+    if (res.statusCode == 200 && res.data != null && options?.responseType != ResponseType.plain) {
+      putCachedSync(clean, res.data);
+    }
+    return res;
+  }
 
   static Options rawResponseOptions() =>
       Options(responseType: ResponseType.plain);
@@ -265,11 +301,15 @@ class ApiService {
   );
 
   Future<dynamic> fetchData(String path) async {
+    final clean = _path(path);
     try {
-      final res = await _dio.get(_path(path));
+      final res = await _dio.get(clean);
+      if (res.data != null) {
+        putCachedSync(clean, res.data);
+      }
       return res.data;
     } catch (_) {
-      return null;
+      return getCachedSync(clean);
     }
   }
 
@@ -371,16 +411,39 @@ class ApiService {
     String path,
     Function(dynamic data, bool isCached, {bool hasError}) onData,
   ) async {
-    final cacheKey = 'cache_v1_${_path(path)}';
+    final clean = _path(path);
+    final cacheKey = 'cache_v1_$clean';
 
     if (kIsWeb) {
       try {
-        final res = await _dio.get(_path(path));
+        final res = await _dio.get(clean);
         onData(res.data, false, hasError: false);
       } catch (e) {
         onData(null, false, hasError: true);
       }
       return;
+    }
+
+    // 1. Synchronous 0ms cache lookup if Hive box is already open
+    bool deliveredSyncCache = false;
+    if (Hive.isBoxOpen('api_cache')) {
+      try {
+        final box = Hive.box('api_cache');
+        final cachedStr = box.get(cacheKey);
+        if (cachedStr != null) {
+          final decoded = (cachedStr is Map || cachedStr is List)
+              ? cachedStr
+              : jsonDecode(cachedStr.toString());
+          deliveredSyncCache = true;
+          try {
+            onData(decoded, true, hasError: false);
+          } catch (e, st) {
+            AppLogger.error('api_service_onData_cached_sync', e, st);
+          }
+        }
+      } catch (e, st) {
+        AppLogger.error('api_service_sync_cache', e, st);
+      }
     }
 
     Box? box;
@@ -392,30 +455,37 @@ class ApiService {
 
     if (box == null) {
       try {
-        final res = await _dio.get(_path(path));
+        final res = await _dio.get(clean);
         onData(res.data, false, hasError: false);
       } catch (e) {
-        onData(null, false, hasError: true);
+        if (!deliveredSyncCache) {
+          onData(null, false, hasError: true);
+        }
       }
       return;
     }
 
-    try {
-      final cachedStr = box.get(cacheKey);
-      if (cachedStr != null) {
-        final decoded = jsonDecode(cachedStr);
-        try {
-          onData(decoded, true, hasError: false);
-        } catch (e, st) {
-          AppLogger.error('api_service_onData_cached', e, st);
+    if (!deliveredSyncCache) {
+      try {
+        final cachedStr = box.get(cacheKey);
+        if (cachedStr != null) {
+          final decoded = (cachedStr is Map || cachedStr is List)
+              ? cachedStr
+              : jsonDecode(cachedStr.toString());
+          deliveredSyncCache = true;
+          try {
+            onData(decoded, true, hasError: false);
+          } catch (e, st) {
+            AppLogger.error('api_service_onData_cached', e, st);
+          }
         }
+      } catch (e, st) {
+        AppLogger.error('api_service', e, st);
       }
-    } catch (e, st) {
-      AppLogger.error('api_service', e, st);
     }
 
     try {
-      final res = await _dio.get(_path(path));
+      final res = await _dio.get(clean);
       final freshData = res.data;
       if (freshData != null) {
         try {
@@ -431,10 +501,12 @@ class ApiService {
       }
     } catch (e) {
       debugPrint('[API Error] $path: $e');
-      try {
-        onData(null, false, hasError: true);
-      } catch (e, st) {
-        AppLogger.error('api_service_onData_error', e, st);
+      if (!deliveredSyncCache) {
+        try {
+          onData(null, false, hasError: true);
+        } catch (e, st) {
+          AppLogger.error('api_service_onData_error', e, st);
+        }
       }
     }
   }
@@ -461,10 +533,13 @@ class ApiService {
             },
           ),
         );
+        if (res.data != null) {
+          putCachedSync(cleanPath, res.data);
+        }
         return res.data;
       } catch (e) {
         debugPrint('getPublic error for path $cleanPath: $e');
-        return null;
+        return getCachedSync(cleanPath);
       } finally {
         _inFlightPublicGets.remove(cleanPath);
       }

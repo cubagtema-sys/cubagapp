@@ -71,7 +71,10 @@ void main() async {
 
 Future<void> _initStartupServices() async {
   try {
-    await SessionStorage.instance.init();
+    await Future.wait([
+      if (!kIsWeb) _initHiveCache(),
+      SessionStorage.instance.init(),
+    ]);
     await Future.wait([
       ThemeService.instance.init(),
       AuthService().checkAuthStatus(),

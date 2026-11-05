@@ -53,25 +53,50 @@ class _DashboardPageState extends State<DashboardPage> {
     super.initState();
     unawaited(PushNotificationService().requestPermissionsAndSyncToken());
     final cachedName = SessionStorage.instance.getStringSync('cubag_name');
-    if (cachedName != null && cachedName.isNotEmpty) {
-      final isPkgPaid = SessionStorage.instance.getStringSync('cubag_package_fee_paid') == 'true';
-      final isGood = SessionStorage.instance.getStringSync('cubag_good_standing') == 'true' || isPkgPaid;
-      final isRegPaid = SessionStorage.instance.getStringSync('cubag_registration_fee_paid') == 'true';
-      _user = {
-        'name': cachedName,
-        'role': SessionStorage.instance.getStringSync('cubag_role') ?? '',
-        'license_expiry_date': SessionStorage.instance.getStringSync('cubag_expiry'),
-        'status': SessionStorage.instance.getStringSync('cubag_status') ?? 'pending',
-        'license_number': SessionStorage.instance.getStringSync('cubag_license_number'),
-        'membership_number': SessionStorage.instance.getStringSync('cubag_membership_number'),
-        'package_fee_paid': isPkgPaid,
-        'good_standing': isGood,
-        'is_good_standing': isGood,
-        'registration_fee_paid': isRegPaid,
-        'id': int.tryParse(SessionStorage.instance.getStringSync('cubag_id') ?? ''),
-      };
-      _loading = false;
+    final isPkgPaid = SessionStorage.instance.getStringSync('cubag_package_fee_paid') == 'true';
+    final isGood = SessionStorage.instance.getStringSync('cubag_good_standing') == 'true' || isPkgPaid;
+    final isRegPaid = SessionStorage.instance.getStringSync('cubag_registration_fee_paid') == 'true';
+    _user = {
+      'name': (cachedName != null && cachedName.isNotEmpty) ? cachedName : 'Member',
+      'role': SessionStorage.instance.getStringSync('cubag_role') ?? '',
+      'license_expiry_date': SessionStorage.instance.getStringSync('cubag_expiry'),
+      'status': SessionStorage.instance.getStringSync('cubag_status') ?? 'pending',
+      'license_number': SessionStorage.instance.getStringSync('cubag_license_number'),
+      'membership_number': SessionStorage.instance.getStringSync('cubag_membership_number'),
+      'package_fee_paid': isPkgPaid,
+      'good_standing': isGood,
+      'is_good_standing': isGood,
+      'registration_fee_paid': isRegPaid,
+      'id': int.tryParse(SessionStorage.instance.getStringSync('cubag_id') ?? ''),
+    };
+
+    // Instant 0ms synchronous Hive cache paint
+    final cachedMe = ApiService.getCachedSync('/auth/me');
+    if (cachedMe is Map) {
+      _user = {..._user, ...Map<String, dynamic>.from(cachedMe)};
     }
+    final cachedTasks = ApiService.getCachedSync('/tasks');
+    if (cachedTasks != null) {
+      _tasks = ApiService.ensureList(cachedTasks);
+      _loadingTasks = false;
+    }
+    final cachedSurveys = ApiService.getCachedSync('/surveys');
+    if (cachedSurveys != null) {
+      _surveys = ApiService.ensureList(cachedSurveys);
+      _loadingSurveys = false;
+    }
+    final cachedIntel = ApiService.getCachedSync('intelligence');
+    if (cachedIntel is Map && cachedIntel['forex'] is Map) {
+      final forexMap = cachedIntel['forex'] as Map;
+      _forex = {
+        'USD': forexMap['USD']?.toString() ?? '—',
+        'EUR': forexMap['EUR']?.toString() ?? '—',
+        'GBP': forexMap['GBP']?.toString() ?? '—',
+        'CNY': forexMap['CNY']?.toString() ?? '—',
+      };
+    }
+    _loading = false;
+
     _loadInstantCache();
     SocketService().on('member_updated', _onLiveUpdate);
     SocketService().on('member_approved', _onLiveUpdate);
