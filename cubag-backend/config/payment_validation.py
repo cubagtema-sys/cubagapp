@@ -159,6 +159,101 @@ def _member_registration_fee(cursor, member_id):
     return None
 
 
+def _member_package_fee(cursor, member_id):
+    """Resolve a member's package fee (new membership dues) by member type / scale / category
+    from the admin-set fee_schedules. Mirrors routes/documents.py package_fee_amount logic.
+    Returns float or None.
+    """
+    try:
+        cursor.execute(
+            "SELECT member_type, member_scale, fee_category FROM members WHERE id = %s",
+            (member_id,)
+        )
+        mem_row = cursor.fetchone()
+        m_type_clean = (mem_row.get('member_type') or 'corporate').lower().strip() if mem_row else 'corporate'
+        fee_cat = (mem_row.get('fee_category') if mem_row else '') or 'cf_only'
+        member_scale = str(mem_row.get('member_scale') or 'sme').lower().strip() if mem_row else 'sme'
+        is_large = member_scale in ('large_corporate', 'large', 'corporate')
+
+        cursor.execute("SELECT key, amount FROM fee_schedules WHERE is_active = TRUE")
+        sched_map = {r['key']: r for r in cursor.fetchall()}
+
+        def get_fee_amt(key, default_amt=0.0):
+            row = sched_map.get(key)
+            if row and row.get('amount') is not None:
+                return _to_float(row['amount'])
+            return default_amt
+
+        if 'licentiate' in m_type_clean:
+            sched_row = sched_map.get('licentiate_package')
+            if sched_row and sched_row.get('amount') is not None:
+                return _to_float(sched_row['amount'])
+            return (
+                get_fee_amt('licentiate_sub_fee')
+                + get_fee_amt('licentiate_vetting_fee')
+                + get_fee_amt('licentiate_district_fee')
+                + get_fee_amt('licentiate_welfare_dues')
+                + get_fee_amt('licentiate_legal_audit_fee')
+                + get_fee_amt('licentiate_agm_levy')
+            )
+        elif 'associate' in m_type_clean:
+            sched_row = sched_map.get('associate_package')
+            if sched_row and sched_row.get('amount') is not None:
+                return _to_float(sched_row['amount'])
+            return (
+                get_fee_amt('associate_sub_fee')
+                + get_fee_amt('associate_vetting_fee')
+                + get_fee_amt('associate_district_fee')
+                + get_fee_amt('associate_welfare_dues')
+                + get_fee_amt('associate_legal_audit_fee')
+                + get_fee_amt('associate_agm_levy')
+            )
+        else:
+            if is_large:
+                if fee_cat == 'cf_only':
+                    schedule_key = 'new_large_cf_only'
+                elif fee_cat == 'consolidation':
+                    schedule_key = 'new_large_consolidation'
+                else:
+                    schedule_key = 'new_large_cf_consolidation'
+            else:
+                if fee_cat == 'cf_only':
+                    schedule_key = 'new_cf_only'
+                elif fee_cat == 'consolidation':
+                    schedule_key = 'new_consolidation'
+                else:
+                    schedule_key = 'new_cf_consolidation'
+
+            sched_row = sched_map.get(schedule_key)
+            if sched_row and sched_row.get('amount') is not None:
+                return _to_float(sched_row['amount'])
+
+            sub_amt = get_fee_amt('new_sub_fee')
+            vetting_amt = get_fee_amt('new_vetting_fee')
+            district_amt = get_fee_amt('new_district_fee')
+            cf_amt = get_fee_amt('new_cf_fee')
+            consol_amt = get_fee_amt('new_consolidation_fee')
+
+            total = sub_amt + vetting_amt + district_amt
+            if is_large:
+                if fee_cat == 'cf_consolidation':
+                    total += consol_amt + cf_amt
+                elif fee_cat == 'consolidation':
+                    total += consol_amt
+                else:
+                    total += cf_amt
+            elif fee_cat == 'cf_only':
+                total += cf_amt
+            elif fee_cat == 'consolidation':
+                total += consol_amt
+            else:
+                total += consol_amt + cf_amt
+            return total
+    except Exception as e:
+        logger.warning('[payment_validation] member package fee lookup failed: %s', e)
+    return None
+
+
 def _renewal_expected_amount(cursor, member_id, comp_app_id=None):
     try:
         if comp_app_id:
@@ -270,6 +365,19 @@ def validate_member_payment_amount(
     if any(k in desc_lower for k in ('registration', 'reg form', 'application fee', 'entrance')):
         expected = _member_registration_fee(cursor, member_id)
         if expected is not None and expected > 0:
+            return expected, None
+
+    # New membership package / dues fees are member-type specific (Licentiate / Associate / SME / Large).
+    # Must be resolved via _member_package_fee BEFORE _MUST_VERIFY_KEYWORDS check.
+    if any(k in desc_lower for k in ('new member', 'membership dues', 'package', 'membership package')):
+        expected = _member_package_fee(cursor, member_id)
+        if expected is not None and expected > 0:
+            if is_installment:
+                if client_amount <= 0 or client_amount > expected + _AMOUNT_TOLERANCE:
+                    return None, f'Installment must be between GHS 0.01 and GHS {expected:,.2f}.'
+                return client_amount, None
+            if not _close(client_amount, expected):
+                return expected, None
             return expected, None
 
     sched_amt = _match_fee_schedule(cursor, description)

@@ -653,7 +653,16 @@ def create_payment():
 
         # ── 2. Handle MoMo via WhitsunPay ──
         if method == 'momo':
-            network_map = {'MTN': 'mtn', 'Telecel': 'vodafone', 'Vodafone': 'vodafone', 'AirtelTigo': 'airteltigo'}
+            network_key = (network or 'mtn').lower().strip()
+            network_map = {
+                'mtn': 'mtn',
+                'telecel': 'vodafone',
+                'vodafone': 'vodafone',
+                'airteltigo': 'airteltigo',
+                'airtel': 'airteltigo',
+                'tigo': 'airteltigo',
+            }
+            provider = network_map.get(network_key, 'mtn')
 
             # WhitsunPay requires international format without +: 233XXXXXXXXX
             clean_phone = ''.join(filter(str.isdigit, phone))
@@ -695,7 +704,7 @@ def create_payment():
                     'amount': round(float(amount), 2),
                     'debitParty': {
                         'msisdn': clean_phone,
-                        'provider': network_map.get(network, 'mtn')
+                        'provider': provider
                     }
                 }
 
