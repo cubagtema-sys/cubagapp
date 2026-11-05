@@ -277,13 +277,19 @@ def register():
                 return jsonify({'message': 'Please verify your email with the OTP before registering.'}), 400
 
             cursor.execute("""
-                SELECT id FROM otp_codes
-                WHERE LOWER(email) = LOWER(%s) AND code = %s
+                SELECT id, code FROM otp_codes
+                WHERE LOWER(email) = LOWER(%s)
                   AND type = 'email_verified'
-                  AND created_at > NOW() - INTERVAL '30 minutes'
-            """, (email, otp))
-            if not cursor.fetchone():
+                  AND created_at > NOW() - INTERVAL '60 minutes'
+            """, (email,))
+            row = cursor.fetchone()
+            if not row:
                 return jsonify({'message': 'Email is not verified or the verification code has expired. Please request a new code.'}), 400
+
+            if otp:
+                stored_code = str(row['code'] if isinstance(row, dict) and 'code' in row else '').strip().upper()
+                if stored_code and stored_code != otp.upper():
+                    return jsonify({'message': 'Verification code does not match. Please verify your email again.'}), 400
 
             cursor.execute("SELECT id FROM members WHERE LOWER(email) = LOWER(%s)", (email,))
             if cursor.fetchone():

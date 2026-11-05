@@ -179,6 +179,7 @@ def init_db():
 
             cursor.execute("""
                 ALTER TABLE otp_codes 
+                ADD COLUMN IF NOT EXISTS id SERIAL,
                 ADD COLUMN IF NOT EXISTS type VARCHAR(50) DEFAULT 'email_verification',
                 ADD COLUMN IF NOT EXISTS attempts INT DEFAULT 0;
             """)
