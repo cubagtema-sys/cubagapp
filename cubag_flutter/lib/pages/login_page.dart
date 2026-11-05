@@ -483,9 +483,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     Provider.of<ThemeService>(context);
-    final size = MediaQuery.of(context).size;
-    final isDesktop = size.width > 1050;
-    final isTablet = size.width > 700 && size.width <= 1050;
 
     final overlayStyle = SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -499,59 +496,44 @@ class _LoginPageState extends State<LoginPage> {
       value: overlayStyle,
       child: Scaffold(
         backgroundColor: _kCream,
-        body: isDesktop
-            ? _buildThreeColumnLayout()
-            : (isTablet ? _buildTwoColumnLayout() : _buildMobileLayout()),
+        body: _buildLoginFormOnlyLayout(),
       ),
     );
   }
 
-  Widget _buildThreeColumnLayout() => Row(
-    children: [
-      Expanded(flex: 35, child: _buildBrandPanel()),
-      Expanded(flex: 35, child: _buildInfoPanel()),
-      Expanded(flex: 30, child: _buildFormPanel(padding: 40, showLogo: false)),
-    ],
-  );
-
-  Widget _buildTwoColumnLayout() => Row(
-    children: [
-      Expanded(flex: 45, child: _buildBrandPanel()),
-      Expanded(flex: 55, child: _buildFormPanel(padding: 50, showLogo: false)),
-    ],
-  );
-
-  Widget _buildMobileLayout() {
+  Widget _buildLoginFormOnlyLayout() {
     final w = MediaQuery.sizeOf(context).width;
     final isNarrow = w < 380;
+    final isMobile = w < 600;
+
     return SafeArea(
       child: Center(
         child: SingleChildScrollView(
           physics: const ClampingScrollPhysics(),
           padding: EdgeInsets.symmetric(
             horizontal: isNarrow ? 12 : 18,
-            vertical: isNarrow ? 6 : 10,
+            vertical: isNarrow ? 8 : 16,
           ),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
+            constraints: const BoxConstraints(maxWidth: 440),
             child: Container(
               padding: EdgeInsets.symmetric(
-                horizontal: isNarrow ? 16 : 22,
-                vertical: isNarrow ? 16 : 20,
+                horizontal: isNarrow ? 16 : (isMobile ? 22 : 30),
+                vertical: isNarrow ? 16 : (isMobile ? 22 : 30),
               ),
               decoration: BoxDecoration(
                 color: _kWhite,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(22),
                 border: Border.all(color: _kBorder),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha(6),
-                    blurRadius: 16,
-                    offset: const Offset(0, 3),
+                    color: Colors.black.withAlpha(8),
+                    blurRadius: 20,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: _buildForm(showLogo: true, isMobile: true),
+              child: _buildForm(showLogo: true, isMobile: isMobile),
             ),
           ),
         ),
@@ -559,227 +541,9 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildBrandPanel() => Container(
-    decoration: const BoxDecoration(
-      color: Color(0xFF1E140F),
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFF2B1B14),
-          Color(0xFF160D09),
-        ],
-      ),
-    ),
-    child: Stack(
-      children: [
-        Positioned(
-          right: -30,
-          bottom: -30,
-          child: Icon(
-            Icons.directions_boat_rounded,
-            size: 260,
-            color: Colors.white.withAlpha(8),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 44, vertical: 48),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const AppLogo(size: 48, borderRadius: 12),
-              const SizedBox(height: 28),
-              Text(
-                'CUBAG',
-                style: GoogleFonts.outfit(
-                  color: Colors.white,
-                  fontSize: 44,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -1.2,
-                  height: 1.05,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                width: 44,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: _kOrange,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                'Customs Brokers Association of Ghana',
-                style: GoogleFonts.outfit(
-                  color: const Color(0xFFF8F4F0),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Connecting customs clearance, freight forwarding, and international trade professionals across Ghana.',
-                style: GoogleFonts.inter(
-                  color: const Color(0xFFC8ADA0),
-                  fontSize: 15,
-                  height: 1.6,
-                ),
-              ),
-              const SizedBox(height: 32),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(10),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white.withAlpha(16)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ACCREDITED MEMBER ROLL',
-                      style: GoogleFonts.outfit(
-                        color: _kOrange,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Instant verification for licensed brokers, clearing agents, and freight forwarders.',
-                      style: GoogleFonts.inter(
-                        color: Colors.white.withAlpha(210),
-                        fontSize: 13.5,
-                        height: 1.45,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
 
-  Widget _buildInfoPanel() => Container(
-    decoration: BoxDecoration(
-      color: _kCream,
-      border: Border(right: BorderSide(color: _kBorder, width: 1)),
-    ),
-    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 48),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Member Services',
-          style: GoogleFonts.outfit(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: _kText,
-            letterSpacing: -0.4,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Unified portal for Ghana trade logistics and port clearance.',
-          style: GoogleFonts.inter(color: _kMuted, fontSize: 14.5),
-        ),
-        const SizedBox(height: 32),
-        _infoCard(
-          icon: Icons.shield_outlined,
-          title: 'Licensed Verification',
-          desc:
-              'Verify operational standing across Ghana ports before clearing cargo.',
-        ),
-        const SizedBox(height: 18),
-        _infoCard(
-          icon: Icons.school_outlined,
-          title: 'CTI Training Institute',
-          desc:
-              'Access professional tariff, HS classification, and ICUMS certification cohorts.',
-        ),
-        const SizedBox(height: 18),
-        _infoCard(
-          icon: Icons.track_changes_rounded,
-          title: 'Dispute & Grievance Desk',
-          desc:
-              'Track demurrage disputes, clearance issues, and case investigations in real time.',
-        ),
-      ],
-    ),
-  );
 
-  Widget _infoCard({
-    required IconData icon,
-    required String title,
-    required String desc,
-  }) => Container(
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: _kWhite,
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: _kBorder),
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: _kBrown.withAlpha(18),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: _kBrown, size: 20),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.outfit(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: _kText,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                desc,
-                style: GoogleFonts.inter(
-                  color: _kMuted,
-                  fontSize: 13.5,
-                  height: 1.45,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
 
-  Widget _buildFormPanel({double padding = 60, required bool showLogo}) =>
-      Container(
-        color: _kWhite,
-        child: Center(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(padding),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: _buildForm(showLogo: showLogo, isMobile: false),
-            ),
-          ),
-        ),
-      );
 
   Widget _buildForm({required bool showLogo, bool isMobile = false}) {
     return Column(
