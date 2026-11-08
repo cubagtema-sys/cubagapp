@@ -165,7 +165,10 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
     super.dispose();
   }
 
-  Future<void> _fetch() async {
+  Future<void> _fetch({bool forceRefresh = false}) async {
+    if (forceRefresh) {
+      await ApiService.deleteCacheKeysMatching('compliance');
+    }
     // Show skeleton only on first load (no cached data yet)
     if (_applications.isEmpty) {
       setState(() {
@@ -415,7 +418,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
       title: 'Compliance Centre',
       scrollable: false,
       child: RefreshIndicator(
-        onRefresh: _fetch,
+        onRefresh: () => _fetch(forceRefresh: true),
         color: _kPrimary,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),

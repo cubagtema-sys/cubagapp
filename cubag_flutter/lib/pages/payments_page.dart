@@ -60,11 +60,9 @@ class _PaymentsPageState extends State<PaymentsPage>
   int? _currentPaymentId;
   String _currentTxRef = '';
   List<Map<String, dynamic>> _regFeeBreakdown = [];
-  String _regFeeCategoryTitle = '';
   String _upfrontRegFeeStr = '600.00';
   String _packageFeeStr = '1620.00';
   List<Map<String, dynamic>> _renewalFeeBreakdown = [];
-  String _renewalFeeCategoryTitle = '';
   double? _renewalFeeAmount;
   double _renewalAmountPaid = 0.0;
   double _renewalBalanceDue = 0.0;
@@ -76,6 +74,7 @@ class _PaymentsPageState extends State<PaymentsPage>
 
   String _cleanFeeLabel(String raw) {
     return raw
+        .replaceAll(RegExp(r'\s*\((Small\s*/\s*SME|small companies|large companies|Large Corporate|multinationals?|small|sme)\)', caseSensitive: false), '')
         .replaceAll(RegExp(r'\b(Associate|Licentiate|Corporate)\b', caseSensitive: false), '')
         .replaceAll(RegExp(r'\s{2,}'), ' ')
         .trim();
@@ -181,7 +180,6 @@ class _PaymentsPageState extends State<PaymentsPage>
         if (dynamicPkgAmt != null && double.tryParse(dynamicPkgAmt) != null) {
           _packageFeeStr = double.parse(dynamicPkgAmt).toStringAsFixed(2);
         }
-        _regFeeCategoryTitle = docData['fee_category_title']?.toString() ?? '';
         regPaidFromDoc = docData['registration_fee_paid'] == true || docData['application_fee_paid'] == true;
         final rawBreakdown = docData['registration_fee_breakdown'];
         if (rawBreakdown is List) {
@@ -206,8 +204,6 @@ class _PaymentsPageState extends State<PaymentsPage>
                   .map((x) => Map<String, dynamic>.from(x as Map))
                   .toList();
             }
-            _renewalFeeCategoryTitle =
-                _memberInfo['renewal_fee_title']?.toString() ?? '';
             final rawRenewalAmt = _memberInfo['renewal_fee_amount'];
             if (rawRenewalAmt != null) {
               _renewalFeeAmount = double.tryParse(rawRenewalAmt.toString());
@@ -778,6 +774,7 @@ class _PaymentsPageState extends State<PaymentsPage>
         _complianceAppId = rawId is int
             ? rawId
             : int.tryParse(rawId?.toString() ?? '');
+        await ApiService.deleteCacheKeysMatching('compliance');
       }
       if (_complianceAppId != null) {
         await _loadComplianceApplicationDetails(_complianceAppId!);
@@ -1718,14 +1715,10 @@ class _PaymentsPageState extends State<PaymentsPage>
                   ? _amountCtrl.text
                   : (_upfrontRegFeeStr.isNotEmpty ? _upfrontRegFeeStr : '600.00');
 
-              final packageTitle = _regFeeCategoryTitle.isNotEmpty
-                  ? 'New Membership Dues ($_regFeeCategoryTitle)'
-                  : 'New Membership Dues';
+              const packageTitle = 'New Membership Dues';
               final packageAmtStr = _packageFeeStr.isNotEmpty ? _packageFeeStr : '1620.00';
 
-              final renewalTitle = _renewalFeeCategoryTitle.isNotEmpty
-                  ? 'Annual Renewal Dues ($_renewalFeeCategoryTitle)'
-                  : 'Annual Renewal Dues';
+              const renewalTitle = 'Annual Renewal Dues';
               final renewalAmtStr =
                   _renewalFeeAmount != null && _renewalFeeAmount! > 0
                   ? _renewalFeeAmount!.toStringAsFixed(2)
@@ -2347,9 +2340,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     children: [
                       Expanded(
                         child: Text(
-                          _regFeeCategoryTitle.isNotEmpty
-                              ? 'FEE BREAKDOWN: NEW MEMBERSHIP DUES (${_cleanFeeLabel(_regFeeCategoryTitle).toUpperCase()})'
-                              : 'NEW MEMBERSHIP DUES BREAKDOWN',
+                          'NEW MEMBERSHIP DUES BREAKDOWN',
                           style: GoogleFonts.inter(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
@@ -2583,9 +2574,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     children: [
                       Expanded(
                         child: Text(
-                          _renewalFeeCategoryTitle.isNotEmpty
-                              ? 'RENEWAL BREAKDOWN: ${_cleanFeeLabel(_renewalFeeCategoryTitle).toUpperCase()}'
-                              : 'ANNUAL RENEWAL & DISTRICT CLEARANCE',
+                          'ANNUAL RENEWAL & DISTRICT CLEARANCE BREAKDOWN',
                           style: GoogleFonts.inter(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
@@ -2608,44 +2597,19 @@ class _PaymentsPageState extends State<PaymentsPage>
                     Widget buildItemRow(Map<String, dynamic> item) {
                       final rawLabel = item['label']?.toString() ?? '';
                       final cleanLabel = _cleanFeeLabel(rawLabel);
-                      final bank = item['bank_name']?.toString() ?? '';
-                      final acc = item['account_number']?.toString() ?? '';
 
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(
                           children: [
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    cleanLabel,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w500,
-                                      color: isDark ? Colors.white70 : const Color(0xFF334155),
-                                    ),
-                                  ),
-                                  if (bank.isNotEmpty && acc.isNotEmpty) ...[
-                                    const SizedBox(height: 2),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                                      decoration: BoxDecoration(
-                                        color: _kBlue.withAlpha(20),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        'Settles to: $bank • $acc',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 10.5,
-                                          fontWeight: FontWeight.bold,
-                                          color: _kBlue,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
+                              child: Text(
+                                cleanLabel,
+                                style: GoogleFonts.inter(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: isDark ? Colors.white70 : const Color(0xFF334155),
+                                ),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -2867,7 +2831,11 @@ class _PaymentsPageState extends State<PaymentsPage>
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton.icon(
-                        onPressed: () => context.go('/compliance'),
+                        onPressed: () async {
+                          await ApiService.deleteCacheKeysMatching('compliance');
+                          if (!mounted) return;
+                          context.go('/compliance');
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _kOrange,
                           foregroundColor: Colors.white,
@@ -2909,15 +2877,15 @@ class _PaymentsPageState extends State<PaymentsPage>
                 height: 50,
                 child: ElevatedButton.icon(
                   onPressed: canContinue
-                      ? () {
+                      ? () async {
                           if (isNoDoc) {
                             setState(() => _step = 3);
                           } else {
                             if (_isComplianceReason(_reason)) {
                               _complianceType = _complianceTypeForReason(_reason);
-                              _prepareComplianceApplication();
+                              await _prepareComplianceApplication();
                             }
-                            setState(() => _step = 2);
+                            if (mounted) setState(() => _step = 2);
                           }
                         }
                       : null,
@@ -3014,7 +2982,11 @@ class _PaymentsPageState extends State<PaymentsPage>
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: () => context.go('/compliance'),
+                  onPressed: () async {
+                    await ApiService.deleteCacheKeysMatching('compliance');
+                    if (!mounted) return;
+                    context.go('/compliance');
+                  },
                   icon: const Icon(Icons.open_in_new_rounded, size: 14),
                   label: const Text('Compliance Centre'),
                   style: TextButton.styleFrom(

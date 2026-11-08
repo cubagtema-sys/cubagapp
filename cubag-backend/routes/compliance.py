@@ -347,7 +347,11 @@ def _send_compliance_email(to_email, member_name, subject, body_html):
 @jwt_required()
 def my_applications():
     """List all compliance applications for the logged-in member."""
-    member_id = get_jwt_identity()
+    raw_mid = get_jwt_identity()
+    try:
+        member_id = int(raw_mid)
+    except (ValueError, TypeError):
+        member_id = raw_mid
     conn = get_db()
     try:
         with conn.cursor() as cursor:
@@ -371,6 +375,9 @@ def my_applications():
                 p_amt = float(d.get('payment_amount') or 0.0)
                 amt_pd = float(d.get('amount_paid') or 0.0)
                 d['balance_due'] = max(0.0, p_amt - amt_pd)
+                reqs = _reqs_for_type(d.get('type'))
+                if not d.get('docs_total') or int(d['docs_total']) == 0:
+                    d['docs_total'] = len(reqs)
                 apps_list.append(d)
         return jsonify({'applications': apps_list}), 200
     except Exception as e:
@@ -389,7 +396,11 @@ def create_application():
     where the requirement keys overlap. Includes source upload date for staleness warning.
     FIX: approved applications no longer block new cycles.
     """
-    member_id = get_jwt_identity()
+    raw_mid = get_jwt_identity()
+    try:
+        member_id = int(raw_mid)
+    except (ValueError, TypeError):
+        member_id = raw_mid
     data      = request.get_json() or {}
     app_type  = data.get('type', '').strip().lower()
 
@@ -421,22 +432,73 @@ def create_application():
 
             # FIX #3: Only block if there is a currently-active (non-approved, non-rejected) application
             cursor.execute("""
-                SELECT id FROM compliance_applications
+                SELECT * FROM compliance_applications
                 WHERE member_id = %s AND type = %s AND status = ANY(%s)
             """, (member_id, app_type, list(ACTIVE_STATUSES)))
             existing = cursor.fetchone()
             if existing:
+                # If existing renewal application is missing fee details, populate them now
+                if app_type == 'renewal' and (existing.get('payment_amount') is None or existing.get('fee_breakdown') is None):
+                    try:
+                        from routes.auth import get_member_renewal_breakdown
+                        cursor.execute("SELECT member_scale, fee_category, member_type, port_of_operation FROM members WHERE id = %s", (member_id,))
+                        m_row = cursor.fetchone()
+                        if m_row:
+                            ren = get_member_renewal_breakdown(
+                                m_row.get('member_scale'),
+                                m_row.get('fee_category'),
+                                cursor,
+                                m_row.get('member_type'),
+                                m_row.get('port_of_operation')
+                            )
+                            if ren:
+                                cursor.execute("""
+                                    UPDATE compliance_applications
+                                    SET payment_amount = COALESCE(payment_amount, %s),
+                                        fee_breakdown = COALESCE(fee_breakdown, %s),
+                                        bill_title = COALESCE(bill_title, %s),
+                                        allow_installments = TRUE
+                                    WHERE id = %s
+                                """, (ren.get('renewal_fee_amount'), json.dumps(ren.get('renewal_fee_breakdown') or []), ren.get('renewal_fee_title'), existing['id']))
+                                conn.commit()
+                    except Exception as ex:
+                        logger.warning(f"Could not update existing renewal fee: {ex}")
+
                 return jsonify({
                     'message': 'Resuming existing active application of this type.',
                     'application_id': existing['id'],
                     'existing': True
                 }), 200
 
+            # Calculate renewal fees if renewal
+            payment_amount = None
+            fee_breakdown_json = None
+            bill_title = None
+            if app_type == 'renewal':
+                try:
+                    from routes.auth import get_member_renewal_breakdown
+                    cursor.execute("SELECT member_scale, fee_category, member_type, port_of_operation FROM members WHERE id = %s", (member_id,))
+                    m_row = cursor.fetchone()
+                    if m_row:
+                        ren = get_member_renewal_breakdown(
+                            m_row.get('member_scale'),
+                            m_row.get('fee_category'),
+                            cursor,
+                            m_row.get('member_type'),
+                            m_row.get('port_of_operation')
+                        )
+                        if ren:
+                            payment_amount = ren.get('renewal_fee_amount')
+                            fee_breakdown_json = json.dumps(ren.get('renewal_fee_breakdown') or [])
+                            bill_title = ren.get('renewal_fee_title')
+                except Exception as ex:
+                    logger.warning(f"Could not auto-populate renewal fee on application creation: {ex}")
+
             # Create the application
             cursor.execute("""
-                INSERT INTO compliance_applications (member_id, type, status)
-                VALUES (%s, %s, 'draft') RETURNING id
-            """, (member_id, app_type))
+                INSERT INTO compliance_applications (member_id, type, status, payment_amount, fee_breakdown, bill_title, allow_installments)
+                VALUES (%s, %s, 'draft', %s, %s, %s, TRUE) RETURNING id
+            """, (member_id, app_type, payment_amount, fee_breakdown_json, bill_title))
             app_id = cursor.fetchone()['id']
 
             # ── Auto-fill overlapping documents from member_documents ──────────

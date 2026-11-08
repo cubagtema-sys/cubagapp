@@ -647,16 +647,16 @@ def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type
     # Default fallback items if platform_settings has not been populated yet
     if not fees_list:
         fees_list = [
-            {'id': 'sub_fee_small', 'section': 'national', 'label': 'Subscription fee (small companies)', 'amount': '233.00', 'bank_name': 'Zenith Bank', 'account_number': '6010309212', 'target_scale': 'small'},
-            {'id': 'sub_fee_large', 'section': 'national', 'label': 'Subscription fee (large companies)', 'amount': '533.00', 'bank_name': 'Zenith Bank', 'account_number': '6010309212', 'target_scale': 'large'},
-            {'id': 'sub_fee_multinational', 'section': 'national', 'label': 'Subscription fee (multinationals)', 'amount': '1167.00', 'bank_name': 'Zenith Bank', 'account_number': '6010309212', 'target_scale': 'multinational'},
-            {'id': 'admin_fee_small', 'section': 'national', 'label': 'Administrative fee (small companies)', 'amount': '200.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'small'},
-            {'id': 'admin_fee_large', 'section': 'national', 'label': 'Administrative Charges (large companies)', 'amount': '270.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'large'},
-            {'id': 'admin_fee_multinational', 'section': 'national', 'label': 'Administrative Charges (multinationals)', 'amount': '300.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'multinational'},
-            {'id': 'legal_fee_small', 'section': 'national', 'label': 'Legal & Audit Fee (small companies)', 'amount': '100.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'small'},
-            {'id': 'legal_fee_large', 'section': 'national', 'label': 'Legal & Audit Fee (large companies)', 'amount': '175.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'large'},
-            {'id': 'legal_fee_multinational', 'section': 'national', 'label': 'Legal & Audit Fee (multinationals)', 'amount': '500.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'multinational'},
-            {'id': 'cpd_course_standard', 'section': 'national', 'label': 'CPD / Refresher course', 'amount': '600.00', 'bank_name': 'NIB', 'account_number': '1110045585101', 'target_scale': 'all'},
+            {'id': 'sub_fee_small', 'section': 'national', 'label': 'Subscription Fee', 'amount': '233.00', 'bank_name': 'Zenith Bank', 'account_number': '6010309212', 'target_scale': 'small'},
+            {'id': 'sub_fee_large', 'section': 'national', 'label': 'Subscription Fee', 'amount': '533.00', 'bank_name': 'Zenith Bank', 'account_number': '6010309212', 'target_scale': 'large'},
+            {'id': 'sub_fee_multinational', 'section': 'national', 'label': 'Subscription Fee', 'amount': '1167.00', 'bank_name': 'Zenith Bank', 'account_number': '6010309212', 'target_scale': 'multinational'},
+            {'id': 'admin_fee_small', 'section': 'national', 'label': 'Administrative Fee', 'amount': '200.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'small'},
+            {'id': 'admin_fee_large', 'section': 'national', 'label': 'Administrative Fee', 'amount': '270.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'large'},
+            {'id': 'admin_fee_multinational', 'section': 'national', 'label': 'Administrative Fee', 'amount': '300.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'multinational'},
+            {'id': 'legal_fee_small', 'section': 'national', 'label': 'Legal & Audit Fee', 'amount': '100.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'small'},
+            {'id': 'legal_fee_large', 'section': 'national', 'label': 'Legal & Audit Fee', 'amount': '175.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'large'},
+            {'id': 'legal_fee_multinational', 'section': 'national', 'label': 'Legal & Audit Fee', 'amount': '500.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'multinational'},
+            {'id': 'cpd_course_standard', 'section': 'national', 'label': 'CPD / Refresher Course', 'amount': '600.00', 'bank_name': 'NIB', 'account_number': '1110045585101', 'target_scale': 'all'},
             {'id': 'district_clearance_tema', 'section': 'district', 'label': 'TM District Clearance', 'amount': '250.00', 'bank_name': 'Ecobank', 'account_number': '1441002452360', 'district': 'Tema Port'},
             {'id': 'district_clearance_general', 'section': 'district', 'label': 'District Clearance (General / Other Districts)', 'amount': '250.00', 'bank_name': 'Ecobank', 'account_number': '1441002452360', 'district': 'All Districts'},
             {'id': 'district_welfare_tm', 'section': 'district', 'label': 'Welfare dues (TM district)', 'amount': '120.00', 'bank_name': 'Ecobank', 'account_number': '1441002452360', 'district': 'Tema Port', 'unit': 'per_head'},
@@ -677,7 +677,15 @@ def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type
         scale_title = 'Large Corporate'
     else:
         scale = 'small'
-        scale_title = 'Small / SME'
+        scale_title = 'Small Corporate'
+
+    def _strip_scale_tags(lbl):
+        if not lbl:
+            return ''
+        import re
+        clean = re.sub(r'\s*\((small|large|multinational|sme).*?\)', '', str(lbl), flags=re.I)
+        clean = re.sub(r'\s{2,}', ' ', clean).strip()
+        return clean
 
     def _find_item(section, keyword, target_scale=None, default_amt=0.0, default_bank='', default_acc=''):
         for f in fees_list:
@@ -695,7 +703,7 @@ def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type
                     amt = default_amt
                 return {
                     'id': f.get('id'),
-                    'label': f.get('label'),
+                    'label': _strip_scale_tags(f.get('label')),
                     'amount': f"{amt:.2f}",
                     'bank_name': f.get('bank_name') or default_bank,
                     'account_number': f.get('account_number') or default_acc,
@@ -713,7 +721,9 @@ def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type
                           default_bank='Zenith Bank', default_acc='6010309212')
     if not sub_item:
         d_amt = 233.0 if scale == 'small' else (533.0 if scale == 'large' else 1167.0)
-        sub_item = {'label': f'Subscription fee ({scale_title})', 'amount': f"{d_amt:.2f}", 'bank_name': 'Zenith Bank', 'account_number': '6010309212', 'section': 'national'}
+        sub_item = {'label': 'Subscription Fee', 'amount': f"{d_amt:.2f}", 'bank_name': 'Zenith Bank', 'account_number': '6010309212', 'section': 'national'}
+    else:
+        sub_item['label'] = _strip_scale_tags(sub_item.get('label')) or 'Subscription Fee'
     national_breakdown.append(sub_item)
     if sub_item.get('id'): matched_ids.add(sub_item['id'])
 
@@ -723,7 +733,9 @@ def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type
                             default_bank='GCB', default_acc='107113005326')
     if not admin_item:
         d_amt = 200.0 if scale == 'small' else (270.0 if scale == 'large' else 300.0)
-        admin_item = {'label': f'Administrative fee ({scale_title})', 'amount': f"{d_amt:.2f}", 'bank_name': 'GCB', 'account_number': '107113005326', 'section': 'national'}
+        admin_item = {'label': 'Administrative Fee', 'amount': f"{d_amt:.2f}", 'bank_name': 'GCB', 'account_number': '107113005326', 'section': 'national'}
+    else:
+        admin_item['label'] = _strip_scale_tags(admin_item.get('label')) or 'Administrative Fee'
     national_breakdown.append(admin_item)
     if admin_item.get('id'): matched_ids.add(admin_item['id'])
 
@@ -733,14 +745,18 @@ def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type
                             default_bank='GCB', default_acc='107113005326')
     if not legal_item:
         d_amt = 100.0 if scale == 'small' else (175.0 if scale == 'large' else 500.0)
-        legal_item = {'label': f'Legal & Audit Fee ({scale_title})', 'amount': f"{d_amt:.2f}", 'bank_name': 'GCB', 'account_number': '107113005326', 'section': 'national'}
+        legal_item = {'label': 'Legal & Audit Fee', 'amount': f"{d_amt:.2f}", 'bank_name': 'GCB', 'account_number': '107113005326', 'section': 'national'}
+    else:
+        legal_item['label'] = _strip_scale_tags(legal_item.get('label')) or 'Legal & Audit Fee'
     national_breakdown.append(legal_item)
     if legal_item.get('id'): matched_ids.add(legal_item['id'])
 
     # CPD / Refresher course
     cpd_item = _find_item('national', 'cpd', target_scale=None, default_amt=600.0, default_bank='NIB', default_acc='1110045585101')
     if not cpd_item:
-        cpd_item = {'label': 'CPD / Refresher course', 'amount': '600.00', 'bank_name': 'NIB', 'account_number': '1110045585101', 'section': 'national'}
+        cpd_item = {'label': 'CPD / Refresher Course', 'amount': '600.00', 'bank_name': 'NIB', 'account_number': '1110045585101', 'section': 'national'}
+    else:
+        cpd_item['label'] = _strip_scale_tags(cpd_item.get('label')) or 'CPD / Refresher Course'
     national_breakdown.append(cpd_item)
     if cpd_item.get('id'): matched_ids.add(cpd_item['id'])
 
@@ -808,7 +824,7 @@ def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type
     # Combined full breakdown for renewal
     breakdown = national_breakdown + district_breakdown
     computed_total = sum(float(b['amount']) for b in breakdown)
-    title = f"Annual Renewal Dues ({scale_title}) – National & District Clearance"
+    title = "Annual Renewal Dues – National & District Clearance"
 
     # ── 3. SETTLEMENT ROUTING DISTRIBUTION (Whitsun Pay Multi-Account Settlement) ──
     settlement_groups = {}
