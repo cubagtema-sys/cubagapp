@@ -675,11 +675,26 @@ def create_payment():
 
             tx_ref = f"CUBAG-{payment_id}-{uuid.uuid4().hex[:8]}"
 
-            # Store payment reference in DB
+            # Fetch or generate settlement distribution for WhitsunPay multi-account routing
+            settlement_dist = data.get('settlement_distribution') or []
+            if not settlement_dist and any(k in (description or '').lower() for k in ('renewal', 'dues', 'annual', 'bill')):
+                try:
+                    from routes.auth import get_member_renewal_breakdown
+                    with conn.cursor() as cur:
+                        cur.execute("SELECT member_scale, fee_category, member_type, port_of_operation FROM members WHERE id = %s", (member_id,))
+                        m_row = cur.fetchone()
+                        if m_row:
+                            ren_info = get_member_renewal_breakdown(m_row.get('member_scale'), m_row.get('fee_category'), cur, m_row.get('member_type'), m_row.get('port_of_operation'))
+                            settlement_dist = ren_info.get('settlement_distribution') or []
+                except Exception as ex_ren:
+                    logger.warning(f"Could not auto-generate settlement distribution: {ex_ren}")
+
+            # Store payment reference and settlement distribution in DB
             with conn.cursor() as cursor:
+                cursor.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS settlement_distribution JSONB")
                 cursor.execute(
-                    "UPDATE payments SET payment_ref = %s WHERE id = %s",
-                    (tx_ref, payment_id)
+                    "UPDATE payments SET payment_ref = %s, settlement_distribution = %s WHERE id = %s",
+                    (tx_ref, json.dumps(settlement_dist) if settlement_dist else None, payment_id)
                 )
                 desc_lower = description.lower()
                 if 'renewal' in desc_lower or 'license' in desc_lower:
@@ -707,6 +722,13 @@ def create_payment():
                         'provider': provider
                     }
                 }
+                if settlement_dist:
+                    payload['settlementBreakdown'] = settlement_dist
+                    payload['metadata'] = {
+                        'settlement_distribution': settlement_dist,
+                        'member_id': member_id,
+                        'purpose': description
+                    }
 
                 # ── Fire WhitsunPay in a background thread so the API returns
                 # immediately (< 1s). WhitsunPay currently takes 60-70s to respond

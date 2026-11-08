@@ -16,6 +16,7 @@ const _kGreen = Color(0xFF10b981);
 const _kAmber = Color(0xFFf59e0b);
 const _kRed = Color(0xFFef4444);
 const _kNavy = Color(0xFF1A0F0A);
+const _kBlue = Color(0xFF0284C7);
 
 class PaymentsPage extends StatefulWidget {
   const PaymentsPage({super.key});
@@ -2551,12 +2552,12 @@ class _PaymentsPageState extends State<PaymentsPage>
               _reason.toLowerCase().contains('renewal')) ...[
             Container(
               margin: const EdgeInsets.only(bottom: 20),
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: isDark
                     ? Colors.white.withAlpha(8)
                     : const Color(0xFFF8F4F0),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: _kOrange.withAlpha(60)),
               ),
               child: Column(
@@ -2569,7 +2570,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         child: Text(
                           _renewalFeeCategoryTitle.isNotEmpty
                               ? 'RENEWAL BREAKDOWN: ${_cleanFeeLabel(_renewalFeeCategoryTitle).toUpperCase()}'
-                              : 'EXISTING MEMBERSHIP RENEWAL',
+                              : 'ANNUAL RENEWAL & DISTRICT CLEARANCE',
                           style: GoogleFonts.inter(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
@@ -2582,39 +2583,111 @@ class _PaymentsPageState extends State<PaymentsPage>
                     ],
                   ),
                   const Divider(height: 16),
-                  ..._renewalFeeBreakdown.map((item) {
-                    final rawLabel = item['label']?.toString() ?? '';
-                    final cleanLabel = _cleanFeeLabel(rawLabel);
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 3),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              cleanLabel,
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                color: isDark
-                                    ? Colors.white70
-                                    : const Color(0xFF334155),
+
+                  // National Section Header if present
+                  Builder(builder: (context) {
+                    final nationalItems = _renewalFeeBreakdown.where((x) => x['section'] == 'national').toList();
+                    final districtItems = _renewalFeeBreakdown.where((x) => x['section'] == 'district').toList();
+                    final otherItems = _renewalFeeBreakdown.where((x) => x['section'] != 'national' && x['section'] != 'district').toList();
+
+                    Widget buildItemRow(Map<String, dynamic> item) {
+                      final rawLabel = item['label']?.toString() ?? '';
+                      final cleanLabel = _cleanFeeLabel(rawLabel);
+                      final bank = item['bank_name']?.toString() ?? '';
+                      final acc = item['account_number']?.toString() ?? '';
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    cleanLabel,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark ? Colors.white70 : const Color(0xFF334155),
+                                    ),
+                                  ),
+                                  if (bank.isNotEmpty && acc.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                      decoration: BoxDecoration(
+                                        color: _kBlue.withAlpha(20),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        'Settles to: $bank • $acc',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: _kBlue,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'GHS ${item['amount']?.toString() ?? ''}',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: isDark
-                                  ? Colors.white
-                                  : const Color(0xFF0f172a),
+                            const SizedBox(width: 8),
+                            Text(
+                              'GHS ${item['amount']?.toString() ?? ''}',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? Colors.white : const Color(0xFF0f172a),
+                              ),
                             ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (nationalItems.isNotEmpty) ...[
+                          Row(
+                            children: [
+                              Icon(Icons.shield_outlined, size: 14, color: _kBlue),
+                              const SizedBox(width: 6),
+                              Text(
+                                'NATIONAL STATUTORY CHARGES',
+                                style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold, color: _kBlue, letterSpacing: 0.5),
+                              ),
+                            ],
                           ),
+                          const SizedBox(height: 4),
+                          ...nationalItems.map(buildItemRow),
+                          const SizedBox(height: 10),
                         ],
-                      ),
+                        if (districtItems.isNotEmpty) ...[
+                          Row(
+                            children: [
+                              const Icon(Icons.location_city_outlined, size: 14, color: _kGreen),
+                              const SizedBox(width: 6),
+                              Text(
+                                'DISTRICT OPERATIONAL CLEARANCE',
+                                style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold, color: _kGreen, letterSpacing: 0.5),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          ...districtItems.map(buildItemRow),
+                          const SizedBox(height: 10),
+                        ],
+                        if (otherItems.isNotEmpty) ...[
+                          ...otherItems.map(buildItemRow),
+                          const SizedBox(height: 10),
+                        ],
+                      ],
                     );
                   }),
+
                   const Divider(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

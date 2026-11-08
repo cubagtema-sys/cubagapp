@@ -631,100 +631,239 @@ def login():
 
 
 def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type='corporate', port_of_operation=None):
-    fee_map = {}
-    extra_national_fees = []
+    fees_list = []
     if cursor:
         try:
             cursor.execute("SELECT config_value FROM platform_settings WHERE config_key = 'cubag_fees_v2'")
             row_cfg = cursor.fetchone()
             if row_cfg and row_cfg.get('config_value'):
                 cv = row_cfg['config_value']
-                fees_list = json.loads(cv) if isinstance(cv, str) else cv
-                if isinstance(fees_list, list):
-                    for f in fees_list:
-                        fid = str(f.get('id', '')).strip()
-                        if fid and f.get('amount') is not None:
-                            try:
-                                fee_map[fid] = float(f['amount'])
-                            except (ValueError, TypeError):
-                                pass
-                        if f.get('section') == 'national' and fid not in ('national_sub_fee', 'national_admin_fee', 'national_legal_audit_fee', 'national_cpd_fee'):
-                            extra_national_fees.append(f)
+                parsed = json.loads(cv) if isinstance(cv, str) else cv
+                if isinstance(parsed, list):
+                    fees_list = parsed
         except Exception as ex:
             logger.debug(f'Error fetching cubag_fees_v2: {ex}')
 
-        try:
-            cursor.execute("SELECT key, amount FROM fee_schedules WHERE is_active = TRUE")
-            for r in cursor.fetchall():
-                if r.get('key') and r.get('amount') is not None:
-                    try:
-                        fee_map[r['key']] = float(r['amount'])
-                    except (ValueError, TypeError):
-                        pass
-        except Exception as ex:
-            logger.debug(f'Error fetching fee_schedules: {ex}')
+    # Default fallback items if platform_settings has not been populated yet
+    if not fees_list:
+        fees_list = [
+            {'id': 'sub_fee_small', 'section': 'national', 'label': 'Subscription fee (small companies)', 'amount': '233.00', 'bank_name': 'Zenith Bank', 'account_number': '6010309212', 'target_scale': 'small'},
+            {'id': 'sub_fee_large', 'section': 'national', 'label': 'Subscription fee (large companies)', 'amount': '533.00', 'bank_name': 'Zenith Bank', 'account_number': '6010309212', 'target_scale': 'large'},
+            {'id': 'sub_fee_multinational', 'section': 'national', 'label': 'Subscription fee (multinationals)', 'amount': '1167.00', 'bank_name': 'Zenith Bank', 'account_number': '6010309212', 'target_scale': 'multinational'},
+            {'id': 'admin_fee_small', 'section': 'national', 'label': 'Administrative fee (small companies)', 'amount': '200.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'small'},
+            {'id': 'admin_fee_large', 'section': 'national', 'label': 'Administrative Charges (large companies)', 'amount': '270.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'large'},
+            {'id': 'admin_fee_multinational', 'section': 'national', 'label': 'Administrative Charges (multinationals)', 'amount': '300.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'multinational'},
+            {'id': 'legal_fee_small', 'section': 'national', 'label': 'Legal & Audit Fee (small companies)', 'amount': '100.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'small'},
+            {'id': 'legal_fee_large', 'section': 'national', 'label': 'Legal & Audit Fee (large companies)', 'amount': '175.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'large'},
+            {'id': 'legal_fee_multinational', 'section': 'national', 'label': 'Legal & Audit Fee (multinationals)', 'amount': '500.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'target_scale': 'multinational'},
+            {'id': 'cpd_course_standard', 'section': 'national', 'label': 'CPD / Refresher course', 'amount': '600.00', 'bank_name': 'NIB', 'account_number': '1110045585101', 'target_scale': 'all'},
+            {'id': 'district_clearance_tema', 'section': 'district', 'label': 'TM District Clearance', 'amount': '250.00', 'bank_name': 'Ecobank', 'account_number': '1441002452360', 'district': 'Tema Port'},
+            {'id': 'district_clearance_general', 'section': 'district', 'label': 'District Clearance (General / Other Districts)', 'amount': '250.00', 'bank_name': 'Ecobank', 'account_number': '1441002452360', 'district': 'All Districts'},
+            {'id': 'district_welfare_tm', 'section': 'district', 'label': 'Welfare dues (TM district)', 'amount': '120.00', 'bank_name': 'Ecobank', 'account_number': '1441002452360', 'district': 'Tema Port', 'unit': 'per_head'},
+            {'id': 'var_development_levy', 'section': 'variable', 'label': 'Development levy', 'amount': '385.00', 'bank_name': 'Zenith Bank', 'account_number': '6010309212'},
+            {'id': 'var_welfare_small', 'section': 'variable', 'label': 'Welfare due (small companies)', 'amount': '175.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'per_director'},
+            {'id': 'var_welfare_multinational', 'section': 'variable', 'label': 'Welfare due (multinational)', 'amount': '255.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'per_director'},
+            {'id': 'var_consolidation', 'section': 'variable', 'label': 'Consolidation fee', 'amount': '1286.00', 'bank_name': 'GCB', 'account_number': '107113005326'},
+            {'id': 'var_id_card', 'section': 'variable', 'label': 'ID card', 'amount': '45.00', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'per_staff'},
+            {'id': 'var_sic_bond', 'section': 'variable', 'label': 'SIC bond', 'amount': '350.00', 'bank_name': 'GCB', 'account_number': '107113005326'}
+        ]
 
-    scale = str(member_scale or 'sme').lower().strip()
-    is_large = scale in ('large_corporate', 'large', 'corporate')
-    scale_title = 'Large Corporate' if is_large else "SME"
+    scale_raw = str(member_scale or 'small').lower().strip()
+    if scale_raw in ('multinational', 'international', 'multi-national'):
+        scale = 'multinational'
+        scale_title = 'Multinational'
+    elif scale_raw in ('large', 'large_corporate', 'corporate'):
+        scale = 'large'
+        scale_title = 'Large Corporate'
+    else:
+        scale = 'small'
+        scale_title = 'Small / SME'
 
-    # ── 1. NATIONAL FEES SECTION ───────────────────────────────────────────────
-    # National comprises: Subscription, Admin fee, Legal-audit, CPD (and others added)
-    sub_fee = fee_map.get('national_sub_fee', fee_map.get('renewal_sub_large' if is_large else 'renewal_sub_sme', 1200.0))
-    admin_fee = fee_map.get('national_admin_fee', fee_map.get('renewal_admin_large' if is_large else 'renewal_admin_sme', 500.0))
-    legal_fee = fee_map.get('national_legal_audit_fee', fee_map.get('renewal_legal_large' if is_large else 'renewal_legal_sme', 300.0))
-    cpd_fee = fee_map.get('national_cpd_fee', fee_map.get('renewal_cti_large' if is_large else 'renewal_cti_sme', 400.0))
+    def _find_item(section, keyword, target_scale=None, default_amt=0.0, default_bank='', default_acc=''):
+        for f in fees_list:
+            if f.get('section') != section:
+                continue
+            f_id = str(f.get('id', '')).lower()
+            f_lbl = str(f.get('label', '')).lower()
+            if keyword in f_id or keyword in f_lbl:
+                f_scale = str(f.get('target_scale', '')).lower()
+                if target_scale and f_scale and f_scale not in (target_scale, 'all'):
+                    continue
+                try:
+                    amt = float(str(f.get('amount', 0)).replace(',', ''))
+                except (ValueError, TypeError):
+                    amt = default_amt
+                return {
+                    'id': f.get('id'),
+                    'label': f.get('label'),
+                    'amount': f"{amt:.2f}",
+                    'bank_name': f.get('bank_name') or default_bank,
+                    'account_number': f.get('account_number') or default_acc,
+                    'section': section
+                }
+        return None
 
-    breakdown = [
-        {'label': 'Subscription Fee (National)', 'amount': f'{sub_fee:.2f}', 'section': 'national'},
-        {'label': 'Administrative Fee (National)', 'amount': f'{admin_fee:.2f}', 'section': 'national'},
-        {'label': 'Legal & Audit Fee (National)', 'amount': f'{legal_fee:.2f}', 'section': 'national'},
-        {'label': 'CPD (Continuing Professional Development) Fee', 'amount': f'{cpd_fee:.2f}', 'section': 'national'},
-    ]
+    # ── 1. NATIONAL FEES SECTION (Statutory Charges) ───────────────────────────
+    national_breakdown = []
+    matched_ids = set()
 
-    for extra in extra_national_fees:
-        e_label = extra.get('label') or extra.get('name') or 'Additional National Fee'
-        e_amt = float(extra.get('amount') or 0.0)
-        breakdown.append({'label': e_label, 'amount': f'{e_amt:.2f}', 'section': 'national'})
+    # Subscription fee
+    sub_item = _find_item('national', 'sub', target_scale=scale,
+                          default_amt=(233.0 if scale == 'small' else (533.0 if scale == 'large' else 1167.0)),
+                          default_bank='Zenith Bank', default_acc='6010309212')
+    if not sub_item:
+        d_amt = 233.0 if scale == 'small' else (533.0 if scale == 'large' else 1167.0)
+        sub_item = {'label': f'Subscription fee ({scale_title})', 'amount': f"{d_amt:.2f}", 'bank_name': 'Zenith Bank', 'account_number': '6010309212', 'section': 'national'}
+    national_breakdown.append(sub_item)
+    if sub_item.get('id'): matched_ids.add(sub_item['id'])
+
+    # Administrative fee
+    admin_item = _find_item('national', 'admin', target_scale=scale,
+                            default_amt=(200.0 if scale == 'small' else (270.0 if scale == 'large' else 300.0)),
+                            default_bank='GCB', default_acc='107113005326')
+    if not admin_item:
+        d_amt = 200.0 if scale == 'small' else (270.0 if scale == 'large' else 300.0)
+        admin_item = {'label': f'Administrative fee ({scale_title})', 'amount': f"{d_amt:.2f}", 'bank_name': 'GCB', 'account_number': '107113005326', 'section': 'national'}
+    national_breakdown.append(admin_item)
+    if admin_item.get('id'): matched_ids.add(admin_item['id'])
+
+    # Legal & Audit Fee
+    legal_item = _find_item('national', 'legal', target_scale=scale,
+                            default_amt=(100.0 if scale == 'small' else (175.0 if scale == 'large' else 500.0)),
+                            default_bank='GCB', default_acc='107113005326')
+    if not legal_item:
+        d_amt = 100.0 if scale == 'small' else (175.0 if scale == 'large' else 500.0)
+        legal_item = {'label': f'Legal & Audit Fee ({scale_title})', 'amount': f"{d_amt:.2f}", 'bank_name': 'GCB', 'account_number': '107113005326', 'section': 'national'}
+    national_breakdown.append(legal_item)
+    if legal_item.get('id'): matched_ids.add(legal_item['id'])
+
+    # CPD / Refresher course
+    cpd_item = _find_item('national', 'cpd', target_scale=None, default_amt=600.0, default_bank='NIB', default_acc='1110045585101')
+    if not cpd_item:
+        cpd_item = {'label': 'CPD / Refresher course', 'amount': '600.00', 'bank_name': 'NIB', 'account_number': '1110045585101', 'section': 'national'}
+    national_breakdown.append(cpd_item)
+    if cpd_item.get('id'): matched_ids.add(cpd_item['id'])
+
+    # Extra admin-added National fees
+    for f in fees_list:
+        if f.get('section') == 'national' and f.get('id') not in matched_ids:
+            f_scale = str(f.get('target_scale', '')).lower()
+            if f_scale and f_scale not in (scale, 'all', ''):
+                continue
+            # avoid duplicates of sub/admin/legal/cpd
+            fid = str(f.get('id', '')).lower()
+            if any(k in fid for k in ('sub_fee_', 'admin_fee_', 'legal_fee_', 'cpd_course_')):
+                continue
+            amt = float(str(f.get('amount', 0)).replace(',', ''))
+            national_breakdown.append({
+                'id': f.get('id'),
+                'label': f.get('label') or 'Additional National Fee',
+                'amount': f"{amt:.2f}",
+                'bank_name': f.get('bank_name') or 'GCB',
+                'account_number': f.get('account_number') or '107113005326',
+                'section': 'national'
+            })
 
     # ── 2. DISTRICT CLEARANCE FEES SECTION ─────────────────────────────────────
-    # District comprises: District clearance based on the district(s) the user is tied to
+    district_breakdown = []
     tied_districts = []
     if port_of_operation:
         tied_districts = [d.strip() for d in str(port_of_operation).split(',') if d.strip()]
     if not tied_districts:
         tied_districts = ['Tema Port']
 
-    default_dist_clearance = fee_map.get('district_clearance_general', 500.0)
+    default_dist_item = _find_item('district', 'general', default_amt=250.0, default_bank='Ecobank', default_acc='1441002452360')
+    default_dist_amt = float(default_dist_item['amount']) if default_dist_item else 250.0
 
     for dist in tied_districts:
-        slug = dist.lower().replace(' ', '_').replace('–', '_').replace('-', '_')
-        dist_amt = None
-        for k, v in fee_map.items():
-            if 'district_clearance_' in k and any(part in slug for part in k.replace('district_clearance_', '').split('_') if len(part) > 2):
-                dist_amt = v
-                break
-        if dist_amt is None:
-            dist_amt = default_dist_clearance
+        dist_slug = dist.lower().replace(' ', '_').replace('–', '_').replace('-', '_')
+        dist_fee_amt = default_dist_amt
+        dist_bank = 'Ecobank'
+        dist_acc = '1441002452360'
 
-        breakdown.append({
+        for f in fees_list:
+            if f.get('section') == 'district':
+                fid = str(f.get('id', '')).lower()
+                flbl = str(f.get('label', '')).lower()
+                fdist = str(f.get('district', '')).lower()
+                if ('tema' in dist_slug and ('tm' in fid or 'tema' in flbl or 'tema' in fdist)) or \
+                   (dist_slug in fid or any(part in dist_slug for part in fid.split('_') if len(part) > 3)):
+                    try:
+                        dist_fee_amt = float(str(f.get('amount', 0)).replace(',', ''))
+                        dist_bank = f.get('bank_name') or dist_bank
+                        dist_acc = f.get('account_number') or dist_acc
+                        break
+                    except (ValueError, TypeError):
+                        pass
+
+        district_breakdown.append({
             'label': f'District Clearance – {dist}',
-            'amount': f'{dist_amt:.2f}',
-            'section': 'district'
+            'amount': f"{dist_fee_amt:.2f}",
+            'bank_name': dist_bank,
+            'account_number': dist_acc,
+            'section': 'district',
+            'district': dist
         })
 
+    # Combined full breakdown for renewal
+    breakdown = national_breakdown + district_breakdown
     computed_total = sum(float(b['amount']) for b in breakdown)
-    title = f"Corporate Annual Tariffs ({scale_title}) – National & District Clearance"
+    title = f"Annual Renewal Dues ({scale_title}) – National & District Clearance"
+
+    # ── 3. SETTLEMENT ROUTING DISTRIBUTION (Whitsun Pay Multi-Account Settlement) ──
+    settlement_groups = {}
+    for item in breakdown:
+        b_name = item.get('bank_name') or 'Zenith Bank'
+        a_num = item.get('account_number') or '6010309212'
+        s_key = f"{b_name}::{a_num}"
+        amt = float(item.get('amount') or 0.0)
+        if s_key not in settlement_groups:
+            settlement_groups[s_key] = {
+                'bank_name': b_name,
+                'account_number': a_num,
+                'amount': 0.0,
+                'items': []
+            }
+        settlement_groups[s_key]['amount'] += amt
+        settlement_groups[s_key]['items'].append(item.get('label'))
+
+    settlement_distribution = [
+        {
+            'bank_name': v['bank_name'],
+            'account_number': v['account_number'],
+            'amount': round(v['amount'], 2),
+            'items': v['items']
+        }
+        for v in settlement_groups.values()
+    ]
+
+    # ── 4. VARIABLE / ADD-ON TARIFF OPTIONS ────────────────────────────────────
+    variable_options = []
+    for f in fees_list:
+        if f.get('section') == 'variable':
+            variable_options.append({
+                'id': f.get('id'),
+                'label': f.get('label'),
+                'amount': f.get('amount'),
+                'bank_name': f.get('bank_name') or 'GCB',
+                'account_number': f.get('account_number') or '107113005326',
+                'unit': f.get('unit', 'flat'),
+                'description': f.get('description', '')
+            })
 
     return {
         'schedule_key': 'corporate_national_district',
-        'scale': 'large_corporate' if is_large else 'sme',
+        'scale': scale,
         'scale_label': scale_title,
         'has_consolidation': (fee_category or '') in ('consolidation', 'cf_consolidation'),
         'scope_label': 'Corporate Logistics',
         'renewal_fee_title': title,
         'renewal_fee_amount': computed_total,
         'renewal_fee_breakdown': breakdown,
+        'national_breakdown': national_breakdown,
+        'district_breakdown': district_breakdown,
+        'settlement_distribution': settlement_distribution,
+        'variable_fee_options': variable_options,
         'tied_districts': tied_districts
     }
 

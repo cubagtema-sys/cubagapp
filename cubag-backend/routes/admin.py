@@ -342,38 +342,42 @@ def get_admin_fees():
                     fees = val
 
             default_items = [
-                # Section 1: Upfront Registration Fee
-                {'id': 'reg_form_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Registration Fee', 'amount': '600.00', 'frequency': 'One-Time', 'description': 'Mandatory initial registration fee paid upon onboarding before document vetting.'},
+                # ── 1. New Company Registration Fee (Onboarding Only) ──────────────────
+                {'id': 'reg_form_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Registration fee', 'amount': '600.00', 'frequency': 'One-Time', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'flat', 'target_scale': 'all', 'description': 'Mandatory initial registration fee paid upon onboarding before document vetting.'},
+                {'id': 'new_vetting_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Vetting Fee', 'amount': '750.00', 'frequency': 'One-Time', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'flat', 'target_scale': 'all', 'description': 'Document vetting and Secretariat inspection fee.'},
+                {'id': 'new_cf_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Clearing and Forwarding Fee', 'amount': '500.00', 'frequency': 'One-Time', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'flat', 'target_scale': 'all', 'description': 'Clearing and Forwarding operational tariff.'},
+                {'id': 'new_sub_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Subscription fee', 'amount': '120.00', 'frequency': 'One-Time', 'bank_name': 'Zenith Bank', 'account_number': '6010309212', 'unit': 'flat', 'target_scale': 'all', 'description': 'Initial subscription component for new onboarding members.'},
+                {'id': 'new_cloth_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Association Cloth', 'amount': '180.00', 'frequency': 'One-Time', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'flat', 'target_scale': 'all', 'description': 'Official CUBAG Association Cloth.'},
+                {'id': 'new_district_reg_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Tema District Registration', 'amount': '250.00', 'frequency': 'One-Time', 'bank_name': 'Ecobank', 'account_number': '1441002452360', 'unit': 'flat', 'target_scale': 'all', 'description': 'Local port district chapter registration and onboarding.'},
 
-                # Section 1: Corporate Entrance Package Summaries (is_summary: True)
-                {'id': 'new_cf_only', 'section': 'new_membership', 'is_summary': True, 'label': 'New Member Package: Clearing & Forwarding Only (SMEs)', 'amount': '1620.00', 'frequency': 'One-Time', 'description': 'Subscription 120 + Vetting 750 + District 250 + C&F 500 = Total GHS 1,620.00'},
-                {'id': 'new_consolidation', 'section': 'new_membership', 'is_summary': True, 'label': 'New Member Package: Consolidation Only (SMEs)', 'amount': '1720.00', 'frequency': 'One-Time', 'description': 'Subscription 120 + Vetting 750 + District 250 + Consolidation 600 = Total GHS 1,720.00'},
-                {'id': 'new_cf_consolidation', 'section': 'new_membership', 'is_summary': True, 'label': 'New Member Package: Consolidation, Clearing & Forwarding (SMEs)', 'amount': '2220.00', 'frequency': 'One-Time', 'description': 'Subscription 120 + Vetting 750 + District 250 + Consolidation 600 + C&F 500 = Total GHS 2,220.00'},
-                {'id': 'new_large_cf_only', 'section': 'new_membership', 'is_summary': True, 'label': 'New Member Package: Clearing & Forwarding Only (Large Corporate)', 'amount': '2220.00', 'frequency': 'One-Time', 'description': 'Subscription 120 + Vetting 750 + District 250 + Corporate Operational Scope 1100 = Total GHS 2,220.00'},
-                {'id': 'new_large_consolidation', 'section': 'new_membership', 'is_summary': True, 'label': 'New Member Package: Consolidation Only (Large Corporate)', 'amount': '2320.00', 'frequency': 'One-Time', 'description': 'Subscription 120 + Vetting 750 + District 250 + Corporate Operational Scope 1200 = Total GHS 2,320.00'},
-                {'id': 'new_large_cf_consolidation', 'section': 'new_membership', 'is_summary': True, 'label': 'New Member Package: Consolidation, Clearing & Forwarding (Large Corporate)', 'amount': '2820.00', 'frequency': 'One-Time', 'description': 'Subscription 120 + Vetting 750 + District 250 + Corporate Consolidation & C&F Scope = Total GHS 2,820.00'},
+                # ── 2. Annual Renewal Fees: Statutory Charges (National Section) ───────
+                {'id': 'sub_fee_small', 'section': 'national', 'is_summary': False, 'label': 'Subscription fee (small companies)', 'amount': '233.00', 'frequency': 'Annual', 'bank_name': 'Zenith Bank', 'account_number': '6010309212', 'unit': 'flat', 'target_scale': 'small', 'description': 'Annual Subscription fee for Small / SME companies.'},
+                {'id': 'sub_fee_large', 'section': 'national', 'is_summary': False, 'label': 'Subscription fee (large companies)', 'amount': '533.00', 'frequency': 'Annual', 'bank_name': 'Zenith Bank', 'account_number': '6010309212', 'unit': 'flat', 'target_scale': 'large', 'description': 'Annual Subscription fee for Large companies.'},
+                {'id': 'sub_fee_multinational', 'section': 'national', 'is_summary': False, 'label': 'Subscription fee (multinationals)', 'amount': '1167.00', 'frequency': 'Annual', 'bank_name': 'Zenith Bank', 'account_number': '6010309212', 'unit': 'flat', 'target_scale': 'multinational', 'description': 'Annual Subscription fee for Multinational corporations.'},
 
-                # Section 1: Corporate Isolated Breakdown Items (is_summary: False)
-                {'id': 'new_sub_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Subscription Fee (New Member)', 'amount': '120.00', 'frequency': 'One-Time', 'description': 'Annual Subscription component for new onboarding members'},
-                {'id': 'new_vetting_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Vetting & Dossier Verification Fee', 'amount': '750.00', 'frequency': 'One-Time', 'description': 'Document vetting and Secretariat inspection fee'},
-                {'id': 'new_district_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'District / Branch Development Levy', 'amount': '250.00', 'frequency': 'One-Time', 'description': 'Local port district chapter development allocation'},
-                {'id': 'new_cf_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Clearing & Forwarding Component Tariff', 'amount': '500.00', 'frequency': 'One-Time', 'description': 'Customs broker and forwarder clearance operations tariff'},
-                {'id': 'new_consolidation_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Consolidation Component Tariff', 'amount': '600.00', 'frequency': 'One-Time', 'description': 'Cargo consolidation operations tariff'},
+                {'id': 'admin_fee_small', 'section': 'national', 'is_summary': False, 'label': 'Administrative fee (small companies)', 'amount': '200.00', 'frequency': 'Annual', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'flat', 'target_scale': 'small', 'description': 'Annual Administrative fee for Small / SME companies.'},
+                {'id': 'admin_fee_large', 'section': 'national', 'is_summary': False, 'label': 'Administrative Charges (large companies)', 'amount': '270.00', 'frequency': 'Annual', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'flat', 'target_scale': 'large', 'description': 'Annual Administrative Charges for Large companies.'},
+                {'id': 'admin_fee_multinational', 'section': 'national', 'is_summary': False, 'label': 'Administrative Charges (multinationals)', 'amount': '300.00', 'frequency': 'Annual', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'flat', 'target_scale': 'multinational', 'description': 'Annual Administrative Charges for Multinational corporations.'},
 
-                # Section 2: National Fees (Subscription, Admin Fee, Legal & Audit, CPD, etc.)
-                {'id': 'national_sub_fee', 'section': 'national', 'is_summary': False, 'label': 'Subscription Fee (National)', 'amount': '1200.00', 'frequency': 'Annual', 'description': 'National headquarters annual membership subscription fee.'},
-                {'id': 'national_admin_fee', 'section': 'national', 'is_summary': False, 'label': 'Administrative Fee (National)', 'amount': '500.00', 'frequency': 'Annual', 'description': 'National secretariat administrative operations levy.'},
-                {'id': 'national_legal_audit_fee', 'section': 'national', 'is_summary': False, 'label': 'Legal & Audit Fee (National)', 'amount': '300.00', 'frequency': 'Annual', 'description': 'Statutory legal compliance and annual audit retainer.'},
-                {'id': 'national_cpd_fee', 'section': 'national', 'is_summary': False, 'label': 'CPD (Continuing Professional Development) Fee', 'amount': '400.00', 'frequency': 'Annual', 'description': 'Mandatory Continuing Professional Development & training quota.'},
+                {'id': 'legal_fee_small', 'section': 'national', 'is_summary': False, 'label': 'Legal & Audit Fee (small companies)', 'amount': '100.00', 'frequency': 'Annual', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'flat', 'target_scale': 'small', 'description': 'Annual Legal & Audit Fee for Small / SME companies.'},
+                {'id': 'legal_fee_large', 'section': 'national', 'is_summary': False, 'label': 'Legal & Audit Fee (large companies)', 'amount': '175.00', 'frequency': 'Annual', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'flat', 'target_scale': 'large', 'description': 'Annual Legal & Audit Fee for Large companies.'},
+                {'id': 'legal_fee_multinational', 'section': 'national', 'is_summary': False, 'label': 'Legal & Audit Fee (multinationals)', 'amount': '500.00', 'frequency': 'Annual', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'flat', 'target_scale': 'multinational', 'description': 'Annual Legal & Audit Fee for Multinational corporations.'},
 
-                # Section 3: District Clearance Fees (per operational district)
-                {'id': 'district_clearance_general', 'section': 'district', 'is_summary': False, 'label': 'District Clearance Fee (General)', 'amount': '500.00', 'frequency': 'Annual', 'description': 'District operational clearance for member-tied districts.'},
-                {'id': 'district_clearance_tema', 'section': 'district', 'is_summary': False, 'label': 'District Clearance – Tema Port', 'amount': '500.00', 'frequency': 'Annual', 'description': 'Operational clearance fee for Tema Port district chapter.'},
-                {'id': 'district_clearance_takoradi', 'section': 'district', 'is_summary': False, 'label': 'District Clearance – Takoradi Port', 'amount': '500.00', 'frequency': 'Annual', 'description': 'Operational clearance fee for Takoradi Port district chapter.'},
-                {'id': 'district_clearance_accra', 'section': 'district', 'is_summary': False, 'label': 'District Clearance – Accra International Airport', 'amount': '500.00', 'frequency': 'Annual', 'description': 'Operational clearance fee for KIA / Accra district chapter.'},
-                {'id': 'district_clearance_aflao', 'section': 'district', 'is_summary': False, 'label': 'District Clearance – Aflao Border Port', 'amount': '350.00', 'frequency': 'Annual', 'description': 'Operational clearance fee for Aflao Border district chapter.'},
-                {'id': 'district_clearance_elubo', 'section': 'district', 'is_summary': False, 'label': 'District Clearance – Elubo Border Port', 'amount': '350.00', 'frequency': 'Annual', 'description': 'Operational clearance fee for Elubo Border district chapter.'},
-                {'id': 'district_clearance_paga', 'section': 'district', 'is_summary': False, 'label': 'District Clearance – Paga Border Port', 'amount': '350.00', 'frequency': 'Annual', 'description': 'Operational clearance fee for Paga Border district chapter.'},
+                {'id': 'cpd_course_standard', 'section': 'national', 'is_summary': False, 'label': 'CPD / Refresher course (Standard)', 'amount': '600.00', 'frequency': 'Annual', 'bank_name': 'NIB', 'account_number': '1110045585101', 'unit': 'flat', 'target_scale': 'all', 'description': 'Continuing Professional Development & training standard course.'},
+                {'id': 'cpd_course_advanced', 'section': 'national', 'is_summary': False, 'label': 'CPD / Refresher course (Advanced)', 'amount': '1200.00', 'frequency': 'Annual', 'bank_name': 'NIB', 'account_number': '1110045585101', 'unit': 'flat', 'target_scale': 'all', 'description': 'Continuing Professional Development advanced executive refresher.'},
+
+                # ── 3. Annual Renewal Fees: District Section ───────────────────────────
+                {'id': 'district_clearance_tema', 'section': 'district', 'is_summary': False, 'label': 'TM District Clearance', 'amount': '250.00', 'frequency': 'Annual', 'bank_name': 'Ecobank', 'account_number': '1441002452360', 'unit': 'flat', 'district': 'Tema Port', 'description': 'Operational clearance fee for Tema Port district chapter.'},
+                {'id': 'district_clearance_general', 'section': 'district', 'is_summary': False, 'label': 'District Clearance (General / Other Districts)', 'amount': '250.00', 'frequency': 'Annual', 'bank_name': 'Ecobank', 'account_number': '1441002452360', 'unit': 'flat', 'district': 'All Districts', 'description': 'Operational clearance fee for member-tied districts.'},
+                {'id': 'district_welfare_tm', 'section': 'district', 'is_summary': False, 'label': 'Welfare dues (TM district)', 'amount': '120.00', 'frequency': 'Annual', 'bank_name': 'Ecobank', 'account_number': '1441002452360', 'unit': 'per_head', 'district': 'Tema Port', 'description': 'District welfare dues for Tema Port chapter (per head).'},
+
+                # ── 4. Variable Fees: To Be Preloaded / Optional Add-Ons ───────────────
+                {'id': 'var_development_levy', 'section': 'variable', 'is_summary': False, 'label': 'Development levy', 'amount': '385.00', 'frequency': 'Annual', 'bank_name': 'Zenith Bank', 'account_number': '6010309212', 'unit': 'flat', 'target_scale': 'all', 'description': 'Preloaded development levy assessment (Variable range: 385.00 – 5835.00).'},
+                {'id': 'var_welfare_small', 'section': 'variable', 'is_summary': False, 'label': 'Welfare due (small companies)', 'amount': '175.00', 'frequency': 'Annual', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'per_director', 'target_scale': 'small', 'description': 'Annual welfare dues per director for small companies.'},
+                {'id': 'var_welfare_multinational', 'section': 'variable', 'is_summary': False, 'label': 'Welfare due (multinational)', 'amount': '255.00', 'frequency': 'Annual', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'per_director', 'target_scale': 'multinational', 'description': 'Annual welfare dues per director for multinational companies.'},
+                {'id': 'var_consolidation', 'section': 'variable', 'is_summary': False, 'label': 'Consolidation fee', 'amount': '1286.00', 'frequency': 'Annual', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'flat', 'target_scale': 'all', 'description': 'Cargo consolidation operations annual fee.'},
+                {'id': 'var_id_card', 'section': 'variable', 'is_summary': False, 'label': 'ID card', 'amount': '45.00', 'frequency': 'Annual', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'per_staff', 'target_scale': 'all', 'description': 'Official accredited member staff ID card (per staff).'},
+                {'id': 'var_sic_bond', 'section': 'variable', 'is_summary': False, 'label': 'SIC bond', 'amount': '350.00', 'frequency': 'Annual', 'bank_name': 'GCB', 'account_number': '107113005326', 'unit': 'flat', 'target_scale': 'all', 'description': 'SIC customs bond security cover.'},
             ]
 
             if fees is None:
@@ -385,10 +389,25 @@ def get_admin_fees():
                     if f.get('section') not in ('renewal', 'associate', 'licentiate')
                     and not str(f.get('id', '')).startswith(('renewal_', 'associate_', 'licentiate_'))
                 ]
-                # Ensure default National and District clearance items exist if not previously saved
+                # Default mapping for bank/account backfill
+                default_dict = {item['id']: item for item in default_items}
+                for f in fees:
+                    fid = str(f.get('id', ''))
+                    if fid in default_dict:
+                        d_item = default_dict[fid]
+                        if not f.get('bank_name'):
+                            f['bank_name'] = d_item.get('bank_name')
+                        if not f.get('account_number'):
+                            f['account_number'] = d_item.get('account_number')
+                        if not f.get('unit'):
+                            f['unit'] = d_item.get('unit', 'flat')
+                        if not f.get('target_scale'):
+                            f['target_scale'] = d_item.get('target_scale', 'all')
+
+                # Ensure all default items exist if not previously saved
                 existing_ids = {str(f.get('id', '')) for f in fees}
                 for item in default_items:
-                    if item.get('section') in ('national', 'district') and str(item.get('id', '')) not in existing_ids:
+                    if str(item.get('id', '')) not in existing_ids:
                         fees.append(item)
 
             return jsonify(fees), 200
@@ -421,6 +440,15 @@ def update_admin_fees():
             renewal_fee = None
             posted_keys = set()
 
+            cursor.execute("ALTER TABLE fee_schedules ADD COLUMN IF NOT EXISTS fee_type VARCHAR(100)")
+            cursor.execute("ALTER TABLE fee_schedules ADD COLUMN IF NOT EXISTS name VARCHAR(255)")
+            cursor.execute("ALTER TABLE fee_schedules ADD COLUMN IF NOT EXISTS description TEXT")
+            cursor.execute("ALTER TABLE fee_schedules ADD COLUMN IF NOT EXISTS bank_name VARCHAR(100)")
+            cursor.execute("ALTER TABLE fee_schedules ADD COLUMN IF NOT EXISTS account_number VARCHAR(100)")
+            cursor.execute("ALTER TABLE fee_schedules ADD COLUMN IF NOT EXISTS unit VARCHAR(50)")
+            cursor.execute("ALTER TABLE fee_schedules ADD COLUMN IF NOT EXISTS target_scale VARCHAR(50)")
+            cursor.execute("ALTER TABLE fee_schedules ADD COLUMN IF NOT EXISTS district VARCHAR(100)")
+
             for item in data:
                 f_id = str(item.get('id', '')).strip()
                 if not f_id:
@@ -429,6 +457,11 @@ def update_admin_fees():
                 lbl = str(item.get('label', ''))
                 sec = str(item.get('section', 'new_membership'))
                 desc = str(item.get('description', ''))
+                bank_name = str(item.get('bank_name', ''))
+                acc_num = str(item.get('account_number', ''))
+                unit_val = str(item.get('unit', 'flat'))
+                tgt_scale = str(item.get('target_scale', 'all'))
+                dist_val = str(item.get('district', ''))
                 amt_str = str(item.get('amount', '0')).replace(',', '').strip()
                 try:
                     amt_val = float(amt_str)
@@ -436,13 +469,16 @@ def update_admin_fees():
                     amt_val = 0.0
 
                 cursor.execute("""
-                    INSERT INTO fee_schedules (key, fee_type, name, amount, description, is_active)
-                    VALUES (%s, %s, %s, %s, %s, TRUE)
+                    INSERT INTO fee_schedules (key, fee_type, name, amount, description, bank_name, account_number, unit, target_scale, district, is_active)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE)
                     ON CONFLICT (key) 
                     DO UPDATE SET fee_type = EXCLUDED.fee_type, name = EXCLUDED.name, 
                                   amount = EXCLUDED.amount, description = EXCLUDED.description, 
+                                  bank_name = EXCLUDED.bank_name, account_number = EXCLUDED.account_number,
+                                  unit = EXCLUDED.unit, target_scale = EXCLUDED.target_scale,
+                                  district = EXCLUDED.district,
                                   is_active = TRUE
-                """, (f_id, sec, lbl, amt_val, desc))
+                """, (f_id, sec, lbl, amt_val, desc, bank_name, acc_num, unit_val, tgt_scale, dist_val))
 
             # Deactivate keys not in posted list
             if posted_keys:
