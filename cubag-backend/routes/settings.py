@@ -49,8 +49,18 @@ def get_setting(key):
         with conn.cursor() as cursor:
             cursor.execute("SELECT config_value FROM platform_settings WHERE config_key = %s", (key,))
             result = cursor.fetchone()
-            if result:
-                return jsonify(result['config_value']), 200
+            if result and result.get('config_value'):
+                val = result['config_value']
+                parsed = json.loads(val) if isinstance(val, str) else val
+                if key == 'cubag_fees_v2' and isinstance(parsed, list):
+                    # Filter out removed categories (associate, licentiate) and ensure current structure
+                    sanitized = [
+                        f for f in parsed
+                        if f.get('section') not in ('renewal', 'associate', 'licentiate')
+                        and not str(f.get('id', '')).startswith(('renewal_', 'associate_', 'licentiate_'))
+                    ]
+                    return jsonify(sanitized), 200
+                return jsonify(parsed), 200
             else:
                 return jsonify({}), 200
     except Exception as e:
