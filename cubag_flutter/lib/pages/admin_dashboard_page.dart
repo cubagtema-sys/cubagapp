@@ -351,9 +351,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         'onTap': () => context.go('/admin/payments'),
       },
       {
-        'label': 'OPEN GRIEVANCES',
+        'label': 'OPEN TICKETS',
         'value': '$_openTickets',
-        'badge': 'Disputes Desk',
+        'badge': 'Support Desk',
         'badgeColor': const Color(0xFF2563EB),
         'onTap': () => context.go('/admin/tickets'),
       },

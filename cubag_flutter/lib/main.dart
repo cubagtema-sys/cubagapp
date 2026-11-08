@@ -190,7 +190,9 @@ class _CubagAppState extends State<CubagApp> with WidgetsBindingObserver {
         );
         return MediaQuery(
           data: mediaQuery.copyWith(textScaler: clampedScaler),
-          child: child ?? const SizedBox.shrink(),
+          child: SelectionArea(
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
     );

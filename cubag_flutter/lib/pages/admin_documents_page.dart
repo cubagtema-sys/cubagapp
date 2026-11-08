@@ -35,7 +35,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
   List<dynamic> _members = [];
   String _search = '';
   String _filter = 'all';
-  String _selectedCategory = 'corporate'; // 'corporate', 'licentiate', 'associate'
+  final String _selectedCategory = 'corporate';
 
   Timer? _debounce;
 
@@ -191,76 +191,6 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
     );
   }
 
-  Widget _buildCategoryTab(String title, String category, int count, IconData icon, Color color, bool isDark, Color cardBg, Color borderColor) {
-    final isSelected = _selectedCategory == category;
-    return Expanded(
-      child: InkWell(
-        onTap: () => setState(() => _selectedCategory = category),
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? (isDark ? color.withAlpha(45) : color.withAlpha(20)) : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? color : Colors.transparent,
-              width: 1.5,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 17,
-                color: isSelected
-                    ? color
-                    : (isDark ? Colors.white60 : const Color(0xFF7A6B60)),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: GoogleFonts.inter(
-                  fontSize: 15,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  color: isSelected
-                      ? (isDark ? Colors.white : color)
-                      : (isDark ? Colors.white70 : const Color(0xFF6B5E55)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? color
-                      : (isDark
-                          ? Colors.white12
-                          : const Color(0xFFE8DED6)),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$count',
-                  style: GoogleFonts.inter(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.bold,
-                    color: isSelected
-                        ? Colors.white
-                        : (isDark
-                            ? Colors.white70
-                            : const Color(0xFF6B5E55)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildFilterChip(String label, String key, int count, IconData icon, Color activeColor, bool isDark) {
     final isSel = _filter == key;
     return InkWell(
@@ -321,11 +251,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
     final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
     final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
-    final corpMembers = _getMembersForCategory('corporate');
-    final licMembers = _getMembersForCategory('licentiate');
-    final assocMembers = _getMembersForCategory('associate');
-
-    final currentCategoryMembers = _getMembersForCategory(_selectedCategory);
+    final currentCategoryMembers = _getMembersForCategory('corporate');
     final countAll = currentCategoryMembers.length;
     final countNeedsReview = currentCategoryMembers.where((m) {
       final up = (m['docs_uploaded'] as num?)?.toInt() ?? 0;
@@ -421,29 +347,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
               ),
             ),
 
-            // ── CATEGORY SEGMENTS ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF22140E)
-                      : const Color(0xFFEDE5DC),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Row(
-                  children: [
-                    _buildCategoryTab('Corporate Members', 'corporate', corpMembers.length, Icons.business_rounded, _kIndigo, isDark, cardBg, borderColor),
-                    _buildCategoryTab('Licentiate Agents', 'licentiate', licMembers.length, Icons.badge_rounded, _kOrange, isDark, cardBg, borderColor),
-                    _buildCategoryTab('Associates / Allied', 'associate', assocMembers.length, Icons.handshake_rounded, _kGreen, isDark, cardBg, borderColor),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
 
             // ── SEARCH & FILTER CONTROLS ──
             Padding(

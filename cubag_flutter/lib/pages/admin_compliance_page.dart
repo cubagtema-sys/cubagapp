@@ -121,7 +121,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
   final Map<String, int> _page = {'renewal': 1};
   final Map<String, int> _perPage = {'renewal': 50};
   final Map<String, String> _statusFilters = {'renewal': ''};
-  String _selectedCategory = 'corporate'; // 'corporate', 'licentiate', 'associate'
+  final String _selectedCategory = 'corporate';
   String _renewalSearch = '';
 
   @override
@@ -236,84 +236,6 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
     }).toList();
   }
 
-  Widget _buildCategoryTab(
-    String label,
-    String key,
-    IconData icon,
-    Color color,
-    int count,
-    bool isDark,
-  ) {
-    final isSelected = _selectedCategory == key;
-
-    return Expanded(
-      child: InkWell(
-        onTap: () => setState(() => _selectedCategory = key),
-        borderRadius: BorderRadius.circular(10),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? (isDark ? color.withAlpha(40) : color.withAlpha(20)) : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected ? color : Colors.transparent,
-              width: 1.5,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isSelected
-                    ? color
-                    : (isDark ? Colors.white60 : const Color(0xFF7A6B60)),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  color: isSelected
-                      ? (isDark ? Colors.white : color)
-                      : (isDark ? Colors.white70 : const Color(0xFF6B5E55)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? color
-                      : (isDark
-                          ? Colors.white12
-                          : const Color(0xFFE8DED6)),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$count',
-                  style: GoogleFonts.inter(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.bold,
-                    color: isSelected
-                        ? Colors.white
-                        : (isDark
-                            ? Colors.white70
-                            : const Color(0xFF6B5E55)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildFilterChip(
     String label,
     String value,
@@ -380,8 +302,6 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
     final borderColor = isDark ? _kBorderDark : const Color(0xFFE8DED6);
     final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
     final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
-
-    final corpApps = _getAppsForCategory('corporate');
 
     final currentList = _filteredForCurrentCategory();
     final activeCategoryTotal = _getAppsForCategory(_selectedCategory).length;
@@ -460,27 +380,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
               ),
             ),
 
-            // ── CATEGORY SEGMENTS ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? _kCardDark
-                      : const Color(0xFFEDE5DC),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Row(
-                  children: [
-                    _buildCategoryTab('Corporate Members', 'corporate', Icons.business_rounded, _kPrimary, corpApps.length, isDark),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
 
             // ── SEARCH & FILTER CONTROLS ──
             Padding(

@@ -23,7 +23,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
   bool _loading = true;
   List<dynamic> _allRequirements = [];
 
-  String _selectedCategory = 'corporate'; // corporate | licentiate | associate
+  final String _selectedCategory = 'corporate';
   String _selectedScope = 'new'; // new | renewal
   String _searchQuery = '';
 
@@ -384,31 +384,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
               ),
             ),
 
-            // Top Category Tabs (Corporate | Licentiate | Associate)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF281710) : const Color(0xFFE2E8F0),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Row(
-                  children: [
-                    _buildCategoryTab(
-                      'Corporate Members',
-                      'corporate',
-                      Icons.corporate_fare_rounded,
-                      _kIndigo,
-                      _countFor('corporate', 'new') + _countFor('corporate', 'renewal'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
 
             // Scope Sub-Tabs + Search + KPIs
             Padding(
@@ -717,89 +693,6 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
             ),
             const SizedBox(height: 16),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryTab(
-    String label,
-    String key,
-    IconData icon,
-    Color color,
-    int totalCount,
-  ) {
-    final isSel = _selectedCategory == key;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Expanded(
-      child: InkWell(
-        onTap: () => setState(() => _selectedCategory = key),
-        borderRadius: BorderRadius.circular(10),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-          decoration: BoxDecoration(
-            color: isSel
-                ? (isDark ? color.withAlpha(40) : Colors.white)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            border: isSel
-                ? Border.all(color: color, width: 1.5)
-                : null,
-            boxShadow: isSel && !isDark
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(10),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 18,
-                color: isSel
-                    ? color
-                    : (isDark ? Colors.white60 : const Color(0xFF64748B)),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 13.5,
-                  fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
-                  color: isSel
-                      ? (isDark ? Colors.white : color)
-                      : (isDark ? Colors.white70 : const Color(0xFF334155)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
-                decoration: BoxDecoration(
-                  color: isSel
-                      ? color
-                      : (isDark ? Colors.white12 : Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$totalCount',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: isSel
-                        ? Colors.white
-                        : (isDark ? Colors.white70 : const Color(0xFF475569)),
-                  ),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
