@@ -630,7 +630,7 @@ def login():
         conn.close()
 
 
-def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type='corporate', port_of_operation=None):
+def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type='corporate', port_of_operation=None, scope='combined'):
     fees_list = []
     if cursor:
         try:
@@ -821,10 +821,25 @@ def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type
             'district': dist
         })
 
-    # Combined full breakdown for renewal
-    breakdown = national_breakdown + district_breakdown
-    computed_total = sum(float(b['amount']) for b in breakdown)
-    title = "Annual Renewal Dues – National & District Clearance"
+    # Calculate totals per section
+    national_total = sum(float(b['amount']) for b in national_breakdown)
+    district_total = sum(float(b['amount']) for b in district_breakdown)
+    computed_total = national_total + district_total
+
+    clean_scope = str(scope or 'combined').strip().lower()
+    if clean_scope == 'national':
+        breakdown = national_breakdown
+        effective_total = national_total
+        title = "Annual Renewal Dues – National Statutory Charges"
+    elif clean_scope == 'district':
+        breakdown = district_breakdown
+        effective_total = district_total
+        title = "District Clearance Dues"
+    else:
+        clean_scope = 'combined'
+        breakdown = national_breakdown + district_breakdown
+        effective_total = computed_total
+        title = "Annual Renewal Dues – National & District Clearance"
 
     # ── 3. SETTLEMENT ROUTING DISTRIBUTION (Whitsun Pay Multi-Account Settlement) ──
     settlement_groups = {}
@@ -873,11 +888,16 @@ def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type
         'scale_label': scale_title,
         'has_consolidation': (fee_category or '') in ('consolidation', 'cf_consolidation'),
         'scope_label': 'Corporate Logistics',
+        'renewal_scope': clean_scope,
         'renewal_fee_title': title,
-        'renewal_fee_amount': computed_total,
+        'renewal_fee_amount': effective_total,
         'renewal_fee_breakdown': breakdown,
         'national_breakdown': national_breakdown,
         'district_breakdown': district_breakdown,
+        'national_total': national_total,
+        'district_total': district_total,
+        'computed_total': computed_total,
+        'combined_total': computed_total,
         'settlement_distribution': settlement_distribution,
         'variable_fee_options': variable_options,
         'tied_districts': tied_districts
@@ -888,6 +908,7 @@ def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type
 @jwt_required()
 def get_my_renewal_details():
     member_id = get_jwt_identity()
+    scope = request.args.get('scope', 'combined').strip().lower()
     conn = get_db()
     try:
         with conn.cursor() as cursor:
@@ -895,7 +916,7 @@ def get_my_renewal_details():
             row = cursor.fetchone()
             if not row:
                 return jsonify({'message': 'Member not found'}), 404
-            details = get_member_renewal_breakdown(row.get('member_scale'), row.get('fee_category'), cursor, row.get('member_type'), row.get('port_of_operation'))
+            details = get_member_renewal_breakdown(row.get('member_scale'), row.get('fee_category'), cursor, row.get('member_type'), row.get('port_of_operation'), scope=scope)
             return jsonify(details), 200
     finally:
         conn.close()
@@ -1063,12 +1084,19 @@ def get_me():
                     }
                     has_custom_bill = True
 
+                # Always compute national and district baseline breakdowns for scope selection
+                base_renewal_info = get_member_renewal_breakdown(result.get('member_scale'), result.get('fee_category'), cursor, result.get('member_type'), result.get('port_of_operation'))
+                result['national_breakdown'] = base_renewal_info.get('national_breakdown') or []
+                result['district_breakdown'] = base_renewal_info.get('district_breakdown') or []
+                result['national_total'] = base_renewal_info.get('national_total') or 0.0
+                result['district_total'] = base_renewal_info.get('district_total') or 0.0
+                result['combined_total'] = base_renewal_info.get('computed_total') or 0.0
+
                 if not has_custom_bill:
-                    renewal_info = get_member_renewal_breakdown(result.get('member_scale'), result.get('fee_category'), cursor, result.get('member_type'), result.get('port_of_operation'))
-                    result['renewal_details'] = renewal_info
-                    result['renewal_fee_amount'] = renewal_info['renewal_fee_amount']
-                    result['renewal_fee_title'] = renewal_info['renewal_fee_title']
-                    result['renewal_fee_breakdown'] = renewal_info['renewal_fee_breakdown']
+                    result['renewal_details'] = base_renewal_info
+                    result['renewal_fee_amount'] = base_renewal_info['renewal_fee_amount']
+                    result['renewal_fee_title'] = base_renewal_info['renewal_fee_title']
+                    result['renewal_fee_breakdown'] = base_renewal_info['renewal_fee_breakdown']
 
                 # Calculate installment financials and retrieve any linked payments
                 app_target_id = latest_comp_app['id'] if latest_comp_app else 0

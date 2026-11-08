@@ -978,9 +978,11 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final status = _app['status']?.toString() ?? 'draft';
     final appType = _app['type']?.toString() ?? '';
-    final typeLabel = appType == 'renewal'
-        ? 'Membership Renewal'
-        : 'Member ID Application';
+    final typeLabel = appType == 'renewal_national'
+        ? 'National Renewal'
+        : (appType == 'renewal_district'
+            ? 'District Clearance'
+            : (appType.contains('renewal') ? 'Membership Renewal' : 'Member ID Application'));
 
     final hasRejectedDocs = _docs.any((d) => d['status'] == 'rejected');
     final isEditable =
@@ -1450,9 +1452,11 @@ class _StatusViewPage extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final status = app['status']?.toString() ?? '';
     final appType = app['type']?.toString() ?? '';
-    final typeLabel = appType == 'renewal'
-        ? 'Membership Renewal'
-        : 'Member ID Application';
+    final typeLabel = appType == 'renewal_national'
+        ? 'National Renewal'
+        : (appType == 'renewal_district'
+            ? 'District Clearance'
+            : (appType.contains('renewal') ? 'Membership Renewal' : 'Member ID Application'));
     final note = app['admin_note']?.toString();
     final color = _statusColor(status);
 
@@ -1698,9 +1702,11 @@ class _ApplicationCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final status = app['status']?.toString() ?? '';
     final type = app['type']?.toString() ?? '';
-    final typeLabel = type == 'renewal'
-        ? 'Membership Renewal'
-        : 'Member ID Application';
+    final typeLabel = type == 'renewal_national'
+        ? 'National Renewal'
+        : (type == 'renewal_district'
+            ? 'District Clearance'
+            : (type.contains('renewal') ? 'Membership Renewal' : 'Member ID Application'));
     final color = _statusColor(status);
     final uploaded = (app['docs_uploaded'] as num?)?.toInt() ?? 0;
     final total = (app['docs_total'] as num?)?.toInt() ?? 0;
@@ -1731,7 +1737,7 @@ class _ApplicationCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
-                type == 'renewal'
+                type.contains('renewal')
                     ? Icons.autorenew_rounded
                     : Icons.badge_outlined,
                 color: color,

@@ -43,6 +43,18 @@ MAX_MB      = 15
 
 # ── Document Requirements ─────────────────────────────────────────────────────
 
+RENEWAL_REQUIREMENTS_NATIONAL = [
+    {'key': 'renewal_application_letter',    'label': 'Application for Renewal on Company Letterhead'},
+    {'key': 'renewal_staff_list',            'label': 'Staff List (Indicating Positions)'},
+    {'key': 'renewal_certificate_commence',  'label': 'Copy of Certificate to Commence Business'},
+    {'key': 'renewal_proficiency_cert',      'label': 'Copy of Proficiency Certificate'},
+]
+
+RENEWAL_REQUIREMENTS_DISTRICT = [
+    {'key': 'renewal_application_letter',    'label': 'Application for District Clearance on Company Letterhead'},
+    {'key': 'renewal_clearance_forms',       'label': 'Clearance Forms from District (Tema / AIA / Aflao / Takoradi)'},
+]
+
 RENEWAL_REQUIREMENTS = [
     {'key': 'renewal_application_letter',    'label': 'Application for Renewal on Company Letterhead'},
     {'key': 'renewal_clearance_forms',       'label': 'Clearance Forms from District (Tema / AIA / Aflao / Takoradi)'},
@@ -83,8 +95,10 @@ CUSTOMS_OVERLAP = {
 }
 
 APPLICATION_TYPES = {
-    'renewal':         {'requirements': RENEWAL_REQUIREMENTS,         'overlap': RENEWAL_OVERLAP},
-    'customs_licence': {'requirements': CUSTOMS_LICENCE_REQUIREMENTS, 'overlap': CUSTOMS_OVERLAP},
+    'renewal':          {'requirements': RENEWAL_REQUIREMENTS,          'overlap': RENEWAL_OVERLAP},
+    'renewal_national': {'requirements': RENEWAL_REQUIREMENTS_NATIONAL, 'overlap': RENEWAL_OVERLAP},
+    'renewal_district': {'requirements': RENEWAL_REQUIREMENTS_DISTRICT, 'overlap': RENEWAL_OVERLAP},
+    'customs_licence':  {'requirements': CUSTOMS_LICENCE_REQUIREMENTS,  'overlap': CUSTOMS_OVERLAP},
 }
 
 # Statuses that indicate an application is still active (block new application of same type)
@@ -403,9 +417,16 @@ def create_application():
         member_id = raw_mid
     data      = request.get_json() or {}
     app_type  = data.get('type', '').strip().lower()
+    scope     = (data.get('scope') or data.get('renewal_scope') or '').strip().lower()
+
+    if app_type == 'renewal':
+        if scope == 'national':
+            app_type = 'renewal_national'
+        elif scope == 'district':
+            app_type = 'renewal_district'
 
     if app_type not in APPLICATION_TYPES:
-        return jsonify({'message': 'type must be "renewal" or "customs_licence"'}), 400
+        return jsonify({'message': f'type must be one of: {", ".join(APPLICATION_TYPES.keys())}'}), 400
 
     conn = get_db()
     try:
@@ -438,18 +459,20 @@ def create_application():
             existing = cursor.fetchone()
             if existing:
                 # If existing renewal application is missing fee details, populate them now
-                if app_type == 'renewal' and (existing.get('payment_amount') is None or existing.get('fee_breakdown') is None):
+                if app_type.startswith('renewal') and (existing.get('payment_amount') is None or existing.get('fee_breakdown') is None):
                     try:
                         from routes.auth import get_member_renewal_breakdown
                         cursor.execute("SELECT member_scale, fee_category, member_type, port_of_operation FROM members WHERE id = %s", (member_id,))
                         m_row = cursor.fetchone()
                         if m_row:
+                            scope_param = 'national' if app_type == 'renewal_national' else ('district' if app_type == 'renewal_district' else 'combined')
                             ren = get_member_renewal_breakdown(
                                 m_row.get('member_scale'),
                                 m_row.get('fee_category'),
                                 cursor,
                                 m_row.get('member_type'),
-                                m_row.get('port_of_operation')
+                                m_row.get('port_of_operation'),
+                                scope=scope_param
                             )
                             if ren:
                                 cursor.execute("""
@@ -474,18 +497,20 @@ def create_application():
             payment_amount = None
             fee_breakdown_json = None
             bill_title = None
-            if app_type == 'renewal':
+            if app_type.startswith('renewal'):
                 try:
                     from routes.auth import get_member_renewal_breakdown
                     cursor.execute("SELECT member_scale, fee_category, member_type, port_of_operation FROM members WHERE id = %s", (member_id,))
                     m_row = cursor.fetchone()
                     if m_row:
+                        scope_param = 'national' if app_type == 'renewal_national' else ('district' if app_type == 'renewal_district' else 'combined')
                         ren = get_member_renewal_breakdown(
                             m_row.get('member_scale'),
                             m_row.get('fee_category'),
                             cursor,
                             m_row.get('member_type'),
-                            m_row.get('port_of_operation')
+                            m_row.get('port_of_operation'),
+                            scope=scope_param
                         )
                         if ren:
                             payment_amount = ren.get('renewal_fee_amount')
