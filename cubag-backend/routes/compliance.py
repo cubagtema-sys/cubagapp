@@ -472,7 +472,8 @@ def create_application():
                                 cursor,
                                 m_row.get('member_type'),
                                 m_row.get('port_of_operation'),
-                                scope=scope_param
+                                scope=scope_param,
+                                member_id=member_id
                             )
                             if ren:
                                 cursor.execute("""
@@ -510,7 +511,8 @@ def create_application():
                             cursor,
                             m_row.get('member_type'),
                             m_row.get('port_of_operation'),
-                            scope=scope_param
+                            scope=scope_param,
+                            member_id=member_id
                         )
                         if ren:
                             payment_amount = ren.get('renewal_fee_amount')

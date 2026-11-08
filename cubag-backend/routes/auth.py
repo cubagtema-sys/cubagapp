@@ -328,6 +328,21 @@ def register():
                 port_of_op, 'Corporate', member_scale, fee_category, consolidation_scope, pw_hash
             ))
             new_id = cursor.fetchone()['id']
+
+            # Insert registered districts into 1-to-many member_districts junction table
+            ports_list = [p.strip() for p in raw_ports.split(',') if p.strip()]
+            for p_name in ports_list:
+                try:
+                    cursor.execute("""
+                        INSERT INTO member_districts (member_id, district_id, district_name)
+                        SELECT %s, id, %s FROM districts WHERE LOWER(name) = LOWER(%s)
+                        UNION ALL
+                        SELECT %s, NULL, %s WHERE NOT EXISTS (SELECT 1 FROM districts WHERE LOWER(name) = LOWER(%s))
+                        ON CONFLICT (member_id, district_name) DO NOTHING
+                    """, (new_id, p_name, p_name, new_id, p_name, p_name))
+                except Exception as ex_md:
+                    logger.debug(f'Error saving member_district: {ex_md}')
+
             cursor.execute("DELETE FROM otp_codes WHERE LOWER(email) = LOWER(%s)", (email,))
             conn.commit()
 
@@ -630,7 +645,7 @@ def login():
         conn.close()
 
 
-def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type='corporate', port_of_operation=None, scope='combined'):
+def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type='corporate', port_of_operation=None, scope='combined', member_id=None):
     fees_list = []
     if cursor:
         try:
@@ -783,8 +798,31 @@ def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type
     # ── 2. DISTRICT CLEARANCE FEES SECTION ─────────────────────────────────────
     district_breakdown = []
     tied_districts = []
-    if port_of_operation:
+
+    if member_id and cursor:
+        try:
+            cursor.execute("SELECT district_name FROM member_districts WHERE member_id = %s ORDER BY id ASC", (member_id,))
+            m_dist_rows = cursor.fetchall()
+            if m_dist_rows:
+                tied_districts = [r['district_name'].strip() for r in m_dist_rows if r.get('district_name') and r['district_name'].strip()]
+        except Exception as e:
+            logger.debug(f'Error querying member_districts: {e}')
+
+    if not tied_districts and port_of_operation:
         tied_districts = [d.strip() for d in str(port_of_operation).split(',') if d.strip()]
+        if member_id and cursor and tied_districts:
+            try:
+                for d_name in tied_districts:
+                    cursor.execute("""
+                        INSERT INTO member_districts (member_id, district_id, district_name)
+                        SELECT %s, id, %s FROM districts WHERE LOWER(name) = LOWER(%s)
+                        UNION ALL
+                        SELECT %s, NULL, %s WHERE NOT EXISTS (SELECT 1 FROM districts WHERE LOWER(name) = LOWER(%s))
+                        ON CONFLICT (member_id, district_name) DO NOTHING
+                    """, (member_id, d_name, d_name, member_id, d_name, d_name))
+            except Exception as e:
+                logger.debug(f'Auto-sync member_districts: {e}')
+
     if not tied_districts:
         tied_districts = ['Tema Port']
 
@@ -916,7 +954,7 @@ def get_my_renewal_details():
             row = cursor.fetchone()
             if not row:
                 return jsonify({'message': 'Member not found'}), 404
-            details = get_member_renewal_breakdown(row.get('member_scale'), row.get('fee_category'), cursor, row.get('member_type'), row.get('port_of_operation'), scope=scope)
+            details = get_member_renewal_breakdown(row.get('member_scale'), row.get('fee_category'), cursor, row.get('member_type'), row.get('port_of_operation'), scope=scope, member_id=member_id)
             return jsonify(details), 200
     finally:
         conn.close()
@@ -1085,12 +1123,13 @@ def get_me():
                     has_custom_bill = True
 
                 # Always compute national and district baseline breakdowns for scope selection
-                base_renewal_info = get_member_renewal_breakdown(result.get('member_scale'), result.get('fee_category'), cursor, result.get('member_type'), result.get('port_of_operation'))
+                base_renewal_info = get_member_renewal_breakdown(result.get('member_scale'), result.get('fee_category'), cursor, result.get('member_type'), result.get('port_of_operation'), member_id=member_id)
                 result['national_breakdown'] = base_renewal_info.get('national_breakdown') or []
                 result['district_breakdown'] = base_renewal_info.get('district_breakdown') or []
                 result['national_total'] = base_renewal_info.get('national_total') or 0.0
                 result['district_total'] = base_renewal_info.get('district_total') or 0.0
                 result['combined_total'] = base_renewal_info.get('computed_total') or 0.0
+                result['districts'] = base_renewal_info.get('tied_districts') or ['Tema Port']
 
                 if not has_custom_bill:
                     result['renewal_details'] = base_renewal_info
@@ -1270,6 +1309,104 @@ def update_preferences():
         conn.rollback()
         logger.error(f'[update-preferences] {e}')
         return jsonify({'message': 'Preferences noted'}), 200  # non-critical
+    finally:
+        conn.close()
+
+
+@auth_bp.route('/profile', methods=['PUT', 'POST', 'PATCH', 'OPTIONS'])
+@jwt_required()
+def update_profile():
+    """Allow member to update their profile particulars (email, phone, districts)."""
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+
+    member_id = get_jwt_identity()
+    data = request.get_json(silent=True) or {}
+    new_email = (data.get('email') or '').strip().lower()
+    new_phone = (data.get('phone') or '').strip()
+    districts = data.get('districts')
+
+    if not new_email and not new_phone and districts is None:
+        return jsonify({'message': 'No profile fields provided to update'}), 400
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            # Check if email is valid and unique if changing
+            if new_email:
+                if '@' not in new_email or '.' not in new_email:
+                    return jsonify({'message': 'Invalid email address format'}), 400
+                cursor.execute("SELECT id FROM members WHERE LOWER(email) = %s AND id != %s", (new_email, member_id))
+                if cursor.fetchone():
+                    return jsonify({'message': 'Email address is already registered by another account'}), 409
+
+            updates = []
+            params = []
+            if new_email:
+                updates.append("email = %s")
+                params.append(new_email)
+            if new_phone:
+                updates.append("phone = %s")
+                params.append(new_phone)
+
+            if districts is not None:
+                if isinstance(districts, list):
+                    dist_str = ', '.join([str(d).strip() for d in districts if str(d).strip()])
+                else:
+                    dist_str = str(districts).strip()
+                updates.append("port_of_operation = %s")
+                params.append(dist_str)
+
+                # Sync 1-to-many member_districts junction table
+                try:
+                    cursor.execute("DELETE FROM member_districts WHERE member_id = %s", (member_id,))
+                    d_list = [d.strip() for d in dist_str.split(',') if d.strip()]
+                    for d_name in d_list:
+                        cursor.execute("""
+                            INSERT INTO member_districts (member_id, district_id, district_name)
+                            SELECT %s, id, %s FROM districts WHERE LOWER(name) = LOWER(%s)
+                            UNION ALL
+                            SELECT %s, NULL, %s WHERE NOT EXISTS (SELECT 1 FROM districts WHERE LOWER(name) = LOWER(%s))
+                            ON CONFLICT (member_id, district_name) DO NOTHING
+                        """, (member_id, d_name, d_name, member_id, d_name, d_name))
+                except Exception as ex_dist:
+                    logger.debug(f'Error syncing member_districts: {ex_dist}')
+
+            if updates:
+                params.append(member_id)
+                cursor.execute(f"UPDATE members SET {', '.join(updates)} WHERE id = %s", tuple(params))
+                conn.commit()
+
+            # Invalidate cached /auth/me for this user
+            cache.delete(f'me_{member_id}')
+
+            # Fetch updated member profile
+            cursor.execute("""
+                SELECT id, name, email, phone, company, license_number, port_of_operation,
+                       member_type, member_scale, fee_category, status, profile_photo
+                FROM members WHERE id = %s
+            """, (member_id,))
+            updated_member = dict(cursor.fetchone() or {})
+
+            # Fetch updated districts
+            try:
+                cursor.execute("SELECT district_name FROM member_districts WHERE member_id = %s ORDER BY id ASC", (member_id,))
+                d_rows = cursor.fetchall()
+                if d_rows:
+                    updated_member['districts'] = [r['district_name'] for r in d_rows if r.get('district_name')]
+                elif updated_member.get('port_of_operation'):
+                    updated_member['districts'] = [d.strip() for d in str(updated_member['port_of_operation']).split(',') if d.strip()]
+            except Exception:
+                pass
+
+            return jsonify({
+                'message': 'Profile updated successfully',
+                'member': updated_member
+            }), 200
+    except Exception as e:
+        conn.rollback()
+        logger.error(f'[update_profile] {e}')
+        return jsonify({'message': f'Failed to update profile: {str(e)}'}), 500
     finally:
         conn.close()
 

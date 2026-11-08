@@ -609,6 +609,64 @@ def init_db():
                 for p_name, p_code in default_ports:
                     cursor.execute("INSERT INTO ports_of_operation (name, code) VALUES (%s, %s) ON CONFLICT DO NOTHING", (p_name, p_code))
 
+            # Operational Districts & 1-to-Many Member Districts Junction Table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS districts (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(150) UNIQUE NOT NULL,
+                    code VARCHAR(50),
+                    bank_name VARCHAR(100) DEFAULT 'Ecobank',
+                    account_number VARCHAR(100) DEFAULT '1441002452360',
+                    clearance_fee NUMERIC(10,2) DEFAULT 250.00,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS member_districts (
+                    id SERIAL PRIMARY KEY,
+                    member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+                    district_id INTEGER REFERENCES districts(id) ON DELETE SET NULL,
+                    district_name VARCHAR(150) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT uq_member_district UNIQUE (member_id, district_name)
+                )
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_member_districts_member_id ON member_districts(member_id)")
+
+            # Seed default Ghanaian districts if empty
+            cursor.execute("SELECT COUNT(*) as total FROM districts")
+            if cursor.fetchone()['total'] == 0:
+                default_districts = [
+                    ('Tema Port', 'TMA', 'Ecobank', '1441002452360', 250.00),
+                    ('Takoradi Port', 'TKD', 'Ecobank', '1441002452360', 250.00),
+                    ('Accra International Airport (KIA)', 'ACC', 'Ecobank', '1441002452360', 250.00),
+                    ('Elubo Border Port', 'ELB', 'Ecobank', '1441002452360', 250.00),
+                    ('Aflao Border Port', 'AFL', 'Ecobank', '1441002452360', 250.00),
+                    ('Paga Border Port', 'PAG', 'Ecobank', '1441002452360', 250.00)
+                ]
+                for d_name, d_code, d_bank, d_acc, d_fee in default_districts:
+                    cursor.execute("""
+                        INSERT INTO districts (name, code, bank_name, account_number, clearance_fee)
+                        VALUES (%s, %s, %s, %s, %s)
+                        ON CONFLICT (name) DO NOTHING
+                    """, (d_name, d_code, d_bank, d_acc, d_fee))
+
+            # Automatically backfill member_districts from members.port_of_operation if empty
+            try:
+                cursor.execute("""
+                    INSERT INTO member_districts (member_id, district_id, district_name)
+                    SELECT m.id, d.id, TRIM(raw_dist)
+                    FROM members m
+                    CROSS JOIN LATERAL unnest(string_to_array(COALESCE(NULLIF(m.port_of_operation, ''), 'Tema Port'), ',')) AS raw_dist
+                    LEFT JOIN districts d ON LOWER(TRIM(raw_dist)) = LOWER(d.name)
+                    WHERE TRIM(raw_dist) != ''
+                    ON CONFLICT (member_id, district_name) DO NOTHING
+                """)
+            except Exception as e:
+                logger.debug(f'Backfilling member_districts: {e}')
+
             # CTI Short Courses table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS cti_courses (

@@ -141,14 +141,79 @@ class _PaymentsPageState extends State<PaymentsPage>
     _pulseAnim = Tween<double>(begin: 0.90, end: 1.06).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
-    _loadData();
+
+    // 1. Instant Cache Paint (0ms) from synchronous Hive cache
+    final cachedMe = ApiService.getCachedSync('/auth/me');
+    if (cachedMe is Map && cachedMe.isNotEmpty) {
+      _applyMemberData(Map<String, dynamic>.from(cachedMe));
+      _loadingData = false;
+    }
+
+    // 2. Silent Background Sync
+    _loadData(silent: _memberInfo.isNotEmpty);
 
     // Listen to real-time fee schedule changes from Admin
     SocketService().socket?.on('fees_updated', _onFeesUpdatedSocket);
   }
 
+  void _applyMemberData(Map<String, dynamic> rawData, {bool regPaidFromDoc = false}) {
+    _memberInfo = (rawData['member'] ?? rawData) as Map<String, dynamic>;
+
+    final rawNational = _memberInfo['national_breakdown'];
+    if (rawNational is List) {
+      _nationalBreakdown = rawNational
+          .map((x) => Map<String, dynamic>.from(x as Map))
+          .toList();
+    }
+    final rawDistrict = _memberInfo['district_breakdown'];
+    if (rawDistrict is List) {
+      _districtBreakdown = rawDistrict
+          .map((x) => Map<String, dynamic>.from(x as Map))
+          .toList();
+    }
+
+    _nationalRenewalTotal = double.tryParse(_memberInfo['national_total']?.toString() ?? '');
+    _districtRenewalTotal = double.tryParse(_memberInfo['district_total']?.toString() ?? '');
+    _combinedRenewalTotal = double.tryParse(_memberInfo['combined_total']?.toString() ?? '') ??
+        double.tryParse(_memberInfo['renewal_fee_amount']?.toString() ?? '');
+
+    final rawRenewalBreakdown = _memberInfo['renewal_fee_breakdown'];
+    if (rawRenewalBreakdown is List) {
+      _renewalFeeBreakdown = rawRenewalBreakdown
+          .map((x) => Map<String, dynamic>.from(x as Map))
+          .toList();
+    } else if (_nationalBreakdown.isNotEmpty || _districtBreakdown.isNotEmpty) {
+      _renewalFeeBreakdown = [..._nationalBreakdown, ..._districtBreakdown];
+    }
+
+    final rawRenewalAmt = _memberInfo['renewal_fee_amount'];
+    if (rawRenewalAmt != null) {
+      _renewalFeeAmount = double.tryParse(rawRenewalAmt.toString());
+    } else if (_combinedRenewalTotal != null) {
+      _renewalFeeAmount = _combinedRenewalTotal;
+    }
+
+    _renewalAmountPaid = double.tryParse(_memberInfo['renewal_amount_paid']?.toString() ?? '0') ?? 0.0;
+    _renewalBalanceDue = double.tryParse(_memberInfo['renewal_balance_due']?.toString() ?? '') ??
+        (_renewalFeeAmount != null ? (_renewalFeeAmount! - _renewalAmountPaid).clamp(0.0, double.infinity) : 0.0);
+    _allowInstallments = _memberInfo['renewal_allow_installments'] != false;
+    _minInstallmentAmount = double.tryParse(_memberInfo['renewal_min_installment_amount']?.toString() ?? '0') ?? 0.0;
+    _isPartiallyPaid = _memberInfo['renewal_is_partially_paid'] == true;
+    _installments = ApiService.ensureList(_memberInfo['renewal_installments']);
+
+    _isRegFeePaid = regPaidFromDoc ||
+        _memberInfo['registration_fee_paid'] == true ||
+        _memberInfo['registration_paid'] == true ||
+        _memberInfo['application_fee_paid'] == true;
+    _isPackageFeePaid = _memberInfo['package_fee_paid'] == true;
+
+    final expiryRaw = _memberInfo['license_expiry_date'];
+    _licenseExpiry = expiryRaw != null ? DateTime.tryParse(expiryRaw.toString()) : null;
+    _isLicenseBlocked = false;
+  }
+
   void _onFeesUpdatedSocket(dynamic _) {
-    if (mounted) _loadData();
+    if (mounted) _loadData(silent: true);
   }
 
   @override
@@ -191,9 +256,11 @@ class _PaymentsPageState extends State<PaymentsPage>
     return clean;
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadData({bool silent = false}) async {
     if (!mounted) return;
-    setState(() => _loadingData = true);
+    if (!silent && _memberInfo.isEmpty) {
+      setState(() => _loadingData = true);
+    }
     try {
       final api = ApiService();
       final results = await Future.wait([
@@ -238,65 +305,10 @@ class _PaymentsPageState extends State<PaymentsPage>
           if (payData is Map<String, dynamic>) _paySettings = payData;
           // Extract member info from /auth/me response
           if (meRes is Response && meRes.data is Map) {
-            _memberInfo =
-                (meRes.data['member'] ?? meRes.data) as Map<String, dynamic>;
-
-            final rawNational = _memberInfo['national_breakdown'];
-            if (rawNational is List) {
-              _nationalBreakdown = rawNational
-                  .map((x) => Map<String, dynamic>.from(x as Map))
-                  .toList();
-            }
-            final rawDistrict = _memberInfo['district_breakdown'];
-            if (rawDistrict is List) {
-              _districtBreakdown = rawDistrict
-                  .map((x) => Map<String, dynamic>.from(x as Map))
-                  .toList();
-            }
-
-            _nationalRenewalTotal = double.tryParse(_memberInfo['national_total']?.toString() ?? '');
-            _districtRenewalTotal = double.tryParse(_memberInfo['district_total']?.toString() ?? '');
-            _combinedRenewalTotal = double.tryParse(_memberInfo['combined_total']?.toString() ?? '') ??
-                double.tryParse(_memberInfo['renewal_fee_amount']?.toString() ?? '');
-
-            final rawRenewalBreakdown = _memberInfo['renewal_fee_breakdown'];
-            if (rawRenewalBreakdown is List) {
-              _renewalFeeBreakdown = rawRenewalBreakdown
-                  .map((x) => Map<String, dynamic>.from(x as Map))
-                  .toList();
-            } else if (_nationalBreakdown.isNotEmpty || _districtBreakdown.isNotEmpty) {
-              _renewalFeeBreakdown = [..._nationalBreakdown, ..._districtBreakdown];
-            }
-
-            final rawRenewalAmt = _memberInfo['renewal_fee_amount'];
-            if (rawRenewalAmt != null) {
-              _renewalFeeAmount = double.tryParse(rawRenewalAmt.toString());
-            } else if (_combinedRenewalTotal != null) {
-              _renewalFeeAmount = _combinedRenewalTotal;
-            }
-
-            _renewalAmountPaid = double.tryParse(_memberInfo['renewal_amount_paid']?.toString() ?? '0') ?? 0.0;
-            _renewalBalanceDue = double.tryParse(_memberInfo['renewal_balance_due']?.toString() ?? '') ??
-                (_renewalFeeAmount != null ? (_renewalFeeAmount! - _renewalAmountPaid).clamp(0.0, double.infinity) : 0.0);
-            _allowInstallments = _memberInfo['renewal_allow_installments'] != false;
-            _minInstallmentAmount = double.tryParse(_memberInfo['renewal_min_installment_amount']?.toString() ?? '0') ?? 0.0;
-            _isPartiallyPaid = _memberInfo['renewal_is_partially_paid'] == true;
-            _installments = ApiService.ensureList(_memberInfo['renewal_installments']);
-
-            _isRegFeePaid = regPaidFromDoc ||
-                _memberInfo['registration_fee_paid'] == true ||
-                _memberInfo['registration_paid'] == true ||
-                _memberInfo['application_fee_paid'] == true;
-            _isPackageFeePaid = _memberInfo['package_fee_paid'] == true;
+            _applyMemberData(meRes.data as Map<String, dynamic>, regPaidFromDoc: regPaidFromDoc);
           } else {
             _isRegFeePaid = regPaidFromDoc;
           }
-          // Compute license expiry
-          final expiryRaw = _memberInfo['license_expiry_date'];
-          _licenseExpiry = expiryRaw != null
-              ? DateTime.tryParse(expiryRaw.toString())
-              : null;
-          _isLicenseBlocked = false;
 
           // Check query parameters for fee pre-selection & redirect return route
           final state = GoRouterState.of(context);
@@ -803,6 +815,21 @@ class _PaymentsPageState extends State<PaymentsPage>
 
   bool get _isNoDocPaymentReason {
     return !_requiresDocuments;
+  }
+
+  bool get _isRenewalFullyPaid {
+    final r = _reason.toLowerCase();
+    if (!r.contains('renewal') && !r.contains('annual dues')) return false;
+    final isMarkedPaid = _memberInfo['is_renewal_paid'] == true ||
+        _memberInfo['renewal_paid'] == true;
+    if (isMarkedPaid) return true;
+    if (_renewalAmountPaid > 0 && _renewalBalanceDue <= 0.01) return true;
+    if (_renewalFeeAmount != null &&
+        _renewalFeeAmount! > 0 &&
+        _renewalAmountPaid >= (_renewalFeeAmount! - 0.01)) {
+      return true;
+    }
+    return false;
   }
 
   bool _isComplianceReason(String? label) {
@@ -1332,9 +1359,12 @@ class _PaymentsPageState extends State<PaymentsPage>
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
             child: Stack(
               children: [
-                SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Column(
+                RefreshIndicator(
+                  onRefresh: () => _loadData(),
+                  color: _kOrange,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
                     children: [
                       Card(
                         color: isDark ? const Color(0xFF1E130D) : Colors.white,
@@ -1518,6 +1548,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     ],
                   ),
                 ),
+              ),
 
                 // Success Modal Overlay
                 if (_showSuccess)
@@ -2077,7 +2108,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             child: Column(
                               children: [
                                 Text(
-                                  'Part-Payment / Installment',
+                                  'Installment',
                                   style: GoogleFonts.inter(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.bold,
@@ -2886,6 +2917,81 @@ class _PaymentsPageState extends State<PaymentsPage>
                 );
               }
 
+              if (_isRenewalFullyPaid) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF064E3B).withAlpha(40) : const Color(0xFFF0FDF4),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFF059669).withAlpha(100), width: 1.5),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF059669).withAlpha(25),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.verified_rounded, color: Color(0xFF059669), size: 24),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'ANNUAL RENEWAL DUES SETTLED',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                    color: const Color(0xFF059669),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Your Annual Renewal Dues (National & District Clearance) have already been fully paid and confirmed for the current operational cycle. No further renewal payment or document submission is required at this time.',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12.5,
+                                    color: isDark ? Colors.white70 : const Color(0xFF065F46),
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton.icon(
+                        onPressed: null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF059669),
+                          disabledBackgroundColor: const Color(0xFF059669).withAlpha(120),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                        icon: Text(
+                          'Annual Renewal Already Settled',
+                          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                        ),
+                        label: const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
               bool isAmountValid = amt > 0;
               if (_isInstallmentMode) {
                 if (amt < (minPayable - 0.01) || (maxPayable < double.infinity && amt > (maxPayable + 0.01))) {
@@ -3290,83 +3396,104 @@ class _PaymentsPageState extends State<PaymentsPage>
                         width: 1.5,
                       ),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: uploaded
-                                ? _kGreen.withAlpha(20)
-                                : const Color(0xFFf1f5f9),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            uploaded
-                                ? Icons.check_circle_rounded
-                                : Icons.upload_file_rounded,
-                            color: uploaded ? _kGreen : const Color(0xFF64748b),
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                requirement,
-                                style: GoogleFonts.inter(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15.5,
-                                  color: const Color(0xFF1A0F0A),
-                                ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: uploaded
+                                    ? _kGreen.withAlpha(20)
+                                    : const Color(0xFFf1f5f9),
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
+                              child: Icon(
                                 uploaded
-                                    ? 'Uploaded & Saved'
-                                    : 'Required for submission',
-                                style: GoogleFonts.inter(
-                                  fontSize: 13.5,
-                                  color: uploaded
-                                      ? _kGreen
-                                      : const Color(0xFF94a3b8),
-                                  fontWeight: FontWeight.w500,
+                                    ? Icons.check_circle_rounded
+                                    : Icons.upload_file_rounded,
+                                color: uploaded ? _kGreen : const Color(0xFF64748b),
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    requirement,
+                                    style: GoogleFonts.inter(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                      color: const Color(0xFF1A0F0A),
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        uploaded ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                                        size: 13,
+                                        color: uploaded ? _kGreen : const Color(0xFF94a3b8),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        uploaded
+                                            ? 'Uploaded & Verified'
+                                            : 'Required for submission',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12.5,
+                                          color: uploaded
+                                              ? _kGreen
+                                              : const Color(0xFF64748b),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 44,
+                          child: ElevatedButton.icon(
+                            onPressed: () => _uploadComplianceDoc(doc),
+                            icon: Icon(
+                              uploaded
+                                  ? Icons.refresh_rounded
+                                  : Icons.file_upload_outlined,
+                              size: 16,
+                            ),
+                            label: Text(
+                              uploaded ? 'Replace Document' : 'Upload Document',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14.5,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: uploaded
+                                  ? const Color(0xFFf1f5f9)
+                                  : primary,
+                              foregroundColor: uploaded
+                                  ? const Color(0xFF4D2D20)
+                                  : Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                side: BorderSide(
+                                  color: uploaded ? const Color(0xFFcbd5e1) : Colors.transparent,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: () => _uploadComplianceDoc(doc),
-                          icon: Icon(
-                            uploaded
-                                ? Icons.refresh_rounded
-                                : Icons.file_upload_outlined,
-                            size: 16,
-                          ),
-                          label: Text(
-                            uploaded ? 'Replace' : 'Upload',
-                            style: GoogleFonts.inter(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: uploaded
-                                ? const Color(0xFFf1f5f9)
-                                : primary,
-                            foregroundColor: uploaded
-                                ? const Color(0xFF4D2D20)
-                                : Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                         ),
@@ -4375,49 +4502,65 @@ class _PaymentsPageState extends State<PaymentsPage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                  color: isSelected ? _kOrange : const Color(0xFF94A3B8),
-                  size: 20,
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Icon(
+                    isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                    color: isSelected ? _kOrange : const Color(0xFF94A3B8),
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Flexible(
-                        child: Text(
-                          title,
-                          style: GoogleFonts.inter(
-                            fontSize: 13.5,
-                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                            color: isDark ? Colors.white : const Color(0xFF1E293B),
-                          ),
-                        ),
-                      ),
-                      if (isRecommended) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF059669).withAlpha(20),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'RECOMMENDED',
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          Text(
+                            title,
                             style: GoogleFonts.inter(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF059669),
+                              fontSize: 13.5,
+                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                              color: isDark ? Colors.white : const Color(0xFF1E293B),
                             ),
                           ),
+                          if (isRecommended)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF059669).withAlpha(20),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'RECOMMENDED',
+                                style: GoogleFonts.inter(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF059669),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.inter(
+                          fontSize: 11.5,
+                          color: const Color(0xFF64748B),
+                          height: 1.3,
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Text(
                   'GH₵ ${amount.toStringAsFixed(2)}',
                   style: GoogleFonts.inter(
@@ -4427,17 +4570,6 @@ class _PaymentsPageState extends State<PaymentsPage>
                   ),
                 ),
               ],
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 30, top: 4),
-              child: Text(
-                subtitle,
-                style: GoogleFonts.inter(
-                  fontSize: 11.5,
-                  color: const Color(0xFF64748B),
-                  height: 1.3,
-                ),
-              ),
             ),
           ],
         ),

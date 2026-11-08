@@ -78,7 +78,15 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    _fetchUser();
+    // 1. Instant Cache Paint (0ms) from synchronous Hive memory/disk cache
+    final cachedMe = ApiService.getCachedSync('/auth/me');
+    if (cachedMe is Map && cachedMe.isNotEmpty) {
+      _user = Map<String, dynamic>.from(cachedMe);
+      _isLoading = false;
+    }
+    // 2. Silent Background Sync (no full-screen spinner if cached data exists)
+    _fetchUser(silent: _user.isNotEmpty);
+
     SocketService().on('member_updated', _onLiveUpdate);
     SocketService().on('member_approved', _onLiveUpdate);
     SocketService().on('payment_approved', _onLiveUpdate);
@@ -88,7 +96,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void _onLiveUpdate(dynamic _) {
     if (mounted) {
       ApiService.deleteCacheKeysMatching('auth/me');
-      _fetchUser();
+      _fetchUser(silent: true);
     }
   }
 
@@ -101,8 +109,13 @@ class _ProfilePageState extends State<ProfilePage> {
     super.dispose();
   }
 
-  Future<void> _fetchUser() async {
-    if (_user.isEmpty) setState(() => _isLoading = true);
+  Future<void> _fetchUser({bool silent = false, bool forceRefresh = false}) async {
+    if (!silent && _user.isEmpty) {
+      setState(() => _isLoading = true);
+    }
+    if (forceRefresh) {
+      ApiService.deleteCacheKeysMatching('auth/me');
+    }
     await ApiService().fetchDataWithCache('/auth/me', (
       data,
       isCached, {
@@ -200,6 +213,232 @@ class _ProfilePageState extends State<ProfilePage> {
     } finally {
       if (mounted) setState(() => _uploadingPhoto = false);
     }
+  }
+
+  void _showEditProfileDialog() {
+    final emailCtrl = TextEditingController(text: _user['email']?.toString() ?? '');
+    final phoneCtrl = TextEditingController(text: _user['phone']?.toString() ?? '');
+    final formKey = GlobalKey<FormState>();
+    bool saving = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          final sheetBg = isDark ? const Color(0xFF1E130D) : Colors.white;
+          final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+          final textMuted = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              decoration: BoxDecoration(
+                color: sheetBg,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white24 : Colors.black12,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: _kOrange.withAlpha(25),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.edit_note_rounded, color: _kOrange, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Update Profile Particulars',
+                          style: GoogleFonts.inter(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Email Address',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      controller: emailCtrl,
+                      keyboardType: TextInputType.emailAddress,
+                      style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.email_outlined, size: 18),
+                        hintText: 'member@company.com',
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF281710) : const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: _kOrange, width: 1.5),
+                        ),
+                      ),
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) return 'Email address is required';
+                        if (!val.contains('@') || !val.contains('.')) return 'Enter a valid email address';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Phone Number',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      controller: phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.phone_outlined, size: 18),
+                        hintText: '024 123 4567',
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF281710) : const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: _kOrange, width: 1.5),
+                        ),
+                      ),
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) return 'Phone number is required';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: saving ? null : () async {
+                          if (!formKey.currentState!.validate()) return;
+                          final scaffoldMessenger = ScaffoldMessenger.of(context);
+                          final nav = Navigator.of(ctx);
+                          setSheetState(() => saving = true);
+                          try {
+                            final res = await ApiService().put(
+                              '/auth/profile',
+                              data: {
+                                'email': emailCtrl.text.trim().toLowerCase(),
+                                'phone': phoneCtrl.text.trim(),
+                              },
+                            );
+                            if (res.statusCode == 200) {
+                              final updatedData = (res.data is Map && res.data['member'] != null)
+                                  ? res.data['member']
+                                  : null;
+                              if (mounted) {
+                                setState(() {
+                                  _user['email'] = emailCtrl.text.trim().toLowerCase();
+                                  _user['phone'] = phoneCtrl.text.trim();
+                                  if (updatedData is Map) {
+                                    _user = {..._user, ...Map<String, dynamic>.from(updatedData)};
+                                  }
+                                });
+                                ApiService.deleteCacheKeysMatching('auth/me');
+                                if (nav.canPop()) {
+                                  nav.pop();
+                                }
+                                scaffoldMessenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text('Profile particulars updated successfully', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                                    backgroundColor: _kGreen,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                );
+                              }
+                            } else {
+                              final msg = res.data?['message']?.toString() ?? 'Failed to update profile';
+                              setSheetState(() => saving = false);
+                              scaffoldMessenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(msg, style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                                  backgroundColor: _kRed,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            setSheetState(() => saving = false);
+                            scaffoldMessenger.showSnackBar(
+                              SnackBar(
+                                content: Text('Update error: $e', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                                backgroundColor: _kRed,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _kOrange,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                        child: saving
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : Text('Save Changes', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _openDigitalIdDialog(StandingTier tier, String? expiry, int? daysLeft, bool isGoodStanding, bool isPackagePending) {
@@ -329,13 +568,18 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return AppLayout(
       title: 'My Profile',
-      scrollable: true,
-      child: Container(
-        color: bg,
-        padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 20, vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      scrollable: false,
+      child: RefreshIndicator(
+        onRefresh: () => _fetchUser(forceRefresh: true),
+        color: _kOrange,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Container(
+            color: bg,
+            padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 20, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             // ── 1. SIMPLE HERO BANNER ─────────────────────────────────────
             Container(
               width: double.infinity,
@@ -477,23 +721,55 @@ class _ProfilePageState extends State<ProfilePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        width: 3,
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: _kOrange,
-                          borderRadius: BorderRadius.circular(1.5),
-                        ),
+                      Row(
+                        children: [
+                          Container(
+                            width: 3,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: _kOrange,
+                              borderRadius: BorderRadius.circular(1.5),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Profile Particulars',
+                            style: GoogleFonts.inter(
+                              fontSize: 16.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
+                              color: textPrimary,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Profile Particulars',
-                        style: GoogleFonts.inter(
-                          fontSize: 16.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.2,
-                          color: textPrimary,
+                      InkWell(
+                        onTap: _showEditProfileDialog,
+                        borderRadius: BorderRadius.circular(6),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _kOrange.withAlpha(20),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: _kOrange.withAlpha(60)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.edit_outlined, size: 13, color: _kOrange),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Update Info',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: _kOrange,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -549,6 +825,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     textMuted: textMuted,
                     tileBg: tileBg,
                     border: border,
+                    onEdit: _showEditProfileDialog,
                   ),
                   const SizedBox(height: 10),
                   _buildParticularTile(
@@ -560,6 +837,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     textMuted: textMuted,
                     tileBg: tileBg,
                     border: border,
+                    onEdit: _showEditProfileDialog,
                   ),
                   const SizedBox(height: 10),
                   _buildParticularTile(
@@ -651,7 +929,9 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildAvatarFallback() => CircleAvatar(
@@ -675,6 +955,7 @@ class _ProfilePageState extends State<ProfilePage> {
     bool isMono = false,
     bool canCopy = true,
     Widget? trailingBadge,
+    VoidCallback? onEdit,
   }) {
     final hasValue = value != '—' && value != 'Not provided';
     return Container(
@@ -713,6 +994,35 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
               ),
+              if (onEdit != null) ...[
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onEdit,
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.edit_outlined, size: 12, color: _kOrange),
+                          const SizedBox(width: 4),
+                          Text(
+                            'EDIT',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.4,
+                              color: _kOrange,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+              ],
               if (trailingBadge != null)
                 trailingBadge
               else if (canCopy && hasValue)

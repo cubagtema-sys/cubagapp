@@ -684,7 +684,7 @@ def create_payment():
                         cur.execute("SELECT member_scale, fee_category, member_type, port_of_operation FROM members WHERE id = %s", (member_id,))
                         m_row = cur.fetchone()
                         if m_row:
-                            ren_info = get_member_renewal_breakdown(m_row.get('member_scale'), m_row.get('fee_category'), cur, m_row.get('member_type'), m_row.get('port_of_operation'))
+                            ren_info = get_member_renewal_breakdown(m_row.get('member_scale'), m_row.get('fee_category'), cur, m_row.get('member_type'), m_row.get('port_of_operation'), member_id=member_id)
                             settlement_dist = ren_info.get('settlement_distribution') or []
                 except Exception as ex_ren:
                     logger.warning(f"Could not auto-generate settlement distribution: {ex_ren}")
