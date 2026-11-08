@@ -403,22 +403,6 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                       _kIndigo,
                       _countFor('corporate', 'new') + _countFor('corporate', 'renewal'),
                     ),
-                    const SizedBox(width: 4),
-                    _buildCategoryTab(
-                      'Licentiate Members',
-                      'licentiate',
-                      Icons.badge_rounded,
-                      _kOrange,
-                      _countFor('licentiate', 'new') + _countFor('licentiate', 'renewal'),
-                    ),
-                    const SizedBox(width: 4),
-                    _buildCategoryTab(
-                      'Associate Member',
-                      'associate',
-                      Icons.people_alt_rounded,
-                      _kGreen,
-                      _countFor('associate', 'new') + _countFor('associate', 'renewal'),
-                    ),
                   ],
                 ),
               ),
@@ -1339,14 +1323,6 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                                 DropdownMenuItem(
                                   value: 'corporate',
                                   child: Text('Corporate Members'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'licentiate',
-                                  child: Text('Licentiate Members'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'associate',
-                                  child: Text('Associate Member'),
                                 ),
                               ],
                               onChanged: (v) {

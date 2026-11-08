@@ -382,8 +382,6 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
     final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
     final corpApps = _getAppsForCategory('corporate');
-    final licApps = _getAppsForCategory('licentiate');
-    final assocApps = _getAppsForCategory('associate');
 
     final currentList = _filteredForCurrentCategory();
     final activeCategoryTotal = _getAppsForCategory(_selectedCategory).length;
@@ -477,8 +475,6 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                 child: Row(
                   children: [
                     _buildCategoryTab('Corporate Members', 'corporate', Icons.business_rounded, _kPrimary, corpApps.length, isDark),
-                    _buildCategoryTab('Licentiate Members', 'licentiate', Icons.badge_rounded, const Color(0xFF6366F1), licApps.length, isDark),
-                    _buildCategoryTab('Associate Member', 'associate', Icons.handshake_rounded, _kGreen, assocApps.length, isDark),
                   ],
                 ),
               ),

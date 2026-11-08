@@ -681,7 +681,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
     final uploaded = rawUp == null ? 0 : (rawUp as num).toInt();
     final approved = rawAp == null ? 0 : (rawAp as num).toInt();
 
-    final memberType = (m['member_type'] as String? ?? 'Licentiate').trim();
+    final memberType = (m['member_type'] as String? ?? 'Corporate').trim();
     final isSme = ((m['member_scale'] as String? ?? 'sme').toLowerCase()) == 'sme';
     final totalExpected = (m['total_required'] as num?)?.toInt() ?? 0;
 
@@ -998,7 +998,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
     final uploaded = rawUp == null ? 0 : (rawUp as num).toInt();
     final approved = rawAp == null ? 0 : (rawAp as num).toInt();
 
-    final memberType = (m['member_type'] as String? ?? 'Licentiate').trim();
+    final memberType = (m['member_type'] as String? ?? 'Corporate').trim();
     final isSme = ((m['member_scale'] as String? ?? 'sme').toLowerCase()) == 'sme';
     final totalExpected = (m['total_required'] as num?)?.toInt() ?? 0;
 
@@ -1526,7 +1526,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
     final phone = (_member['phone'] as String?) ?? '';
     final tin = (_member['tin'] as String?) ?? '';
     final port = (_member['port_of_operation'] as String?) ?? 'Tema Port';
-    final memberType = ((_member['member_type'] as String?) ?? 'Licentiate').trim();
+    final memberType = ((_member['member_type'] as String?) ?? 'Corporate').trim();
     final isCorporate = memberType.toLowerCase().contains('corporate');
     Color headerTypeColor = _kOrange;
     if (isCorporate) {

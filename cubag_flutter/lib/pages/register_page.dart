@@ -8,7 +8,6 @@ import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/theme_service.dart';
 import '../components/app_logo.dart';
-import '../components/custom_dropdown.dart';
 import '../core/router.dart';
 import '../utils/validators.dart';
 
@@ -62,9 +61,11 @@ class _RegisterPageState extends State<RegisterPage> {
   final _pwCtrl = TextEditingController();
   final _cpwCtrl = TextEditingController();
 
+  List<String> _selectedDistricts = ['Tema Port'];
+
   final Map<String, String?> _form = {
-    'portOfOperation': 'Accra International Airport',
-    'memberType': 'Licentiate',
+    'portOfOperation': 'Tema Port',
+    'memberType': 'Corporate',
     'companyScale': null,
     'feeCategory': null,
   };
@@ -81,7 +82,10 @@ class _RegisterPageState extends State<RegisterPage> {
       if (mounted && res is List && res.isNotEmpty) {
         setState(() {
           _portsList = res;
-          _form['portOfOperation'] = res.first['name'].toString();
+          if (_selectedDistricts.isEmpty) {
+            _selectedDistricts = [res.first['name'].toString()];
+          }
+          _form['portOfOperation'] = _selectedDistricts.join(', ');
         });
       }
     } catch (_) {}
@@ -183,6 +187,11 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
+    if (_selectedDistricts.isEmpty) {
+      _err('Please select at least one operational District.');
+      return;
+    }
+
     _err('');
     setState(() => _loading = true);
     try {
@@ -274,11 +283,12 @@ class _RegisterPageState extends State<RegisterPage> {
           'location': _locationCtrl.text.trim(),
           'digitalAddress': _digitalAddressCtrl.text.trim(),
           'tin': _tinCtrl.text.trim(),
-          'portOfOperation': _form['portOfOperation'],
-          'memberType': _form['memberType'],
-          'memberScale': isCorporate ? (_form['companyScale'] ?? 'sme') : null,
-          'companyScale': isCorporate ? (_form['companyScale'] ?? 'sme') : null,
-          'feeCategory': isCorporate ? (_form['feeCategory'] ?? 'cf_only') : null,
+          'portOfOperation': _form['portOfOperation'] ?? _selectedDistricts.join(', '),
+          'districts': _selectedDistricts,
+          'memberType': 'Corporate',
+          'memberScale': _form['companyScale'] ?? 'sme',
+          'companyScale': _form['companyScale'] ?? 'sme',
+          'feeCategory': _form['feeCategory'] ?? 'cf_only',
           'password': _pwCtrl.text,
           'otp': _otpCtrl.text.trim(),
           'email_otp': _otpCtrl.text.trim(),
@@ -942,22 +952,10 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildMemberTypeCards() {
     const types = [
       {
-        'value': 'Licentiate',
-        'label': 'Licentiate',
-        'icon': Icons.badge_outlined,
-        'desc': 'Individual licensed customs practitioner / member',
-      },
-      {
-        'value': 'Associate',
-        'label': 'Associate',
-        'icon': Icons.groups_outlined,
-        'desc': 'Supporting partner / industry affiliate',
-      },
-      {
         'value': 'Corporate',
-        'label': 'Corporate',
+        'label': 'Corporate Membership',
         'icon': Icons.business_outlined,
-        'desc': 'Registered corporate agency / firm',
+        'desc': 'Registered corporate agency / customs clearance & logistics firm',
       },
     ];
 
@@ -1287,26 +1285,14 @@ class _RegisterPageState extends State<RegisterPage> {
             child: DropdownButton<String>(
               value: currentVal,
               isExpanded: true,
-              hint: Row(
-                children: [
-                  Icon(
-                    Icons.inventory_2_outlined,
-                    color: _kMuted.withAlpha(180),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      '-- Select Operational Category (Required) --',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: _kMuted.withAlpha(180),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+              hint: Text(
+                '-- Select Operational Category (Required) --',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: _kMuted.withAlpha(180),
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
               icon: Icon(
                 Icons.keyboard_arrow_down_rounded,
@@ -1315,32 +1301,43 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               dropdownColor: _kWhite,
               borderRadius: BorderRadius.circular(16),
+              selectedItemBuilder: (BuildContext context) {
+                return categories.map<Widget>((cat) {
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      cat['label'] as String,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        color: _kOrange,
+                        height: 1.2,
+                      ),
+                      maxLines: 2,
+                      softWrap: true,
+                    ),
+                  );
+                }).toList();
+              },
               items: categories.map((cat) {
                 final isSel = cat['value'] == currentVal;
                 return DropdownMenuItem<String>(
                   value: cat['value'] as String,
-                  child: Row(
-                    children: [
-                      Icon(
-                        cat['icon'] as IconData,
-                        color: isSel ? _kOrange : _kBrown,
-                        size: 20,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Text(
+                      cat['label'] as String,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: isSel
+                            ? FontWeight.w800
+                            : FontWeight.w600,
+                        color: isSel ? _kOrange : _kText,
+                        height: 1.25,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          cat['label'] as String,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: isSel
-                                ? FontWeight.w800
-                                : FontWeight.w600,
-                            color: isSel ? _kOrange : _kText,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                      maxLines: 2,
+                      softWrap: true,
+                    ),
                   ),
                 );
               }).toList(),
@@ -1401,40 +1398,98 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildPortCards() {
-    List<DropdownItem<String>> portItems = _portsList.isNotEmpty
-        ? _portsList
-              .map(
-                (p) => DropdownItem<String>(
-                  value: p['name'].toString(),
-                  label: p['name'].toString(),
-                ),
-              )
-              .toList()
+  Widget _buildDistrictSelector() {
+    final availableDistricts = _portsList.isNotEmpty
+        ? _portsList.map((p) => p['name'].toString()).toList()
         : [
-            const DropdownItem(
-              value: 'Accra International Airport',
-              label: 'Accra International Airport',
-            ),
-            const DropdownItem(
-              value: 'Aflao Border Port',
-              label: 'Aflao Border Port',
-            ),
-            const DropdownItem(
-              value: 'Elubo Border Port',
-              label: 'Elubo Border Port',
-            ),
-            const DropdownItem(value: 'Paga Border Port', label: 'Paga Border Port'),
-            const DropdownItem(value: 'Takoradi Port', label: 'Takoradi Port'),
-            const DropdownItem(value: 'Tema Port', label: 'Tema Port'),
+            'Accra International Airport',
+            'Aflao Border Port',
+            'Elubo Border Port',
+            'Paga Border Port',
+            'Takoradi Port',
+            'Tema Port',
           ];
+    availableDistricts.sort();
 
-    portItems.sort((a, b) => a.label.compareTo(b.label));
-
-    return CustomDropdown<String>(
-      value: _form['portOfOperation'] ?? 'Accra International Airport',
-      items: portItems,
-      onChanged: (val) => setState(() => _form['portOfOperation'] = val),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: _isDark
+                ? const Color(0xFF1E130D)
+                : const Color(0xFFFBF8F4),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _kOrange.withAlpha(50)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.location_on_outlined, color: _kOrange, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Select one or multiple districts where your company operates. District clearance tariffs will apply per registered district (${_selectedDistricts.length} selected):',
+                  style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    color: _kMuted,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: availableDistricts.map((district) {
+            final isSelected = _selectedDistricts.contains(district);
+            return FilterChip(
+              avatar: isSelected
+                  ? const Icon(Icons.check_circle_rounded, size: 17, color: Colors.white)
+                  : const Icon(Icons.radio_button_unchecked_rounded, size: 17, color: Color(0xFF94A3B8)),
+              label: Text(
+                district,
+                style: GoogleFonts.inter(
+                  fontSize: 13.5,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: isSelected ? Colors.white : _kText,
+                ),
+              ),
+              selected: isSelected,
+              selectedColor: _kOrange,
+              backgroundColor: _isDark ? const Color(0xFF241610) : const Color(0xFFF3ECE4),
+              showCheckmark: false,
+              side: BorderSide(
+                color: isSelected ? _kOrange : _kBorder,
+                width: isSelected ? 1.5 : 1.0,
+              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              onSelected: (bool selected) {
+                setState(() {
+                  if (selected) {
+                    if (!_selectedDistricts.contains(district)) {
+                      _selectedDistricts.add(district);
+                    }
+                  } else {
+                    if (_selectedDistricts.length > 1) {
+                      _selectedDistricts.remove(district);
+                    } else {
+                      _err('You must select at least 1 operational District.');
+                    }
+                  }
+                  _form['portOfOperation'] = _selectedDistricts.join(', ');
+                });
+              },
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
@@ -1528,9 +1583,9 @@ class _RegisterPageState extends State<RegisterPage> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _inputLabel('Primary Port of Operation'),
+            _inputLabel('District(s) of Operation *'),
             SizedBox(height: _compact ? 6 : 10),
-            _buildPortCards(),
+            _buildDistrictSelector(),
             SizedBox(height: _compact ? 10 : 18),
           ],
         ),

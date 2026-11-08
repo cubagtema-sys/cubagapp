@@ -145,7 +145,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
         m['company']?.toString() ?? m['name']?.toString() ?? 'CUBAG Member';
     final name = m['name']?.toString() ?? '';
     final port = m['primary_port']?.toString() ?? 'Tema Port';
-    final type = m['member_type']?.toString() ?? 'Licentiate';
+    final type = m['member_type']?.toString() ?? 'Corporate';
     final phone = m['phone']?.toString() ?? '';
     final email = m['email']?.toString() ?? '';
     final location = m['location']?.toString() ?? '';
@@ -204,7 +204,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                     _detailRow('Lead Member / Contact', name),
                   ],
                   const Divider(height: 16),
-                  _detailRow('Primary Port', port),
+                  _detailRow('District(s)', port),
                   const Divider(height: 16),
                   _detailRow('Member Category', type),
                   if (location.isNotEmpty) ...[
@@ -730,7 +730,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                             final port =
                                 m['primary_port']?.toString() ?? 'Tema Port';
                             final type =
-                                m['member_type']?.toString() ?? 'Licentiate';
+                                m['member_type']?.toString() ?? 'Corporate';
 
                             return Container(
                               padding: const EdgeInsets.all(18),

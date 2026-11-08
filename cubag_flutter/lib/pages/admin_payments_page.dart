@@ -1807,11 +1807,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
     }
 
     final mType = (_selectedMember!['member_type'] ?? 'corporate').toString().toLowerCase().trim();
-    final mTypeDisplay = mType == 'associate'
-        ? 'Associate'
-        : mType == 'licentiate'
-            ? 'Licentiate'
-            : 'Corporate';
+    final mTypeDisplay = 'Corporate';
 
     final appBill = double.tryParse(_selectedMember!['app_bill_amount']?.toString() ?? '') ??
         double.tryParse(_selectedMember!['renewal_fee_amount']?.toString() ?? '') ?? 0.0;
@@ -2218,12 +2214,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                             double.tryParse(m['renewal_fee_amount']?.toString() ?? '') ?? 0.0;
                                         final isPkgPaid = m['package_fee_paid'] == true;
 
-                                        final mTypeRaw = (m['member_type']?.toString() ?? 'corporate').toLowerCase();
-                                        final mTypeStr = mTypeRaw == 'associate'
-                                            ? 'Associate'
-                                            : mTypeRaw == 'licentiate'
-                                                ? 'Licentiate'
-                                                : 'Corporate';
+                                        const mTypeStr = 'Corporate';
 
                                         return ListTile(
                                           dense: true,
@@ -2367,12 +2358,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                             border: Border.all(color: _kOrange.withAlpha(80)),
                                           ),
                                           child: Text(
-                                            ((_selectedMember!['member_type'] ?? 'corporate').toString().toLowerCase() == 'associate'
-                                                    ? 'Associate'
-                                                    : (_selectedMember!['member_type'] ?? 'corporate').toString().toLowerCase() == 'licentiate'
-                                                        ? 'Licentiate'
-                                                        : 'Corporate')
-                                                .toUpperCase(),
+                                            'CORPORATE',
                                             style: GoogleFonts.inter(
                                               fontSize: 10,
                                               fontWeight: FontWeight.bold,

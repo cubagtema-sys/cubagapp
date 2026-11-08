@@ -794,7 +794,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
             },
             {
               'icon': Icons.location_on_outlined,
-              'label': 'Port of Operation',
+              'label': 'District(s)',
               'val': rec['port_of_operation'],
             },
           ].where((r) => r['val'] != null)).map(

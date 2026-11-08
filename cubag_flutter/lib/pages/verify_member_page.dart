@@ -305,7 +305,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                                   'icon': Icons.card_membership_rounded,
                                 },
                                 {
-                                  'label': 'Primary Port',
+                                  'label': 'District(s)',
                                   'val': m['primary_port'],
                                   'icon': Icons.location_on_outlined,
                                 },

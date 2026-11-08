@@ -569,7 +569,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
           },
           {
             'icon': Icons.location_on_rounded,
-            'label': 'PORT OF OPERATION',
+            'label': 'DISTRICT(S)',
             'val': m['port_of_operation'] ?? m['primary_port'],
           },
           {
@@ -875,8 +875,6 @@ class _NetworkingPageState extends State<NetworkingPage> {
                   child: Row(
                     children: [
                       _buildFilterChip('All', 'All Members', isDark),
-                      _buildFilterChip('Licentiate', 'Licentiate', isDark),
-                      _buildFilterChip('Associate', 'Associate', isDark),
                       _buildFilterChip('Corporate', 'Corporate', isDark),
                     ],
                   ),

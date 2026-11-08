@@ -1270,7 +1270,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           final type =
                               (m['member_type']?.toString().isNotEmpty == true)
                                   ? m['member_type'].toString()
-                                  : 'Licentiate';
+                                  : 'Corporate';
                           final hasPayment =
                               m['payment_ref'] != null &&
                               m['payment_ref'].toString().isNotEmpty;
@@ -1804,7 +1804,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
     final company = m['company']?.toString() ?? 'N/A';
     final email = m['email']?.toString() ?? 'N/A';
     final phone = m['phone']?.toString() ?? 'N/A';
-    final type = m['member_type']?.toString() ?? 'Licentiate';
+    final type = m['member_type']?.toString() ?? 'Corporate';
     final tin = m['tin']?.toString() ?? 'N/A';
     final paymentRef = m['payment_ref']?.toString();
     final hasPayment = paymentRef != null && paymentRef.isNotEmpty;

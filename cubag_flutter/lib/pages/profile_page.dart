@@ -322,13 +322,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final starRating = double.tryParse(_user['star_rating']?.toString() ?? '') ?? 5.0;
     final tier = StandingTier.getFromStars(starRating);
 
-    final rawMemberType = (_user['member_type'] ?? _user['memberType'] ?? '').toString().toLowerCase();
-    final isLicentiate = rawMemberType.contains('licentiate') || rawMemberType.contains('individual');
-    final isAssociate = rawMemberType.contains('associate') || rawMemberType.contains('affiliate');
-
-    final scaleLabel = isLicentiate
-        ? 'Licentiate Member'
-        : (isAssociate ? 'Associate Member' : 'Corporate Entity');
+    const scaleLabel = 'Corporate Entity';
 
     final portRaw = (_user['port_of_operation'] ?? _user['port'] ?? 'Tema Port').toString();
     final portStr = _formatPortAbbreviation(portRaw);
@@ -570,9 +564,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 10),
                   _buildParticularTile(
                     context: context,
-                    label: 'Operating Port',
+                    label: 'District(s)',
                     value: _portFullName(portStr),
-                    icon: Icons.anchor_outlined,
+                    icon: Icons.location_on_outlined,
                     textPrimary: textPrimary,
                     textMuted: textMuted,
                     tileBg: tileBg,

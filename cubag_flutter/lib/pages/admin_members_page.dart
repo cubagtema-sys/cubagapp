@@ -106,8 +106,6 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
   };
 
   final _typeColors = {
-    'Licentiate': const Color(0xFFFF5000),
-    'Associate': const Color(0xFF10b981),
     'Corporate': const Color(0xFF3b82f6),
   };
 
@@ -1027,7 +1025,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
         ...([
           ['Organisation', m['company']],
           ['Membership Type', m['member_type']],
-          ['Primary Port', m['port_of_operation']],
+          ['District(s)', m['port_of_operation']],
           [
             'Membership ID / Number',
             (m['membership_number'] ?? m['license_number'] ?? m['id'])

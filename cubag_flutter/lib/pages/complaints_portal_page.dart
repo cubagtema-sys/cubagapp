@@ -686,7 +686,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
             const SizedBox(height: 20),
 
             // Port of Incident
-            _formLabel('Primary Port / Clearance Station *'),
+            _formLabel('District / Clearance Station *'),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),

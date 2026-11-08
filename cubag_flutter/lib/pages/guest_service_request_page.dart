@@ -1522,7 +1522,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
 
             // ── Port / Customs Station Selector (Only for Cargo Clearance) ──
             if (_serviceType == 'clearing_agent') ...[
-              _formLabel('Primary Port of Cargo Operation *'),
+              _formLabel('District / Port of Cargo Operation *'),
               const SizedBox(height: 8),
               _customDropdownButton(
                 icon: Icons.anchor_rounded,
@@ -2562,7 +2562,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
     final name = m['name']?.toString() ?? '';
     final memNo = m['membership_number']?.toString() ?? 'CUBAG-2026-000';
     final port = m['primary_port']?.toString() ?? 'Tema Port';
-    final type = m['member_type']?.toString() ?? 'Licentiate';
+    final type = m['member_type']?.toString() ?? 'Corporate';
 
     return Container(
       decoration: BoxDecoration(
@@ -2700,7 +2700,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
     final name = m['name']?.toString() ?? '';
     final memNo = m['membership_number']?.toString() ?? 'CUBAG-2026-000';
     final port = m['primary_port']?.toString() ?? 'Tema Port';
-    final type = m['member_type']?.toString() ?? 'Licentiate';
+    final type = m['member_type']?.toString() ?? 'Corporate';
     final licNo = m['license_number']?.toString() ?? 'GRA-LIC-VALID';
     final phone = m['phone']?.toString() ?? '';
     final email = m['email']?.toString() ?? '';
@@ -2766,7 +2766,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                     Divider(color: _kBorder, height: 16),
                     _modalDetailRow('Member ID #', licNo),
                     Divider(color: _kBorder, height: 16),
-                    _modalDetailRow('Port of Operation', port),
+                    _modalDetailRow('District(s)', port),
                     Divider(color: _kBorder, height: 16),
                     _modalDetailRow('Member Category', type),
                     Divider(color: _kBorder, height: 16),

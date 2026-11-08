@@ -345,7 +345,7 @@ def get_admin_fees():
                 # Section 1: Upfront Registration Fee
                 {'id': 'reg_form_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Registration Fee', 'amount': '600.00', 'frequency': 'One-Time', 'description': 'Mandatory initial registration fee paid upon onboarding before document vetting.'},
 
-                # Section 1: Membership Entrance Package Summaries (is_summary: True)
+                # Section 1: Corporate Entrance Package Summaries (is_summary: True)
                 {'id': 'new_cf_only', 'section': 'new_membership', 'is_summary': True, 'label': 'New Member Package: Clearing & Forwarding Only (SMEs)', 'amount': '1620.00', 'frequency': 'One-Time', 'description': 'Subscription 120 + Vetting 750 + District 250 + C&F 500 = Total GHS 1,620.00'},
                 {'id': 'new_consolidation', 'section': 'new_membership', 'is_summary': True, 'label': 'New Member Package: Consolidation Only (SMEs)', 'amount': '1720.00', 'frequency': 'One-Time', 'description': 'Subscription 120 + Vetting 750 + District 250 + Consolidation 600 = Total GHS 1,720.00'},
                 {'id': 'new_cf_consolidation', 'section': 'new_membership', 'is_summary': True, 'label': 'New Member Package: Consolidation, Clearing & Forwarding (SMEs)', 'amount': '2220.00', 'frequency': 'One-Time', 'description': 'Subscription 120 + Vetting 750 + District 250 + Consolidation 600 + C&F 500 = Total GHS 2,220.00'},
@@ -353,31 +353,43 @@ def get_admin_fees():
                 {'id': 'new_large_consolidation', 'section': 'new_membership', 'is_summary': True, 'label': 'New Member Package: Consolidation Only (Large Corporate)', 'amount': '2320.00', 'frequency': 'One-Time', 'description': 'Subscription 120 + Vetting 750 + District 250 + Corporate Operational Scope 1200 = Total GHS 2,320.00'},
                 {'id': 'new_large_cf_consolidation', 'section': 'new_membership', 'is_summary': True, 'label': 'New Member Package: Consolidation, Clearing & Forwarding (Large Corporate)', 'amount': '2820.00', 'frequency': 'One-Time', 'description': 'Subscription 120 + Vetting 750 + District 250 + Corporate Consolidation & C&F Scope = Total GHS 2,820.00'},
 
-                # Section 1: New Membership Isolated Breakdown Items (is_summary: False)
+                # Section 1: Corporate Isolated Breakdown Items (is_summary: False)
                 {'id': 'new_sub_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Subscription Fee (New Member)', 'amount': '120.00', 'frequency': 'One-Time', 'description': 'Annual Subscription component for new onboarding members'},
                 {'id': 'new_vetting_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Vetting & Dossier Verification Fee', 'amount': '750.00', 'frequency': 'One-Time', 'description': 'Document vetting and Secretariat inspection fee'},
                 {'id': 'new_district_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'District / Branch Development Levy', 'amount': '250.00', 'frequency': 'One-Time', 'description': 'Local port district chapter development allocation'},
                 {'id': 'new_cf_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Clearing & Forwarding Component Tariff', 'amount': '500.00', 'frequency': 'One-Time', 'description': 'Customs broker and forwarder clearance operations tariff'},
                 {'id': 'new_consolidation_fee', 'section': 'new_membership', 'is_summary': False, 'label': 'Consolidation Component Tariff', 'amount': '600.00', 'frequency': 'One-Time', 'description': 'Cargo consolidation operations tariff'},
 
-                # Section 3: Associate Membership Breakdown Items
-                {'id': 'associate_reg_form_fee', 'section': 'associate', 'is_summary': False, 'label': 'Registration Fee – Associate', 'amount': '0.00', 'frequency': 'One-Time', 'description': 'Mandatory initial onboarding registration fee for Associate members.'},
-                {'id': 'associate_sub_fee', 'section': 'associate', 'is_summary': False, 'label': 'Subscription Fee – Associate', 'amount': '0.00', 'frequency': 'One-Time', 'description': 'Base subscription fee for Associate onboarding.'},
-                {'id': 'associate_vetting_fee', 'section': 'associate', 'is_summary': False, 'label': 'Vetting Fee – Associate', 'amount': '0.00', 'frequency': 'One-Time', 'description': 'Document vetting fee for Associate members.'},
-                {'id': 'associate_district_fee', 'section': 'associate', 'is_summary': False, 'label': 'District – Associate', 'amount': '0.00', 'frequency': 'One-Time', 'description': 'District chapter onboarding dues for Associate members.'},
+                # Section 2: National Fees (Subscription, Admin Fee, Legal & Audit, CPD, etc.)
+                {'id': 'national_sub_fee', 'section': 'national', 'is_summary': False, 'label': 'Subscription Fee (National)', 'amount': '1200.00', 'frequency': 'Annual', 'description': 'National headquarters annual membership subscription fee.'},
+                {'id': 'national_admin_fee', 'section': 'national', 'is_summary': False, 'label': 'Administrative Fee (National)', 'amount': '500.00', 'frequency': 'Annual', 'description': 'National secretariat administrative operations levy.'},
+                {'id': 'national_legal_audit_fee', 'section': 'national', 'is_summary': False, 'label': 'Legal & Audit Fee (National)', 'amount': '300.00', 'frequency': 'Annual', 'description': 'Statutory legal compliance and annual audit retainer.'},
+                {'id': 'national_cpd_fee', 'section': 'national', 'is_summary': False, 'label': 'CPD (Continuing Professional Development) Fee', 'amount': '400.00', 'frequency': 'Annual', 'description': 'Mandatory Continuing Professional Development & training quota.'},
 
-                # Section 4: Licentiate Membership Breakdown Items
-                {'id': 'licentiate_reg_form_fee', 'section': 'licentiate', 'is_summary': False, 'label': 'Registration Fee – Licentiate', 'amount': '0.00', 'frequency': 'One-Time', 'description': 'Mandatory initial onboarding registration fee for Licentiate members.'},
-                {'id': 'licentiate_sub_fee', 'section': 'licentiate', 'is_summary': False, 'label': 'Subscription Fee – Licentiate', 'amount': '0.00', 'frequency': 'One-Time', 'description': 'Base subscription fee for Licentiate onboarding.'},
-                {'id': 'licentiate_vetting_fee', 'section': 'licentiate', 'is_summary': False, 'label': 'Vetting Fee – Licentiate', 'amount': '0.00', 'frequency': 'One-Time', 'description': 'Document vetting fee for Licentiate members.'},
-                {'id': 'licentiate_district_fee', 'section': 'licentiate', 'is_summary': False, 'label': 'District – Licentiate', 'amount': '0.00', 'frequency': 'One-Time', 'description': 'District chapter onboarding dues for Licentiate members.'},
+                # Section 3: District Clearance Fees (per operational district)
+                {'id': 'district_clearance_general', 'section': 'district', 'is_summary': False, 'label': 'District Clearance Fee (General)', 'amount': '500.00', 'frequency': 'Annual', 'description': 'District operational clearance for member-tied districts.'},
+                {'id': 'district_clearance_tema', 'section': 'district', 'is_summary': False, 'label': 'District Clearance – Tema Port', 'amount': '500.00', 'frequency': 'Annual', 'description': 'Operational clearance fee for Tema Port district chapter.'},
+                {'id': 'district_clearance_takoradi', 'section': 'district', 'is_summary': False, 'label': 'District Clearance – Takoradi Port', 'amount': '500.00', 'frequency': 'Annual', 'description': 'Operational clearance fee for Takoradi Port district chapter.'},
+                {'id': 'district_clearance_accra', 'section': 'district', 'is_summary': False, 'label': 'District Clearance – Accra International Airport', 'amount': '500.00', 'frequency': 'Annual', 'description': 'Operational clearance fee for KIA / Accra district chapter.'},
+                {'id': 'district_clearance_aflao', 'section': 'district', 'is_summary': False, 'label': 'District Clearance – Aflao Border Port', 'amount': '350.00', 'frequency': 'Annual', 'description': 'Operational clearance fee for Aflao Border district chapter.'},
+                {'id': 'district_clearance_elubo', 'section': 'district', 'is_summary': False, 'label': 'District Clearance – Elubo Border Port', 'amount': '350.00', 'frequency': 'Annual', 'description': 'Operational clearance fee for Elubo Border district chapter.'},
+                {'id': 'district_clearance_paga', 'section': 'district', 'is_summary': False, 'label': 'District Clearance – Paga Border Port', 'amount': '350.00', 'frequency': 'Annual', 'description': 'Operational clearance fee for Paga Border district chapter.'},
             ]
 
             if fees is None:
                 fees = default_items
             else:
-                # Filter out legacy renewal items from saved fees
-                fees = [f for f in fees if f.get('section') != 'renewal' and not str(f.get('id', '')).startswith('renewal_')]
+                # Filter out legacy renewal items and removed membership categories (licentiate & associate)
+                fees = [
+                    f for f in fees
+                    if f.get('section') not in ('renewal', 'associate', 'licentiate')
+                    and not str(f.get('id', '')).startswith(('renewal_', 'associate_', 'licentiate_'))
+                ]
+                # Ensure default National and District clearance items exist if not previously saved
+                existing_ids = {str(f.get('id', '')) for f in fees}
+                for item in default_items:
+                    if item.get('section') in ('national', 'district') and str(item.get('id', '')) not in existing_ids:
+                        fees.append(item)
 
             return jsonify(fees), 200
     except Exception as e:

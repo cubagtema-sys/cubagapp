@@ -2458,7 +2458,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
         m['company']?.toString() ?? m['name']?.toString() ?? 'CUBAG Member';
     final name = m['name']?.toString() ?? '';
     final port = m['primary_port']?.toString() ?? 'Main Port';
-    final type = m['member_type']?.toString() ?? 'Licentiate';
+    final type = m['member_type']?.toString() ?? 'Corporate';
     final phone = m['phone']?.toString() ?? '';
     final email = m['email']?.toString() ?? '';
     final location = m['location']?.toString() ?? '';
@@ -2523,7 +2523,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                       _modalDetailRow('Lead Member / Contact', name),
                     ],
                     const SizedBox(height: 12),
-                    _modalDetailRow('Primary Port', port),
+                    _modalDetailRow('District(s)', port),
                     const SizedBox(height: 12),
                     _modalDetailRow('Member Category', type),
                     if (location.isNotEmpty) ...[

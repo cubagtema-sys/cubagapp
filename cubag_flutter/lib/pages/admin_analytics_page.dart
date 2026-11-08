@@ -567,7 +567,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
       return _isWithinDateRange(dateStr);
     }).toList();
     final buffer = StringBuffer();
-    buffer.writeln('Member ID,Full Name,Company,Email,Phone,Member Category,Port of Operation,License Number,TIN,Status,Compliance Score,Star Rating,Registration Date');
+    buffer.writeln('Member ID,Full Name,Company,Email,Phone,Member Category,District(s),License Number,TIN,Status,Compliance Score,Star Rating,Registration Date');
     
     for (var m in filteredMembers) {
       final id = m['id']?.toString() ?? '';

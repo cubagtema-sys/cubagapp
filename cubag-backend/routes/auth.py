@@ -301,11 +301,19 @@ def register():
                 return jsonify({'message': 'Password must be at least 8 characters'}), 400
 
             pw_hash = generate_password_hash(password, method='pbkdf2:sha256')
-            is_corp = (data.get('memberType') or '').strip().lower() == 'corporate'
-            member_scale = (data.get('memberScale') or data.get('companyScale') or 'sme') if is_corp else None
-            fee_category = (data.get('feeCategory') or data.get('fee_category') or 'cf_only') if is_corp else None
-            consolidation_scope = ('with_consolidation' if fee_category in ('consolidation', 'cf_consolidation') else 'without_consolidation') if is_corp else None
+            is_corp = True
+            member_scale = (data.get('memberScale') or data.get('companyScale') or 'sme')
+            fee_category = (data.get('feeCategory') or data.get('fee_category') or 'cf_only')
+            consolidation_scope = ('with_consolidation' if fee_category in ('consolidation', 'cf_consolidation') else 'without_consolidation')
             tin = (data.get('tin') or '').strip().upper()[:11]
+            raw_ports = data.get('districts') or data.get('portOfOperation') or 'Tema Port'
+            if isinstance(raw_ports, list):
+                port_of_op = ", ".join(str(p).strip() for p in raw_ports if str(p).strip())
+            else:
+                port_of_op = str(raw_ports).strip()
+            if not port_of_op:
+                port_of_op = 'Tema Port'
+
             cursor.execute("""
                 INSERT INTO members (name, email, phone, company, license_number, agency_code,
                                      location, digital_address, tin,
@@ -317,7 +325,7 @@ def register():
                 data['name'], email, data['phone'], data['company'],
                 data.get('licenseNumber'), data.get('agencyCode'),
                 data.get('location'), data.get('digitalAddress'), tin,
-                data.get('portOfOperation'), data['memberType'], member_scale, fee_category, consolidation_scope, pw_hash
+                port_of_op, 'Corporate', member_scale, fee_category, consolidation_scope, pw_hash
             ))
             new_id = cursor.fetchone()['id']
             cursor.execute("DELETE FROM otp_codes WHERE LOWER(email) = LOWER(%s)", (email,))
@@ -622,131 +630,102 @@ def login():
         conn.close()
 
 
-def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type='corporate'):
-    raw_m = str(member_type or 'corporate').lower().strip()
-    is_licentiate = 'licentiate' in raw_m or 'individual' in raw_m
-    is_associate = 'associate' in raw_m or 'affiliate' in raw_m
-
+def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type='corporate', port_of_operation=None):
     fee_map = {}
+    extra_national_fees = []
     if cursor:
+        try:
+            cursor.execute("SELECT config_value FROM platform_settings WHERE config_key = 'cubag_fees_v2'")
+            row_cfg = cursor.fetchone()
+            if row_cfg and row_cfg.get('config_value'):
+                cv = row_cfg['config_value']
+                fees_list = json.loads(cv) if isinstance(cv, str) else cv
+                if isinstance(fees_list, list):
+                    for f in fees_list:
+                        fid = str(f.get('id', '')).strip()
+                        if fid and f.get('amount') is not None:
+                            try:
+                                fee_map[fid] = float(f['amount'])
+                            except (ValueError, TypeError):
+                                pass
+                        if f.get('section') == 'national' and fid not in ('national_sub_fee', 'national_admin_fee', 'national_legal_audit_fee', 'national_cpd_fee'):
+                            extra_national_fees.append(f)
+        except Exception as ex:
+            logger.debug(f'Error fetching cubag_fees_v2: {ex}')
+
         try:
             cursor.execute("SELECT key, amount FROM fee_schedules WHERE is_active = TRUE")
             for r in cursor.fetchall():
                 if r.get('key') and r.get('amount') is not None:
-                    fee_map[r['key']] = float(r['amount'])
+                    try:
+                        fee_map[r['key']] = float(r['amount'])
+                    except (ValueError, TypeError):
+                        pass
         except Exception as ex:
             logger.debug(f'Error fetching fee_schedules: {ex}')
 
-    if is_licentiate:
-        sub_fee = fee_map.get('licentiate_sub_fee', 0.0)
-        vet_fee = fee_map.get('licentiate_vetting_fee', 0.0)
-        dist_fee = fee_map.get('licentiate_district_fee', 0.0)
-        welfare = fee_map.get('licentiate_welfare_dues', 0.0)
-        legal_fee = fee_map.get('licentiate_legal_audit_fee', 0.0)
-        agm_levy = fee_map.get('licentiate_agm_levy', 0.0)
-
-        breakdown = [
-            {'label': 'Subscription Fee – Licentiate', 'amount': f'{sub_fee:.2f}'},
-            {'label': 'Vetting Fee – Licentiate', 'amount': f'{vet_fee:.2f}'},
-            {'label': 'District Dues – Licentiate', 'amount': f'{dist_fee:.2f}'},
-            {'label': 'Welfare Dues – Licentiate', 'amount': f'{welfare:.2f}'},
-            {'label': 'Legal & Audit Fee – Licentiate', 'amount': f'{legal_fee:.2f}'},
-            {'label': 'AGM Levy – Licentiate', 'amount': f'{agm_levy:.2f}'},
-        ]
-        computed_total = sum(float(b['amount']) for b in breakdown)
-        return {
-            'schedule_key': 'renewal_licentiate',
-            'scale': 'licentiate',
-            'scale_label': 'Licentiate Member',
-            'has_consolidation': False,
-            'scope_label': 'Customs House Agent',
-            'renewal_fee_title': 'Licentiate Annual Renewal Dues',
-            'renewal_fee_amount': computed_total,
-            'renewal_fee_breakdown': breakdown
-        }
-    elif is_associate:
-        sub_fee = fee_map.get('associate_sub_fee', 0.0)
-        vet_fee = fee_map.get('associate_vetting_fee', 0.0)
-        dist_fee = fee_map.get('associate_district_fee', 0.0)
-        welfare = fee_map.get('associate_welfare_dues', 0.0)
-        legal_fee = fee_map.get('associate_legal_audit_fee', 0.0)
-        agm_levy = fee_map.get('associate_agm_levy', 0.0)
-
-        breakdown = [
-            {'label': 'Subscription Fee – Associate', 'amount': f'{sub_fee:.2f}'},
-            {'label': 'Vetting Fee – Associate', 'amount': f'{vet_fee:.2f}'},
-            {'label': 'District Dues – Associate', 'amount': f'{dist_fee:.2f}'},
-            {'label': 'Welfare Dues – Associate', 'amount': f'{welfare:.2f}'},
-            {'label': 'Legal & Audit Fee – Associate', 'amount': f'{legal_fee:.2f}'},
-            {'label': 'AGM Levy – Associate', 'amount': f'{agm_levy:.2f}'},
-        ]
-        computed_total = sum(float(b['amount']) for b in breakdown)
-        return {
-            'schedule_key': 'renewal_associate',
-            'scale': 'associate',
-            'scale_label': 'Associate Member',
-            'has_consolidation': False,
-            'scope_label': 'Allied Logistics Partner',
-            'renewal_fee_title': 'Associate Annual Renewal Dues',
-            'renewal_fee_amount': computed_total,
-            'renewal_fee_breakdown': breakdown
-        }
-
     scale = str(member_scale or 'sme').lower().strip()
     is_large = scale in ('large_corporate', 'large', 'corporate')
-    cat = str(fee_category or 'cf_only').lower().strip()
-    has_consolidation = cat in ('consolidation', 'cf_consolidation')
+    scale_title = 'Large Corporate' if is_large else "SME"
 
-    if is_large:
-        sched_key = 'renewal_large_corporate_with_consolidation' if has_consolidation else 'renewal_large_corporate_without_consolidation'
-        scale_title = 'Large Corporate'
-        sub_fee = fee_map.get('renewal_sub_large', 0.0)
-        welfare = fee_map.get('renewal_welfare_large', 0.0)
-        admin_fee = fee_map.get('renewal_admin_large', 0.0)
-        legal_fee = fee_map.get('renewal_legal_large', 0.0)
-        cti_fee = fee_map.get('renewal_cti_large', 0.0)
-    else:
-        sched_key = 'renewal_sme_with_consolidation' if has_consolidation else 'renewal_sme_without_consolidation'
-        scale_title = "SME's"
-        sub_fee = fee_map.get('renewal_sub_sme', 0.0)
-        welfare = fee_map.get('renewal_welfare_sme', 0.0)
-        admin_fee = fee_map.get('renewal_admin_sme', 0.0)
-        legal_fee = fee_map.get('renewal_legal_sme', 0.0)
-        cti_fee = fee_map.get('renewal_cti_sme', 0.0)
-
-    agm_levy = fee_map.get('renewal_agm', 0.0)
-    customs_bond = fee_map.get('renewal_bond', 0.0)
-    consolidation_fee = fee_map.get('renewal_consolidation', fee_map.get('renewal_consolidation_item', 0.0)) if has_consolidation else 0.0
+    # ── 1. NATIONAL FEES SECTION ───────────────────────────────────────────────
+    # National comprises: Subscription, Admin fee, Legal-audit, CPD (and others added)
+    sub_fee = fee_map.get('national_sub_fee', fee_map.get('renewal_sub_large' if is_large else 'renewal_sub_sme', 1200.0))
+    admin_fee = fee_map.get('national_admin_fee', fee_map.get('renewal_admin_large' if is_large else 'renewal_admin_sme', 500.0))
+    legal_fee = fee_map.get('national_legal_audit_fee', fee_map.get('renewal_legal_large' if is_large else 'renewal_legal_sme', 300.0))
+    cpd_fee = fee_map.get('national_cpd_fee', fee_map.get('renewal_cti_large' if is_large else 'renewal_cti_sme', 400.0))
 
     breakdown = [
-        {'label': f'Subscription Fee ({scale_title})', 'amount': f'{sub_fee:.2f}'},
-        {'label': f'Welfare Dues ({scale_title})', 'amount': f'{welfare:.2f}'},
+        {'label': 'Subscription Fee (National)', 'amount': f'{sub_fee:.2f}', 'section': 'national'},
+        {'label': 'Administrative Fee (National)', 'amount': f'{admin_fee:.2f}', 'section': 'national'},
+        {'label': 'Legal & Audit Fee (National)', 'amount': f'{legal_fee:.2f}', 'section': 'national'},
+        {'label': 'CPD (Continuing Professional Development) Fee', 'amount': f'{cpd_fee:.2f}', 'section': 'national'},
     ]
-    if has_consolidation:
-        breakdown.append({'label': 'Consolidation Fee', 'amount': f'{consolidation_fee:.2f}'})
 
-    breakdown.extend([
-        {'label': f'Administrative Fee ({scale_title})', 'amount': f'{admin_fee:.2f}'},
-        {'label': f'Legal & Audit Fee ({scale_title})', 'amount': f'{legal_fee:.2f}'},
-        {'label': 'AGM Levy', 'amount': f'{agm_levy:.2f}'},
-        {'label': 'Customs Bond Fee (SIC)', 'amount': f'{customs_bond:.2f}'},
-        {'label': f'CTI Training ({scale_title})', 'amount': f'{cti_fee:.2f}'},
-    ])
+    for extra in extra_national_fees:
+        e_label = extra.get('label') or extra.get('name') or 'Additional National Fee'
+        e_amt = float(extra.get('amount') or 0.0)
+        breakdown.append({'label': e_label, 'amount': f'{e_amt:.2f}', 'section': 'national'})
+
+    # ── 2. DISTRICT CLEARANCE FEES SECTION ─────────────────────────────────────
+    # District comprises: District clearance based on the district(s) the user is tied to
+    tied_districts = []
+    if port_of_operation:
+        tied_districts = [d.strip() for d in str(port_of_operation).split(',') if d.strip()]
+    if not tied_districts:
+        tied_districts = ['Tema Port']
+
+    default_dist_clearance = fee_map.get('district_clearance_general', 500.0)
+
+    for dist in tied_districts:
+        slug = dist.lower().replace(' ', '_').replace('–', '_').replace('-', '_')
+        dist_amt = None
+        for k, v in fee_map.items():
+            if 'district_clearance_' in k and any(part in slug for part in k.replace('district_clearance_', '').split('_') if len(part) > 2):
+                dist_amt = v
+                break
+        if dist_amt is None:
+            dist_amt = default_dist_clearance
+
+        breakdown.append({
+            'label': f'District Clearance – {dist}',
+            'amount': f'{dist_amt:.2f}',
+            'section': 'district'
+        })
 
     computed_total = sum(float(b['amount']) for b in breakdown)
-    expected_total = fee_map.get(sched_key, computed_total)
-
-    title = f"{scale_title} ({'Consolidation' if has_consolidation else 'Without Consolidation'})"
+    title = f"Corporate Annual Tariffs ({scale_title}) – National & District Clearance"
 
     return {
-        'schedule_key': sched_key,
+        'schedule_key': 'corporate_national_district',
         'scale': 'large_corporate' if is_large else 'sme',
         'scale_label': scale_title,
-        'has_consolidation': has_consolidation,
-        'scope_label': 'Consolidation' if has_consolidation else 'Without Consolidation',
+        'has_consolidation': (fee_category or '') in ('consolidation', 'cf_consolidation'),
+        'scope_label': 'Corporate Logistics',
         'renewal_fee_title': title,
-        'renewal_fee_amount': expected_total,
-        'renewal_fee_breakdown': breakdown
+        'renewal_fee_amount': computed_total,
+        'renewal_fee_breakdown': breakdown,
+        'tied_districts': tied_districts
     }
 
 
@@ -757,11 +736,11 @@ def get_my_renewal_details():
     conn = get_db()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT member_scale, fee_category, member_type FROM members WHERE id = %s", (member_id,))
+            cursor.execute("SELECT member_scale, fee_category, member_type, port_of_operation FROM members WHERE id = %s", (member_id,))
             row = cursor.fetchone()
             if not row:
                 return jsonify({'message': 'Member not found'}), 404
-            details = get_member_renewal_breakdown(row.get('member_scale'), row.get('fee_category'), cursor, row.get('member_type'))
+            details = get_member_renewal_breakdown(row.get('member_scale'), row.get('fee_category'), cursor, row.get('member_type'), row.get('port_of_operation'))
             return jsonify(details), 200
     finally:
         conn.close()
@@ -930,7 +909,7 @@ def get_me():
                     has_custom_bill = True
 
                 if not has_custom_bill:
-                    renewal_info = get_member_renewal_breakdown(result.get('member_scale'), result.get('fee_category'), cursor, result.get('member_type'))
+                    renewal_info = get_member_renewal_breakdown(result.get('member_scale'), result.get('fee_category'), cursor, result.get('member_type'), result.get('port_of_operation'))
                     result['renewal_details'] = renewal_info
                     result['renewal_fee_amount'] = renewal_info['renewal_fee_amount']
                     result['renewal_fee_title'] = renewal_info['renewal_fee_title']

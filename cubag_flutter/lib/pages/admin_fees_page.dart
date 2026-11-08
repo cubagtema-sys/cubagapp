@@ -32,7 +32,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
   String _message = '';
   bool _isSuccess = false;
 
-  // Active Category: 'corporate' (SME & Large), 'associate', 'licentiate', 'all'
+  // Active Category: 'corporate' (SME & Large), 'national', 'district', 'all'
   String _selectedCategory = 'corporate';
   String _subFilter = 'all';
 
@@ -165,21 +165,21 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             },
                           ),
                           ChoiceChip(
-                            label: Text('Associate', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold)),
-                            selected: section == 'associate',
-                            selectedColor: const Color(0xFFD97706),
-                            labelStyle: TextStyle(color: section == 'associate' ? Colors.white : textCol),
+                            label: Text('National Fee', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold)),
+                            selected: section == 'national',
+                            selectedColor: const Color(0xFF0284C7),
+                            labelStyle: TextStyle(color: section == 'national' ? Colors.white : textCol),
                             onSelected: (val) {
-                              if (val) setDlgState(() => section = 'associate');
+                              if (val) setDlgState(() => section = 'national');
                             },
                           ),
                           ChoiceChip(
-                            label: Text('Licentiate', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold)),
-                            selected: section == 'licentiate',
-                            selectedColor: const Color(0xFF6B3E26),
-                            labelStyle: TextStyle(color: section == 'licentiate' ? Colors.white : textCol),
+                            label: Text('District Clearance', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold)),
+                            selected: section == 'district',
+                            selectedColor: const Color(0xFF10B981),
+                            labelStyle: TextStyle(color: section == 'district' ? Colors.white : textCol),
                             onSelected: (val) {
-                              if (val) setDlgState(() => section = 'licentiate');
+                              if (val) setDlgState(() => section = 'district');
                             },
                           ),
                         ],
@@ -450,18 +450,18 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
           !id.startsWith('renewal_');
     }).toList();
 
-    // 2. Associate Membership
-    final associateFees = _fees.where((f) {
+    // 2. National Fees (Subscription, Admin fee, Legal-audit, CPD, etc.)
+    final nationalFees = _fees.where((f) {
       final sec = f['section']?.toString() ?? '';
       final id = f['id']?.toString() ?? '';
-      return (sec == 'associate' || id.startsWith('associate_')) && sec != 'renewal' && !id.startsWith('renewal_');
+      return (sec == 'national' || id.startsWith('national_')) && sec != 'renewal' && !id.startsWith('renewal_');
     }).toList();
 
-    // 3. Licentiate Membership
-    final licentiateFees = _fees.where((f) {
+    // 3. District Clearance Fees (per operational district)
+    final districtFees = _fees.where((f) {
       final sec = f['section']?.toString() ?? '';
       final id = f['id']?.toString() ?? '';
-      return (sec == 'licentiate' || id.startsWith('licentiate_')) && sec != 'renewal' && !id.startsWith('renewal_');
+      return (sec == 'district' || id.startsWith('district_')) && sec != 'renewal' && !id.startsWith('renewal_');
     }).toList();
 
     // Determine current display list based on active category & sub-filter
@@ -492,17 +492,37 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
       } else {
         activeList = corporateFees;
       }
-    } else if (_selectedCategory == 'associate') {
-      activeThemeColor = const Color(0xFFD97706);
-      activeTitle = 'Associate Membership Tariffs';
-      activeList = associateFees;
-    } else if (_selectedCategory == 'licentiate') {
-      activeThemeColor = const Color(0xFF6B3E26);
-      activeTitle = 'Licentiate Membership Tariffs (Individual)';
-      activeList = licentiateFees;
+    } else if (_selectedCategory == 'national') {
+      activeThemeColor = const Color(0xFF0284C7);
+      activeTitle = 'National Platform Fees (Subscription, Admin, Legal-Audit, CPD)';
+      if (_subFilter == 'subscription') {
+        activeList = nationalFees.where((f) => f['id'].toString().contains('sub') || f['label'].toString().toLowerCase().contains('subscription')).toList();
+      } else if (_subFilter == 'admin') {
+        activeList = nationalFees.where((f) => f['id'].toString().contains('admin') || f['label'].toString().toLowerCase().contains('admin')).toList();
+      } else if (_subFilter == 'legal') {
+        activeList = nationalFees.where((f) => f['id'].toString().contains('legal') || f['label'].toString().toLowerCase().contains('legal')).toList();
+      } else if (_subFilter == 'cpd') {
+        activeList = nationalFees.where((f) => f['id'].toString().contains('cpd') || f['label'].toString().toLowerCase().contains('cpd')).toList();
+      } else {
+        activeList = nationalFees;
+      }
+    } else if (_selectedCategory == 'district') {
+      activeThemeColor = const Color(0xFF10B981);
+      activeTitle = 'District Clearance Tariffs (Tied Districts)';
+      if (_subFilter == 'tema') {
+        activeList = districtFees.where((f) => f['id'].toString().contains('tema') || f['label'].toString().toLowerCase().contains('tema')).toList();
+      } else if (_subFilter == 'takoradi') {
+        activeList = districtFees.where((f) => f['id'].toString().contains('takoradi') || f['label'].toString().toLowerCase().contains('takoradi')).toList();
+      } else if (_subFilter == 'accra') {
+        activeList = districtFees.where((f) => f['id'].toString().contains('accra') || f['label'].toString().toLowerCase().contains('accra')).toList();
+      } else if (_subFilter == 'borders') {
+        activeList = districtFees.where((f) => f['id'].toString().contains('aflao') || f['id'].toString().contains('elubo') || f['id'].toString().contains('paga') || f['label'].toString().toLowerCase().contains('border')).toList();
+      } else {
+        activeList = districtFees;
+      }
     } else {
       activeThemeColor = _kPurple;
-      activeTitle = 'Master Fee Schedule (New Onboarding)';
+      activeTitle = 'Master Fee Schedule (All Items)';
       activeList = _fees.where((f) => f['section'] != 'renewal' && !f['id'].toString().startsWith('renewal_')).toList();
     }
 
@@ -520,7 +540,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
             // ── TOP EXECUTIVE HEADER ─────────────────────────────────────────
             AdminHeader(
               title: 'Platform Fees & Tariff Schedule',
-              subtitle: 'Configure New Member Registration Fees & Onboarding Entrance Tariffs for Corporate (SME & Large), Associate, and Licentiate categories.',
+              subtitle: 'Configure Corporate Onboarding Entrance Tariffs, National Platform Fees, and District Clearance Schedules.',
               actions: [
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
@@ -643,12 +663,12 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       textMuted: textMuted,
                     ),
                     _buildCategoryKpiCard(
-                      key: 'associate',
-                      title: 'Associate Membership',
-                      subtitle: 'Institutional Affiliates & Partners',
-                      itemCount: associateFees.length,
-                      color: const Color(0xFFD97706),
-                      icon: Icons.groups_rounded,
+                      key: 'national',
+                      title: 'National Fees',
+                      subtitle: 'Subscription, Admin, Legal, CPD',
+                      itemCount: nationalFees.length,
+                      color: const Color(0xFF0284C7),
+                      icon: Icons.account_balance_rounded,
                       width: cardWidth,
                       isDark: isDark,
                       cardBg: cardBg,
@@ -657,12 +677,12 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       textMuted: textMuted,
                     ),
                     _buildCategoryKpiCard(
-                      key: 'licentiate',
-                      title: 'Licentiate Membership',
-                      subtitle: 'Individual Licensed Forwarders',
-                      itemCount: licentiateFees.length,
-                      color: const Color(0xFF6B3E26),
-                      icon: Icons.badge_rounded,
+                      key: 'district',
+                      title: 'District Clearance',
+                      subtitle: 'Tariffs Per Tied District',
+                      itemCount: districtFees.length,
+                      color: const Color(0xFF10B981),
+                      icon: Icons.location_city_rounded,
                       width: cardWidth,
                       isDark: isDark,
                       cardBg: cardBg,
@@ -966,13 +986,29 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
         const SizedBox(width: 6),
         _pill('breakdown', '📑 Isolated Components'),
       ];
-    } else if (_selectedCategory == 'associate') {
+    } else if (_selectedCategory == 'national') {
       return [
-        _pill('all', 'All Associate Tariffs'),
+        _pill('all', 'All National Fees'),
+        const SizedBox(width: 6),
+        _pill('subscription', 'Subscription'),
+        const SizedBox(width: 6),
+        _pill('admin', 'Admin Fee'),
+        const SizedBox(width: 6),
+        _pill('legal', 'Legal & Audit'),
+        const SizedBox(width: 6),
+        _pill('cpd', 'CPD'),
       ];
-    } else if (_selectedCategory == 'licentiate') {
+    } else if (_selectedCategory == 'district') {
       return [
-        _pill('all', 'All Licentiate Tariffs'),
+        _pill('all', 'All Districts'),
+        const SizedBox(width: 6),
+        _pill('tema', 'Tema Port'),
+        const SizedBox(width: 6),
+        _pill('takoradi', 'Takoradi Port'),
+        const SizedBox(width: 6),
+        _pill('accra', 'Accra / KIA'),
+        const SizedBox(width: 6),
+        _pill('borders', 'Border Ports'),
       ];
     } else {
       return [
@@ -1091,12 +1127,12 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                   } else if (id.contains('sme') || label.toLowerCase().contains('sme')) {
                     targetTag = 'SME';
                     tagColor = _kOrange;
-                  } else if (sec == 'associate' || id.contains('associate')) {
-                    targetTag = 'Associate';
-                    tagColor = const Color(0xFFD97706);
-                  } else if (sec == 'licentiate' || id.contains('licentiate')) {
-                    targetTag = 'Licentiate';
-                    tagColor = _kBrown;
+                  } else if (sec == 'national' || id.contains('national')) {
+                    targetTag = 'National Fee';
+                    tagColor = const Color(0xFF0284C7);
+                  } else if (sec == 'district' || id.contains('district')) {
+                    targetTag = 'District Clearance';
+                    tagColor = const Color(0xFF10B981);
                   } else if (id.contains('reg_form') || id.contains('new_reg')) {
                     targetTag = 'All New Members';
                     tagColor = _kGreen;
