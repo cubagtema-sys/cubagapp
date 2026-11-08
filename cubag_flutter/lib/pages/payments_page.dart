@@ -119,6 +119,26 @@ class _PaymentsPageState extends State<PaymentsPage>
     super.dispose();
   }
 
+  double _getCurrentBillTotal() {
+    final r = _reason.toLowerCase();
+    if (r.contains('renewal') || r.contains('annual dues')) {
+      return _renewalBalanceDue > 0 ? _renewalBalanceDue : (_renewalFeeAmount ?? 0.0);
+    }
+    if (r.contains('registration') || r.contains('application')) {
+      return double.tryParse(_upfrontRegFeeStr) ?? 600.0;
+    }
+    if (r.contains('package')) {
+      return double.tryParse(_packageFeeStr) ?? 1620.0;
+    }
+    for (final f in _fees) {
+      if (f is Map && f['label']?.toString().toLowerCase() == r) {
+        final amt = double.tryParse(f['amount']?.toString().replaceAll(',', '') ?? '');
+        if (amt != null && amt > 0) return amt;
+      }
+    }
+    return double.tryParse(_amountCtrl.text) ?? 0.0;
+  }
+
   String _normalizeGhanaPhone(String input) {
     var clean = input.replaceAll(RegExp(r'\D'), '');
     if (clean.startsWith('233') && clean.length > 3) {
@@ -408,8 +428,9 @@ class _PaymentsPageState extends State<PaymentsPage>
 
     try {
       final api = ApiService();
+      final currentBillTot = _getCurrentBillTotal();
       final isInstallment = _isInstallmentMode ||
-          (_reason.toLowerCase().contains('renewal') && _allowInstallments && amt < ((_renewalFeeAmount ?? amt) - 0.01));
+          (currentBillTot > 0 && amt < (currentBillTot - 0.01));
       final requestData = {
         'amount': amt,
         'description': effectiveReason,
@@ -1880,8 +1901,8 @@ class _PaymentsPageState extends State<PaymentsPage>
               );
             },
           ),
-          // ── If Renewal and installments allowed, show payment mode selector ──
-          if (_reason.toLowerCase().contains('renewal') && _allowInstallments) ...[
+          // ── Payment mode selector (Full Balance vs Part-Payment / Installment) for ALL bills ──
+          if (_reason.isNotEmpty && _allowInstallments && _getCurrentBillTotal() > 0) ...[
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
@@ -1916,9 +1937,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           onTap: () {
                             setState(() {
                               _isInstallmentMode = false;
-                              final fullBal = _renewalBalanceDue > 0
-                                  ? _renewalBalanceDue
-                                  : (_renewalFeeAmount ?? 0.0);
+                              final fullBal = _getCurrentBillTotal();
                               _amountCtrl.text = fullBal > 0 ? fullBal.toStringAsFixed(2) : _amountCtrl.text;
                             });
                           },
@@ -1940,7 +1959,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             child: Column(
                               children: [
                                 Text(
-                                  'Full Balance',
+                                  'Full Payment',
                                   style: GoogleFonts.inter(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
@@ -1951,7 +1970,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'GH₵ ${(_renewalBalanceDue > 0 ? _renewalBalanceDue : (_renewalFeeAmount ?? 0.0)).toStringAsFixed(2)}',
+                                  'GH₵ ${_getCurrentBillTotal().toStringAsFixed(2)}',
                                   style: GoogleFonts.inter(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -1969,10 +1988,11 @@ class _PaymentsPageState extends State<PaymentsPage>
                           onTap: () {
                             setState(() {
                               _isInstallmentMode = true;
+                              final billTot = _getCurrentBillTotal();
                               if (_minInstallmentAmount > 0) {
                                 _amountCtrl.text = _minInstallmentAmount.toStringAsFixed(2);
-                              } else if (_renewalBalanceDue > 0) {
-                                final half = (_renewalBalanceDue / 2).clamp(1.0, _renewalBalanceDue);
+                              } else if (billTot > 0) {
+                                final half = (billTot / 2).clamp(1.0, billTot);
                                 _amountCtrl.text = half.toStringAsFixed(2);
                               }
                             });
@@ -1995,9 +2015,9 @@ class _PaymentsPageState extends State<PaymentsPage>
                             child: Column(
                               children: [
                                 Text(
-                                  'Part-Payment',
+                                  'Part-Payment / Installment',
                                   style: GoogleFonts.inter(
-                                    fontSize: 13,
+                                    fontSize: 12.5,
                                     fontWeight: FontWeight.bold,
                                     color: _isInstallmentMode
                                         ? _kOrange
@@ -2008,9 +2028,9 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 Text(
                                   _minInstallmentAmount > 0
                                       ? 'Min GH₵ ${_minInstallmentAmount.toStringAsFixed(2)}'
-                                      : 'Installment',
+                                      : 'Flexible Installment',
                                   style: GoogleFonts.inter(
-                                    fontSize: 12,
+                                    fontSize: 11.5,
                                     fontWeight: FontWeight.w600,
                                     color: isDark ? Colors.white : Colors.black87,
                                   ),
@@ -2082,8 +2102,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
                     ],
-                    readOnly: (_reason.isNotEmpty && _reason != 'Other') &&
-                        !(_reason.toLowerCase().contains('renewal') && _allowInstallments && _isInstallmentMode),
+                    readOnly: (_reason.isNotEmpty && _reason != 'Other') && !_isInstallmentMode,
                     style: GoogleFonts.inter(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
@@ -2095,7 +2114,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       hintText: (_reason.toLowerCase().contains('renewal') && (_renewalFeeAmount == null || _renewalFeeAmount == 0))
                           ? 'Bill Pending (Submit Docs)'
                           : '0.00',
-                      suffixIcon: (_reason.toLowerCase().contains('renewal') && _allowInstallments && _isInstallmentMode)
+                      suffixIcon: _isInstallmentMode
                           ? const Tooltip(
                               message: 'Editable installment amount',
                               child: Icon(Icons.edit_note_rounded, color: _kOrange, size: 22),
@@ -2107,11 +2126,11 @@ class _PaymentsPageState extends State<PaymentsPage>
               ],
             ),
           ),
-          if (_reason.toLowerCase().contains('renewal') && _allowInstallments && _isInstallmentMode) ...[
+          if (_isInstallmentMode) ...[
             Builder(
               builder: (ctx) {
                 final enteredAmt = double.tryParse(_amountCtrl.text) ?? 0.0;
-                final maxBal = _renewalBalanceDue > 0 ? _renewalBalanceDue : (_renewalFeeAmount ?? double.infinity);
+                final maxBal = _getCurrentBillTotal() > 0 ? _getCurrentBillTotal() : double.infinity;
                 final minBal = _minInstallmentAmount > 0 ? _minInstallmentAmount : 1.0;
 
                 if (_amountCtrl.text.isNotEmpty && enteredAmt < (minBal - 0.01)) {
@@ -2169,16 +2188,12 @@ class _PaymentsPageState extends State<PaymentsPage>
                   padding: const EdgeInsets.only(top: 6, left: 4),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline, size: 14, color: _kAmber),
+                      const Icon(Icons.info_outline_rounded, size: 13, color: _kOrange),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          'Enter an installment amount between GH₵ ${minBal.toStringAsFixed(2)} and GH₵ ${maxBal.toStringAsFixed(2)}',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: _kAmber,
-                          ),
+                          'Installment active: enter partial amount to pay now (Min GH₵ ${minBal.toStringAsFixed(2)}). You can settle the remaining balance in future installments.',
+                          style: GoogleFonts.inter(fontSize: 11.5, color: _kOrange, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],
@@ -2876,8 +2891,8 @@ class _PaymentsPageState extends State<PaymentsPage>
               }
 
               bool isAmountValid = amt > 0;
-              if (isRenewal && _allowInstallments && _isInstallmentMode) {
-                if (amt < (minPayable - 0.01) || amt > (maxPayable + 0.01)) {
+              if (_isInstallmentMode) {
+                if (amt < (minPayable - 0.01) || (maxPayable < double.infinity && amt > (maxPayable + 0.01))) {
                   isAmountValid = false;
                 }
               }

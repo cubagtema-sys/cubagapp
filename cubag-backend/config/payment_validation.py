@@ -344,6 +344,10 @@ def validate_member_payment_amount(
     if any(k in desc_lower for k in ('cti', 'course', 'training', 'enroll')):
         expected = get_cti_course_amount(cursor, description)
         if expected and expected > 0:
+            if is_installment:
+                if client_amount <= 0 or client_amount > expected + _AMOUNT_TOLERANCE:
+                    return None, f'Course installment must be between GHS 0.01 and GHS {expected:,.2f}.'
+                return client_amount, None
             if not _close(client_amount, expected):
                 return expected, None
             return expected, None
@@ -365,6 +369,10 @@ def validate_member_payment_amount(
     if any(k in desc_lower for k in ('registration', 'reg form', 'application fee', 'entrance')):
         expected = _member_registration_fee(cursor, member_id)
         if expected is not None and expected > 0:
+            if is_installment:
+                if client_amount <= 0 or client_amount > expected + _AMOUNT_TOLERANCE:
+                    return None, f'Registration installment must be between GHS 0.01 and GHS {expected:,.2f}.'
+                return client_amount, None
             return expected, None
 
     # New membership package / dues fees are member-type specific (Licentiate / Associate / SME / Large).
@@ -382,6 +390,10 @@ def validate_member_payment_amount(
 
     sched_amt = _match_fee_schedule(cursor, description)
     if sched_amt is not None:
+        if is_installment:
+            if client_amount <= 0 or client_amount > sched_amt + _AMOUNT_TOLERANCE:
+                return None, f'Installment must be between GHS 0.01 and GHS {sched_amt:,.2f}.'
+            return client_amount, None
         if not _close(client_amount, sched_amt):
             return sched_amt, None
         return sched_amt, None
