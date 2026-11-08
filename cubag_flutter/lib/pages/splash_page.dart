@@ -489,7 +489,7 @@ class _SplashPageState extends State<SplashPage>
                       opacity: _titleOpacity.value.clamp(0.0, 1.0),
                       child: Text(
                         'C U B A G',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 28,
                           fontWeight: FontWeight.w900,
                           letterSpacing: _titleSpacing.value,
@@ -617,7 +617,7 @@ class _SplashPageState extends State<SplashPage>
                     icon: const Icon(Icons.fingerprint_rounded, size: 24),
                     label: Text(
                       'Unlock with Face ID',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),

@@ -178,7 +178,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: Text('Archive Support Ticket', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: Text('Archive Support Ticket', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16)),
         content: Text(
           'Are you sure you want to archive Ticket #$ticketId?',
           style: GoogleFonts.inter(fontSize: 13),
@@ -186,7 +186,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: GoogleFonts.outfit(color: _kSlate)),
+            child: Text('Cancel', style: GoogleFonts.inter(color: _kSlate)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -195,7 +195,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
               foregroundColor: Colors.white,
               elevation: 0,
             ),
-            child: Text('Archive', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            child: Text('Archive', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -213,7 +213,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg, style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13)),
+        content: Text(msg, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
@@ -299,7 +299,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                   _fetchTickets(page: 1);
                 },
                 icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: Text('Refresh', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13)),
+                label: Text('Refresh', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
               ),
             ],
           ),
@@ -399,11 +399,11 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                 children: [
                   Text(
                     value,
-                    style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w800, color: textPrimary),
+                    style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w800, color: textPrimary),
                   ),
                   Text(
                     label,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 11.5,
                       fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
                       color: isSel ? color : textMuted,
@@ -452,7 +452,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                     child: TextField(
                       controller: _searchCtrl,
                       onChanged: _onSearchChanged,
-                      style: GoogleFonts.outfit(fontSize: 13.5, color: textPrimary),
+                      style: GoogleFonts.inter(fontSize: 13.5, color: textPrimary),
                       decoration: InputDecoration(
                         hintText: 'Search by ID, subject, member name, company...',
                         hintStyle: GoogleFonts.inter(fontSize: 12.5, color: textMuted),
@@ -516,7 +516,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                   const SizedBox(height: 12),
                   Text(
                     'No tickets found in this view',
-                    style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: textPrimary),
+                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: textPrimary),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -544,7 +544,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                       headingRowColor: WidgetStateProperty.all(
                         isDark ? const Color(0xFF22140E) : const Color(0xFFFAF6F0),
                       ),
-                      headingTextStyle: GoogleFonts.outfit(
+                      headingTextStyle: GoogleFonts.inter(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w700,
                         color: textMuted,
@@ -587,7 +587,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                   ),
                                   child: Text(
                                     '#$id',
-                                    style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w800, color: _kIndigo),
+                                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: _kIndigo),
                                   ),
                                 ),
                               ),
@@ -602,7 +602,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                   children: [
                                     Text(
                                       memberName,
-                                      style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: textPrimary),
+                                      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: textPrimary),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -630,7 +630,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                         Expanded(
                                           child: Text(
                                             subject,
-                                            style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary),
+                                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -643,7 +643,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                               color: _kBlue.withValues(alpha: 0.12),
                                               borderRadius: BorderRadius.circular(8),
                                             ),
-                                            child: Text('$replies', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: _kBlue)),
+                                            child: Text('$replies', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: _kBlue)),
                                           ),
                                       ],
                                     ),
@@ -668,7 +668,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                 ),
                                 child: Text(
                                   _statusLabel(status).toUpperCase(),
-                                  style: GoogleFonts.outfit(fontSize: 10.5, fontWeight: FontWeight.w800, color: statusCol),
+                                  style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w800, color: statusCol),
                                 ),
                               ),
                             ),
@@ -691,7 +691,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                                       elevation: 0,
                                     ),
-                                    child: Text('Respond', style: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                    child: Text('Respond', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold)),
                                   ),
                                   const SizedBox(width: 4),
                                   PopupMenuButton<String>(
@@ -707,14 +707,14 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                     },
                                     itemBuilder: (ctx) => [
                                       if (status != 'open')
-                                        PopupMenuItem(value: 'open', child: Text('Mark Open', style: GoogleFonts.outfit(fontSize: 13))),
+                                        PopupMenuItem(value: 'open', child: Text('Mark Open', style: GoogleFonts.inter(fontSize: 13))),
                                       if (status != 'pending')
-                                        PopupMenuItem(value: 'pending', child: Text('Mark In Progress', style: GoogleFonts.outfit(fontSize: 13))),
+                                        PopupMenuItem(value: 'pending', child: Text('Mark In Progress', style: GoogleFonts.inter(fontSize: 13))),
                                       if (status != 'resolved')
-                                        PopupMenuItem(value: 'resolved', child: Text('Mark Resolved', style: GoogleFonts.outfit(fontSize: 13, color: _kGreen, fontWeight: FontWeight.bold))),
+                                        PopupMenuItem(value: 'resolved', child: Text('Mark Resolved', style: GoogleFonts.inter(fontSize: 13, color: _kGreen, fontWeight: FontWeight.bold))),
                                       const PopupMenuDivider(),
                                       if (status != 'archived')
-                                        PopupMenuItem(value: 'archive', child: Text('Archive', style: GoogleFonts.outfit(fontSize: 13, color: _kRed))),
+                                        PopupMenuItem(value: 'archive', child: Text('Archive', style: GoogleFonts.inter(fontSize: 13, color: _kRed))),
                                     ],
                                   ),
                                 ],
@@ -747,7 +747,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                       onPressed: _page > 1 ? () => _fetchTickets(page: _page - 1) : null,
                       visualDensity: VisualDensity.compact,
                     ),
-                    Text('$_page', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
+                    Text('$_page', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
                     IconButton(
                       icon: const Icon(Icons.chevron_right_rounded, size: 18),
                       onPressed: _hasMore ? () => _fetchTickets(page: _page + 1) : null,
@@ -788,7 +788,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
             color: isSel ? color : (isDark ? Colors.white70 : const Color(0xFF475569)),
@@ -838,7 +838,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   icon: const Icon(Icons.arrow_back_rounded, size: 14),
-                  label: Text('Back', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                  label: Text('Back', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12.5)),
                 ),
                 const SizedBox(width: 10),
                 Container(
@@ -847,13 +847,13 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                     color: _kIndigo.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Text('#$id', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: _kIndigo)),
+                  child: Text('#$id', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: _kIndigo)),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     subject,
-                    style: GoogleFonts.outfit(fontSize: 14.5, fontWeight: FontWeight.bold, color: textPrimary),
+                    style: GoogleFonts.inter(fontSize: 14.5, fontWeight: FontWeight.bold, color: textPrimary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -871,7 +871,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                     child: DropdownButton<String>(
                       value: ['open', 'pending', 'resolved', 'archived'].contains(status) ? status : 'open',
                       dropdownColor: cardBg,
-                      style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: statusCol),
+                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: statusCol),
                       items: const [
                         DropdownMenuItem(value: 'open', child: Text('OPEN')),
                         DropdownMenuItem(value: 'pending', child: Text('IN PROGRESS')),
@@ -896,7 +896,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
             child: Row(
               children: [
                 Text('From: ', style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
-                Text(memberName, style: GoogleFonts.outfit(fontSize: 12.5, fontWeight: FontWeight.bold, color: textPrimary)),
+                Text(memberName, style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold, color: textPrimary)),
                 if (company.isNotEmpty) ...[
                   Text(' • ', style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
                   Text(company, style: GoogleFonts.inter(fontSize: 12, color: _kOrange, fontWeight: FontWeight.w600)),
@@ -955,7 +955,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                 // Reply Composer
                 Text(
                   'REPLY TO MEMBER',
-                  style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5),
+                  style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5),
                 ),
                 const SizedBox(height: 6),
                 TextField(
@@ -993,7 +993,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       ),
-                      child: Text('Reply & Resolve', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: Text('Reply & Resolve', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton.icon(
@@ -1008,7 +1008,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                       icon: _sendingReply
                           ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                           : const Icon(Icons.send_rounded, size: 14),
-                      label: Text(_sendingReply ? 'Sending...' : 'Send Reply', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
+                      label: Text(_sendingReply ? 'Sending...' : 'Send Reply', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
                   ],
                 ),
@@ -1051,7 +1051,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
             children: [
               Text(
                 sender,
-                style: GoogleFonts.outfit(fontSize: 12.5, fontWeight: FontWeight.bold, color: isAdmin ? _kOrange : textPrimary),
+                style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold, color: isAdmin ? _kOrange : textPrimary),
               ),
               const SizedBox(width: 6),
               Container(
@@ -1062,7 +1062,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                 ),
                 child: Text(
                   tag,
-                  style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: isAdmin ? _kOrange : _kIndigo),
+                  style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: isAdmin ? _kOrange : _kIndigo),
                 ),
               ),
               const Spacer(),

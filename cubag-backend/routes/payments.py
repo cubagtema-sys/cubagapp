@@ -2073,10 +2073,15 @@ def admin_lookup_members():
                 cursor.execute("""
                     SELECT DISTINCT ON (m.id)
                            m.id, m.name, m.email, m.phone, m.company, m.license_number,
-                           m.status, m.package_fee_paid, m.renewal_fee_amount, m.renewal_fee_title,
+                           m.status, m.package_fee_paid, COALESCE(m.registration_fee_paid, false) as registration_fee_paid,
+                           m.renewal_fee_amount, m.renewal_fee_title, m.license_expiry_date,
                            COALESCE(m.member_type, 'corporate') AS member_type,
                            m.member_scale, m.fee_category, m.consolidation_scope,
-                           ca.id as renewal_app_id, ca.payment_amount as app_bill_amount, ca.amount_paid as app_amount_paid
+                           ca.id as renewal_app_id, ca.payment_amount as app_bill_amount, ca.amount_paid as app_amount_paid,
+                           ca.status as renewal_app_status,
+                           (SELECT COALESCE(json_agg(DISTINCT p.description), '[]'::json) FROM payments p WHERE p.member_id = m.id AND p.status = 'paid') as paid_descriptions,
+                           EXISTS(SELECT 1 FROM payments p WHERE p.member_id = m.id AND p.status = 'paid' AND (LOWER(p.description) LIKE '%renewal%' OR LOWER(p.description) LIKE '%annual%') AND EXTRACT(YEAR FROM p.created_at) = EXTRACT(YEAR FROM CURRENT_DATE)) as renewal_paid_this_year,
+                           EXISTS(SELECT 1 FROM compliance_applications ca2 WHERE ca2.member_id = m.id AND ca2.type = 'renewal' AND ca2.status IN ('approved', 'completed') AND EXTRACT(YEAR FROM ca2.created_at) = EXTRACT(YEAR FROM CURRENT_DATE)) as renewal_approved_this_year
                     FROM members m
                     LEFT JOIN compliance_applications ca
                            ON ca.member_id = m.id
@@ -2096,10 +2101,15 @@ def admin_lookup_members():
                 cursor.execute("""
                     SELECT DISTINCT ON (m.id)
                            m.id, m.name, m.email, m.phone, m.company, m.license_number,
-                           m.status, m.package_fee_paid, m.renewal_fee_amount, m.renewal_fee_title,
+                           m.status, m.package_fee_paid, COALESCE(m.registration_fee_paid, false) as registration_fee_paid,
+                           m.renewal_fee_amount, m.renewal_fee_title, m.license_expiry_date,
                            COALESCE(m.member_type, 'corporate') AS member_type,
                            m.member_scale, m.fee_category, m.consolidation_scope,
-                           ca.id as renewal_app_id, ca.payment_amount as app_bill_amount, ca.amount_paid as app_amount_paid
+                           ca.id as renewal_app_id, ca.payment_amount as app_bill_amount, ca.amount_paid as app_amount_paid,
+                           ca.status as renewal_app_status,
+                           (SELECT COALESCE(json_agg(DISTINCT p.description), '[]'::json) FROM payments p WHERE p.member_id = m.id AND p.status = 'paid') as paid_descriptions,
+                           EXISTS(SELECT 1 FROM payments p WHERE p.member_id = m.id AND p.status = 'paid' AND (LOWER(p.description) LIKE '%renewal%' OR LOWER(p.description) LIKE '%annual%') AND EXTRACT(YEAR FROM p.created_at) = EXTRACT(YEAR FROM CURRENT_DATE)) as renewal_paid_this_year,
+                           EXISTS(SELECT 1 FROM compliance_applications ca2 WHERE ca2.member_id = m.id AND ca2.type = 'renewal' AND ca2.status IN ('approved', 'completed') AND EXTRACT(YEAR FROM ca2.created_at) = EXTRACT(YEAR FROM CURRENT_DATE)) as renewal_approved_this_year
                     FROM members m
                     LEFT JOIN compliance_applications ca
                            ON ca.member_id = m.id
@@ -2148,8 +2158,23 @@ def admin_record_counter_payment():
     payment_method = str(data.get('payment_method') or 'cash').lower().strip()
     receipt_no = str(data.get('receipt_no') or '').strip()
     notes = str(data.get('notes') or '').strip()
+    allow_duplicate = bool(data.get('allow_duplicate', False))
+
+    is_installment = bool(data.get('is_installment', False))
+    installment_number = data.get('installment_number')
+    if installment_number is not None:
+        try:
+            installment_number = int(installment_number)
+        except (TypeError, ValueError):
+            installment_number = 1
+    elif is_installment:
+        installment_number = 1
+    else:
+        installment_number = None
 
     full_notes = f"Office Counter Payment ({payment_method.upper()})"
+    if is_installment:
+        full_notes += f" | Installment #{installment_number or 1}"
     if receipt_no:
         full_notes += f" | Receipt/Cheque #{receipt_no}"
     if notes:
@@ -2159,17 +2184,57 @@ def admin_record_counter_payment():
     suffix = uuid.uuid4().hex[:6].upper()
     payment_ref = f"OFFICE-{time_stamp}-{suffix}"
 
+    desc_lower = description.lower()
+    is_registration = any(k in desc_lower for k in ('registration', 'new member', 'entrance', 'package', 'clearing & forwarding package'))
+    is_renewal = any(k in desc_lower for k in ('renewal', 'annual dues', 'annual renewal', 'license renewal')) and not is_registration
+
     conn = get_db()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT id, name, email, phone, fcm_token FROM members WHERE id = %s", (member_id,))
+            cursor.execute("""
+                SELECT id, name, email, phone, fcm_token, license_number, license_expiry_date,
+                       package_fee_paid, COALESCE(registration_fee_paid, false) as registration_fee_paid
+                FROM members WHERE id = %s
+            """, (member_id,))
             member = cursor.fetchone()
             if not member:
                 return jsonify({'message': 'Selected member does not exist.'}), 404
 
-            # Check if there is an active renewal application to link
+            # ── 1. DUPLICATE RECEIPT CHECK ──────────────────────────
+            if receipt_no:
+                cursor.execute("""
+                    SELECT id, payment_ref, amount, created_at FROM payments
+                    WHERE notes LIKE %s AND status = 'paid'
+                    LIMIT 1
+                """, (f"%Receipt/Cheque #{receipt_no}%",))
+                dup_receipt = cursor.fetchone()
+                if dup_receipt:
+                    return jsonify({
+                        'message': f"Receipt/Cheque #{receipt_no} has already been recorded for payment Ref: {dup_receipt['payment_ref']}."
+                    }), 409
+
+            # ── 2. ONE-TIME REGISTRATION / PACKAGE DUP CHECK ────────
+            if is_registration and not allow_duplicate and not is_installment:
+                cursor.execute("""
+                    SELECT id, payment_ref, amount, paid_at, created_at, description FROM payments
+                    WHERE member_id = %s AND status = 'paid'
+                      AND (
+                          LOWER(description) LIKE '%%registration%%' OR 
+                          LOWER(description) LIKE '%%entrance%%' OR 
+                          LOWER(description) LIKE '%%package%%'
+                      )
+                    ORDER BY id DESC LIMIT 1
+                """, (member_id,))
+                prior_reg = cursor.fetchone()
+                if prior_reg or member.get('package_fee_paid') or member.get('registration_fee_paid'):
+                    ref_str = f" (Ref: {prior_reg['payment_ref']})" if prior_reg else ""
+                    return jsonify({
+                        'message': f"Member '{member['name']}' has already paid their Registration / Membership Package fee{ref_str}. You cannot pay for registration twice."
+                    }), 409
+
+            # ── 3. ANNUAL RENEWAL DUES DUP / BALANCE CHECK ───────────
             app_id = data.get('application_id')
-            if not app_id and any(k in description.lower() for k in ('renewal', 'annual', 'license')):
+            if not app_id and is_renewal:
                 cursor.execute("""
                     SELECT id FROM compliance_applications 
                     WHERE member_id = %s AND type = 'renewal' AND status NOT IN ('approved', 'completed')
@@ -2179,20 +2244,96 @@ def admin_record_counter_payment():
                 if ca:
                     app_id = ca['id']
 
+            if is_renewal and not allow_duplicate:
+                # Check active or latest renewal application
+                cursor.execute("""
+                    SELECT id, payment_amount, amount_paid, status, created_at
+                    FROM compliance_applications
+                    WHERE member_id = %s AND type = 'renewal'
+                    ORDER BY id DESC LIMIT 1
+                """, (member_id,))
+                latest_app = cursor.fetchone()
+
+                if latest_app:
+                    app_status = (latest_app.get('status') or '').lower()
+                    bill_amt = float(latest_app.get('payment_amount') or 0.0)
+                    paid_amt = float(latest_app.get('amount_paid') or 0.0)
+
+                    if app_status in ('approved', 'completed') and not is_installment:
+                        return jsonify({
+                            'message': f"Member '{member['name']}' has already completed their annual renewal for application #{latest_app['id']}. Their renewal is approved."
+                        }), 409
+
+                    if bill_amt > 0:
+                        remaining = max(0.0, bill_amt - paid_amt)
+                        if remaining <= 0 and not is_installment:
+                            return jsonify({
+                                'message': f"The renewal bill for application #{latest_app['id']} (GH₵ {bill_amt:.2f}) is already fully paid."
+                            }), 409
+                        if amount > (remaining + 0.01):
+                            return jsonify({
+                                'message': f"Payment amount of GH₵ {amount:.2f} exceeds the outstanding renewal balance of GH₵ {remaining:.2f}."
+                            }), 400
+
+                # Check if member already paid renewal dues in the current calendar year
+                current_year = datetime.now().year
+                cursor.execute("""
+                    SELECT id, payment_ref, amount, paid_at, created_at FROM payments
+                    WHERE member_id = %s AND status = 'paid'
+                      AND (LOWER(description) LIKE '%%renewal%%' OR LOWER(description) LIKE '%%annual%%')
+                      AND EXTRACT(YEAR FROM created_at) = %s
+                    ORDER BY id DESC LIMIT 1
+                """, (member_id, current_year))
+                paid_renewal = cursor.fetchone()
+                if paid_renewal and not latest_app and not is_installment:
+                    return jsonify({
+                        'message': f"Member '{member['name']}' has already paid Annual Renewal Dues for {current_year} (Ref: {paid_renewal['payment_ref']}). Their renewal dues are settled."
+                    }), 409
+
+            # ── 4. 24-HOUR IDENTICAL PAYMENT DEBOUNCE ────────────────
+            if not allow_duplicate:
+                if is_installment:
+                    cursor.execute("""
+                        SELECT id, payment_ref, amount, description, created_at FROM payments
+                        WHERE member_id = %s 
+                          AND LOWER(description) = LOWER(%s)
+                          AND amount = %s
+                          AND installment_number = %s
+                          AND status = 'paid'
+                          AND created_at >= NOW() - INTERVAL '24 hours'
+                        ORDER BY id DESC LIMIT 1
+                    """, (member_id, description, amount, installment_number))
+                else:
+                    cursor.execute("""
+                        SELECT id, payment_ref, amount, description, created_at FROM payments
+                        WHERE member_id = %s 
+                          AND LOWER(description) = LOWER(%s)
+                          AND amount = %s
+                          AND status = 'paid'
+                          AND created_at >= NOW() - INTERVAL '24 hours'
+                        ORDER BY id DESC LIMIT 1
+                    """, (member_id, description, amount))
+                recent_dup = cursor.fetchone()
+                if recent_dup:
+                    return jsonify({
+                        'message': f"A payment of GH₵ {amount:.2f} for '{description}' was already recorded for {member['name']} today (Ref: {recent_dup['payment_ref']}). Duplicate payments are not allowed."
+                    }), 409
+
+            # ── 5. INSERT RECORD ────────────────────────────────────
             cursor.execute("""
                 INSERT INTO payments (
                     member_id, amount, description, status, payment_method,
                     payment_ref, notes, paid_at, verified_at, verified_by,
-                    application_id, created_at
+                    application_id, is_installment, installment_number, created_at
                 ) VALUES (
                     %s, %s, %s, 'pending', %s,
                     %s, %s, NOW(), NOW(), %s,
-                    %s, NOW()
+                    %s, %s, %s, NOW()
                 ) RETURNING id
             """, (
                 member_id, amount, description, payment_method,
                 payment_ref, full_notes, admin_id,
-                app_id
+                app_id, is_installment, installment_number
             ))
             payment_row = cursor.fetchone()
             payment_id = payment_row['id']
@@ -2210,7 +2351,9 @@ def admin_record_counter_payment():
                     'method': payment_method,
                     'description': description,
                     'receipt_no': receipt_no,
-                    'ref': payment_ref
+                    'ref': payment_ref,
+                    'is_installment': is_installment,
+                    'installment_number': installment_number
                 }
             )
     except Exception as e:

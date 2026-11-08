@@ -62,7 +62,7 @@ class AdminHeader extends StatelessWidget {
                   Flexible(
                     child: Text(
                       title,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: isSmall ? 22 : 26,
                         fontWeight: FontWeight.w800,
                         color: titleColor,
@@ -186,7 +186,7 @@ class AdminStatCard extends StatelessWidget {
                   children: [
                     Text(
                       value,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: textColor,
@@ -267,10 +267,10 @@ class AdminToolbar extends StatelessWidget {
               child: TextField(
                 controller: searchController,
                 onChanged: onSearchChanged,
-                style: GoogleFonts.outfit(fontSize: 14, color: textColor),
+                style: GoogleFonts.inter(fontSize: 14, color: textColor),
                 decoration: InputDecoration(
                   hintText: searchHint,
-                  hintStyle: GoogleFonts.outfit(
+                  hintStyle: GoogleFonts.inter(
                     fontSize: 14,
                     color: subTextColor,
                   ),
@@ -406,7 +406,7 @@ class AdminFilterChip extends StatelessWidget {
             ],
             Text(
               label,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: textColor,
@@ -424,7 +424,7 @@ class AdminFilterChip extends StatelessWidget {
                 ),
                 child: Text(
                   '$count',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: textColor,
@@ -477,7 +477,7 @@ class AdminBadge extends StatelessWidget {
           ],
           Text(
             label,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 11.5,
               fontWeight: FontWeight.w700,
               color: color,
@@ -540,7 +540,7 @@ class AdminSectionCard extends StatelessWidget {
                       children: [
                         Text(
                           title!,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
                             color: titleColor,
@@ -623,7 +623,7 @@ class AdminEmptyState extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.w800,
               fontSize: 17,
               color: textColor,

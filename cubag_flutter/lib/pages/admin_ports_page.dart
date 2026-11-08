@@ -88,7 +88,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
               const SizedBox(width: 12),
               Text(
                 isEdit ? 'Edit Port of Operation' : 'Add Port of Operation',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   fontSize: 22,
                 ),
@@ -288,7 +288,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
                 icon: const Icon(Icons.add_location_alt_rounded, size: 18),
                 label: Text(
                   'Add New Port',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 17,
                   ),
@@ -389,7 +389,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
                   const SizedBox(height: 12),
                   Text(
                     'No ports match your filter.',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 20,
                       color: textCol,
@@ -423,13 +423,13 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
                         ),
                         child: DataTable(
                           headingRowColor: WidgetStateProperty.all(headerBg),
-                          headingTextStyle: GoogleFonts.outfit(
+                          headingTextStyle: GoogleFonts.inter(
                             fontWeight: FontWeight.w800,
                             fontSize: 16,
                             color: subTextCol,
                             letterSpacing: 0.5,
                           ),
-                          dataTextStyle: GoogleFonts.outfit(
+                          dataTextStyle: GoogleFonts.inter(
                             fontSize: 17,
                             color: textCol,
                           ),
@@ -477,7 +477,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
                                       const SizedBox(width: 12),
                                       Text(
                                         name,
-                                        style: GoogleFonts.outfit(
+                                        style: GoogleFonts.inter(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 18,
                                           color: textCol,
@@ -536,7 +536,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
                                           isActive
                                               ? 'Operational / Active'
                                               : 'Inactive',
-                                          style: GoogleFonts.outfit(
+                                          style: GoogleFonts.inter(
                                             fontSize: 16,
                                             fontWeight: FontWeight.bold,
                                             color: isActive

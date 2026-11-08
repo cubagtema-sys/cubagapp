@@ -173,7 +173,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     );
 
     final memberName = payment['member_name']?.toString() ?? userName;
-    final finalMemberName = memberName.isNotEmpty ? memberName : 'Registered Broker';
+    final finalMemberName = memberName.isNotEmpty ? memberName : 'Registered Member';
 
     final memberCompany = payment['member_company']?.toString() ?? userCompany;
     final license = payment['license_number']?.toString() ?? licenseNumber;
@@ -538,7 +538,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                           children: [
                             Text(
                               'CUBAG',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
                                 color: titleCol,
@@ -576,7 +576,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                 // Receipt Title & Badge
                 Text(
                   'OFFICIAL PAYMENT RECEIPT',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.5,
@@ -605,7 +605,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                       const SizedBox(width: 6),
                       Text(
                         config['label'] as String,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
                           color: config['color'] as Color,
@@ -644,7 +644,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                         fit: BoxFit.scaleDown,
                         child: Text(
                           'GH₵ ${_fmt(amount)}',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 30,
                             fontWeight: FontWeight.w900,
                             color: isDark ? _kOrange : _kBrown,
@@ -678,7 +678,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                 _receiptRow('Payment Purpose', desc, isDark: isDark),
                 _receiptRow(
                   'Member Name',
-                  payment['member_name']?.toString() ?? auth.userName ?? 'Registered Broker',
+                  payment['member_name']?.toString() ?? auth.userName ?? 'Registered Member',
                   isDark: isDark,
                 ),
                 if ((payment['member_company']?.toString() ?? auth.userCompany)?.isNotEmpty ?? false)
@@ -776,7 +776,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                         children: [
                           Text(
                             'Digital Verification Token',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: isDark ? Colors.white : _kText,
@@ -837,7 +837,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              textStyle: GoogleFonts.outfit(
+                              textStyle: GoogleFonts.inter(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
@@ -960,7 +960,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                 Expanded(
                   child: SelectableText(
                     value,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: isDark ? Colors.white : _kText,
@@ -1865,7 +1865,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                           ),
                           child: Text(
                             '$n',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               color: isCurrent ? Colors.white : textCol,
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
@@ -2006,7 +2006,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
           ),
           dropdownColor: isDark ? const Color(0xFF281710) : _kWhite,
           borderRadius: BorderRadius.circular(14),
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 15,
             fontWeight: FontWeight.w700,
             color: isDark ? Colors.white : _kText,

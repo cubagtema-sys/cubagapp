@@ -336,7 +336,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                 Expanded(
                   child: Text(
                     'Spreadsheet downloaded: $fileName',
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                    style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -361,7 +361,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
               children: [
                 Text(
                   'Copy the spreadsheet data below:',
-                  style: GoogleFonts.outfit(fontSize: 16),
+                  style: GoogleFonts.inter(fontSize: 16),
                 ),
                 const SizedBox(height: 10),
                 Container(
@@ -421,7 +421,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                 children: [
                   Text(
                     'Export Spreadsheet',
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 21, color: textPrimary),
+                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 21, color: textPrimary),
                   ),
                   Text(
                     'Microsoft Excel & CSV Compatible',
@@ -465,7 +465,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                         children: [
                           Text(
                             'Financial Ledger Export',
-                            style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: textPrimary),
+                            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18, color: textPrimary),
                           ),
                           Text(
                             '${_transactions.length} payment records, MoMo & Card receipts',
@@ -504,7 +504,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                         children: [
                           Text(
                             'Members Roster Export',
-                            style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: textPrimary),
+                            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18, color: textPrimary),
                           ),
                           Text(
                             '${_rawMembers.length} member profiles, categories & licenses',
@@ -525,7 +525,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
             onPressed: () => Navigator.pop(context),
             child: Text(
               'Close',
-              style: GoogleFonts.outfit(color: textMuted, fontWeight: FontWeight.w600),
+              style: GoogleFonts.inter(color: textMuted, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -793,7 +793,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                         Expanded(
                           child: Text(
                           _error!,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             color: const Color(0xFFef4444),
                             fontSize: 17,
                             fontWeight: FontWeight.w600,
@@ -822,7 +822,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                       icon: const Icon(Icons.download_rounded, size: 16),
                       label: Text(
                         'Export Ledger',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
                         ),
@@ -924,7 +924,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                     unselectedLabelColor: isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55),
                     indicatorColor: _kOrange,
                     indicatorWeight: 3,
-                    labelStyle: GoogleFonts.outfit(
+                    labelStyle: GoogleFonts.inter(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1037,7 +1037,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                         children: [
                           Text(
                             'Financial Revenue Stream Breakdown',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontWeight: FontWeight.bold,
                               fontSize: 20,
                               color: textPrimary,
@@ -1062,7 +1062,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                       ),
                       child: Text(
                         'Total: GH₵ ${_formatCurrency(_filteredRevenue)}',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 16.5,
                           fontWeight: FontWeight.w900,
                           color: _kGreen,
@@ -1217,7 +1217,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                       children: [
                         Text(
                           'Revenue Stream Proportions',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: textMuted,
@@ -1303,7 +1303,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                     children: [
                       Text(
                         'Revenue Collection Trend (GH₵)',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                           color: textPrimary,
@@ -1325,7 +1325,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                                     const SizedBox(height: 8),
                                     Text(
                                       'No revenue data available',
-                                      style: GoogleFonts.outfit(
+                                      style: GoogleFonts.inter(
                                         color: textMuted,
                                         fontSize: 15,
                                       ),
@@ -1361,7 +1361,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                     children: [
                       Text(
                         'Dues Settlement Status',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                           color: textPrimary,
@@ -1416,7 +1416,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                   children: [
                     Text(
                       'Financial Transaction Ledger',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.bold,
                         fontSize: 19,
                         color: textPrimary,
@@ -1447,7 +1447,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                         child: ChoiceChip(
                           label: Text(
                             filter,
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 15.5,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                               color: isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569)),
@@ -1474,7 +1474,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                     child: Center(
                       child: Text(
                         'No transaction records found matching the filter criteria',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           color: textMuted,
                           fontSize: 17,
                         ),
@@ -1538,7 +1538,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                                       Expanded(
                                         child: Text(
                                           tx['member_name']?.toString() ?? 'Anonymous Member',
-                                          style: GoogleFonts.outfit(
+                                          style: GoogleFonts.inter(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 17,
                                             color: textPrimary,
@@ -1554,7 +1554,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                                         ),
                                         child: Text(
                                           cat.toUpperCase(),
-                                          style: GoogleFonts.outfit(
+                                          style: GoogleFonts.inter(
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,
                                             color: catColor,
@@ -1581,7 +1581,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                               children: [
                                 Text(
                                   'GH₵ ${_formatCurrency(amt)}',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontWeight: FontWeight.w900,
                                     fontSize: 17,
                                     color: textPrimary,
@@ -1590,7 +1590,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                                 const SizedBox(height: 2),
                                 Text(
                                   status.toUpperCase(),
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     color: statusColor,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13.5,
@@ -1641,7 +1641,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
               Expanded(
                 child: Text(
                   title,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: textPrimary,
@@ -1657,7 +1657,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                 ),
                 child: Text(
                   '$percentage%',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 13.5,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -1669,7 +1669,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
           const SizedBox(height: 8),
           Text(
             'GH₵ ${_formatCurrency(amount)}',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 19.5,
               fontWeight: FontWeight.w900,
               color: color,
@@ -1735,7 +1735,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
             children: [
               Text(
                 label,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: textMuted,
@@ -1743,7 +1743,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
               ),
               Text(
                 '₵${val.toStringAsFixed(0)}',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: textPrimary,
@@ -1808,7 +1808,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                 children: [
                   Text(
                     'Member Status Ratios',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: textPrimary,
@@ -1839,8 +1839,8 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Broker Classifications',
-                    style: GoogleFonts.outfit(
+                    'Member Classifications',
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: textPrimary,
@@ -1862,7 +1862,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                             children: [
                               Text(
                                 e.key,
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                   color: textMuted,
@@ -1870,7 +1870,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                               ),
                               Text(
                                 '${e.value.toInt()}',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w900,
                                   color: textPrimary,
@@ -1994,7 +1994,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
           const SizedBox(height: 14),
           Text(
             value,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 20,
               fontWeight: FontWeight.w900,
               color: textPrimary,
@@ -2003,7 +2003,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
           const SizedBox(height: 4),
           Text(
             title,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: textMuted,
@@ -2049,7 +2049,7 @@ class _CustomBarChart extends StatelessWidget {
               getTooltipItem: (group, groupIndex, rod, rodIndex) {
                 return BarTooltipItem(
                   '${labels[group.x]}\n',
-                  GoogleFonts.outfit(
+                  GoogleFonts.inter(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
@@ -2057,7 +2057,7 @@ class _CustomBarChart extends StatelessWidget {
                   children: <TextSpan>[
                     TextSpan(
                       text: '₵${rod.toY.toStringAsFixed(2)}',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: color,
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
@@ -2080,7 +2080,7 @@ class _CustomBarChart extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
                       labels[idx],
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: textMuted,
                         fontWeight: FontWeight.bold,
                         fontSize: 11,
@@ -2102,7 +2102,7 @@ class _CustomBarChart extends StatelessWidget {
                       : value.toStringAsFixed(0);
                   return Text(
                     '₵$valStr',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       color: textMuted,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -2237,7 +2237,7 @@ class _CustomRingChartState extends State<_CustomRingChart> {
                   children: [
                     Text(
                       'TOTAL',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: widget.textMuted,
@@ -2246,7 +2246,7 @@ class _CustomRingChartState extends State<_CustomRingChart> {
                     ),
                     Text(
                       '${total.toInt()}',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
                         color: widget.textPrimary,
@@ -2289,7 +2289,7 @@ class _CustomRingChartState extends State<_CustomRingChart> {
                       Expanded(
                         child: Text(
                           '${e.key.toUpperCase()}: ${e.value.toInt()} ($pct%)',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: widget.textMuted,

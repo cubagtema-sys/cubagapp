@@ -135,7 +135,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                               const SizedBox(width: 10),
                               Text(
                                 isEdit ? 'Edit Fee Tariff' : 'Add Fee Tariff',
-                                style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: textCol),
+                                style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.bold, color: textCol),
                               ),
                             ],
                           ),
@@ -149,14 +149,14 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       const Divider(height: 1),
                       const SizedBox(height: 16),
 
-                      Text('MEMBERSHIP CATEGORY / SECTION *', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
+                      Text('MEMBERSHIP CATEGORY / SECTION *', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
                           ChoiceChip(
-                            label: Text('Corporate: New Member', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold)),
+                            label: Text('Corporate: New Member', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold)),
                             selected: section == 'new_membership',
                             selectedColor: _kOrange,
                             labelStyle: TextStyle(color: section == 'new_membership' ? Colors.white : textCol),
@@ -165,7 +165,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             },
                           ),
                           ChoiceChip(
-                            label: Text('Associate', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold)),
+                            label: Text('Associate', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold)),
                             selected: section == 'associate',
                             selectedColor: const Color(0xFFD97706),
                             labelStyle: TextStyle(color: section == 'associate' ? Colors.white : textCol),
@@ -174,7 +174,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             },
                           ),
                           ChoiceChip(
-                            label: Text('Licentiate', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold)),
+                            label: Text('Licentiate', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold)),
                             selected: section == 'licentiate',
                             selectedColor: const Color(0xFF6B3E26),
                             labelStyle: TextStyle(color: section == 'licentiate' ? Colors.white : textCol),
@@ -186,11 +186,11 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       ),
                       const SizedBox(height: 14),
 
-                      Text('TARIFF NAME / DESCRIPTION *', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
+                      Text('TARIFF NAME / DESCRIPTION *', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       TextField(
                         controller: nameCtrl,
-                        style: GoogleFonts.outfit(fontSize: 17, color: textCol),
+                        style: GoogleFonts.inter(fontSize: 17, color: textCol),
                         decoration: InputDecoration(
                           hintText: 'e.g. New Member Package: Clearing & Forwarding Only (SMEs)',
                           hintStyle: GoogleFonts.inter(fontSize: 16, color: const Color(0xFF94A3B8)),
@@ -209,15 +209,15 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('AMOUNT (GHS) *', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
+                                Text('AMOUNT (GHS) *', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
                                 const SizedBox(height: 6),
                                 TextField(
                                   controller: amountCtrl,
                                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.bold, color: textCol),
+                                  style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.bold, color: textCol),
                                   decoration: InputDecoration(
                                     prefixText: 'GHS ',
-                                    prefixStyle: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.bold, color: _kOrange),
+                                    prefixStyle: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.bold, color: _kOrange),
                                     filled: true,
                                     fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
@@ -233,7 +233,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('FREQUENCY *', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
+                                Text('FREQUENCY *', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
                                 const SizedBox(height: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -247,7 +247,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                                       value: frequency,
                                       isExpanded: true,
                                       dropdownColor: cardBg,
-                                      style: GoogleFonts.outfit(fontSize: 17, color: textCol),
+                                      style: GoogleFonts.inter(fontSize: 17, color: textCol),
                                       items: const [
                                         DropdownMenuItem(value: 'One-Time', child: Text('One-Time')),
                                         DropdownMenuItem(value: 'Annual', child: Text('Annual')),
@@ -265,12 +265,12 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       ),
                       const SizedBox(height: 14),
 
-                      Text('FORMULA / BREAKDOWN DETAILS', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
+                      Text('FORMULA / BREAKDOWN DETAILS', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       TextField(
                         controller: descCtrl,
                         maxLines: 2,
-                        style: GoogleFonts.outfit(fontSize: 16.5, color: textCol),
+                        style: GoogleFonts.inter(fontSize: 16.5, color: textCol),
                         decoration: InputDecoration(
                           hintText: 'e.g. Sub (120) + Vetting (750) + District (250) + C&F Scope (500)',
                           hintStyle: GoogleFonts.inter(fontSize: 15.5, color: const Color(0xFF94A3B8)),
@@ -287,7 +287,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                         value: isSummary,
                         contentPadding: EdgeInsets.zero,
                         activeColor: _kOrange,
-                        title: Text('Package Summary (Total Entrance / Total Renewal)', style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.bold, color: textCol)),
+                        title: Text('Package Summary (Total Entrance / Total Renewal)', style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.bold, color: textCol)),
                         subtitle: Text('Check this if this tariff represents a package total paid by members.', style: GoogleFonts.inter(fontSize: 15, color: const Color(0xFF94A3B8))),
                         onChanged: (val) => setDlgState(() => isSummary = val ?? false),
                       ),
@@ -298,7 +298,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                         children: [
                           TextButton(
                             onPressed: () => Navigator.of(dlgCtx).pop(),
-                            child: Text('Cancel', style: GoogleFonts.outfit(color: const Color(0xFF94A3B8), fontWeight: FontWeight.bold)),
+                            child: Text('Cancel', style: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontWeight: FontWeight.bold)),
                           ),
                           const SizedBox(width: 10),
                           ElevatedButton.icon(
@@ -336,7 +336,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                               _saveAllFees();
                             },
                             icon: const Icon(Icons.check_rounded, size: 16),
-                            label: Text(isEdit ? 'Update Tariff' : 'Add Tariff', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                            label: Text(isEdit ? 'Update Tariff' : 'Add Tariff', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
@@ -359,7 +359,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Remove Fee Item', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        title: Text('Remove Fee Item', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
         content: Text('Are you sure you want to delete "$itemName" from the official tariff schedule?', style: GoogleFonts.inter(fontSize: 15)),
         actions: [
           TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
@@ -535,7 +535,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       : const Icon(Icons.cloud_upload_rounded, size: 18),
                   label: Text(
                     _saving ? 'Publishing...' : 'Save & Publish Schedule',
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13),
+                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ),
               ],
@@ -600,7 +600,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                     Icon(_isSuccess ? Icons.check_circle_rounded : Icons.error_outline_rounded, color: _isSuccess ? _kGreen : _kRed, size: 18),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(_message, style: GoogleFonts.outfit(color: _isSuccess ? _kGreen : _kRed, fontWeight: FontWeight.bold, fontSize: 15)),
+                      child: Text(_message, style: GoogleFonts.inter(color: _isSuccess ? _kGreen : _kRed, fontWeight: FontWeight.bold, fontSize: 15)),
                     ),
                   ],
                 ),
@@ -612,7 +612,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
             // ── 1. 3 CORE MEMBERSHIP CATEGORIES KPI CARDS ───────────────────────
             Text(
               'MEMBERSHIP CATEGORIES (3 MAIN BRANCHES)',
-              style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.8),
+              style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.8),
             ),
             const SizedBox(height: 10),
 
@@ -725,7 +725,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             const SizedBox(width: 8),
                             Text(
                               activeTitle,
-                              style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.w900, color: activeThemeColor),
+                              style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w900, color: activeThemeColor),
                             ),
                           ],
                         ),
@@ -752,7 +752,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         icon: const Icon(Icons.add_rounded, size: 16),
-                        label: Text('Add Fee Item', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold)),
+                        label: Text('Add Fee Item', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -773,7 +773,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                           ),
                           child: TextField(
                             onChanged: _onSearchChanged,
-                            style: GoogleFonts.outfit(fontSize: 17, color: textPrimary),
+                            style: GoogleFonts.inter(fontSize: 17, color: textPrimary),
                             decoration: InputDecoration(
                               hintText: 'Search tariff by fee name, category, or description...',
                               hintStyle: GoogleFonts.inter(fontSize: 16, color: textMuted),
@@ -787,7 +787,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       const SizedBox(width: 12),
                       Text(
                         'Showing ${filteredDisplayList.length} tariffs',
-                        style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: textMuted),
+                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: textMuted),
                       ),
                     ],
                   ),
@@ -901,7 +901,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                         const SizedBox(width: 4),
                         Text(
                           'ACTIVE',
-                          style: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.w900, color: Colors.white),
+                          style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w900, color: Colors.white),
                         ),
                       ],
                     ),
@@ -911,7 +911,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
             const SizedBox(height: 14),
             Text(
               title,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 19.5,
                 fontWeight: FontWeight.w900,
                 color: isSelected ? (isDark ? Colors.white : color) : textPrimary,
@@ -933,7 +933,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
               children: [
                 Text(
                   '$itemCount Tariffs',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: isSelected ? color : textMuted,
@@ -984,7 +984,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
   Widget _pill(String value, String label) {
     final isSelected = _subFilter == value;
     return ChoiceChip(
-      label: Text(label, style: GoogleFonts.outfit(fontSize: 15.5, fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600)),
+      label: Text(label, style: GoogleFonts.inter(fontSize: 15.5, fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600)),
       selected: isSelected,
       selectedColor: _kOrange,
       labelStyle: TextStyle(color: isSelected ? Colors.white : const Color(0xFF6B5E55)),
@@ -1029,7 +1029,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
             const SizedBox(height: 10),
             Text(
               'No fee tariffs found for this filter.',
-              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
+              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
             ),
             const SizedBox(height: 4),
             Text(
@@ -1062,7 +1062,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                 horizontalMargin: 20,
                 columnSpacing: 20,
                 headingRowColor: WidgetStateProperty.all(isDark ? const Color(0xFF22140E) : const Color(0xFFFAF6F0)),
-                headingTextStyle: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.5),
+                headingTextStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.5),
                 columns: const [
                   DataColumn(label: Text('CATEGORY / TARGET')),
                   DataColumn(label: Text('TARIFF NAME')),
@@ -1118,7 +1118,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                               ),
                               child: Text(
                                 targetTag,
-                                style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: tagColor),
+                                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: tagColor),
                               ),
                             ),
                             if (isSummary) ...[
@@ -1131,7 +1131,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                                 ),
                                 child: Text(
                                   'PACKAGE',
-                                  style: GoogleFonts.outfit(fontSize: 12.5, fontWeight: FontWeight.w900, color: Colors.white),
+                                  style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w900, color: Colors.white),
                                 ),
                               ),
                             ],
@@ -1145,7 +1145,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                           constraints: const BoxConstraints(maxWidth: 260),
                           child: Text(
                             label,
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 16.5,
                               fontWeight: isSummary ? FontWeight.w800 : FontWeight.w600,
                               color: isSummary ? (isDark ? Colors.white : const Color(0xFF1F1612)) : textPrimary,
@@ -1160,7 +1160,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       DataCell(
                         Text(
                           'GHS ${double.tryParse(amt)?.toStringAsFixed(2) ?? amt}',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 17.5,
                             fontWeight: FontWeight.w900,
                             color: activeThemeColor,
@@ -1178,7 +1178,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                           ),
                           child: Text(
                             freq.toUpperCase(),
-                            style: GoogleFonts.outfit(fontSize: 13.5, fontWeight: FontWeight.bold, color: freq == 'One-Time' ? _kOrange : _kBrown),
+                            style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.bold, color: freq == 'One-Time' ? _kOrange : _kBrown),
                           ),
                         ),
                       ),
@@ -1212,7 +1212,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                                 minimumSize: Size.zero,
                               ),
                               icon: const Icon(Icons.edit_outlined, size: 12),
-                              label: Text('Edit', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold)),
+                              label: Text('Edit', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold)),
                             ),
                             const SizedBox(width: 6),
                             IconButton(

@@ -271,7 +271,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
             const SizedBox(height: 16),
             Text(
               'No Notifications',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF475569),
@@ -399,7 +399,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     child: Text(
                                       (cat['label']?.toString() ?? 'SYSTEM')
                                           .toUpperCase(),
-                                      style: GoogleFonts.outfit(
+                                      style: GoogleFonts.inter(
                                         fontSize: 12,
                                         color: color,
                                         fontWeight: FontWeight.w900,
@@ -425,7 +425,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         const SizedBox(height: 16),
                         Text(
                           n['title']?.toString() ?? '',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF1A0F0A),
@@ -608,7 +608,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                         n['title']?.toString() ?? '',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.outfit(
+                                        style: GoogleFonts.inter(
                                           fontSize: 15,
                                           fontWeight: isRead
                                               ? FontWeight.w600
@@ -661,7 +661,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       ),
                                       child: Text(
                                         label.toUpperCase(),
-                                        style: GoogleFonts.outfit(
+                                        style: GoogleFonts.inter(
                                           fontSize: 10.5,
                                           fontWeight: FontWeight.w800,
                                           letterSpacing: 0.4,
@@ -780,7 +780,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             children: [
                               Text(
                                 'Activity Feed',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w800,
                                   color: isDark
@@ -791,7 +791,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               const SizedBox(height: 2),
                               Text(
                                 'Latest system alerts and personal notifications.',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   color: isDark
                                       ? Colors.white70
                                       : const Color(0xFF64748b),
@@ -832,7 +832,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             Expanded(
                               child: Text(
                                 'You have $unread unread notification${unread == 1 ? '' : 's'}',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                   color: isDark
@@ -941,7 +941,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             searchQuery.isNotEmpty
                                 ? 'SEARCH RESULTS (${filtered.length})'
                                 : 'LATEST UPDATES (${filtered.length})',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontWeight: FontWeight.w800,
                               fontSize: 13,
                               color: isDark
@@ -973,7 +973,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   const SizedBox(width: 4),
                                   Text(
                                     'Clear',
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w700,
                                       color: _kOrange,

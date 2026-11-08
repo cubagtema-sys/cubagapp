@@ -173,8 +173,8 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Accredited Customs Broker',
-              style: GoogleFonts.outfit(
+              'Accredited Member',
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.bold,
                 fontSize: 22,
                 color: _kText,
@@ -201,7 +201,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                   _detailRow('Company Entity', company),
                   if (name.isNotEmpty && name != company) ...[
                     const Divider(height: 16),
-                    _detailRow('Lead Broker / Contact', name),
+                    _detailRow('Lead Member / Contact', name),
                   ],
                   const Divider(height: 16),
                   _detailRow('Primary Port', port),
@@ -247,7 +247,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                     icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
                     label: Text(
                       'Start A Conversation',
-                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                      style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -265,7 +265,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                     onPressed: () => Navigator.of(ctx).pop(),
                     child: Text(
                       'Close',
-                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                      style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -289,7 +289,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
             alignment: Alignment.centerRight,
             child: SelectableText(
               value,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: isEmail ? 14.5 : 15,
                 fontWeight: FontWeight.bold,
                 color: _kText,
@@ -352,7 +352,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                           children: [
                                 Text(
                               'CUBAG',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontWeight: FontWeight.w900,
                                 fontSize: 18,
                                 color: _kBrown,
@@ -382,7 +382,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                         ),
                         label: Text(
                           'Back to Portal',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             color: _kBrown,
                           ),
@@ -404,7 +404,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                         onPressed: () => context.go('/login'),
                         child: Text(
                           'Member Portal',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
@@ -452,7 +452,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                             const SizedBox(width: 6),
                             Text(
                               'OFFICIAL PUBLIC DIRECTORY',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 color: _kAccent,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
@@ -464,8 +464,8 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Accredited Customs Brokers in Ghana',
-                        style: GoogleFonts.outfit(
+                        'Accredited Members in Ghana',
+                        style: GoogleFonts.inter(
                           fontSize: isMobile ? 28 : 40,
                           fontWeight: FontWeight.w900,
                           color: Colors.white,
@@ -502,7 +502,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                           onChanged: _onSearchChanged,
                           decoration: InputDecoration(
                             hintText:
-                                'Search by company name, licensed broker, or membership ID...',
+                                'Search by company name, licensed member, or membership ID...',
                             hintStyle: GoogleFonts.inter(
                               color: _kMuted,
                               fontSize: 16,
@@ -575,7 +575,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                                     const SizedBox(width: 8),
                                     Text(
                                       'Filter by Port of Operation',
-                                      style: GoogleFonts.outfit(
+                                      style: GoogleFonts.inter(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 15,
                                         color: _kBrown,
@@ -594,7 +594,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                                   ),
                                   child: Text(
                                     '${members.length} Accredited Members',
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                       color: _kGreen,
@@ -617,7 +617,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                                   selected: isSelected,
                                   selectedColor: _kAccent.withAlpha(30),
                                   checkmarkColor: _kAccent,
-                                  labelStyle: GoogleFonts.outfit(
+                                  labelStyle: GoogleFonts.inter(
                                     fontSize: 14,
                                     fontWeight: isSelected
                                         ? FontWeight.bold
@@ -663,7 +663,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                                 const SizedBox(height: 14),
                                 Text(
                                   'No Verified Members Found',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: _kText,
@@ -671,7 +671,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  'No customs broker matched your search filter criteria.',
+                                  'No member matched your search filter criteria.',
                                   style: GoogleFonts.inter(
                                     fontSize: 15,
                                     color: _kMuted,
@@ -696,7 +696,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                                   },
                                   child: Text(
                                     'Reset Filters',
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       color: Colors.white,
                                     ),
                                   ),
@@ -778,7 +778,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                                           children: [
                                             Text(
                                               company,
-                                              style: GoogleFonts.outfit(
+                                              style: GoogleFonts.inter(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 17,
                                                 color: _kText,
@@ -789,7 +789,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                                             if (name.isNotEmpty &&
                                                 name != company)
                                               Text(
-                                                'Broker: $name',
+                                                'Member: $name',
                                                 style: GoogleFonts.inter(
                                                   fontSize: 14,
                                                   color: _kMuted,
@@ -852,7 +852,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                                                 const SizedBox(width: 4),
                                                 Text(
                                                   'Verified',
-                                                  style: GoogleFonts.outfit(
+                                                  style: GoogleFonts.inter(
                                                     fontSize: 13,
                                                     fontWeight: FontWeight.bold,
                                                     color: _kGreen,
@@ -874,7 +874,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                                             ),
                                             child: Text(
                                               type.toUpperCase(),
-                                              style: GoogleFonts.outfit(
+                                              style: GoogleFonts.inter(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.bold,
                                                 color: _kBrown,
@@ -903,7 +903,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                                         ),
                                         label: Text(
                                           'View',
-                                          style: GoogleFonts.outfit(
+                                          style: GoogleFonts.inter(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 14,
                                             color: _kBrown,

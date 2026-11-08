@@ -558,7 +558,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                 children: [
                   Text(
                     'Bank Deposit Receipt Slip',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                       color: textColor,
@@ -678,7 +678,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                     children: [
                       Text(
                         'Bank Deposit Receipts & Payments',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.bold,
                           fontSize: 17,
                         ),
@@ -702,7 +702,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                     ),
                     child: Text(
                       '${payments.length} Records',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: primary,
@@ -829,7 +829,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                                 Expanded(
                                   child: Text(
                                     desc,
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15,
                                     ),
@@ -839,7 +839,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                                 ),
                                 Text(
                                   'GH₵ ${amount.toStringAsFixed(2)}',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 15.5,
                                     color: isPaid ? const Color(0xFF10B981) : primary,
@@ -858,7 +858,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                                   ),
                                   child: Text(
                                     status.toUpperCase(),
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.w800,
                                       color: statusColor,
@@ -905,7 +905,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                       minimumSize: Size.zero,
                                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                      textStyle: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold),
+                                      textStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -925,7 +925,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                         minimumSize: Size.zero,
                                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        textStyle: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600),
+                                        textStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
                                       ),
                                     ),
                                 ],
@@ -943,7 +943,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                                 ),
                                 child: Text(
                                   'View Attached Deposit Slip →',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                     color: primary,

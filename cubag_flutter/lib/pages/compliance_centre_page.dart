@@ -289,7 +289,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Start Compliance Application',
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.bold,
             fontSize: 20,
             color: isDark ? Colors.white : _kTextDark,
@@ -326,7 +326,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
               ),
               title: Text(
                 'Annual Membership Renewal',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
                   color: isDark ? Colors.white : const Color(0xFF1A0F0A),
@@ -364,15 +364,15 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                 child: const Icon(Icons.badge_outlined, color: _kGreen, size: 22),
               ),
               title: Text(
-                'Customs Broker License & ID',
-                style: GoogleFonts.outfit(
+                'Customs License & Member ID',
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
                   color: isDark ? Colors.white : const Color(0xFF1A0F0A),
                 ),
               ),
               subtitle: Text(
-                'GRA operational license endorsement and official CUBAG broker ID',
+                'GRA operational license endorsement and official CUBAG member ID',
                 style: GoogleFonts.inter(
                   fontSize: 12.5,
                   color: isDark ? Colors.white60 : const Color(0xFF64748b),
@@ -391,7 +391,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text(
               'Cancel',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w600,
                 color: isDark ? Colors.white70 : const Color(0xFF64748b),
               ),
@@ -451,7 +451,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                     children: [
                       Text(
                         'My Applications',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: isDark ? Colors.white : _kTextDark,
@@ -529,7 +529,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                         child: Text(
                           _error!,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             color: _kRed,
                             fontWeight: FontWeight.w600,
                           ),
@@ -752,7 +752,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
             children: [
               Text(
                 'Renewal & Compliance Steps',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: isDark ? Colors.white : _kTextDark,
@@ -822,7 +822,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                                 ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
                                 : Text(
                                     '${i + 1}',
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
@@ -848,7 +848,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 11.5,
                         fontWeight: isCurrent ? FontWeight.bold : FontWeight.w600,
                         color: isCurrent
@@ -955,7 +955,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
             Expanded(
               child: Text(
                 msg,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1012,7 +1012,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           typeLabel,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             color: Colors.white,
             fontWeight: FontWeight.w800,
             fontSize: 20,
@@ -1108,7 +1108,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
 
                         Text(
                           'Documents',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 19,
                             fontWeight: FontWeight.bold,
                             color: isDark ? Colors.white : _kTextDark,
@@ -1144,7 +1144,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                             Text(
                               'No additional payment required — your previous payment is still valid.',
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 14,
                                 color: Colors.grey,
                                 fontStyle: FontStyle.italic,
@@ -1232,7 +1232,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                   children: [
                     Text(
                       'Official Renewal Bill Issued',
-                      style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : _kTextDark),
+                      style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : _kTextDark),
                     ),
                     Text(
                       'Payment Deadline: $deadline',
@@ -1257,7 +1257,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(label, style: GoogleFonts.inter(fontSize: 14, color: isDark ? Colors.white70 : Colors.grey.shade700)),
-                    Text('GHS ${amt.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontSize: 14.5, fontWeight: FontWeight.w700, color: isDark ? Colors.white : _kTextDark)),
+                    Text('GHS ${amt.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 14.5, fontWeight: FontWeight.w700, color: isDark ? Colors.white : _kTextDark)),
                   ],
                 ),
               );
@@ -1269,8 +1269,8 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Total Amount Due:', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : _kTextDark)),
-              Text('GHS ${amount.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w900, color: _kPrimary)),
+              Text('Total Amount Due:', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : _kTextDark)),
+              Text('GHS ${amount.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w900, color: _kPrimary)),
             ],
           ),
           const SizedBox(height: 20),
@@ -1295,7 +1295,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                       const SizedBox(width: 8),
                       Text(
                         'Payment Submitted',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.bold,
                           fontSize: 15.5,
                           color: const Color(0xFFE65100),
@@ -1332,7 +1332,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                   const SizedBox(width: 8),
                   Text(
                     'Payment Confirmed ✓',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 15.5,
                       color: const Color(0xFF10B981),
@@ -1384,7 +1384,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                           allowInst
                               ? 'Proceed to Payment (Full or Installment)'
                               : 'Proceed to Payment (GHS ${amount.toStringAsFixed(2)})',
-                          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                       ),
                     ),
@@ -1460,7 +1460,7 @@ class _StatusViewPage extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           typeLabel,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             color: Colors.white,
             fontWeight: FontWeight.w800,
           ),
@@ -1485,7 +1485,7 @@ class _StatusViewPage extends StatelessWidget {
                 const SizedBox(height: 20),
                 Text(
                   _statusLabel(status),
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 30,
                     fontWeight: FontWeight.bold,
                     color: color,
@@ -1497,7 +1497,7 @@ class _StatusViewPage extends StatelessWidget {
                       ? 'Your $typeLabel has been approved.'
                       : 'Your $typeLabel was rejected.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 17,
                     color: isDark ? Colors.white70 : Colors.black54,
                   ),
@@ -1517,7 +1517,7 @@ class _StatusViewPage extends StatelessWidget {
                       children: [
                         Text(
                           'Admin Note',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             color: color,
                           ),
@@ -1525,7 +1525,7 @@ class _StatusViewPage extends StatelessWidget {
                         const SizedBox(height: 6),
                         Text(
                           note,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             color: isDark ? Colors.white70 : Colors.black87,
                           ),
                         ),
@@ -1542,7 +1542,7 @@ class _StatusViewPage extends StatelessWidget {
                       icon: const Icon(Icons.workspace_premium_rounded),
                       label: Text(
                         'View Compliance Certificate',
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                        style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _kGreen,
@@ -1562,7 +1562,7 @@ class _StatusViewPage extends StatelessWidget {
                   icon: const Icon(Icons.arrow_back_rounded),
                   label: Text(
                     'Back to Compliance Centre',
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                    style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _kPrimary,
@@ -1627,7 +1627,7 @@ class _SectionHeader extends StatelessWidget {
             children: [
               Text(
                 'COMPLIANCE & STATUTORY CENTRE',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
                   fontSize: 18,
@@ -1674,7 +1674,7 @@ class _AlertBanner extends StatelessWidget {
         Expanded(
           child: Text(
             message,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 14.5,
               color: color,
               fontWeight: FontWeight.w600,
@@ -1743,7 +1743,7 @@ class _ApplicationCard extends StatelessWidget {
                 children: [
                   Text(
                     typeLabel,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
                       color: isDark ? Colors.white : _kTextDark,
@@ -1796,7 +1796,7 @@ class _ApplicationCard extends StatelessWidget {
                             const SizedBox(width: 4),
                             Text(
                               _statusLabel(status),
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 color: color,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
@@ -1894,7 +1894,7 @@ class _StatusBanner extends StatelessWidget {
               children: [
                 Text(
                   _statusLabel(status),
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     color: color,
                     fontSize: 16,
@@ -1903,7 +1903,7 @@ class _StatusBanner extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   message,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14.5,
                     color: color.withValues(alpha: 0.85),
                   ),
@@ -1946,14 +1946,14 @@ class _ProgressCard extends StatelessWidget {
             children: [
               Text(
                 'Document Progress',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   color: isDark ? Colors.white : _kTextDark,
                 ),
               ),
               Text(
                 '$uploaded / $total',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   color: _kPrimary,
                   fontSize: 16,
@@ -2070,7 +2070,7 @@ class _DocRow extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
                         color: isDark ? Colors.white : _kTextDark,
@@ -2115,7 +2115,7 @@ class _DocRow extends StatelessWidget {
                               docStatus == 'approved'
                                   ? 'Approved'
                                   : (needsAction ? 'Action Required' : 'Under Review'),
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                                 color: docStatus == 'approved'
@@ -2162,7 +2162,7 @@ class _DocRow extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         'Verified',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w700,
                           fontSize: 12,
                           color: _kGreen,
@@ -2198,7 +2198,7 @@ class _DocRow extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           'Under Review',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w700,
                             fontSize: 12,
                             color: Colors.grey,
@@ -2236,7 +2236,7 @@ class _DocRow extends StatelessWidget {
                       needsAction
                           ? 'Re-upload'
                           : 'Upload',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                         color: needsAction
@@ -2268,7 +2268,7 @@ class _DocRow extends StatelessWidget {
                     isStaleDoc
                         ? 'Auto-filled ${_fmtDate(srcDate)} — document may be outdated, please replace.'
                         : 'Auto-filled from registration (uploaded ${_fmtDate(srcDate)})',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 13,
                       color: isStaleDoc ? _kRed : _kAmber,
                       fontStyle: FontStyle.italic,
@@ -2304,7 +2304,7 @@ class _DocRow extends StatelessWidget {
                   Flexible(
                     child: Text(
                       doc['file_name']?.toString() ?? 'View document',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 13,
                         color: _kPrimary,
                         decoration: TextDecoration.underline,
@@ -2327,7 +2327,7 @@ class _DocRow extends StatelessWidget {
               ),
               child: Text(
                 'Admin note: $adminNote',
-                style: GoogleFonts.outfit(fontSize: 13.5, color: _kRed),
+                style: GoogleFonts.inter(fontSize: 13.5, color: _kRed),
               ),
             ),
           ],
@@ -2361,7 +2361,7 @@ class _InfoBox extends StatelessWidget {
         Expanded(
           child: Text(
             message,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               color: color,
               fontWeight: FontWeight.w600,
             ),
@@ -2401,7 +2401,7 @@ class _ActionButton extends StatelessWidget {
           : Icon(icon, size: 18),
       label: Text(
         label,
-        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+        style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
       ),
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
@@ -2442,7 +2442,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'No Active Compliance Applications',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: isDark ? Colors.white : const Color(0xFF1A0F0A),
@@ -2452,7 +2452,7 @@ class _EmptyState extends StatelessWidget {
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Text(
-                'Start a renewal or customs broker license application to upload statutory documents and track vetting progress.',
+                'Start a renewal or customs license application to upload statutory documents and track vetting progress.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
                   fontSize: 14,
@@ -2467,7 +2467,7 @@ class _EmptyState extends StatelessWidget {
               icon: const Icon(Icons.add_rounded, size: 18),
               label: Text(
                 'Start Application Now',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
                 ),

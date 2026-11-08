@@ -213,7 +213,7 @@ class _InAppDocumentViewerState extends State<InAppDocumentViewer> {
           children: [
             Text(
               widget.title,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: textPrimary,
@@ -329,7 +329,7 @@ class _InAppDocumentViewerState extends State<InAppDocumentViewer> {
               const SizedBox(height: 12),
               Text(
                 'Could not display document',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
@@ -395,7 +395,7 @@ class _InAppDocumentViewerState extends State<InAppDocumentViewer> {
           const SizedBox(height: 14),
           Text(
             widget.title,
-            style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold),
+            style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(

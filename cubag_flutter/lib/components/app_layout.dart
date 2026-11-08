@@ -350,7 +350,7 @@ class _AppLayoutState extends State<AppLayout> {
                       child: Text(
                         unreadCount > 99 ? '99+' : '$unreadCount',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           color: Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
@@ -417,7 +417,7 @@ class _AppLayoutState extends State<AppLayout> {
                           children: [
                             Text(
                               'Notifications',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                                 color: textColor,
@@ -437,7 +437,7 @@ class _AppLayoutState extends State<AppLayout> {
                                 ),
                                 child: Text(
                                   '$unreadCount New',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     color: const Color(0xFFef4444),
                                     fontSize: 12,
                                     fontWeight: FontWeight.w800,
@@ -518,7 +518,7 @@ class _AppLayoutState extends State<AppLayout> {
                                               children: [
                                                 Text(
                                                   n['title']?.toString() ?? '',
-                                                  style: GoogleFonts.outfit(
+                                                  style: GoogleFonts.inter(
                                                     fontWeight: isRead
                                                         ? FontWeight.w600
                                                         : FontWeight.w800,
@@ -567,7 +567,7 @@ class _AppLayoutState extends State<AppLayout> {
                               children: [
                                 Text(
                                   'View All Notifications',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                     color: const Color(0xFFFF5000),
@@ -724,7 +724,7 @@ class _AppLayoutState extends State<AppLayout> {
                       children: [
                         Text(
                           authService.userName ?? 'Member',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 16.5,
                             color: textColor,
@@ -782,7 +782,7 @@ class _AppLayoutState extends State<AppLayout> {
                     const SizedBox(width: 12),
                     Text(
                       'Complete Application',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
                         color: textColor,
@@ -816,7 +816,7 @@ class _AppLayoutState extends State<AppLayout> {
                     const SizedBox(width: 12),
                     Text(
                       'My Profile',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w600,
                         fontSize: 16.5,
                         color: textColor,
@@ -855,7 +855,7 @@ class _AppLayoutState extends State<AppLayout> {
                     const SizedBox(width: 12),
                     Text(
                       'Settings',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w600,
                         fontSize: 16.5,
                         color: textColor,
@@ -899,7 +899,7 @@ class _AppLayoutState extends State<AppLayout> {
                   const SizedBox(width: 12),
                   Text(
                     'Sign Out',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 16.5,
                       color: const Color(0xFFef4444),
@@ -963,7 +963,7 @@ class _AppLayoutState extends State<AppLayout> {
           const SizedBox(width: 8),
           Text(
             widget.title,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               color: textColor,
               fontWeight: FontWeight.w800,
               fontSize: 22,
@@ -1153,7 +1153,7 @@ class _AppLayoutState extends State<AppLayout> {
                             children: [
                               Text(
                                 'CUBAG',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   color: textColor,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w900,
@@ -1341,7 +1341,7 @@ class _AppLayoutState extends State<AppLayout> {
                       children: [
                         Text(
                           authService.userName ?? 'Member',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                             color: textColor,
@@ -1816,7 +1816,7 @@ class _AppLayoutState extends State<AppLayout> {
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
           child: Text(
             title,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.w800,
               color: headerColor,
@@ -1915,7 +1915,7 @@ class _AppLayoutState extends State<AppLayout> {
                       Expanded(
                         child: Text(
                           title,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             color: active ? activeTextColor : inactiveTextColor,
                             fontWeight: active
                                 ? FontWeight.w800
@@ -1940,7 +1940,7 @@ class _AppLayoutState extends State<AppLayout> {
                           ),
                           child: Text(
                             badge > 99 ? '99+' : badge.toString(),
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               color: Colors.white,
                               fontSize: 11.5,
                               fontWeight: FontWeight.w800,

@@ -292,7 +292,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                         const SizedBox(width: 8),
                         Text(
                           (_user['role']?.toString() ?? 'ADMIN').toUpperCase(),
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             color: kAdminOrange,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -319,11 +319,11 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                   indicatorWeight: 3,
                   labelColor: _kOrange,
                   unselectedLabelColor: subTextCol,
-                  labelStyle: GoogleFonts.outfit(
+                  labelStyle: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
-                  unselectedLabelStyle: GoogleFonts.outfit(
+                  unselectedLabelStyle: GoogleFonts.inter(
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
                   ),
@@ -419,7 +419,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                     children: [
                       Text(
                         'Admin Profile Overview',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                           color: textCol,
@@ -580,7 +580,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                     children: [
                       Text(
                         'Security & Password Reset',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                           color: textCol,
@@ -744,7 +744,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                       : const Icon(Icons.key_rounded, size: 16),
                   label: Text(
                     'Update',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
@@ -802,7 +802,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                 children: [
                   Text(
                     'Compliance Scoring Weights',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                       color: textCol,
@@ -861,7 +861,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
           // 1. Payment Points
           Text(
             '1. Payment & Financial Standing',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.bold,
               fontSize: 16,
               color: textCol,
@@ -898,7 +898,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
           // 2. Customs Licensing Points
           Text(
             '2. Customs Operating License Standing',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.bold,
               fontSize: 16,
               color: textCol,
@@ -935,7 +935,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
           // 3. Operational Tasks & Surveys
           Text(
             '3. Association Engagements & Surveys',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.bold,
               fontSize: 16,
               color: textCol,
@@ -972,7 +972,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
           // 4. AGM Attendance
           Text(
             '4. AGM & Executive Meetings Attendance',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.bold,
               fontSize: 16,
               color: textCol,
@@ -1034,7 +1034,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                   : const Icon(Icons.save_rounded, size: 16),
               label: Text(
                 'Save Scoring Weights',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
                 ),
@@ -1059,7 +1059,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
       children: [
         Text(
           label,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 13,
             fontWeight: FontWeight.bold,
             color: subTextCol,
@@ -1103,7 +1103,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
       children: [
         Text(
           label,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 13,
             fontWeight: FontWeight.bold,
             color: subTextCol,
@@ -1162,7 +1162,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
       children: [
         Text(
           label,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 13,
             fontWeight: FontWeight.bold,
             color: subTextCol,

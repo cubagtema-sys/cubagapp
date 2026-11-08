@@ -150,10 +150,10 @@ class _AdminEventAttendeesPageState extends State<AdminEventAttendeesPage> {
             padding: const EdgeInsets.only(bottom: 16),
             child: TextField(
               onChanged: (v) => setState(() => _searchQuery = v),
-              style: GoogleFonts.outfit(color: textColor, fontSize: 18),
+              style: GoogleFonts.inter(color: textColor, fontSize: 18),
               decoration: InputDecoration(
                 hintText: 'Search by name or company...',
-                hintStyle: GoogleFonts.outfit(
+                hintStyle: GoogleFonts.inter(
                   color: subTextColor,
                   fontSize: 18,
                 ),
@@ -197,7 +197,7 @@ class _AdminEventAttendeesPageState extends State<AdminEventAttendeesPage> {
                       _searchQuery.isEmpty
                           ? 'No members found.'
                           : 'No matches for "$_searchQuery".',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: subTextColor,
                         fontWeight: FontWeight.bold,
                       ),
@@ -243,7 +243,7 @@ class _AdminEventAttendeesPageState extends State<AdminEventAttendeesPage> {
                                 : subTextColor.withValues(alpha: 0.15),
                             child: Text(
                               initial,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 color: isAttended
                                     ? const Color(0xFF10b981)
                                     : subTextColor,
@@ -253,7 +253,7 @@ class _AdminEventAttendeesPageState extends State<AdminEventAttendeesPage> {
                           ),
                           title: Text(
                             nameStr,
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontWeight: FontWeight.bold,
                               fontSize: 19,
                               color: textColor,
@@ -261,7 +261,7 @@ class _AdminEventAttendeesPageState extends State<AdminEventAttendeesPage> {
                           ),
                           subtitle: Text(
                             '${a['email'] ?? ''}\n${a['company'] ?? ''}',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 16,
                               height: 1.5,
                               color: subTextColor,
@@ -300,7 +300,7 @@ class _AdminEventAttendeesPageState extends State<AdminEventAttendeesPage> {
                                       const SizedBox(width: 4),
                                       Text(
                                         'Checked In',
-                                        style: GoogleFonts.outfit(
+                                        style: GoogleFonts.inter(
                                           color: const Color(0xFF10b981),
                                           fontSize: 15,
                                           fontWeight: FontWeight.bold,
@@ -335,7 +335,7 @@ class _AdminEventAttendeesPageState extends State<AdminEventAttendeesPage> {
                                       const SizedBox(width: 4),
                                       Text(
                                         'Absent',
-                                        style: GoogleFonts.outfit(
+                                        style: GoogleFonts.inter(
                                           color: subTextColor,
                                           fontSize: 15,
                                           fontWeight: FontWeight.bold,
@@ -387,7 +387,7 @@ class _AdminEventAttendeesPageState extends State<AdminEventAttendeesPage> {
             children: [
               Text(
                 count.toString(),
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w800,
                   fontSize: 22,
                   color: isSelected
@@ -398,7 +398,7 @@ class _AdminEventAttendeesPageState extends State<AdminEventAttendeesPage> {
               const SizedBox(height: 2),
               Text(
                 label,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: isSelected

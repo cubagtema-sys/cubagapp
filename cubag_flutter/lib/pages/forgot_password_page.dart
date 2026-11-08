@@ -165,7 +165,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               const SizedBox(height: 28),
               Text(
                 'CUBAG',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: Colors.white,
                   fontSize: 44,
                   fontWeight: FontWeight.w900,
@@ -185,7 +185,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               const SizedBox(height: 18),
               Text(
                 'Customs Brokers Association of Ghana',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: const Color(0xFFF8F4F0),
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -220,7 +220,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       children: [
         Text(
           'Security Center',
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 24,
             fontWeight: FontWeight.w800,
             color: _kText,
@@ -237,7 +237,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           icon: Icons.verified_user_outlined,
           title: 'Authorized Retrieval',
           desc:
-              'Password recovery is restricted to verified customs broker accounts with registered credentials.',
+              'Password recovery is restricted to verified member accounts with registered credentials.',
         ),
         const SizedBox(height: 18),
         _infoCard(
@@ -286,7 +286,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             children: [
               Text(
                 title,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: _kText,
@@ -338,7 +338,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               Text(
                 'Reset Password',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
                   color: _kText,
@@ -376,7 +376,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 const SizedBox(height: 24),
                 Text(
                   'Check your Inbox',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     color: _kText,
                     fontWeight: FontWeight.w900,
                     fontSize: 22,

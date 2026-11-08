@@ -122,7 +122,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
               const SizedBox(height: 16),
               Text(
                 'VERIFYING TREASURY RECEIPT...',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w800,
                   fontSize: 13,
                   letterSpacing: 1.2,
@@ -184,7 +184,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                   const SizedBox(height: 16),
                   Text(
                     'Receipt Unverified',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF1E130D),
@@ -234,7 +234,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                       ),
                       child: Text(
                         'Return to CUBAG Portal',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
@@ -289,7 +289,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
             const SizedBox(width: 10),
             Text(
               'CUBAG Official Clearance',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 color: const Color(0xFF1E130D),
                 fontWeight: FontWeight.w800,
                 fontSize: 16,
@@ -348,7 +348,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                           children: [
                             Text(
                               statusLabel,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 color: statusColor,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 14,
@@ -391,7 +391,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                       const SizedBox(height: 4),
                       Text(
                         _formatAmount(p['amount']),
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
                           color: const Color(0xFF1E130D),
@@ -408,7 +408,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                         ),
                         child: Text(
                           desc,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                             color: _kBrown,
@@ -461,7 +461,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                           children: [
                             Text(
                               'AUTHENTICATED BY CUBAG TREASURY',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                                 color: _kBrown,
@@ -502,7 +502,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                       ),
                       child: Text(
                         'Open CUBAG Portal',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
@@ -545,7 +545,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF1E130D),
                     )
-                  : GoogleFonts.outfit(
+                  : GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF1E130D),

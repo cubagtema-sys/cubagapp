@@ -119,7 +119,7 @@ class _IframeWidgetState extends State<IframeWidget> {
                       const SizedBox(width: 6),
                       Text(
                         'LIVE AIS MAP',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           color: accentGreen,
@@ -130,7 +130,7 @@ class _IframeWidgetState extends State<IframeWidget> {
                         const SizedBox(width: 6),
                         Text(
                           '· MMSI ${widget.mmsi}',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: Colors.white70,
@@ -169,7 +169,7 @@ class _IframeWidgetState extends State<IframeWidget> {
                       children: [
                         Text(
                           'MarineTraffic',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,

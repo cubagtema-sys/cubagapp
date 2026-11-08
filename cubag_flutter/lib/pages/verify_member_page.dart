@@ -279,7 +279,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                             ),
                           ),
                           Text(
-                            m['company']?.toString() ?? 'Independent Broker',
+                            m['company']?.toString() ?? 'Independent Member',
                             style: const TextStyle(
                               color: Colors.grey,
                               fontWeight: FontWeight.w600,

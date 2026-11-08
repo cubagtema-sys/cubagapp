@@ -107,7 +107,7 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(width: 10),
               Text(
                 'Server Configuration',
-                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 20, color: _kText),
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 20, color: _kText),
               ),
             ],
           ),
@@ -565,7 +565,7 @@ class _LoginPageState extends State<LoginPage> {
               Text(
                 'Welcome Back',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: isMobile ? 24 : 32,
                   fontWeight: FontWeight.w900,
                   color: _kText,

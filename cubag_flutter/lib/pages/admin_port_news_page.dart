@@ -94,7 +94,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
               const SizedBox(width: 10),
               Text(
                 isEdit ? 'Edit Port Bulletin' : 'Post Port Bulletin',
-                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ],
           ),
@@ -112,7 +112,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                   const SizedBox(height: 14),
                   TextField(
                     controller: portCtrl,
-                    style: GoogleFonts.outfit(fontSize: 13.5),
+                    style: GoogleFonts.inter(fontSize: 13.5),
                     decoration: const InputDecoration(
                       labelText: 'Port / Terminal Name *',
                       hintText: 'e.g. Tema Port Terminal 3',
@@ -126,7 +126,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                         flex: 1,
                         child: TextField(
                           controller: codeCtrl,
-                          style: GoogleFonts.outfit(fontSize: 13.5),
+                          style: GoogleFonts.inter(fontSize: 13.5),
                           decoration: const InputDecoration(
                             labelText: 'Code',
                             hintText: 'e.g. TMP',
@@ -231,7 +231,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                     },
               child: submitting
                   ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : Text(isEdit ? 'Save Changes' : 'Post Bulletin', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
+                  : Text(isEdit ? 'Save Changes' : 'Post Bulletin', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
             ),
           ],
         ),
@@ -261,7 +261,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: Text('Archive Port Bulletin?', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: Text('Archive Port Bulletin?', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16)),
         content: Text('Remove "${bulletin['port_name']}" bulletin from public view?', style: GoogleFonts.inter(fontSize: 13)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
@@ -348,7 +348,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                 ),
                 onPressed: _fetchBulletins,
                 icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: Text('Refresh', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13)),
+                label: Text('Refresh', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
               ),
               const SizedBox(width: 8),
               ElevatedButton.icon(
@@ -361,7 +361,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                 ),
                 onPressed: () => _showBulletinDialog(),
                 icon: const Icon(Icons.add_rounded, size: 18),
-                label: Text('Post Bulletin', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
+                label: Text('Post Bulletin', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
               ),
             ],
           ),
@@ -387,7 +387,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                     child: TextField(
                       controller: _searchCtrl,
                       onChanged: (v) => setState(() => _searchQuery = v.trim()),
-                      style: GoogleFonts.outfit(fontSize: 13.5, color: textColor),
+                      style: GoogleFonts.inter(fontSize: 13.5, color: textColor),
                       decoration: InputDecoration(
                         hintText: 'Search by port, terminal code, or operational notice...',
                         hintStyle: GoogleFonts.inter(fontSize: 12.5, color: subTextColor),
@@ -457,7 +457,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                   children: [
                     Icon(Icons.anchor_rounded, size: 36, color: subTextColor),
                     const SizedBox(height: 8),
-                    Text('No port bulletins found', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
+                    Text('No port bulletins found', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
                   ],
                 ),
               ),
@@ -504,7 +504,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                               children: [
                                 Text(
                                   b['port_name']?.toString() ?? '',
-                                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15, color: textColor),
+                                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15, color: textColor),
                                 ),
                                 if (b['code'] != null && b['code'].toString().isNotEmpty) ...[
                                   const SizedBox(width: 6),
@@ -516,7 +516,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                                     ),
                                     child: Text(
                                       b['code'].toString(),
-                                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 11, color: subTextColor),
+                                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 11, color: subTextColor),
                                     ),
                                   ),
                                 ],
@@ -530,7 +530,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                                   ),
                                   child: Text(
                                     statusStr.toUpperCase(),
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       color: badgeColor,
                                       fontWeight: FontWeight.w800,
                                       fontSize: 10,
@@ -668,11 +668,11 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                 children: [
                   Text(
                     value,
-                    style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: textColor),
+                    style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: textColor),
                   ),
                   Text(
                     label,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 11.5,
                       color: isSelected ? color : subTextColor,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
@@ -704,7 +704,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 11.5,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
             color: isSelected ? Colors.white : textColor,

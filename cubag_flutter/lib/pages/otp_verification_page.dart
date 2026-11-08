@@ -212,7 +212,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
               const SizedBox(height: 24),
               Text(
                 'CUBAG',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: Colors.white,
                   fontSize: 38,
                   fontWeight: FontWeight.w900,
@@ -231,7 +231,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
               const SizedBox(height: 20),
               Text(
                 'Enterprise Mobility Platform',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: Colors.white.withAlpha(220),
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -338,7 +338,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
             ],
             Text(
               'Verify Your Email',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 30,
                 fontWeight: FontWeight.w900,
                 color: _kText,
@@ -399,7 +399,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
                   keyboardType: TextInputType.number,
                   maxLength: 1,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: _kText,

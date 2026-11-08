@@ -110,7 +110,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                 const SizedBox(width: 12),
                 Text(
                   isEdit ? 'Edit Gallery Photo' : 'Upload Gallery Photo',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 22,
                   ),
@@ -200,7 +200,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                     // Image Attachment Section
                     Text(
                       'Photo Attachment',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.bold,
                         fontSize: 17,
                       ),
@@ -393,7 +393,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                               selectedImageBytes != null || uploadedUrl.isNotEmpty
                                   ? 'Replace Photo Attachment'
                                   : 'Choose Photo Attachment',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 17,
                               ),
@@ -628,7 +628,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                 icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
                 label: Text(
                   'Upload Photo',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
@@ -715,7 +715,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                   const SizedBox(height: 12),
                   Text(
                     'No gallery items match your filter.',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 20,
                     ),
@@ -811,7 +811,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                                   ),
                                   child: Text(
                                     it['category']?.toString() ?? 'Conferences',
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       color: Colors.white,
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,
@@ -852,7 +852,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                               children: [
                                 Text(
                                   it['title']?.toString() ?? '',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     color: Colors.white,
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,

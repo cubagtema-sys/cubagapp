@@ -51,8 +51,8 @@ TextStyle _outfit({
   List<FontFeature>? fontFeatures,
 }) {
   return TextStyle(
-    fontFamily: 'Outfit',
-    fontFamilyFallback: const ['Inter', 'sans-serif'],
+    fontFamily: 'Inter',
+    fontFamilyFallback: const ['sans-serif'],
     color: color,
     fontSize: fontSize,
     fontWeight: fontWeight,
@@ -832,7 +832,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               if (!isMobile) ...[
                 _headerLink('Services', () => _scrollTo(_servicesKey)),
                 _headerLink('Updates', () => _scrollTo(_updatesKey)),
-                _headerLink('Licensed Brokers', () => _scrollTo(_directoryKey)),
+                _headerLink('Accredited Members', () => _scrollTo(_directoryKey)),
                 _headerLink('Events', () => _scrollTo(_eventsKey)),
                 _headerLink('Register A Course', () => _scrollTo(_trainingKey)),
                 _headerLink('Surveys & Polls', () => _scrollTo(_surveysKey)),
@@ -1073,8 +1073,8 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                                 () => _scrollTo(_updatesKey),
                               ),
                               _drawerLink(
-                                'Licensed Brokers',
-                                'National Clearing Agent Roll',
+                                'Accredited Members',
+                                'National Member Directory',
                                 Icons.verified_user_outlined,
                                 () => _scrollTo(_directoryKey),
                               ),
@@ -1718,8 +1718,8 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
   Widget _buildQuickServicesSection(bool isMobile) {
     final services = [
       (
-        title: 'Find A Licensed Broker (Clearing Agent/Forwarder)',
-        subtitle: 'Search verified brokers',
+        title: 'Find An Accredited Member (Clearing Agent/Forwarder)',
+        subtitle: 'Search verified members',
         icon: Icons.manage_search_rounded,
         onTap: () => _scrollTo(_directoryKey),
       ),
@@ -2264,7 +2264,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // ④ LICENSED BROKER REGISTRY
+  // ④ ACCREDITED MEMBER REGISTRY
   // ──────────────────────────────────────────────────────────────────────────
   Widget _buildMemberDirectorySection(bool isMobile) {
     final searchLedger = Container(
@@ -2285,7 +2285,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Find a Licensed Broker',
+            'Find an Accredited Member',
             style: _outfit(
               fontSize: 19,
               fontWeight: FontWeight.w700,
@@ -2308,7 +2308,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text(
-                '${_directoryMembers.length} verified brokers available',
+                '${_directoryMembers.length} verified members available',
                 style: _inter(
                   fontSize: 13.5,
                   color: _kMuted,
@@ -2353,7 +2353,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'FIND A LICENSED BROKER (CLEARING AGENT/FORWARDER)',
+                      'FIND AN ACCREDITED MEMBER (CLEARING AGENT/FORWARDER)',
                       style: _outfit(
                         color: _kAccent,
                         fontSize: 12,
@@ -2363,7 +2363,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Licensed Brokers Directory',
+                      'Accredited Members Directory',
                       style: _outfit(
                         color: _kText,
                         fontSize: 28,
@@ -2396,7 +2396,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'FIND A LICENSED BROKER (CLEARING AGENT/FORWARDER)',
+                              'FIND AN ACCREDITED MEMBER (CLEARING AGENT/FORWARDER)',
                               style: _outfit(
                                 color: _kAccent,
                                 fontSize: 12.5,
@@ -2406,7 +2406,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                             ),
                             const SizedBox(height: 10),
                             Text(
-                              'Licensed Brokers Directory',
+                              'Accredited Members Directory',
                               style: _outfit(
                                 color: _kText,
                                 fontSize: 38,
@@ -2520,7 +2520,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                     _modalDetailRow('Company Entity', company),
                     if (name.isNotEmpty && name != company) ...[
                       const SizedBox(height: 12),
-                      _modalDetailRow('Lead Broker / Contact', name),
+                      _modalDetailRow('Lead Member / Contact', name),
                     ],
                     const SizedBox(height: 12),
                     _modalDetailRow('Primary Port', port),
@@ -2626,7 +2626,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                 ),
                 style: _inter(fontSize: isMobile ? 15 : 15.5, color: _kText),
                 decoration: InputDecoration(
-                  hintText: 'Search broker name, company, or license...',
+                  hintText: 'Search member name, company, or license...',
                   hintStyle: _inter(color: _kMuted, fontSize: isMobile ? 14 : 15),
                   prefixIcon: Icon(
                     Icons.search_rounded,
@@ -2674,7 +2674,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                         elevation: 0,
                       ),
                       child: Text(
-                        'Search Brokers',
+                        'Search Members',
                         style: _outfit(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -2747,7 +2747,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                       separatorBuilder: (_, _) => Divider(height: 1, color: _kBorder.withAlpha(80)),
                       itemBuilder: (BuildContext context, int index) {
                         final m = optionsList[index];
-                        final company = m['company']?.toString() ?? m['name']?.toString() ?? 'Licensed Broker';
+                        final company = m['company']?.toString() ?? m['name']?.toString() ?? 'Licensed Member';
                         final name = m['name']?.toString() ?? '';
                         final port = m['primary_port']?.toString() ?? 'Port Operations';
                         final license = m['license_number']?.toString();
@@ -3593,7 +3593,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                             ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 420),
                               child: Text(
-                                'Lodge an official grievance regarding clearance delays, demurrage disputes, or broker conduct — or track the live status of an existing complaint.',
+                                'Lodge an official grievance regarding clearance delays, demurrage disputes, or member conduct — or track the live status of an existing complaint.',
                                 style: _inter(
                                   color: _kMuted,
                                   fontSize: 16,
@@ -4421,7 +4421,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                             ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 420),
                               child: Text(
-                                'Open to importers, exporters, and licensed customs brokers. Vote and voice your opinion on port operations, ICUMS workflows, and trade policy.',
+                                'Open to importers, exporters, and accredited members. Vote and voice your opinion on port operations, ICUMS workflows, and trade policy.',
                                 style: _inter(
                                   color: _kMuted,
                                   fontSize: 16,
@@ -6727,7 +6727,7 @@ class _AllCoursesDialogState extends State<_AllCoursesDialog> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Professional development courses for customs brokers & trade practitioners',
+                              'Professional development courses for customs practitioners & members',
                               style: _inter(color: _kMuted, fontSize: 14),
                             ),
                           ],
@@ -6997,7 +6997,7 @@ class _AllCoursesDialogState extends State<_AllCoursesDialog> {
   );
 }
 
-/// Interactive Full Accredited Customs Brokers Directory Modal
+/// Interactive Full Accredited Members Directory Modal
 class _AllDirectoryDialog extends StatefulWidget {
   final List<dynamic> membersList;
   final String initialQuery;
@@ -7178,7 +7178,7 @@ class _AllDirectoryDialogState extends State<_AllDirectoryDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Accredited Customs Brokers Directory',
+                            'Accredited Members Directory',
                             style: _outfit(
                               fontSize: isMobile ? 18 : 20,
                               fontWeight: FontWeight.bold,
@@ -7229,7 +7229,7 @@ class _AllDirectoryDialogState extends State<_AllDirectoryDialog> {
                         style: _inter(fontSize: 15.5, color: _kText),
                         decoration: InputDecoration(
                           hintText:
-                              'Search by company, broker name, license no, or membership ID...',
+                              'Search by company, member name, license no, or membership ID...',
                           hintStyle: _inter(fontSize: 15, color: _kMuted),
                           prefixIcon: Icon(
                             Icons.search_rounded,
@@ -7304,7 +7304,7 @@ class _AllDirectoryDialogState extends State<_AllDirectoryDialog> {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'No matching customs brokers found',
+                              'No matching members found',
                               style: _outfit(
                                 fontSize: 17,
                                 fontWeight: FontWeight.bold,
@@ -7329,7 +7329,7 @@ class _AllDirectoryDialogState extends State<_AllDirectoryDialog> {
                           final company =
                               m['company']?.toString() ??
                               m['name']?.toString() ??
-                              'Accredited Broker';
+                              'Accredited Member';
                           final name = m['name']?.toString() ?? '';
                           final port =
                               m['primary_port']?.toString() ??
@@ -7405,7 +7405,7 @@ class _AllDirectoryDialogState extends State<_AllDirectoryDialog> {
                                           name != company) ...[
                                         const SizedBox(height: 2),
                                         Text(
-                                          'Lead Broker: $name',
+                                          'Lead Member: $name',
                                           style: _inter(
                                             fontSize: 14,
                                             color: _kMuted,
@@ -7425,7 +7425,7 @@ class _AllDirectoryDialogState extends State<_AllDirectoryDialog> {
                                           _dialogMeta(
                                             Icons.category_outlined,
                                             m['member_type']?.toString() ??
-                                                'Accredited Broker',
+                                                'Accredited Member',
                                           ),
                                         ],
                                       ),

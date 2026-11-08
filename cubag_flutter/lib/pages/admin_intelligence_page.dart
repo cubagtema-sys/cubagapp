@@ -148,7 +148,7 @@ class _State extends State<AdminIntelligencePage> {
                 const SizedBox(width: 8),
                 Text(
                   'Customs FX rates saved & published successfully!',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                     fontSize: 13.5,
@@ -170,7 +170,7 @@ class _State extends State<AdminIntelligencePage> {
           SnackBar(
             content: Text(
               'Failed to update currency rates: $e',
-              style: GoogleFonts.outfit(color: Colors.white, fontSize: 13),
+              style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
             ),
             backgroundColor: const Color(0xFFef4444),
             behavior: SnackBarBehavior.floating,
@@ -322,7 +322,7 @@ class _State extends State<AdminIntelligencePage> {
                   icon: const Icon(Icons.refresh_rounded, size: 16),
                   label: Text(
                     'Refresh All',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       fontSize: 13.5,
                     ),
@@ -355,7 +355,7 @@ class _State extends State<AdminIntelligencePage> {
                   const SizedBox(width: 8),
                   Text(
                     'Connected Feeds:',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
                       color: isDark ? Colors.white70 : const Color(0xFF475569),
@@ -395,7 +395,7 @@ class _State extends State<AdminIntelligencePage> {
                                 const SizedBox(width: 5),
                                 Text(
                                   s['source'] as String,
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w600,
                                     color: color,
@@ -434,7 +434,7 @@ class _State extends State<AdminIntelligencePage> {
                 const SizedBox(width: 8),
                 Text(
                   'Live Maritime Feed',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 16.5,
                     color: textColor,
@@ -450,7 +450,7 @@ class _State extends State<AdminIntelligencePage> {
                     ),
                     child: Text(
                       '${_articles.length}',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w700,
                         color: _kOrange,
@@ -462,7 +462,7 @@ class _State extends State<AdminIntelligencePage> {
                   const SizedBox(width: 8),
                   Text(
                     '• updated $_lastUpdated',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 12.5,
                       color: subTextColor,
                     ),
@@ -562,7 +562,7 @@ class _State extends State<AdminIntelligencePage> {
                       const SizedBox(height: 12),
                       Text(
                         'News feed temporarily unavailable',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           color: textColor,
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
@@ -571,7 +571,7 @@ class _State extends State<AdminIntelligencePage> {
                       const SizedBox(height: 4),
                       Text(
                         'Unable to connect to live syndication endpoints.',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           color: subTextColor,
                           fontSize: 13,
                         ),
@@ -582,7 +582,7 @@ class _State extends State<AdminIntelligencePage> {
                         icon: const Icon(Icons.refresh, size: 14),
                         label: Text(
                           'Try Again',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
                           ),
@@ -742,7 +742,7 @@ class _State extends State<AdminIntelligencePage> {
                             ),
                             child: Text(
                               a.source,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                                 color: a.sourceColor,
@@ -753,7 +753,7 @@ class _State extends State<AdminIntelligencePage> {
                             const SizedBox(width: 8),
                             Text(
                               _formatDate(a.pubDate),
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color: subTextColor,
                                 fontWeight: FontWeight.w500,
@@ -771,7 +771,7 @@ class _State extends State<AdminIntelligencePage> {
                       const SizedBox(height: 6),
                       Text(
                         a.title,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w600,
                           fontSize: 14.5,
                           color: textColor,
@@ -838,7 +838,7 @@ class _State extends State<AdminIntelligencePage> {
                   children: [
                     Text(
                       'Official Customs FX Rates (GHS)',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                         color: textColor,
@@ -846,7 +846,7 @@ class _State extends State<AdminIntelligencePage> {
                     ),
                     Text(
                       'Exchange rates published live to member portal & dashboard calculations.',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         color: subTextColor,
                       ),
@@ -958,7 +958,7 @@ class _State extends State<AdminIntelligencePage> {
                       : const Icon(Icons.check_rounded, size: 16),
                   label: Text(
                     _forexSaving ? 'Saving...' : 'Save Rates',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       fontSize: 13.5,
                     ),
@@ -1019,7 +1019,7 @@ class _State extends State<AdminIntelligencePage> {
                 alignment: Alignment.center,
                 child: Text(
                   symbol,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     color: color,
                     fontWeight: FontWeight.bold,
                     fontSize: 11,
@@ -1029,7 +1029,7 @@ class _State extends State<AdminIntelligencePage> {
               const SizedBox(width: 6),
               Text(
                 code,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                   color: color,
@@ -1038,7 +1038,7 @@ class _State extends State<AdminIntelligencePage> {
               const Spacer(),
               Text(
                 'GHS',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 11,
                   color: isDark ? Colors.white54 : const Color(0xFF64748b),
                   fontWeight: FontWeight.w600,
@@ -1052,7 +1052,7 @@ class _State extends State<AdminIntelligencePage> {
             child: TextField(
               controller: ctrl,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.bold,
                 fontSize: 14.5,
                 color: isDark ? Colors.white : const Color(0xFF1A0F0A),

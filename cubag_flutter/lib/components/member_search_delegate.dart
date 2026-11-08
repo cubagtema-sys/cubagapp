@@ -59,7 +59,7 @@ class MemberSearchDelegate extends SearchDelegate<String> {
             Icon(Icons.search, size: 48, color: Color(0xFFcbd5e1)),
             SizedBox(height: 12),
             Text(
-              'Search the broker directory & announcements',
+              'Search the member directory & announcements',
               style: TextStyle(color: Color(0xFF94a3b8), fontSize: 15),
             ),
           ],
@@ -286,7 +286,7 @@ class _DebouncedMemberSearchState extends State<_DebouncedMemberSearch> {
             ),
             child: Text(
               r.type == 'directory'
-                  ? 'BROKER'
+                  ? 'MEMBER'
                   : r.type == 'announcement'
                   ? 'ALERT'
                   : 'SCHEDULE',

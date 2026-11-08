@@ -118,7 +118,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                 const SizedBox(width: 12),
                 Text(
                   isEdit ? 'Edit Event Details' : 'Create New Event',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 22,
                   ),
@@ -546,7 +546,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                 icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
                 label: Text(
                   'Scan Check-in QR',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
@@ -569,7 +569,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                 icon: const Icon(Icons.add_rounded, size: 18),
                 label: Text(
                   'Create Event',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
@@ -647,7 +647,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                   const SizedBox(height: 12),
                   Text(
                     'No events match your current filter.',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 20,
                       color: textCol,
@@ -681,13 +681,13 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                         ),
                         child: DataTable(
                           headingRowColor: WidgetStateProperty.all(headerBg),
-                          headingTextStyle: GoogleFonts.outfit(
+                          headingTextStyle: GoogleFonts.inter(
                             fontWeight: FontWeight.w800,
                             fontSize: 16,
                             color: subTextCol,
                             letterSpacing: 0.5,
                           ),
-                          dataTextStyle: GoogleFonts.outfit(
+                          dataTextStyle: GoogleFonts.inter(
                             fontSize: 17,
                             color: textCol,
                           ),
@@ -743,7 +743,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                                       children: [
                                         Text(
                                           title,
-                                          style: GoogleFonts.outfit(
+                                          style: GoogleFonts.inter(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 18,
                                             color: textCol,
@@ -796,7 +796,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                                               rawDate.isNotEmpty
                                                   ? rawDate
                                                   : 'No Date',
-                                              style: GoogleFonts.outfit(
+                                              style: GoogleFonts.inter(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 16,
                                                 color: _kOrange,
@@ -884,7 +884,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                                           const SizedBox(width: 6),
                                           Text(
                                             '$attendeeCount Attendees',
-                                            style: GoogleFonts.outfit(
+                                            style: GoogleFonts.inter(
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
                                               color: _kBlue,
@@ -917,7 +917,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                                     ),
                                     child: Text(
                                       isPast ? 'Past Event' : 'Upcoming',
-                                      style: GoogleFonts.outfit(
+                                      style: GoogleFonts.inter(
                                         fontSize: 15,
                                         fontWeight: FontWeight.bold,
                                         color: isPast ? Colors.grey : _kGreen,
@@ -986,7 +986,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
     return FilterChip(
       label: Text(
         label,
-        style: GoogleFonts.outfit(
+        style: GoogleFonts.inter(
           fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
           fontSize: 16,
           color: isSelected ? _kOrange : null,

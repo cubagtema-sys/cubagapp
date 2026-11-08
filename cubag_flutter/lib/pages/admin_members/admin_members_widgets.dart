@@ -84,7 +84,7 @@ class _KPICardState extends State<_KPICard> {
                       fit: BoxFit.scaleDown,
                       child: Text(
                         widget.value,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 21,
                           fontWeight: FontWeight.w800,
                           color: isDark

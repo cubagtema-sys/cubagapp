@@ -157,7 +157,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               const SizedBox(height: 24),
               Text(
                 'CUBAG',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: Colors.white,
                   fontSize: 38,
                   fontWeight: FontWeight.w900,
@@ -176,7 +176,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               const SizedBox(height: 20),
               Text(
                 'Enterprise Mobility Platform',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: Colors.white.withAlpha(220),
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -261,7 +261,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           const SizedBox(height: 16),
           Text(
             'Invalid Link',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: _kText,
@@ -335,7 +335,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           const SizedBox(height: 20),
           Text(
             'Password Reset',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: _kText,
@@ -418,7 +418,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             ],
             Text(
               'Set New Password',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 28,
                 fontWeight: FontWeight.w900,
                 color: _kText,

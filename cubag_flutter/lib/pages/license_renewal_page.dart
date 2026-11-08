@@ -122,7 +122,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                               ),
                               child: Text(
                                 'Membership History',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color:
@@ -247,7 +247,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                   children: [
                     Text(
                       'Renewal Progress',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -358,7 +358,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                           const SizedBox(height: 10),
                           Text(
                             step.title,
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -459,7 +459,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
               children: [
                 Text(
                   'License Active — No Payment Required',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                     color: const Color(0xFF10b981),
@@ -543,7 +543,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
           const SizedBox(height: 24),
           Text(
             'Records Restricted',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.bold,
               fontSize: 22,
               color: Theme.of(context).brightness == Brightness.dark
@@ -646,7 +646,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
           const SizedBox(height: 20),
           Text(
             'No Records Found',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.bold,
               fontSize: 20,
               color: Theme.of(context).brightness == Brightness.dark
@@ -748,7 +748,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
               Expanded(
                 child: Text(
                   'Membership License',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                     color: Theme.of(context).brightness == Brightness.dark

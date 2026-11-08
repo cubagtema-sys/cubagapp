@@ -385,7 +385,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                           searchQuery.isNotEmpty
                               ? 'SEARCH RESULTS (${filtered.length})'
                               : 'LATEST CIRCULARS (${filtered.length})',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w800,
                             fontSize: 17,
                             color: const Color(0xFF64748b),
@@ -450,7 +450,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                               const SizedBox(height: 16),
                               Text(
                                 'No Circulars Found',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w800,
                                   color: const Color(0xFF475569),
@@ -621,7 +621,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                         const SizedBox(height: 18),
                         Text(
                           a['title'] ?? '',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF1A0F0A),
@@ -760,7 +760,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                               a['title'] ?? '',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 17,
                                 fontWeight: isRead
                                     ? FontWeight.w600

@@ -295,7 +295,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                     else if (_totalDocs > 0 && _requirements.isNotEmpty) ...[
                       Text(
                         'Required Documents (${_requirements.length})',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: isDark
@@ -358,7 +358,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
               Expanded(
                 child: Text(
                   'CUBAG Membership Application',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -394,7 +394,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                 ),
                 Text(
                   '${(progress * 100).toInt()}%',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                     color: _kOrange,
@@ -483,7 +483,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                       ? Icon(statusIcon, color: statusColor, size: 18)
                       : Text(
                           '$index',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: _kGrey,
@@ -819,7 +819,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
               Expanded(
                 child: Text(
                   titleText,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: isDark ? Colors.white : const Color(0xFF1A0F0A),
@@ -859,7 +859,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                       children: [
                         Text(
                           'REGISTRATION FEE',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
                             color: _kOrange,
@@ -883,7 +883,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                   const SizedBox(width: 12),
                   Text(
                     displayRegFee,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
                       color: isDark ? Colors.white : const Color(0xFF0f172a),

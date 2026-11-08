@@ -278,7 +278,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                 ),
                 onPressed: _fetchAll,
                 icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: Text('Refresh', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13)),
+                label: Text('Refresh', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
               ),
               const SizedBox(width: 8),
               ElevatedButton.icon(
@@ -291,7 +291,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                 ),
                 onPressed: () => _showCourseDialog(),
                 icon: const Icon(Icons.add_rounded, size: 18),
-                label: Text('New Course', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
+                label: Text('New Course', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
               ),
             ],
           ),
@@ -313,8 +313,8 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
               indicatorColor: _kOrange,
               labelColor: _kOrange,
               unselectedLabelColor: subTextColor,
-              labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13),
-              unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
+              labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
+              unselectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
               tabs: [
                 Tab(
                   icon: const Icon(Icons.school_rounded, size: 16),
@@ -421,11 +421,11 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
               children: [
                 Text(
                   value,
-                  style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: textColor),
+                  style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: textColor),
                 ),
                 Text(
                   label,
-                  style: GoogleFonts.outfit(fontSize: 11.5, color: subTextColor, fontWeight: FontWeight.w500),
+                  style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor, fontWeight: FontWeight.w500),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -468,7 +468,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                   height: 38,
                   child: TextField(
                     onChanged: (v) => setState(() => _searchQuery = v.trim()),
-                    style: GoogleFonts.outfit(fontSize: 13.5, color: textColor),
+                    style: GoogleFonts.inter(fontSize: 13.5, color: textColor),
                     decoration: InputDecoration(
                       hintText: 'Search courses by title, mode, or keywords...',
                       hintStyle: GoogleFonts.inter(fontSize: 12.5, color: subTextColor),
@@ -521,7 +521,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                 children: [
                   Icon(Icons.school_outlined, size: 36, color: subTextColor),
                   const SizedBox(height: 8),
-                  Text('No courses found', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
+                  Text('No courses found', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
                 ],
               ),
             ),
@@ -568,7 +568,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                               Expanded(
                                 child: Text(
                                   c['title'] ?? '',
-                                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15, color: textColor),
+                                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15, color: textColor),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -580,7 +580,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                                 ),
                                 child: Text(
                                   isActive ? 'ACTIVE' : 'ARCHIVED',
-                                  style: GoogleFonts.outfit(fontSize: 9.5, fontWeight: FontWeight.bold, color: isActive ? _kGreen : _kSlate),
+                                  style: GoogleFonts.inter(fontSize: 9.5, fontWeight: FontWeight.bold, color: isActive ? _kGreen : _kSlate),
                                 ),
                               ),
                             ],
@@ -630,7 +630,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                                 const SizedBox(width: 4),
                                 Text(
                                   '$enrolledCount Enrolled',
-                                  style: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.bold, color: enrolledCount > 0 ? _kGreen : _kOrange),
+                                  style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold, color: enrolledCount > 0 ? _kGreen : _kOrange),
                                 ),
                               ],
                             ),
@@ -715,7 +715,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                       height: 38,
                       child: TextField(
                         onChanged: (v) => setState(() => _enrollmentSearchQuery = v.trim()),
-                        style: GoogleFonts.outfit(fontSize: 13.5, color: textColor),
+                        style: GoogleFonts.inter(fontSize: 13.5, color: textColor),
                         decoration: InputDecoration(
                           hintText: 'Search enrolled students by name, company, email, ref...',
                           hintStyle: GoogleFonts.inter(fontSize: 12.5, color: subTextColor),
@@ -775,7 +775,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                 children: [
                   Icon(Icons.people_outline_rounded, size: 36, color: subTextColor),
                   const SizedBox(height: 8),
-                  Text('No enrolled members found', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
+                  Text('No enrolled members found', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
                 ],
               ),
             ),
@@ -789,7 +789,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
             itemBuilder: (ctx, i) {
               final en = filteredList[i];
               final memberName = en['member_name'] ?? 'Enrolled Member';
-              final company = en['company'] ?? 'Licensed Broker';
+              final company = en['company'] ?? 'Licensed Member';
               final courseTitle = en['course_title'] ?? 'CTI Course';
               final mode = en['mode'] ?? 'Hybrid';
               final amount = en['amount']?.toString() ?? '0.00';
@@ -812,7 +812,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                       backgroundColor: _kGreen.withValues(alpha: 0.12),
                       child: Text(
                         memberName.isNotEmpty ? memberName[0].toUpperCase() : 'M',
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: _kGreen),
+                        style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: _kGreen),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -822,7 +822,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                         children: [
                           Row(
                             children: [
-                              Text(memberName, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13.5, color: textColor)),
+                              Text(memberName, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13.5, color: textColor)),
                               if (company.isNotEmpty) ...[
                                 const SizedBox(width: 6),
                                 Text('• $company', style: GoogleFonts.inter(fontSize: 11.5, color: _kOrange, fontWeight: FontWeight.w500)),
@@ -841,7 +841,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                         color: _kGreen.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text('PAID & ENROLLED', style: GoogleFonts.outfit(fontSize: 9.5, fontWeight: FontWeight.bold, color: _kGreen)),
+                      child: Text('PAID & ENROLLED', style: GoogleFonts.inter(fontSize: 9.5, fontWeight: FontWeight.bold, color: _kGreen)),
                     ),
                   ],
                 ),
@@ -889,7 +889,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                       height: 38,
                       child: TextField(
                         onChanged: (v) => setState(() => _guestSearchQuery = v.trim()),
-                        style: GoogleFonts.outfit(fontSize: 13.5, color: textColor),
+                        style: GoogleFonts.inter(fontSize: 13.5, color: textColor),
                         decoration: InputDecoration(
                           hintText: 'Search guest name, phone, email, CTI reference...',
                           hintStyle: GoogleFonts.inter(fontSize: 12.5, color: subTextColor),
@@ -926,7 +926,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                         );
                       },
                       icon: const Icon(Icons.copy_rounded, size: 14),
-                      label: Text('Copy Roster', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
+                      label: Text('Copy Roster', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _kOrange,
                         foregroundColor: Colors.white,
@@ -972,7 +972,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                             ),
                             child: Text(
                               cTitle,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 11.5,
                                 fontWeight: isSel ? FontWeight.bold : FontWeight.w600,
                                 color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF334155)),
@@ -1011,7 +1011,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                 children: [
                   Icon(Icons.person_search_rounded, size: 36, color: subTextColor),
                   const SizedBox(height: 8),
-                  Text('No guest course enrollments found', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
+                  Text('No guest course enrollments found', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
                 ],
               ),
             ),
@@ -1049,7 +1049,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                       backgroundColor: isPaid ? _kGreen.withValues(alpha: 0.12) : _kOrange.withValues(alpha: 0.12),
                       child: Text(
                         name.isNotEmpty ? name[0].toUpperCase() : 'G',
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: isPaid ? _kGreen : _kOrange),
+                        style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: isPaid ? _kGreen : _kOrange),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1059,7 +1059,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                         children: [
                           Row(
                             children: [
-                              Text(name, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13.5, color: textColor)),
+                              Text(name, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13.5, color: textColor)),
                               const SizedBox(width: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
@@ -1067,7 +1067,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                                   color: _kIndigo.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: Text('GUEST', style: GoogleFonts.outfit(fontSize: 9.5, fontWeight: FontWeight.bold, color: _kIndigo)),
+                                child: Text('GUEST', style: GoogleFonts.inter(fontSize: 9.5, fontWeight: FontWeight.bold, color: _kIndigo)),
                               ),
                             ],
                           ),
@@ -1088,7 +1088,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                           ),
                           child: Text(
                             isPaid ? 'PAID' : 'PENDING',
-                            style: GoogleFonts.outfit(fontSize: 9.5, fontWeight: FontWeight.bold, color: isPaid ? _kGreen : _kOrange),
+                            style: GoogleFonts.inter(fontSize: 9.5, fontWeight: FontWeight.bold, color: isPaid ? _kGreen : _kOrange),
                           ),
                         ),
                         if (!isPaid) ...[
@@ -1097,7 +1097,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                             onTap: () => _markGuestPaid(rawRef),
                             child: Text(
                               'Mark Paid',
-                              style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: _kGreen),
+                              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: _kGreen),
                             ),
                           ),
                         ],
@@ -1146,7 +1146,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
         ),
         child: Text(
           label,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 11.5,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
             color: isSelected ? Colors.white : textColor,
@@ -1171,7 +1171,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
         ),
         child: Text(
           label,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 11.5,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
             color: isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF334155)),
@@ -1221,7 +1221,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(courseTitle, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16, color: textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text(courseTitle, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
                       Text('Enrolled Students (${courseEnrollments.length} Total)', style: GoogleFonts.inter(fontSize: 12, color: _kOrange, fontWeight: FontWeight.w600)),
                     ],
                   ),
@@ -1258,7 +1258,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                         ? Center(
                             child: Text(
                               courseEnrollments.isEmpty ? 'No members enrolled yet.' : 'No matching students found.',
-                              style: GoogleFonts.outfit(fontSize: 13.5, color: textMuted),
+                              style: GoogleFonts.inter(fontSize: 13.5, color: textMuted),
                             ),
                           )
                         : ListView.separated(
@@ -1267,7 +1267,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                             itemBuilder: (ctx, i) {
                               final en = filteredList[i];
                               final memberName = en['member_name'] ?? 'Member';
-                              final company = en['company'] ?? 'Broker';
+                              final company = en['company'] ?? 'Member';
                               final email = en['email'] ?? '';
                               final phone = en['phone'] ?? '';
                               final amount = en['amount']?.toString() ?? '';
@@ -1280,20 +1280,20 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                                     CircleAvatar(
                                       radius: 16,
                                       backgroundColor: _kOrange.withValues(alpha: 0.15),
-                                      child: Text(memberName.isNotEmpty ? memberName[0].toUpperCase() : 'M', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12, color: _kOrange)),
+                                      child: Text(memberName.isNotEmpty ? memberName[0].toUpperCase() : 'M', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12, color: _kOrange)),
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text('$memberName • $company', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary)),
+                                          Text('$memberName • $company', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary)),
                                           Text('$email • $phone', style: GoogleFonts.inter(fontSize: 11.5, color: textMuted)),
                                         ],
                                       ),
                                     ),
                                     if (amount.isNotEmpty)
-                                      Text('GHS $amount', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: _kGreen)),
+                                      Text('GHS $amount', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: _kGreen)),
                                   ],
                                 ),
                               );
@@ -1306,12 +1306,12 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dlgCtx),
-                child: Text('Close', style: GoogleFonts.outfit(color: textMuted)),
+                child: Text('Close', style: GoogleFonts.inter(color: textMuted)),
               ),
               if (courseEnrollments.isNotEmpty)
                 ElevatedButton.icon(
                   onPressed: () {
-                    final names = courseEnrollments.map((e) => '${e['member_name']} (${e['company'] ?? 'Broker'}) - ${e['phone']} - ${e['email']}').join('\n');
+                    final names = courseEnrollments.map((e) => '${e['member_name']} (${e['company'] ?? 'Member'}) - ${e['phone']} - ${e['email']}').join('\n');
                     Clipboard.setData(ClipboardData(text: names));
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -1322,7 +1322,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                     );
                   },
                   icon: const Icon(Icons.copy_rounded, size: 14),
-                  label: Text('Copy Roster', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12)),
+                  label: Text('Copy Roster', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _kOrange,
                     foregroundColor: Colors.white,
@@ -1365,7 +1365,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
               Expanded(
                 child: Text(
                   isEdit ? 'Edit CTI Course' : 'Add New CTI Course',
-                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
             ],
@@ -1378,7 +1378,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                 children: [
                   TextField(
                     controller: titleCtrl,
-                    style: GoogleFonts.outfit(fontSize: 13.5),
+                    style: GoogleFonts.inter(fontSize: 13.5),
                     decoration: const InputDecoration(labelText: 'Course Title *', hintText: 'e.g. Freight Forwarding Fundamentals'),
                   ),
                   const SizedBox(height: 10),
@@ -1387,7 +1387,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                       Expanded(
                         child: TextField(
                           controller: dateCtrl,
-                          style: GoogleFonts.outfit(fontSize: 13.5),
+                          style: GoogleFonts.inter(fontSize: 13.5),
                           decoration: const InputDecoration(labelText: 'Start Date *', hintText: 'e.g. 25 Aug 2026'),
                         ),
                       ),
@@ -1395,7 +1395,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                       Expanded(
                         child: TextField(
                           controller: durationCtrl,
-                          style: GoogleFonts.outfit(fontSize: 13.5),
+                          style: GoogleFonts.inter(fontSize: 13.5),
                           decoration: const InputDecoration(labelText: 'Duration *', hintText: 'e.g. 4 Weeks'),
                         ),
                       ),
@@ -1420,7 +1420,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                       Expanded(
                         child: TextField(
                           controller: feeCtrl,
-                          style: GoogleFonts.outfit(fontSize: 13.5),
+                          style: GoogleFonts.inter(fontSize: 13.5),
                           decoration: const InputDecoration(labelText: 'Fee (GHS) *', hintText: 'e.g. GHS 1,980'),
                         ),
                       ),
@@ -1439,7 +1439,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       '🔔 Broadcast Push Notification to all Members',
-                      style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: _kOrange),
+                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: _kOrange),
                     ),
                     value: notifyMembers,
                     activeColor: _kOrange,
@@ -1536,7 +1536,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: Text(title, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16)),
         content: Text(content, style: GoogleFonts.inter(fontSize: 13)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),

@@ -37,7 +37,7 @@ class InAppLegalViewer {
                       children: [
                         Text(
                           title,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 20,
                             fontWeight: FontWeight.w900,
                             color: const Color(0xFF1A0F0A),
@@ -74,7 +74,7 @@ class InAppLegalViewer {
                       children: [
                         Text(
                           section['heading'] ?? '',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF1A0F0A),
@@ -108,7 +108,7 @@ class InAppLegalViewer {
                   onPressed: () => Navigator.pop(ctx),
                   child: Text(
                     'Close',
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
               ),

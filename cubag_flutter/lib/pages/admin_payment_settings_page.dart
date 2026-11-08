@@ -111,7 +111,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
               const SizedBox(width: 10),
               Text(
                 'Bank settlement accounts saved successfully!',
-                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 17),
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 17),
               ),
             ],
           ),
@@ -153,7 +153,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                   icon: const Icon(Icons.account_balance_rounded, size: 16),
                   label: Text(
                     'Add Bank Account',
-                    style: GoogleFonts.outfit(fontSize: 16.5, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.inter(fontSize: 16.5, fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _kOrange,
@@ -242,7 +242,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                         children: [
                           Text(
                             'Enforce Security & Live Publication',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                               color: textPrimary,
@@ -267,7 +267,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                           : const Icon(Icons.save_rounded, size: 18),
                       label: Text(
                         _loading ? 'Saving Settings...' : 'Save & Publish Settings',
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 17.5),
+                        style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 17.5),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _kOrange,
@@ -318,7 +318,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 19,
                       fontWeight: FontWeight.w900,
                       color: textPrimary,
@@ -333,7 +333,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                     ),
                     child: Text(
                       badgeText,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w800,
                         color: badgeColor,
@@ -377,7 +377,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
           const SizedBox(height: 8),
           Text(
             title,
-            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
+            style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
           ),
           const SizedBox(height: 4),
           Text(
@@ -446,7 +446,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                 const SizedBox(width: 10),
                 Text(
                   bankName.isNotEmpty ? bankName : 'Bank Account #${index + 1}',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 17.5,
                     fontWeight: FontWeight.w800,
                     color: textPrimary,
@@ -462,7 +462,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                     ),
                     child: Text(
                       'PRIMARY',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
@@ -574,7 +574,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
       children: [
         Text(
           label,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF94A3B8),
@@ -585,7 +585,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
         TextFormField(
           initialValue: value,
           keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 17,
             fontWeight: FontWeight.w600,
             color: textPrimary,

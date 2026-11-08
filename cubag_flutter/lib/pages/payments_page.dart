@@ -28,7 +28,7 @@ class _PaymentsPageState extends State<PaymentsPage>
   int _step = 1;
   final _amountCtrl = TextEditingController();
   String _reason = '';
-  String _method = 'momo';
+  final String _method = 'momo';
   String _momoNetwork = '';
   String _momoPhone = '';
   int? _complianceAppId;
@@ -80,37 +80,6 @@ class _PaymentsPageState extends State<PaymentsPage>
         .trim();
   }
 
-  // Bank transfer receipt state
-  String? _receiptUrl;
-  String? _receiptFileName;
-  bool _uploadingReceipt = false;
-  int _selectedBankIndex = 0;
-  final _bankRefCtrl = TextEditingController();
-  final _bankNotesCtrl = TextEditingController();
-
-  List<Map<String, dynamic>> _getBankList(dynamic bank) {
-    if (_paySettings['bankAccounts'] is List) {
-      final list = (_paySettings['bankAccounts'] as List)
-          .map((item) => Map<String, dynamic>.from(item as Map))
-          .where((b) => b['type'] != 'momo')
-          .toList();
-      if (list.isNotEmpty) return list;
-    }
-    if (bank is Map && bank.isNotEmpty) {
-      return [Map<String, dynamic>.from(bank)];
-    }
-    return [
-      {
-        'bankName': 'GCB Bank Limited',
-        'accountName': 'Customs Brokers Association of Ghana (CUBAG)',
-        'accountNumber': '1011130002145',
-        'branch': 'Tema Main Branch',
-        'sortCode': '01011',
-        'swiftCode': 'GHBKGHAC',
-      }
-    ];
-  }
-
   late AnimationController _pulseController;
   late Animation<double> _pulseAnim;
 
@@ -146,75 +115,7 @@ class _PaymentsPageState extends State<PaymentsPage>
     SocketService().socket?.off('payment_approved');
     _pulseController.dispose();
     _amountCtrl.dispose();
-    _bankRefCtrl.dispose();
-    _bankNotesCtrl.dispose();
     super.dispose();
-  }
-
-  Future<void> _pickAndUploadBankReceipt() async {
-    try {
-      FilePickerResult? result = await FilePicker.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg', 'webp'],
-        withData: true,
-      );
-      if (result == null || result.files.isEmpty) return;
-      final file = result.files.first;
-      setState(() => _uploadingReceipt = true);
-
-      MultipartFile mpFile;
-      if (file.bytes != null && file.bytes!.isNotEmpty) {
-        mpFile = MultipartFile.fromBytes(
-          file.bytes!,
-          filename: file.name,
-        );
-      } else if (file.path != null && file.path!.isNotEmpty) {
-        mpFile = await MultipartFile.fromFile(file.path!, filename: file.name);
-      } else {
-        setState(() => _uploadingReceipt = false);
-        return;
-      }
-
-      final formData = FormData.fromMap({'receipt': mpFile});
-      final res = await ApiService().upload('/payments/upload-receipt', formData);
-
-      final resData = res.data is Map ? res.data as Map : null;
-      if (res.statusCode == 200 && resData != null) {
-        setState(() {
-          _receiptUrl = resData['receipt_url'] ?? resData['url'];
-          _receiptFileName = file.name;
-          _uploadingReceipt = false;
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Bank deposit slip uploaded successfully!'),
-              backgroundColor: _kGreen,
-            ),
-          );
-        }
-      } else {
-        setState(() => _uploadingReceipt = false);
-        final errText = resData != null
-            ? (resData['message']?.toString() ?? 'Failed to upload receipt.')
-            : (res.data?.toString() ?? 'Failed to upload receipt.');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errText),
-              backgroundColor: _kRed,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      setState(() => _uploadingReceipt = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload error: $e'), backgroundColor: _kRed),
-        );
-      }
-    }
   }
 
   String _normalizeGhanaPhone(String input) {
@@ -484,13 +385,6 @@ class _PaymentsPageState extends State<PaymentsPage>
       });
       return;
     }
-    if (_method == 'bank' && (_receiptUrl == null || _receiptUrl!.isEmpty)) {
-      setState(() {
-        _errorMsg = 'Please upload a copy of your bank deposit slip or wire transfer receipt.';
-        _showError = true;
-      });
-      return;
-    }
     final effectiveReason = _reason.trim().isEmpty
         ? 'Association Payment'
         : _reason;
@@ -513,28 +407,20 @@ class _PaymentsPageState extends State<PaymentsPage>
 
     try {
       final api = ApiService();
-      final bankList = _getBankList(null);
-      final chosenBank = (_selectedBankIndex >= 0 && _selectedBankIndex < bankList.length)
-          ? bankList[_selectedBankIndex]
-          : (bankList.isNotEmpty ? bankList.first : {});
-      final bName = (chosenBank['bankName'] ?? chosenBank['bank_name'] ?? 'GCB Bank Limited').toString();
-      final aName = (chosenBank['accountName'] ?? chosenBank['account_name'] ?? 'Customs Brokers Association of Ghana (CUBAG)').toString();
-      final aNum = (chosenBank['accountNumber'] ?? chosenBank['account_number'] ?? '1011130002145').toString();
-
       final isInstallment = _isInstallmentMode ||
           (_reason.toLowerCase().contains('renewal') && _allowInstallments && amt < ((_renewalFeeAmount ?? amt) - 0.01));
       final requestData = {
         'amount': amt,
         'description': effectiveReason,
-        'method': _method,
+        'method': 'momo',
         'network': _momoNetwork,
         'phone': _momoPhone,
-        'receipt_url': _receiptUrl,
-        'bank_name': _method == 'bank' ? bName : null,
-        'account_name': _method == 'bank' ? aName : null,
-        'account_number': _method == 'bank' ? aNum : null,
-        'payment_ref': _bankRefCtrl.text.trim().isNotEmpty ? _bankRefCtrl.text.trim() : null,
-        'notes': _bankNotesCtrl.text.trim().isNotEmpty ? _bankNotesCtrl.text.trim() : null,
+        'receipt_url': null,
+        'bank_name': null,
+        'account_name': null,
+        'account_number': null,
+        'payment_ref': null,
+        'notes': null,
         'is_installment': isInstallment,
         'installment_number': _installments.length + 1,
         'compliance_application_id': _complianceAppId,
@@ -651,7 +537,6 @@ class _PaymentsPageState extends State<PaymentsPage>
           final resData = res.data as Map;
           final paymentId = resData['payment_id'];
           final txRef = resData['transaction_ref'] ?? '';
-          final receipt = resData['receipt_url'];
 
           // Suppress bill popup and invalidate caches
           await SessionStorage.instance.setString('cubag_renewal_submitted', 'true');
@@ -662,9 +547,6 @@ class _PaymentsPageState extends State<PaymentsPage>
             setState(() {
               _currentPaymentId = paymentId;
               _currentTxRef = txRef;
-              if (receipt != null && receipt.toString().isNotEmpty) {
-                _receiptUrl = receipt.toString();
-              }
               _confirmedAmount = _amountCtrl.text;
               _loading = false;
               _submittingPayment = false;
@@ -941,7 +823,7 @@ class _PaymentsPageState extends State<PaymentsPage>
             Expanded(
               child: Text(
                 'Uploading ${result.files.length} document(s)…',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
@@ -1031,7 +913,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   Expanded(
                     child: Text(
                       msg,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -1040,7 +922,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   ),
                 ],
               )
-            : Text(msg, style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            : Text(msg, style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
@@ -1226,7 +1108,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                 Expanded(
                   child: Text(
                     'Still pending: ${resData['message'] ?? 'Please check your phone for the MoMo prompt.'}',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 15.5,
                     ),
@@ -1260,7 +1142,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                 Expanded(
                   child: Text(
                     'Check failed — please try again.',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 15.5,
                     ),
@@ -1463,7 +1345,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                                           )
                                                         : Text(
                                                             '$n',
-                                                            style: GoogleFonts.outfit(
+                                                            style: GoogleFonts.inter(
                                                               color: isActive
                                                                   ? Colors.white
                                                                   : const Color(0xFF64748b),
@@ -1491,7 +1373,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                               child: isActive
                                                   ? Text(
                                                       labels[i],
-                                                      style: GoogleFonts.outfit(
+                                                      style: GoogleFonts.inter(
                                                         fontSize: 12,
                                                         color: _kOrange,
                                                         fontWeight: FontWeight.w800,
@@ -1532,7 +1414,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           const SizedBox(width: 6),
                           Text(
                             'Secured by WhitsunPay PCI-DSS Compliance',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 13,
                               color: const Color(0xFF64748b),
                               fontWeight: FontWeight.w700,
@@ -1569,7 +1451,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         const SizedBox(height: 20),
                         Text(
                           'Payment Confirmed!',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF1A0F0A),
@@ -1601,7 +1483,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               children: [
                                 Text(
                                   'AMOUNT PAID',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 12,
                                     color: const Color(0xFF16a34a),
                                     fontWeight: FontWeight.w900,
@@ -1611,7 +1493,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 const SizedBox(height: 4),
                                 Text(
                                   'GH₵ ${double.tryParse(_confirmedAmount)?.toStringAsFixed(2) ?? _confirmedAmount}',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 28,
                                     fontWeight: FontWeight.w800,
                                     color: const Color(0xFF15803d),
@@ -1661,7 +1543,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                               : (redirectUrl != null && redirectUrl.isNotEmpty
                                                   ? 'Return to App'
                                                   : 'View Payment History')),
-                                      style: GoogleFonts.outfit(
+                                      style: GoogleFonts.inter(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
                                       ),
@@ -1680,7 +1562,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                     ),
                                     child: Text(
                                       'View Payment History',
-                                      style: GoogleFonts.outfit(
+                                      style: GoogleFonts.inter(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 15,
                                       ),
@@ -1699,7 +1581,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           ),
                           child: Text(
                             'Close',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),
@@ -1733,7 +1615,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         const SizedBox(height: 20),
                         Text(
                           'Transaction Failed',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF1A0F0A),
@@ -1765,7 +1647,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             onPressed: () => setState(() => _showError = false),
                             child: Text(
                               'Try Again',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
@@ -1799,7 +1681,7 @@ class _PaymentsPageState extends State<PaymentsPage>
         children: [
           Text(
             'PAYMENT CATEGORY',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 13,
               color: const Color(0xFF64748b),
               fontWeight: FontWeight.w800,
@@ -2016,7 +1898,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       const SizedBox(width: 8),
                       Text(
                         'PAYMENT OPTION',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.5,
@@ -2069,7 +1951,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 const SizedBox(height: 4),
                                 Text(
                                   'GH₵ ${(_renewalBalanceDue > 0 ? _renewalBalanceDue : (_renewalFeeAmount ?? 0.0)).toStringAsFixed(2)}',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                     color: isDark ? Colors.white : Colors.black87,
@@ -2126,7 +2008,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                   _minInstallmentAmount > 0
                                       ? 'Min GH₵ ${_minInstallmentAmount.toStringAsFixed(2)}'
                                       : 'Installment',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                     color: isDark ? Colors.white : Colors.black87,
@@ -2146,7 +2028,7 @@ class _PaymentsPageState extends State<PaymentsPage>
           const SizedBox(height: 20),
           Text(
             _isInstallmentMode ? 'INSTALLMENT AMOUNT TO PAY' : 'AMOUNT TO PAY',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 13,
               color: const Color(0xFF64748b),
               fontWeight: FontWeight.w800,
@@ -2184,7 +2066,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   alignment: Alignment.center,
                   child: Text(
                     'GH₵',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF475569),
@@ -2201,7 +2083,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     ],
                     readOnly: (_reason.isNotEmpty && _reason != 'Other') &&
                         !(_reason.toLowerCase().contains('renewal') && _allowInstallments && _isInstallmentMode),
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF1A0F0A),
@@ -2326,7 +2208,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     children: [
                       Text(
                         'REGISTRATION FEE BREAKDOWN',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
                           color: _kOrange,
@@ -2344,7 +2226,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         ),
                         child: Text(
                           'One-Time',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
                             color: _kOrange,
@@ -2389,7 +2271,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         const SizedBox(width: 12),
                         Text(
                           'GHS ${_amountCtrl.text.isNotEmpty ? _amountCtrl.text : "600.00"}',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
                             color: isDark
@@ -2406,7 +2288,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     children: [
                       Text(
                         'TOTAL PAYABLE',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           color: _kOrange,
@@ -2414,7 +2296,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       ),
                       Text(
                         'GHS ${_amountCtrl.text.isNotEmpty ? _amountCtrl.text : "600.00"}',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 17,
                           fontWeight: FontWeight.w900,
                           color: isDark
@@ -2452,7 +2334,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           _regFeeCategoryTitle.isNotEmpty
                               ? 'FEE BREAKDOWN: NEW MEMBERSHIP DUES (${_cleanFeeLabel(_regFeeCategoryTitle).toUpperCase()})'
                               : 'NEW MEMBERSHIP DUES BREAKDOWN',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
                             color: _kOrange,
@@ -2485,7 +2367,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           const SizedBox(width: 8),
                           Text(
                             'GHS ${item['amount']?.toString() ?? ''}',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                               color: isDark
@@ -2511,7 +2393,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       ),
                       Text(
                         'GHS ${_amountCtrl.text}',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 17,
                           fontWeight: FontWeight.w900,
                           color: const Color(0xFFea580c),
@@ -2546,7 +2428,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           const SizedBox(width: 6),
                           Text(
                             'INSTALLMENT PLAN OVERVIEW',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF059669),
@@ -2599,7 +2481,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 'GHS ${((_renewalFeeAmount != null && _renewalFeeAmount! > 0) ? _renewalFeeAmount! : (_renewalAmountPaid + _renewalBalanceDue)).toStringAsFixed(2)}',
-                                style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
+                                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
                               ),
                             ),
                           ],
@@ -2617,7 +2499,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               alignment: Alignment.center,
                               child: Text(
                                 'GHS ${_renewalAmountPaid.toStringAsFixed(2)}',
-                                style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF059669)),
+                                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF059669)),
                               ),
                             ),
                           ],
@@ -2635,7 +2517,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               alignment: Alignment.centerRight,
                               child: Text(
                                 'GHS ${_renewalBalanceDue.toStringAsFixed(2)}',
-                                style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFFD97706)),
+                                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFFD97706)),
                               ),
                             ),
                           ],
@@ -2654,7 +2536,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         ),
                         Text(
                           'GHS ${((_renewalBalanceDue - (double.tryParse(_amountCtrl.text) ?? 0.0)).clamp(0.0, double.infinity)).toStringAsFixed(2)}',
-                          style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w700, color: _kOrange),
+                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: _kOrange),
                         ),
                       ],
                     ),
@@ -2688,7 +2570,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           _renewalFeeCategoryTitle.isNotEmpty
                               ? 'RENEWAL BREAKDOWN: ${_cleanFeeLabel(_renewalFeeCategoryTitle).toUpperCase()}'
                               : 'EXISTING MEMBERSHIP RENEWAL',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
                             color: _kOrange,
@@ -2721,7 +2603,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           const SizedBox(width: 8),
                           Text(
                             'GHS ${item['amount']?.toString() ?? ''}',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                               color: isDark
@@ -2747,7 +2629,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       ),
                       Text(
                         'GHS ${_amountCtrl.text}',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 17,
                           fontWeight: FontWeight.w900,
                           color: const Color(0xFFea580c),
@@ -2883,7 +2765,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           icon: const Icon(Icons.lock_outline_rounded, size: 18),
                           label: Text(
                             'Pay Annual Renewal Dues (Documents Required)',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontWeight: FontWeight.bold,
                               fontSize: 14.5,
                             ),
@@ -2909,7 +2791,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         icon: const Icon(Icons.upload_file_rounded, size: 18),
                         label: Text(
                           'Submit Renewal Documents (Step 1)',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
                           ),
@@ -2987,7 +2869,7 @@ class _PaymentsPageState extends State<PaymentsPage>
 
       final title = _complianceType == 'renewal'
           ? 'Membership Renewal Documents'
-          : 'Customs Broker License Credentials';
+          : 'Customs License Credentials';
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3024,7 +2906,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     children: [
                       Text(
                         'STEP 2: SUPPORTING DOCUMENTS',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
                           color: _kOrange,
                           fontWeight: FontWeight.w800,
@@ -3034,7 +2916,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       const SizedBox(height: 2),
                       Text(
                         title,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: isDark ? Colors.white : const Color(0xFF1A0F0A),
@@ -3049,7 +2931,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   label: const Text('Compliance Centre'),
                   style: TextButton.styleFrom(
                     foregroundColor: _kOrange,
-                    textStyle: GoogleFonts.outfit(
+                    textStyle: GoogleFonts.inter(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
                     ),
@@ -3126,7 +3008,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             children: [
                               Text(
                                 'Create Application Entry',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: const Color(0xFF1A0F0A),
@@ -3165,7 +3047,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         ),
                         label: Text(
                           'Initialize Application',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
@@ -3216,7 +3098,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         children: [
                           Text(
                             'APPLICATION STATUS',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF64748b),
@@ -3230,7 +3112,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                       .replaceAll('_', ' ')
                                       .toUpperCase()
                                 : 'DRAFT',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 17,
                               fontWeight: FontWeight.w800,
                               color: _complianceStatus == 'revision_requested'
@@ -3254,7 +3136,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       ),
                       child: Text(
                         _allComplianceDocsUploaded ? 'Ready' : 'Incomplete',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
                           color: _allComplianceDocsUploaded ? _kGreen : _kAmber,
@@ -3269,7 +3151,7 @@ class _PaymentsPageState extends State<PaymentsPage>
               // Required Documents List
               Text(
                 'REQUIRED DOCUMENTS',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 13,
                   color: const Color(0xFF64748b),
                   fontWeight: FontWeight.w800,
@@ -3320,7 +3202,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             children: [
                               Text(
                                 requirement,
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15.5,
                                   color: const Color(0xFF1A0F0A),
@@ -3352,7 +3234,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           ),
                           label: Text(
                             uploaded ? 'Replace' : 'Upload',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
                             ),
@@ -3402,7 +3284,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   icon: const Icon(Icons.arrow_forward_rounded, size: 18),
                   label: Text(
                     'Continue to Payment Method',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -3427,7 +3309,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   icon: const Icon(Icons.arrow_back_rounded, size: 16),
                   label: Text(
                     'Back to Fee Details',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w700,
                       fontSize: 15.5,
                     ),
@@ -3453,131 +3335,57 @@ class _PaymentsPageState extends State<PaymentsPage>
     if (_step == 3) {
       final cleanDigits = _normalizeGhanaPhone(_momoPhone);
       final isPhoneValid = cleanDigits.length == 10;
-      final isMomo = _method == 'momo';
-      final isBank = _method == 'bank';
-      final hasReceipt = _receiptUrl != null && _receiptUrl!.isNotEmpty;
-      final canProceed = isMomo
-          ? (_momoNetwork.isNotEmpty && isPhoneValid)
-          : hasReceipt;
+      final canProceed = _momoNetwork.isNotEmpty && isPhoneValid;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Payment Method Toggle Selector ──
-          Text(
-            'SELECT PAYMENT CHANNEL',
-            style: GoogleFonts.outfit(
-              fontWeight: FontWeight.w800,
-              fontSize: 13,
-              color: const Color(0xFF64748b),
-              letterSpacing: 0.6,
-            ),
-          ),
-          const SizedBox(height: 10),
+          // ── Payment Channel: Mobile Money (Instant) ──
           Row(
             children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _method = 'momo'),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: isMomo ? _kOrange.withAlpha(16) : Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isMomo ? _kOrange : const Color(0xFFcbd5e1),
-                        width: isMomo ? 2.0 : 1.2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isMomo ? _kOrange.withAlpha(20) : Colors.black.withAlpha(3),
-                          blurRadius: isMomo ? 8 : 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.phone_android_rounded,
-                          color: isMomo ? _kOrange : const Color(0xFF64748b),
-                          size: 22,
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            'MoMo',
-                            style: GoogleFonts.outfit(
-                              fontWeight: isMomo ? FontWeight.w800 : FontWeight.w600,
-                              fontSize: 15,
-                              color: isMomo ? _kOrange : const Color(0xFF334155),
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _kOrange.withAlpha(20),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.phone_android_rounded,
+                  color: _kOrange,
+                  size: 20,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _method = 'bank'),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: isBank ? _kOrange.withAlpha(16) : Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isBank ? _kOrange : const Color(0xFFcbd5e1),
-                        width: isBank ? 2.0 : 1.2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isBank ? _kOrange.withAlpha(25) : Colors.black.withAlpha(3),
-                          blurRadius: isBank ? 8 : 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.account_balance_rounded,
-                          color: isBank ? _kOrange : const Color(0xFF64748b),
-                          size: 22,
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            'Bank',
-                            style: GoogleFonts.outfit(
-                              fontWeight: isBank ? FontWeight.w800 : FontWeight.w600,
-                              fontSize: 15,
-                              color: isBank ? _kOrange : const Color(0xFF334155),
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'PAYMENT CHANNEL',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                      color: const Color(0xFF64748b),
+                      letterSpacing: 0.6,
                     ),
                   ),
-                ),
+                  Text(
+                    'Mobile Money (Instant Verification)',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: const Color(0xFF1A0F0A),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
 
-          // ── CHANNEL A: MOBILE MONEY ──
-          if (isMomo) ...[
-            Text(
-              'SELECT MOBILE CARRIER',
-              style: GoogleFonts.outfit(
+          // ── CHANNEL: MOBILE MONEY ──
+          Text(
+            'SELECT MOBILE CARRIER',
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w800,
                 fontSize: 13,
                 color: const Color(0xFF64748b),
@@ -3628,7 +3436,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               Flexible(
                                 child: Text(
                                   entry['label']!,
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 14,
                                     fontWeight: _momoNetwork == entry['id']
                                         ? FontWeight.w800
@@ -3655,7 +3463,7 @@ class _PaymentsPageState extends State<PaymentsPage>
               children: [
                 Text(
                   'MOMO NUMBER',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
                     color: const Color(0xFF64748b),
@@ -3684,7 +3492,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         const SizedBox(width: 5),
                         Text(
                           _carrierName(_momoNetwork),
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 13.5,
                             fontWeight: FontWeight.bold,
                             color: _kOrange,
@@ -3740,7 +3548,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       keyboardType: TextInputType.phone,
                       maxLength: 10,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 2.0,
@@ -3748,7 +3556,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       ),
                       decoration: InputDecoration(
                         hintText: '024XXXXXXX (10 digits)',
-                        hintStyle: GoogleFonts.outfit(
+                        hintStyle: GoogleFonts.inter(
                           color: const Color(0xFF94a3b8),
                           fontSize: 17,
                           letterSpacing: 1.0,
@@ -3821,7 +3629,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       children: [
                         Text(
                           'Direct USSD Push Authorization',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w800,
                             fontSize: 14.5,
                             color: const Color(0xFF0f172a),
@@ -3842,380 +3650,6 @@ class _PaymentsPageState extends State<PaymentsPage>
                 ],
               ),
             ),
-          ],
-
-          // ── CHANNEL B: BANK TRANSFER / DIRECT DEPOSIT ──
-          if (isBank) ...[
-            Builder(
-              builder: (ctx) {
-                final banks = _getBankList(bank);
-                final selectedIdx = (_selectedBankIndex >= 0 && _selectedBankIndex < banks.length) ? _selectedBankIndex : 0;
-                final curBank = banks[selectedIdx];
-                final bName = (curBank['bankName'] ?? curBank['bank_name'] ?? 'Bank Transfer').toString();
-                final aName = (curBank['accountName'] ?? curBank['account_name'] ?? 'Customs Brokers Association of Ghana (CUBAG)').toString();
-                final aNum = (curBank['accountNumber'] ?? curBank['account_number'] ?? '').toString();
-                final bBranch = (curBank['branch'] ?? curBank['branch_name'] ?? '').toString();
-                final sCode = (curBank['sortCode'] ?? curBank['sort_code'] ?? '').toString();
-                final swCode = (curBank['swiftCode'] ?? curBank['swift_code'] ?? '').toString();
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (banks.length > 1) ...[
-                      Text(
-                        'SELECT SETTLEMENT BANK ACCOUNT',
-                        style: GoogleFonts.outfit(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF64748b),
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: List.generate(banks.length, (idx) {
-                            final b = banks[idx];
-                            final name = (b['bankName'] ?? b['bank_name'] ?? 'Account ${idx + 1}').toString();
-                            final isCur = idx == selectedIdx;
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: InkWell(
-                                onTap: () => setState(() => _selectedBankIndex = idx),
-                                borderRadius: BorderRadius.circular(10),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: isCur ? const Color(0xFF24140D) : const Color(0xFFf8fafc),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: isCur ? _kOrange : const Color(0xFFcbd5e1),
-                                      width: isCur ? 1.5 : 1.0,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.account_balance_rounded,
-                                        size: 14,
-                                        color: isCur ? _kOrange : const Color(0xFF475569),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        name,
-                                        style: GoogleFonts.outfit(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: isCur ? Colors.white : const Color(0xFF334155),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          }),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-
-                    // Bank Account Details Card (Rich Dark Brown with Orange Accents)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF1A0F0A),
-                            Color(0xFF2E1A11),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: _kOrange.withAlpha(50),
-                          width: 1.2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF1A0F0A).withAlpha(50),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: _kOrange.withAlpha(35),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(
-                                  Icons.account_balance_rounded,
-                                  color: _kOrange,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'OFFICIAL CUBAG BANK SETTLEMENT ACCOUNT',
-                                      style: GoogleFonts.outfit(
-                                        color: const Color(0xFFd4b8aa),
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                    Text(
-                                      bName,
-                                      style: GoogleFonts.outfit(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Divider(color: Color(0xFF4A2A1E), height: 22),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'ACCOUNT NUMBER',
-                                    style: GoogleFonts.outfit(
-                                      color: const Color(0xFFd4b8aa),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  SelectableText(
-                                    aNum.isNotEmpty ? aNum : 'N/A',
-                                    style: GoogleFonts.outfit(
-                                      color: _kOrange,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 1.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (aNum.isNotEmpty)
-                                IconButton(
-                                  tooltip: 'Copy Account Number',
-                                  icon: const Icon(Icons.copy_rounded, color: Colors.white70, size: 20),
-                                  onPressed: () {
-                                    Clipboard.setData(ClipboardData(text: aNum));
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Bank account number copied to clipboard!'),
-                                        duration: Duration(seconds: 2),
-                                        backgroundColor: _kGreen,
-                                      ),
-                                    );
-                                  },
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Account Name: $aName'
-                                  '${bBranch.isNotEmpty ? '\nBranch: $bBranch' : ''}'
-                                  '${sCode.isNotEmpty ? ' (Sort: $sCode)' : ''}'
-                                  '${swCode.isNotEmpty ? ' | Swift: $swCode' : ''}',
-                                  style: GoogleFonts.inter(
-                                    color: const Color(0xFFe2d5ce),
-                                    fontSize: 13,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 18),
-
-            // Deposit Slip Upload Dropzone
-            Text(
-              'UPLOAD DEPOSIT SLIP / TRANSFER RECEIPT',
-              style: GoogleFonts.outfit(
-                fontWeight: FontWeight.w800,
-                fontSize: 13,
-                color: const Color(0xFF64748b),
-                letterSpacing: 0.6,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            if (_uploadingReceipt)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFf8fafc),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFcbd5e1)),
-                ),
-                child: Column(
-                  children: [
-                    const CircularProgressIndicator(color: _kOrange),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Uploading deposit slip to secure storage...',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF334155),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else if (hasReceipt)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFf0fdf4),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF86efac), width: 1.5),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFdcfce7),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.check_circle_rounded,
-                        color: _kGreen,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _receiptFileName ?? 'Bank Deposit Slip',
-                            style: GoogleFonts.outfit(
-                              fontSize: 15.5,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF14532d),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Deposit receipt attached & ready for review',
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              color: const Color(0xFF166534),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: _pickAndUploadBankReceipt,
-                      icon: const Icon(Icons.refresh_rounded, size: 16),
-                      label: const Text('Replace'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF15803d),
-                        side: const BorderSide(color: Color(0xFF86efac)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              InkWell(
-                onTap: _pickAndUploadBankReceipt,
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFfdfaf8),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: _kOrange.withAlpha(120),
-                      width: 1.5,
-                      style: BorderStyle.solid,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: _kOrange.withAlpha(20),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.cloud_upload_rounded,
-                          color: _kOrange,
-                          size: 32,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Click to Upload Bank Slip / Transfer Screenshot',
-                        style: GoogleFonts.outfit(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF1A0F0A),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Supports JPG, PNG, PDF receipts from bank teller or online banking',
-                        style: GoogleFonts.inter(
-                          fontSize: 13.5,
-                          color: const Color(0xFF64748b),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
 
           const SizedBox(height: 24),
 
@@ -4231,12 +3665,10 @@ class _PaymentsPageState extends State<PaymentsPage>
                       : () => setState(() => _step = 4),
                   icon: const Icon(Icons.arrow_forward_rounded, size: 18),
                   label: Text(
-                    isBank
-                        ? (hasReceipt ? 'Continue to Invoice Review' : 'Upload Receipt to Continue')
-                        : (_momoNetwork.isNotEmpty
-                            ? 'Continue with ${_carrierName(_momoNetwork)}'
-                            : 'Select Carrier to Continue'),
-                    style: GoogleFonts.outfit(
+                    _momoNetwork.isNotEmpty
+                        ? 'Continue with ${_carrierName(_momoNetwork)}'
+                        : 'Select Carrier to Continue',
+                    style: GoogleFonts.inter(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 17,
@@ -4268,7 +3700,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         isNoDoc
                             ? 'Back to Payment Type'
                             : 'Back to Supporting Documents',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w700,
                           fontSize: 15.5,
                         ),
@@ -4294,18 +3726,9 @@ class _PaymentsPageState extends State<PaymentsPage>
     }
 
     if (_step == 4) {
-      final isBank = _method == 'bank';
-      final banks = _getBankList(bank);
-      final selectedIdx = (_selectedBankIndex >= 0 && _selectedBankIndex < banks.length) ? _selectedBankIndex : 0;
-      final curBank = banks[selectedIdx];
-      final bName = (curBank['bankName'] ?? curBank['bank_name'] ?? 'Bank').toString();
-      final aNum = (curBank['accountNumber'] ?? curBank['account_number'] ?? '').toString();
-
-      final methodLabel = isBank
-          ? 'BANK'
-          : (_momoNetwork.isNotEmpty
-              ? 'MOMO (${_momoNetwork.toUpperCase()})'
-              : 'MOMO');
+      final methodLabel = _momoNetwork.isNotEmpty
+          ? 'MOMO (${_momoNetwork.toUpperCase()})'
+          : 'MOMO';
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -4336,10 +3759,8 @@ class _PaymentsPageState extends State<PaymentsPage>
                     vertical: 14,
                   ),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isBank
-                          ? [const Color(0xFF1A0F0A), const Color(0xFF2E1A11)]
-                          : [_kOrange, const Color(0xFFea580c)],
+                    gradient: const LinearGradient(
+                      colors: [_kOrange, Color(0xFFea580c)],
                     ),
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(14),
@@ -4347,7 +3768,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   ),
                   child: Text(
                     'DIGITAL INVOICE SUMMARY',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       color: Colors.white,
                       fontWeight: FontWeight.w900,
                       fontSize: 13,
@@ -4368,20 +3789,6 @@ class _PaymentsPageState extends State<PaymentsPage>
                     'highlight': false,
                     'isAttachment': false,
                   },
-                  if (isBank) ...[
-                    {
-                      'label': 'Settlement Bank',
-                      'value': aNum.isNotEmpty ? '$bName\n(Acc: $aNum)' : bName,
-                      'highlight': false,
-                      'isAttachment': false,
-                    },
-                    {
-                      'label': 'Attached Deposit Slip',
-                      'value': _receiptFileName ?? 'Deposit Slip Uploaded',
-                      'highlight': false,
-                      'isAttachment': true,
-                    },
-                  ],
                   {
                     'label': 'Total Payable Amount',
                     'value':
@@ -4455,7 +3862,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                             row['value']! as String,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: GoogleFonts.outfit(
+                                            style: GoogleFonts.inter(
                                               fontWeight: FontWeight.w700,
                                               color: const Color(0xFF281710),
                                               fontSize: 13.5,
@@ -4469,7 +3876,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               : Text(
                                   row['value']! as String,
                                   textAlign: TextAlign.right,
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontWeight: isHighlight
                                         ? FontWeight.w900
                                         : FontWeight.w700,
@@ -4526,12 +3933,8 @@ class _PaymentsPageState extends State<PaymentsPage>
                           ),
                         )
                       : Text(
-                          isBank
-                              ? 'Submit Deposit Slip for Confirmation'
-                              : (_method == 'momo'
-                                  ? 'Initiate Mobile Payment'
-                                  : 'Confirm & Submit Payment'),
-                          style: GoogleFonts.outfit(
+                          'Initiate Mobile Payment',
+                          style: GoogleFonts.inter(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -4546,212 +3949,6 @@ class _PaymentsPageState extends State<PaymentsPage>
     }
 
     if (_step == 5) {
-      if (_method == 'bank') {
-        final banks = _getBankList(bank);
-        final selectedIdx = (_selectedBankIndex >= 0 && _selectedBankIndex < banks.length) ? _selectedBankIndex : 0;
-        final curBank = banks[selectedIdx];
-        final bName = (curBank['bankName'] ?? curBank['bank_name'] ?? 'Bank Transfer').toString();
-
-        return Column(
-          children: [
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF1A0F0A), Color(0xFF2E1A11)],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF1A0F0A).withAlpha(50),
-                    blurRadius: 18,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.mark_email_read_rounded,
-                color: _kOrange,
-                size: 38,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Deposit Slip Submitted',
-              style: GoogleFonts.outfit(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF1A0F0A),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Your bank deposit receipt has been recorded and submitted to CUBAG Administration for review and confirmation.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                color: const Color(0xFF64748b),
-                fontSize: 15,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Summary Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFe2e8f0)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(4),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Amount Submitted:', style: GoogleFonts.inter(color: const Color(0xFF64748b), fontSize: 14)),
-                      Text(
-                        'GH₵ ${_amountCtrl.text}',
-                        style: GoogleFonts.outfit(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: _kOrange,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Category:', style: GoogleFonts.inter(color: const Color(0xFF64748b), fontSize: 14)),
-                      Text(_reason, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Channel:', style: GoogleFonts.inter(color: const Color(0xFF64748b), fontSize: 14)),
-                      Text('Bank ($bName)', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 14)),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Verification Status:', style: GoogleFonts.inter(color: const Color(0xFF64748b), fontSize: 14)),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFf59e0b).withAlpha(25),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFf59e0b).withAlpha(80)),
-                        ),
-                        child: Text(
-                          'RECEIVED',
-                          style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                            color: const Color(0xFFd97706),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
-
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFf0fdf4),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFF86efac)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.verified_user_rounded, color: _kGreen, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'As soon as an administrator confirms your deposit slip, your dues/license will be marked PAID and you will receive your official receipt.',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: const Color(0xFF166534),
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: () => context.go('/payment-history'),
-                icon: const Icon(Icons.receipt_long_rounded, size: 18),
-                label: Text(
-                  'View Payment History',
-                  style: GoogleFonts.outfit(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kOrange,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Builder(
-              builder: (ctx) {
-                final state = GoRouterState.of(ctx);
-                final redirectUrl = state.uri.queryParameters['redirect'];
-                final isCourses = redirectUrl != null && (redirectUrl.contains('course') || redirectUrl.contains('cti'));
-                return TextButton(
-                  onPressed: () {
-                    if (redirectUrl != null && redirectUrl.isNotEmpty) {
-                      context.go(redirectUrl);
-                    } else {
-                      context.go('/dashboard');
-                    }
-                  },
-                  child: Text(
-                    isCourses ? 'Return to CTI Courses' : 'Return to Member Dashboard',
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: const Color(0xFF64748b),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        );
-      }
-
       final remaining = (_pollMax - _pollAttempt) * 5;
       final progressVal = _pollMax > 0 ? _pollAttempt / _pollMax : 0.0;
 
@@ -4787,7 +3984,7 @@ class _PaymentsPageState extends State<PaymentsPage>
           const SizedBox(height: 20),
           Text(
             'Awaiting Approval',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF1A0F0A),
@@ -4839,7 +4036,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       const SizedBox(width: 6),
                       Text(
                         noticeTitle,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           color: primary,
                           fontSize: 13,
                           fontWeight: FontWeight.w900,
@@ -4928,7 +4125,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     ),
               label: Text(
                 _manualChecking ? 'Verifying...' : "I've Approved — Check Now",
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -4957,7 +4154,7 @@ class _PaymentsPageState extends State<PaymentsPage>
             ),
             child: Text(
               'Cancel & Change Method',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
               ),

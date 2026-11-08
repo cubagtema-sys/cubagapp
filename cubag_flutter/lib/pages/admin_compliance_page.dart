@@ -11,6 +11,7 @@ import '../components/doc_preview_stub.dart'
     as doc_preview;
 import '../components/cors_image_widget.dart';
 import '../services/api_service.dart';
+import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
 
 // ── Design tokens ────────────────────────────────────────────────────────────
@@ -127,6 +128,40 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
   void initState() {
     super.initState();
     _fetch('renewal');
+    SocketService().on('compliance_updated', _onComplianceLiveUpdate);
+    SocketService().on('member_updated', _onComplianceLiveUpdate);
+    SocketService().on('member_approved', _onComplianceLiveUpdate);
+    SocketService().on('tasks_updated', _onComplianceLiveUpdate);
+  }
+
+  void _onComplianceLiveUpdate(dynamic data) {
+    if (!mounted) return;
+    if (data is Map && data['application_id'] != null) {
+      final appId = data['application_id'].toString();
+      final newStatus = data['status']?.toString();
+      if (newStatus != null) {
+        setState(() {
+          for (var list in _data.values) {
+            for (var a in list) {
+              if (a is Map && a['id']?.toString() == appId) {
+                a['status'] = newStatus;
+              }
+            }
+          }
+        });
+      }
+    }
+    ApiService.deleteCacheKeysMatching('compliance');
+    _fetch('renewal');
+  }
+
+  @override
+  void dispose() {
+    SocketService().off('compliance_updated', _onComplianceLiveUpdate);
+    SocketService().off('member_updated', _onComplianceLiveUpdate);
+    SocketService().off('member_approved', _onComplianceLiveUpdate);
+    SocketService().off('tasks_updated', _onComplianceLiveUpdate);
+    super.dispose();
   }
 
   Future<void> _fetch(String type) async {
@@ -239,7 +274,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
               const SizedBox(width: 8),
               Text(
                 label,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                   color: isSelected
@@ -261,7 +296,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                 ),
                 child: Text(
                   '$count',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 11.5,
                     fontWeight: FontWeight.bold,
                     color: isSelected
@@ -309,7 +344,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
             const SizedBox(width: 6),
             Text(
               label,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 fontWeight: isSel ? FontWeight.w700 : FontWeight.w600,
                 color: isSel ? activeColor : (isDark ? Colors.white70 : const Color(0xFF6B5E55)),
@@ -324,7 +359,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
               ),
               child: Text(
                 '$count',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF7A6B60)),
@@ -387,7 +422,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                       children: [
                         Text(
                           'Renewal Compliance Centre',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: textPrimary,
@@ -420,7 +455,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                     icon: const Icon(Icons.refresh_rounded, size: 16),
                     label: Text(
                       'Refresh',
-                      style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 13.5),
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13.5),
                     ),
                   ),
                 ],
@@ -441,8 +476,8 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                 ),
                 child: Row(
                   children: [
-                    _buildCategoryTab('Corporate Brokerage', 'corporate', Icons.business_rounded, _kPrimary, corpApps.length, isDark),
-                    _buildCategoryTab('Licentiate Broker', 'licentiate', Icons.badge_rounded, const Color(0xFF6366F1), licApps.length, isDark),
+                    _buildCategoryTab('Corporate Members', 'corporate', Icons.business_rounded, _kPrimary, corpApps.length, isDark),
+                    _buildCategoryTab('Licentiate Members', 'licentiate', Icons.badge_rounded, const Color(0xFF6366F1), licApps.length, isDark),
                     _buildCategoryTab('Associate Member', 'associate', Icons.handshake_rounded, _kGreen, assocApps.length, isDark),
                   ],
                 ),
@@ -545,7 +580,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                                       const SizedBox(height: 12),
                                       Text(
                                         'No $_selectedCategory renewal applications found',
-                                        style: GoogleFonts.outfit(
+                                        style: GoogleFonts.inter(
                                           fontSize: 16,
                                           color: textMuted,
                                           fontWeight: FontWeight.w600,
@@ -722,7 +757,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                 width: 100,
                 child: Text(
                   refId,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 12.5,
                     color: _kPrimary,
@@ -738,7 +773,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                       backgroundColor: _kPrimary.withAlpha(30),
                       child: Text(
                         name.isNotEmpty ? name[0].toUpperCase() : 'M',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           color: _kPrimary,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -752,7 +787,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                         children: [
                           Text(
                             company,
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                               color: textCol,
@@ -784,7 +819,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                       ),
                       child: Text(
                         _selectedCategory.toUpperCase(),
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: _kPrimary,
@@ -803,7 +838,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                       children: [
                         Text(
                           '$uploaded / $totalDocs Docs',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: (approved == totalDocs && totalDocs > 0) ? _kGreen : textCol,
@@ -813,7 +848,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                           const SizedBox(width: 4),
                           Text(
                             '($approved ✓)',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: _kGreen,
@@ -864,7 +899,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                         const SizedBox(width: 4),
                         Text(
                           paymentLabel,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 11.5,
                             fontWeight: FontWeight.bold,
                             color: paymentColor,
@@ -894,7 +929,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('Review', style: GoogleFonts.outfit(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                        Text('Review', style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold)),
                         const SizedBox(width: 4),
                         Icon(Icons.arrow_forward_rounded, size: 12, color: _kPrimary),
                       ],
@@ -972,7 +1007,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                   backgroundColor: _kPrimary.withAlpha(30),
                   child: Text(
                     name.isNotEmpty ? name[0].toUpperCase() : 'M',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       color: _kPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
@@ -986,7 +1021,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                     children: [
                       Text(
                         company,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 14.5,
                           fontWeight: FontWeight.w700,
                           color: textCol,
@@ -1023,7 +1058,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                       const SizedBox(width: 4),
                       Text(
                         paymentLabel,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: paymentColor,
@@ -1045,7 +1080,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                   ),
                   child: Text(
                     _selectedCategory.toUpperCase(),
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: _kPrimary,
@@ -1055,7 +1090,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                 const Spacer(),
                 Text(
                   '$uploaded/$totalDocs Docs${approved > 0 ? ' ($approved ✓)' : ''}',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: approved == totalDocs ? _kGreen : textCol,
@@ -1084,7 +1119,11 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
   Future<void> _openDetail(Map<String, dynamic> app) async {
     final id = app['id'];
     if (id != null) {
-      context.go('/admin/compliance/$id');
+      await context.push('/admin/compliance/$id');
+      if (mounted) {
+        await ApiService.deleteCacheKeysMatching('compliance');
+        _fetch('renewal');
+      }
     }
   }
 }
@@ -1279,6 +1318,18 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
       note = await _promptNote(context, 'Rejection note for "${doc['label']}"');
       if (note == null) return;
     }
+
+    final prevDocStatus = doc['status'];
+    final prevPayStatus = _payment?['status'];
+
+    // Instant optimistic update
+    setState(() {
+      doc['status'] = status;
+      if (isBankSlip && _payment != null) {
+        _payment!['status'] = status == 'approved' ? 'paid' : 'rejected';
+      }
+    });
+
     try {
       if (isBankSlip && paymentId != null) {
         if (status == 'approved') {
@@ -1295,12 +1346,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
         );
       }
 
-      setState(() {
-        doc['status'] = status;
-        if (isBankSlip && _payment != null) {
-          _payment!['status'] = status == 'approved' ? 'paid' : 'rejected';
-        }
-      });
+      await ApiService.deleteCacheKeysMatching('compliance');
       _showSnack(
         status == 'approved'
             ? (isBankSlip ? 'Bank deposit payment approved & verified' : 'Document approved')
@@ -1309,6 +1355,13 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
       );
       _fetch();
     } catch (e) {
+      // Revert if error
+      setState(() {
+        doc['status'] = prevDocStatus;
+        if (isBankSlip && _payment != null) {
+          _payment!['status'] = prevPayStatus;
+        }
+      });
       _showSnack('Error: $e', color: _kRed);
     }
   }
@@ -1318,15 +1371,33 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
     final actionName = isRenewal ? 'Renewal' : 'Application';
     final note = await _promptNote(context, '$actionName approval note (optional)');
     if (!mounted) return;
-    setState(() => _approving = true);
+
+    final prevStatus = _app['status'];
+    final prevDocs = _docs.map((d) => Map<String, dynamic>.from(d as Map)).toList();
+
+    // Instant optimistic update
+    setState(() {
+      _approving = true;
+      _app['status'] = 'approved';
+      for (var d in _docs) {
+        if (d is Map) d['status'] = 'approved';
+      }
+    });
+
     try {
       await ApiService().post(
         '/compliance/admin/applications/${widget.appId}/approve',
         data: {'note': note ?? ''},
       );
+      await ApiService.deleteCacheKeysMatching('compliance');
+      await ApiService.deleteCacheKeysMatching('members');
       _showSnack('$actionName approved successfully!', color: _kGreen);
       _fetch();
     } catch (e) {
+      setState(() {
+        _app['status'] = prevStatus;
+        _docs = prevDocs;
+      });
       _showSnack('Error: $e', color: _kRed);
     } finally {
       if (mounted) setState(() => _approving = false);
@@ -1337,15 +1408,23 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
     final note = await _promptNote(context, 'Rejection reason (required)');
     if (note == null || note.isEmpty) return;
     if (!mounted) return;
-    setState(() => _rejecting = true);
+
+    final prevStatus = _app['status'];
+    setState(() {
+      _rejecting = true;
+      _app['status'] = 'rejected';
+    });
+
     try {
       await ApiService().post(
         '/compliance/admin/applications/${widget.appId}/reject',
         data: {'note': note},
       );
+      await ApiService.deleteCacheKeysMatching('compliance');
       _showSnack('Application rejected', color: _kRed);
       _fetch();
     } catch (e) {
+      setState(() => _app['status'] = prevStatus);
       _showSnack('Error: $e', color: _kRed);
     } finally {
       if (mounted) setState(() => _rejecting = false);
@@ -1385,7 +1464,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Add Review Note',
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
         ),
         content: TextField(
           controller: _noteCtrl,
@@ -1394,12 +1473,12 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
             hintText: hint,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           ),
-          style: GoogleFonts.outfit(),
+          style: GoogleFonts.inter(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, null),
-            child: Text('Cancel', style: GoogleFonts.outfit()),
+            child: Text('Cancel', style: GoogleFonts.inter()),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -1410,7 +1489,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
             onPressed: () => Navigator.pop(ctx, _noteCtrl.text.trim()),
             child: Text(
               'Confirm',
-              style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -1424,7 +1503,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
       SnackBar(
         content: Text(
           msg,
-          style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w600),
+          style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600),
         ),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
@@ -1458,7 +1537,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                   Expanded(
                     child: Text(
                       title,
-                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -1548,7 +1627,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                   children: [
                     Text(
                       '#COMP-${widget.appId.toString().padLeft(5, '0')}',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
                         color: _kPrimary,
@@ -1564,7 +1643,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                       ),
                       child: Text(
                         statusLabel.toUpperCase(),
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: statusColor,
@@ -1717,7 +1796,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                   children: [
                     Text(
                       'Bank Deposit Slip & Payment Proof',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: isDark ? Colors.white : _kTextDark,
@@ -1753,7 +1832,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                     const SizedBox(width: 5),
                     Text(
                       isPaid ? 'PAYMENT CONFIRMED' : 'VERIFICATION PENDING',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w700,
                         color: isPaid ? _kGreen : _kAmber,
@@ -1840,7 +1919,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                                     const SizedBox(width: 4),
                                     Text(
                                       'Click to View',
-                                      style: GoogleFonts.outfit(
+                                      style: GoogleFonts.inter(
                                         color: Colors.white,
                                         fontSize: 11.5,
                                         fontWeight: FontWeight.w600,
@@ -1876,7 +1955,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                             ),
                             Text(
                               'GH₵ ${amount.toStringAsFixed(2)}',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
                                 color: isPaid ? _kGreen : _kPrimary,
@@ -1909,7 +1988,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                                     : const Icon(Icons.check_circle_rounded, size: 18),
                                 label: Text(
                                   _confirmingPayment ? 'Confirming...' : 'Verify & Confirm Payment',
-                                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13.5),
+                                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13.5),
                                 ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: _kGreen,
@@ -1929,7 +2008,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                                   icon: const Icon(Icons.visibility_rounded, size: 16),
                                   label: Text(
                                     'Inspect Slip',
-                                    style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
+                                    style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
                                   ),
                                   style: OutlinedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -1953,7 +2032,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                                 const SizedBox(width: 8),
                                 Text(
                                   'Payment Verified & Recorded in Ledger',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
                                     color: _kGreen,
@@ -1993,7 +2072,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
           Expanded(
             child: Text(
               value,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: isDark ? Colors.white : _kTextDark,
@@ -2025,7 +2104,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
               const SizedBox(width: 8),
               Text(
                 'Statutory Compliance Documents',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: isDark ? Colors.white : _kTextDark,
@@ -2102,7 +2181,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
               const SizedBox(width: 8),
               Text(
                 'Itemized Renewal Bill',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: isDark ? Colors.white : _kTextDark,
@@ -2128,7 +2207,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600),
+            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 14),
 
@@ -2149,7 +2228,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                       ),
-                      style: GoogleFonts.outfit(fontSize: 13.5),
+                      style: GoogleFonts.inter(fontSize: 13.5),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -2165,7 +2244,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                       ),
-                      style: GoogleFonts.outfit(fontSize: 13.5),
+                      style: GoogleFonts.inter(fontSize: 13.5),
                     ),
                   ),
                   if (_billItemControllers.length > 1)
@@ -2229,7 +2308,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                             _paymentDeadline != null
                                 ? "${_paymentDeadline!.year}-${_paymentDeadline!.month.toString().padLeft(2, '0')}-${_paymentDeadline!.day.toString().padLeft(2, '0')}"
                                 : 'Pick Date',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontWeight: FontWeight.bold,
                               color: _kPrimary,
                               fontSize: 13,
@@ -2266,7 +2345,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                         children: [
                           Text(
                             'Allow Part-Payments / Installments',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 13.5,
                               fontWeight: FontWeight.w600,
                               color: isDark ? Colors.white : _kTextDark,
@@ -2302,7 +2381,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                       prefixIcon: const Icon(Icons.money_rounded, size: 16),
                     ),
-                    style: GoogleFonts.outfit(fontSize: 13.5),
+                    style: GoogleFonts.inter(fontSize: 13.5),
                   ),
                 ],
               ],
@@ -2317,7 +2396,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
             children: [
               Text(
                 'Total Bill: GHS ${_calculatedTotal.toStringAsFixed(2)}',
-                style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: _kPrimary),
+                style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: _kPrimary),
               ),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
@@ -2333,7 +2412,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                     : const Icon(Icons.save_rounded, size: 15),
                 label: Text(
                   _savingBill ? 'Saving...' : 'Save & Issue Bill',
-                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13.5),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13.5),
                 ),
               ),
             ],
@@ -2383,7 +2462,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                   children: [
                     Text(
                       'Renewal Payment Ledger & Installments',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: isDark ? Colors.white : _kTextDark,
@@ -2407,7 +2486,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                 ),
                 child: Text(
                   balanceDue <= 0.01 && totalBilled > 0 ? 'SETTLED' : 'GHS ${balanceDue.toStringAsFixed(2)} DUE',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: balanceDue <= 0.01 && totalBilled > 0 ? _kGreen : const Color(0xFFF59E0B),
@@ -2433,7 +2512,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                     children: [
                       Text('TOTAL BILLED', style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w600, color: Colors.grey)),
                       const SizedBox(height: 2),
-                      Text('GHS ${totalBilled.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : _kTextDark)),
+                      Text('GHS ${totalBilled.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : _kTextDark)),
                     ],
                   ),
                 ),
@@ -2451,7 +2530,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                     children: [
                       Text('TOTAL PAID', style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w600, color: _kGreen)),
                       const SizedBox(height: 2),
-                      Text('GHS ${totalPaid.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: _kGreen)),
+                      Text('GHS ${totalPaid.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: _kGreen)),
                     ],
                   ),
                 ),
@@ -2469,7 +2548,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                     children: [
                       Text('BALANCE DUE', style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w600, color: balanceDue > 0 ? const Color(0xFFF59E0B) : _kGreen)),
                       const SizedBox(height: 2),
-                      Text('GHS ${balanceDue.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: balanceDue > 0 ? const Color(0xFFF59E0B) : _kGreen)),
+                      Text('GHS ${balanceDue.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: balanceDue > 0 ? const Color(0xFFF59E0B) : _kGreen)),
                     ],
                   ),
                 ),
@@ -2504,7 +2583,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
           else ...[
             Text(
               'Recorded Installments (${_installments.length})',
-              style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white : _kTextDark),
+              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white : _kTextDark),
             ),
             const SizedBox(height: 8),
             ..._installments.asMap().entries.map((entry) {
@@ -2533,7 +2612,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                       backgroundColor: (isPConfirmed ? _kGreen : _kAmber).withValues(alpha: 0.15),
                       child: Text(
                         '#$idx',
-                        style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: isPConfirmed ? _kGreen : _kAmber),
+                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: isPConfirmed ? _kGreen : _kAmber),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -2545,7 +2624,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                             children: [
                               Text(
                                 'GHS ${pAmt.toStringAsFixed(2)}',
-                                style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white : _kTextDark),
+                                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white : _kTextDark),
                               ),
                               const SizedBox(width: 8),
                               Container(
@@ -2610,7 +2689,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
         children: [
           Text(
             'Application Review Actions',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: isDark ? Colors.white : _kTextDark,
@@ -2828,7 +2907,7 @@ class _MemberInfoCard extends StatelessWidget {
                   memberCompany.isNotEmpty
                       ? memberCompany[0].toUpperCase()
                       : (memberName.isNotEmpty ? memberName[0].toUpperCase() : 'M'),
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -2842,7 +2921,7 @@ class _MemberInfoCard extends StatelessWidget {
                   children: [
                     Text(
                       memberCompany.isNotEmpty ? memberCompany : memberName,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: textColor,
@@ -2868,7 +2947,7 @@ class _MemberInfoCard extends StatelessWidget {
                 ),
                 child: Text(
                   '$category MEMBER',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: _kPrimary,
@@ -2995,7 +3074,7 @@ class _MemberInfoCard extends StatelessWidget {
                 ),
                 Text(
                   val,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                     color: textColor,
@@ -3033,7 +3112,7 @@ class _AdminStatusBanner extends StatelessWidget {
           Expanded(
             child: Text(
               'Status: ${_statusLabel(status)}${note != null && note!.isNotEmpty ? ' — $note' : ''}',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 color: color,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
@@ -3131,7 +3210,7 @@ class _AdminDocRowState extends State<_AdminDocRow> {
               Expanded(
                 child: Text(
                   label,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                     color: widget.isDark ? Colors.white : _kTextDark,
@@ -3154,7 +3233,7 @@ class _AdminDocRowState extends State<_AdminDocRow> {
                       const SizedBox(width: 4),
                       Text(
                         'Payment Slip',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 10.5,
                           color: const Color(0xFF0F766E),
                           fontWeight: FontWeight.bold,
@@ -3173,7 +3252,7 @@ class _AdminDocRowState extends State<_AdminDocRow> {
                   ),
                   child: Text(
                     'Auto-filled',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 10,
                       color: _kAmber,
                       fontWeight: FontWeight.bold,
@@ -3233,7 +3312,7 @@ class _AdminDocRowState extends State<_AdminDocRow> {
                         const SizedBox(width: 4),
                         Text(
                           _showInlinePreview ? 'Hide' : 'Preview',
-                          style: GoogleFonts.outfit(fontSize: 12, color: _kPrimary, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.inter(fontSize: 12, color: _kPrimary, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -3250,7 +3329,7 @@ class _AdminDocRowState extends State<_AdminDocRow> {
                         const SizedBox(width: 4),
                         Text(
                           'Full View',
-                          style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.inter(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -3314,7 +3393,7 @@ class _AdminDocRowState extends State<_AdminDocRow> {
               ),
               child: Text(
                 'Note: $adminNote',
-                style: GoogleFonts.outfit(fontSize: 11.5, color: _kRed),
+                style: GoogleFonts.inter(fontSize: 11.5, color: _kRed),
               ),
             ),
           ],
@@ -3334,7 +3413,7 @@ class _AdminDocRowState extends State<_AdminDocRow> {
                   children: [
                     const Icon(Icons.verified_rounded, size: 13, color: _kGreen),
                     const SizedBox(width: 4),
-                    Text('Approved', style: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.bold, color: _kGreen)),
+                    Text('Approved', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold, color: _kGreen)),
                   ],
                 ),
               )
@@ -3393,7 +3472,7 @@ class _DocAction extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               color: color,
               fontWeight: FontWeight.bold,
               fontSize: 12,

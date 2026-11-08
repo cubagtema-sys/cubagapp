@@ -126,7 +126,7 @@ class _TasksPageState extends State<TasksPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Uploaded "$label" successfully', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              content: Text('Uploaded "$label" successfully', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
               backgroundColor: _kGreen,
             ),
           );
@@ -136,7 +136,7 @@ class _TasksPageState extends State<TasksPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(res.data?['message'] ?? 'Upload failed', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              content: Text(res.data?['message'] ?? 'Upload failed', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
               backgroundColor: _kRed,
             ),
           );
@@ -146,7 +146,7 @@ class _TasksPageState extends State<TasksPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Upload error: $e', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            content: Text('Upload error: $e', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
             backgroundColor: _kRed,
           ),
         );
@@ -203,7 +203,7 @@ class _TasksPageState extends State<TasksPage> {
                               children: [
                                 Text(
                                   'COMPLIANCE & OBLIGATIONS',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w800,
                                     color: _kBrown,
@@ -213,7 +213,7 @@ class _TasksPageState extends State<TasksPage> {
                                 const SizedBox(height: 3),
                                 Text(
                                   'Filings & Tasks',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 22,
                                     fontWeight: FontWeight.w800,
                                     color: _kText,
@@ -232,7 +232,7 @@ class _TasksPageState extends State<TasksPage> {
                                 _docsTotal > 0
                                     ? '$_docsUploaded OF $_docsTotal FILED'
                                     : 'VERIFYING REQUIREMENTS',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
                                   color: completionRatio >= 1.0 ? _kGreen : _kOrange,
@@ -285,7 +285,7 @@ class _TasksPageState extends State<TasksPage> {
                                   _docsTotal > 0
                                       ? 'Documents ($_docsUploaded/$_docsTotal)'
                                       : 'Documents',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
                                     color: _activeTab == 'documents' ? Colors.white : _kMuted,
@@ -309,7 +309,7 @@ class _TasksPageState extends State<TasksPage> {
                               child: Center(
                                 child: Text(
                                   'Action Items (${pendingTasks.length})',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
                                     color: _activeTab == 'tasks' ? Colors.white : _kMuted,
@@ -365,7 +365,7 @@ class _TasksPageState extends State<TasksPage> {
               const SizedBox(height: 10),
               Text(
                 'No compliance documents required at this time.',
-                style: GoogleFonts.outfit(fontSize: 14.5, fontWeight: FontWeight.bold, color: _kText),
+                style: GoogleFonts.inter(fontSize: 14.5, fontWeight: FontWeight.bold, color: _kText),
               ),
             ],
           ),
@@ -476,7 +476,7 @@ class _TasksPageState extends State<TasksPage> {
                       children: [
                         Text(
                           label,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: _kText,
@@ -535,7 +535,7 @@ class _TasksPageState extends State<TasksPage> {
                           const SizedBox(width: 6),
                           Text(
                             'Uploading...',
-                            style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12.5, color: _kMuted),
+                            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12.5, color: _kMuted),
                           ),
                         ],
                       ),
@@ -555,7 +555,7 @@ class _TasksPageState extends State<TasksPage> {
                           const SizedBox(width: 4),
                           Text(
                             'Verified',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontWeight: FontWeight.w700,
                               fontSize: 12,
                               color: _kGreen,
@@ -581,7 +581,7 @@ class _TasksPageState extends State<TasksPage> {
                             const SizedBox(width: 4),
                             Text(
                               'Under Review',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 12,
                                 color: _kMuted,
@@ -604,7 +604,7 @@ class _TasksPageState extends State<TasksPage> {
                       icon: const Icon(Icons.refresh_rounded, size: 14, color: Colors.white),
                       label: Text(
                         'Replace',
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12.5),
+                        style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12.5),
                       ),
                     )
                   else
@@ -620,7 +620,7 @@ class _TasksPageState extends State<TasksPage> {
                       icon: const Icon(Icons.upload_rounded, size: 14, color: Colors.white),
                       label: Text(
                         'Upload',
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12.5),
+                        style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12.5),
                       ),
                     ),
                 ],
@@ -680,7 +680,7 @@ class _TasksPageState extends State<TasksPage> {
               const SizedBox(height: 10),
               Text(
                 'No pending action items.',
-                style: GoogleFonts.outfit(fontSize: 14.5, fontWeight: FontWeight.bold, color: _kText),
+                style: GoogleFonts.inter(fontSize: 14.5, fontWeight: FontWeight.bold, color: _kText),
               ),
               const SizedBox(height: 4),
               Text(
@@ -753,7 +753,7 @@ class _TasksPageState extends State<TasksPage> {
                       children: [
                         Text(
                           title,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: _kText,
@@ -796,7 +796,7 @@ class _TasksPageState extends State<TasksPage> {
                         elevation: 0,
                       ),
                       onPressed: () => context.go(actionUrl),
-                      child: Text('Action →', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                      child: Text('Action →', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12.5)),
                     )
                   : null;
 

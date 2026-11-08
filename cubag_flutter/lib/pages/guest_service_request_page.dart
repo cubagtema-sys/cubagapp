@@ -123,9 +123,9 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
   static const List<Map<String, dynamic>> _kServices = [
     {
       'id': 'clearing_agent',
-      'title': 'Find A Licensed Broker (Clearing Agent/Forwarder)',
+      'title': 'Find An Accredited Member (Clearing Agent/Forwarder)',
       'desc':
-          'Connect with an accredited CUBAG licensed customs broker for cargo clearance.',
+          'Connect with an accredited CUBAG member for cargo clearance.',
       'icon': Icons.manage_search_rounded,
     },
     {
@@ -313,7 +313,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         const SizedBox(height: 18),
                         Text(
                           'Awaiting Approval',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: _kText,
@@ -367,7 +367,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                     const SizedBox(width: 6),
                                     Text(
                                       noticeTitle,
-                                      style: GoogleFonts.outfit(
+                                      style: GoogleFonts.inter(
                                         color: _kBrown,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w900,
@@ -412,7 +412,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                               ),
                               Text(
                                 _currentCourseFee,
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w900,
                                   color: _kAccent,
@@ -497,7 +497,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                 : const Icon(Icons.check_circle_outline_rounded, size: 18, color: Colors.white),
                             label: Text(
                               processingPayment ? 'Verifying...' : "I've Approved — Check Now",
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -550,7 +550,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                   children: [
                                     Text(
                                       'CTI Course Checkout',
-                                      style: GoogleFonts.outfit(
+                                      style: GoogleFonts.inter(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                         color: _kText,
@@ -591,7 +591,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                 _courseCtrl.text.trim().isNotEmpty
                                     ? _courseCtrl.text.trim()
                                     : 'CTI Customs & Trade Professional Course',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                   color: _kText,
@@ -616,7 +616,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                   ),
                                   Text(
                                     _currentCourseFee,
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w900,
                                       color: _kAccent,
@@ -631,7 +631,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
 
                         Text(
                           'Select Mobile Carrier',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: _kBrown,
@@ -843,7 +843,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                   )
                                 : Text(
                                     'Pay $_currentCourseFee Now',
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -899,7 +899,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                     children: [
                       Text(
                         title,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: _kBrown,
@@ -993,7 +993,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           const SizedBox(height: 8),
                           Text(
                             'No matching ports found',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontWeight: FontWeight.bold,
                               color: _kText,
                               fontSize: 14,
@@ -1061,7 +1061,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                       children: [
                                         Text(
                                           item['label'] as String,
-                                          style: GoogleFonts.outfit(
+                                          style: GoogleFonts.inter(
                                             fontSize: 14,
                                             fontWeight: isSelected
                                                 ? FontWeight.bold
@@ -1203,7 +1203,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                               children: [
                                 Text(
                                   'CUBAG',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     color: _kBrown,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w900,
@@ -1218,8 +1218,8 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                     border: Border.all(color: _kAccent.withAlpha(50), width: 0.5),
                                   ),
                                   child: Text(
-                                    _serviceType == 'cti_training' ? 'CTI PORTAL' : 'BROKER DESK',
-                                    style: GoogleFonts.outfit(
+                                    _serviceType == 'cti_training' ? 'CTI PORTAL' : 'MEMBER DESK',
+                                    style: GoogleFonts.inter(
                                       fontSize: 9.5,
                                       fontWeight: FontWeight.w800,
                                       color: _kAccent,
@@ -1231,7 +1231,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                             ),
                             Text(
                               _serviceType == 'clearing_agent'
-                                  ? 'Find A Licensed Broker (Clearing Agent/Forwarder)'
+                                  ? 'Find An Accredited Member (Clearing Agent/Forwarder)'
                                   : 'Register A Course',
                               style: GoogleFonts.inter(
                                 color: _kMuted,
@@ -1256,7 +1256,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         ),
                         label: Text(
                           isMobile ? 'Sign In' : 'Member Sign In',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             color: _kBrown,
                             fontSize: 12.5,
                             fontWeight: FontWeight.bold,
@@ -1330,9 +1330,9 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
             // Headline
             Text(
               _serviceType == 'clearing_agent'
-                  ? 'Find A Licensed Broker (Clearing Agent/Forwarder)'
+                  ? 'Find An Accredited Member (Clearing Agent/Forwarder)'
                   : 'Register A Course',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 color: _kBrown,
                 fontSize: isMobile ? 20 : 24,
                 fontWeight: FontWeight.w900,
@@ -1341,7 +1341,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
             const SizedBox(height: 6),
             Text(
               _serviceType == 'clearing_agent'
-                  ? 'Submit your cargo clearance details below. You will instantly be matched with accredited CUBAG licensed brokers, clearing agents, and freight forwarders across Ghana.'
+                  ? 'Submit your cargo clearance details below. You will instantly be matched with accredited CUBAG members, clearing agents, and freight forwarders across Ghana.'
                   : 'Submit your enrolment details below for CTI certification and professional courses.',
               style: GoogleFonts.inter(
                 color: _kMuted,
@@ -1443,7 +1443,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           ),
                           child: Text(
                             'OFFICIAL CTI COHORT',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
                               color: _kAccent,
@@ -1454,7 +1454,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         const Spacer(),
                         Text(
                           _currentCourseFee,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.w900,
                             color: _kAccent,
@@ -1468,7 +1468,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                       _courseCtrl.text.isNotEmpty
                           ? _courseCtrl.text
                           : 'Customs & Logistics Professional Certification',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: _kText,
@@ -1826,9 +1826,9 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                       )
                     : Text(
                         _serviceType == 'clearing_agent'
-                            ? 'Find Licensed Brokers Now'
+                            ? 'Find Accredited Members Now'
                             : 'Proceed to Course Payment ($_currentCourseFee)',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1876,7 +1876,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                       Flexible(
                         child: Text(
                           title,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: _kText,
@@ -1897,7 +1897,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           ),
                           child: Text(
                             'LOCKED',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
                               color: _kBrown,
@@ -1966,7 +1966,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
 
   Widget _formLabel(String label) => Text(
     label,
-    style: GoogleFonts.outfit(
+    style: GoogleFonts.inter(
       color: _kBrown,
       fontSize: 13,
       fontWeight: FontWeight.bold,
@@ -2105,7 +2105,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           _serviceType == 'cti_training'
                               ? 'Request Logged with CUBAG Secretariat!'
                               : 'Request Logged with CUBAG Secretariat!',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w900,
                             fontSize: 18,
                             color: _kText,
@@ -2168,7 +2168,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                               _courseCtrl.text.trim().isNotEmpty
                                   ? _courseCtrl.text.trim()
                                   : 'CTI Customs & Trade Professional Course',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: _kText,
@@ -2237,7 +2237,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                     icon: const Icon(Icons.event_available_rounded, size: 20),
                     label: Text(
                       'Add to Calendar',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                       ),
@@ -2267,7 +2267,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                     border: Border.all(color: _kBorder),
                   ),
                   child: Text(
-                    '💡 Below are accredited CUBAG Clearing Agents matching your port. Click any broker below to view their verified credentials, contact details, and direct connections.',
+                    '💡 Below are accredited CUBAG Clearing Agents matching your port. Click any member below to view their verified credentials, contact details, and direct connections.',
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       color: const Color(0xFF1e40af),
@@ -2309,7 +2309,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                     children: [
                       Text(
                         'ACCREDITED CLEARING AGENTS',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           color: _kBrown,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -2318,8 +2318,8 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Verified Customs Brokers',
-                        style: GoogleFonts.outfit(
+                        'Verified Members',
+                        style: GoogleFonts.inter(
                           fontSize: 20,
                           fontWeight: FontWeight.w900,
                           color: _kText,
@@ -2343,7 +2343,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         const SizedBox(width: 4),
                         Text(
                           'Good Standing Only',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                             color: _kGreen,
@@ -2418,7 +2418,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           child: ChoiceChip(
                             label: Text(
                               port,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 12,
                                 fontWeight: isSel
                                     ? FontWeight.bold
@@ -2466,7 +2466,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                       const SizedBox(height: 8),
                       Text(
                         'No clearing agents found',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: _kText,
@@ -2522,7 +2522,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                 ),
                 child: Text(
                   'Submit Another Request',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     color: _kBrown,
                   ),
@@ -2543,7 +2543,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                 ),
                 child: Text(
                   'Back to Portal',
-                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -2558,7 +2558,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
     final company =
         m['company']?.toString() ??
         m['name']?.toString() ??
-        'Accredited Broker';
+        'Accredited Member';
     final name = m['name']?.toString() ?? '';
     final memNo = m['membership_number']?.toString() ?? 'CUBAG-2026-000';
     final port = m['primary_port']?.toString() ?? 'Tema Port';
@@ -2605,7 +2605,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                 Flexible(
                                   child: Text(
                                     company,
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,
                                       color: _kText,
@@ -2648,7 +2648,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                             ),
                             child: Text(
                               memNo,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                                 color: _kBrown,
@@ -2666,7 +2666,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           const Spacer(),
                           Text(
                             'View Profile & Contact',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: _kAccent,
@@ -2696,7 +2696,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
     final company =
         m['company']?.toString() ??
         m['name']?.toString() ??
-        'Accredited Broker';
+        'Accredited Member';
     final name = m['name']?.toString() ?? '';
     final memNo = m['membership_number']?.toString() ?? 'CUBAG-2026-000';
     final port = m['primary_port']?.toString() ?? 'Tema Port';
@@ -2730,7 +2730,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
               Text(
                 company,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w900,
                   fontSize: 20,
                   color: _kText,
@@ -2759,7 +2759,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (name.isNotEmpty && name != company) ...[
-                      _modalDetailRow('Lead Broker / Director', name),
+                      _modalDetailRow('Lead Member / Director', name),
                       Divider(color: _kBorder, height: 16),
                     ],
                     _modalDetailRow('Membership ID', memNo),
@@ -2798,8 +2798,8 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         ),
                         icon: const Icon(Icons.phone_outlined, size: 16),
                         label: Text(
-                          'Call Broker',
-                          style: GoogleFonts.outfit(
+                          'Call Member',
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
@@ -2823,7 +2823,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         icon: const Icon(Icons.email_outlined, size: 16),
                         label: Text(
                           'Send Email',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
@@ -2851,7 +2851,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                     onPressed: () => Navigator.of(ctx).pop(),
                     child: Text(
                       'Close',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.bold,
                         color: _kText,
                       ),
@@ -2874,7 +2874,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
           width: 140,
           child: Text(
             label,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.bold,
               color: _kMuted,

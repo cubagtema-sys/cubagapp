@@ -124,7 +124,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             color: isSelected ? Colors.white : (isDark ? const Color(0xFFFFF8F3) : _kText),
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
             fontSize: 13,
@@ -153,7 +153,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
             const SizedBox(height: 16),
             Text(
               'No Members Found',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: _kText,
@@ -203,7 +203,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
     final initials = _initials(m['name']?.toString() ?? '');
     final port = m['port_of_operation'] ?? m['primary_port'] ?? 'Tema Maritime Port';
     final name = m['name']?.toString() ?? 'Licensed Member';
-    final company = m['company']?.toString() ?? 'Accredited Brokerage Desk';
+    final company = m['company']?.toString() ?? 'Accredited Member Enterprise';
     final regId = m['license_number'] ?? m['membership_number'] ?? 'GH-${(m['id']?.toString() ?? '00').padLeft(4, '0')}';
 
     final cardBg = isDark ? const Color(0xFF1E130D) : _kWhite;
@@ -452,7 +452,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                   children: [
                     Text(
                       'Member Information',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
                         color: _kBrown,
@@ -511,7 +511,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                       m['profile_photo'].toString().isEmpty)
                   ? Text(
                       initials,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: _kBrown,
                         fontWeight: FontWeight.w900,
                         fontSize: 18,
@@ -526,7 +526,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                 children: [
                   Text(
                     name,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w900,
                       fontSize: 19,
                       color: _kText,
@@ -545,7 +545,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                     ),
                     child: Text(
                       (mType.isNotEmpty ? mType : 'MEMBER').toUpperCase(),
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 11,
                         color: color,
                         fontWeight: FontWeight.w900,
@@ -667,7 +667,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
             icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
             label: Text(
               'Start A Conversation',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -693,7 +693,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    textStyle: GoogleFonts.outfit(
+                    textStyle: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
@@ -721,7 +721,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    textStyle: GoogleFonts.outfit(
+                    textStyle: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
@@ -802,7 +802,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'National Register of Customs Brokers',
+                              'National Register of Accredited Members',
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 16,

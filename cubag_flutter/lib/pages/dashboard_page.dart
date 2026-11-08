@@ -410,7 +410,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               ),
                               child: Text(
                                 'OFFICIAL BILL ISSUED',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w900,
                                   color: _kOrange,
@@ -421,7 +421,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             const SizedBox(height: 4),
                             Text(
                               'Annual Renewal Dues Ready',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: textColor,
@@ -470,7 +470,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           children: [
                             Text(
                               'Total Amount Due:',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: textColor,
@@ -478,7 +478,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                             Text(
                               'GHS $amtStr',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w900,
                                 color: _kOrange,
@@ -523,7 +523,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                   ),
                                   Text(
                                     'GHS $itemAmt',
-                                    style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: textColor),
+                                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: textColor),
                                   ),
                                 ],
                               ),
@@ -557,7 +557,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       icon: const Icon(Icons.payment_rounded, size: 18),
                       label: Text(
                         'Pay Renewal Dues (GHS $amtStr)',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 15.5,
                           fontWeight: FontWeight.bold,
                         ),
@@ -582,7 +582,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       },
                       child: Text(
                         'View Full Details in Compliance',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
@@ -740,7 +740,7 @@ class _DashboardPageState extends State<DashboardPage> {
       statusBadge = 'ACTIVE IN GOOD STANDING';
       statusBadgeBg = const Color(0xFFDCFCE7);
       statusBadgeInk = const Color(0xFF166534);
-      statusText = 'Verified Customs Broker & Freight Forwarder';
+      statusText = 'Verified Member & Freight Forwarder';
       if (!_loadingTasks && pending.isNotEmpty) {
         btnLabel = 'View Tasks (${pending.length})';
         btnIcon = Icons.assignment_turned_in_outlined;
@@ -783,7 +783,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 alignment: Alignment.center,
                 child: Text(
                   firstName.isNotEmpty ? firstName[0].toUpperCase() : 'M',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -811,7 +811,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         Flexible(
                           child: Text(
                             firstName,
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               color: _kText,
                               fontSize: isMobile ? 20 : 24,
                               fontWeight: FontWeight.w800,
@@ -832,7 +832,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                             child: Text(
                               role.toUpperCase(),
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 color: _kBrown,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w800,
@@ -857,7 +857,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                           child: Text(
                             statusBadge,
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
                               color: statusBadgeInk,
@@ -868,7 +868,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         if (memNo.isNotEmpty)
                           Text(
                             'ID: $memNo',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontFeatures: const [FontFeature.tabularFigures()],
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -911,7 +911,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    textStyle: GoogleFonts.outfit(
+                    textStyle: GoogleFonts.inter(
                       fontWeight: FontWeight.w700,
                       fontSize: 13.5,
                     ),
@@ -936,7 +936,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  textStyle: GoogleFonts.outfit(
+                  textStyle: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     fontSize: 13.5,
                   ),
@@ -1046,7 +1046,7 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(width: 8),
             Text(
               'MEMBER STATUS & OVERSIGHT',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w800,
                 fontSize: 11.5,
                 letterSpacing: 0.8,
@@ -1155,7 +1155,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 Expanded(
                   child: Text(
                     item['title'] as String,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       color: _kMuted,
                       fontSize: isMobile ? 10 : 10.5,
                       fontWeight: FontWeight.w800,
@@ -1185,7 +1185,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   ],
                   Text(
                     item['value'] as String,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       color: isStatus && isGood ? _kGreen : _kText,
                       fontSize: isStatus ? (isMobile ? 15.5 : 17) : (isMobile ? 19 : 20),
                       fontWeight: FontWeight.w800,
@@ -1254,7 +1254,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   children: [
                     Text(
                       'MEMBERSHIP ENTRANCE PACKAGE REQUIRED',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: _kOrange,
                         fontSize: 13,
                         fontWeight: FontWeight.w900,
@@ -1298,7 +1298,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                textStyle: GoogleFonts.outfit(
+                textStyle: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   fontSize: 14.5,
                 ),
@@ -1333,7 +1333,7 @@ class _DashboardPageState extends State<DashboardPage> {
               children: [
                 Text(
                   'PRIORITY TASKS',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w900,
                     fontSize: 13,
                     color: _kText,
@@ -1350,7 +1350,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                     child: Text(
                       '${pending.length}',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w900,
                         fontSize: 11,
                         color: _kOrange,
@@ -1370,7 +1370,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                   child: Text(
                     'View All →',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w700,
                       fontSize: 12.5,
                     ),
@@ -1407,7 +1407,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(height: 10),
                     Text(
                       'All tasks completed',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
                         color: _kText,
@@ -1488,7 +1488,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             children: [
                               Text(
                                 task['title'] ?? '',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 14,
                                   color: _kText,
@@ -1552,7 +1552,7 @@ class _DashboardPageState extends State<DashboardPage> {
               children: [
                 Text(
                   'OFFICIAL FOREX RATES',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w900,
                     fontSize: 13,
                     color: _kText,
@@ -1568,7 +1568,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                   child: Text(
                     'BOG INDICATIVE',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 10,
                       color: _kGreen,
                       fontWeight: FontWeight.w800,
@@ -1599,7 +1599,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     icon: const Icon(Icons.analytics_outlined, size: 16),
                     label: Text(
                       'Trade Intelligence Hub →',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
                       ),
@@ -1643,7 +1643,7 @@ class _DashboardPageState extends State<DashboardPage> {
             alignment: Alignment.center,
             child: Text(
               symbol,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: _kBrown,
@@ -1657,7 +1657,7 @@ class _DashboardPageState extends State<DashboardPage> {
               children: [
                 Text(
                   pair,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w800,
                     fontSize: 13.5,
                     color: _kText,
@@ -1672,7 +1672,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           Text(
             rate,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.w800,
               fontSize: 16,
               color: _kText,
@@ -1732,7 +1732,7 @@ class _DashboardPageState extends State<DashboardPage> {
       },
       {
         'icon': Icons.badge_outlined,
-        'label': 'Broker Network',
+        'label': 'Member Network',
         'sub': 'Accredited clearing roll',
         'route': '/networking',
         'badge': 'DIRECTORY',
@@ -1820,7 +1820,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                           child: Text(
                             a['badge'] as String,
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 9,
                               fontWeight: FontWeight.w800,
                               color: isHL ? _kOrange : _kMuted,
@@ -1845,7 +1845,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   children: [
                     Text(
                       a['label'] as String,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
                         color: _kText,
@@ -1892,7 +1892,7 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(width: 8),
             Text(
               'QUICK ACTIONS & SERVICES',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w800,
                 fontSize: 11.5,
                 letterSpacing: 0.8,
@@ -1949,7 +1949,7 @@ class _DashboardPageState extends State<DashboardPage> {
               children: [
                 Text(
                   'ASSOCIATION POLLS & SURVEYS',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w900,
                     fontSize: 13,
                     color: _kText,
@@ -1966,7 +1966,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                     child: Text(
                       '${activeSurveys.length}',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 11,
                         fontWeight: FontWeight.w900,
                         color: const Color(0xFF8B5CF6),
@@ -1986,7 +1986,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                   child: Text(
                     'View All →',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w700,
                       fontSize: 12.5,
                     ),
@@ -2024,7 +2024,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(height: 10),
                     Text(
                       'No active association polls right now',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
                         color: _kText,
@@ -2091,7 +2091,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                     ),
                                     child: Text(
                                       type,
-                                      style: GoogleFonts.outfit(
+                                      style: GoogleFonts.inter(
                                         fontSize: 9.5,
                                         fontWeight: FontWeight.w800,
                                         color: const Color(0xFF8B5CF6),
@@ -2108,7 +2108,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                       ),
                                       child: Text(
                                         'VOTED',
-                                        style: GoogleFonts.outfit(
+                                        style: GoogleFonts.inter(
                                           fontSize: 9.5,
                                           fontWeight: FontWeight.w800,
                                           color: _kGreen,
@@ -2134,7 +2134,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                 title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 14,
                                   color: _kText,

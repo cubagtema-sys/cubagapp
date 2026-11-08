@@ -139,7 +139,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
               child: const Icon(Icons.archive_outlined, color: _kRed, size: 20),
             ),
             const SizedBox(width: 10),
-            Text('Archive Circular', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Archive Circular', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Text(
@@ -149,7 +149,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: GoogleFonts.outfit(color: const Color(0xFF6B5E55), fontWeight: FontWeight.w600)),
+            child: Text('Cancel', style: GoogleFonts.inter(color: const Color(0xFF6B5E55), fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -160,7 +160,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            child: Text('Archive', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            child: Text('Archive', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -239,7 +239,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                         Expanded(
                           child: Text(
                             'New Announcement',
-                            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w800, color: textCol),
+                            style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800, color: textCol),
                           ),
                         ),
                         IconButton(
@@ -280,7 +280,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                                 const SizedBox(width: 5),
                                 Text(
                                   c['label'] as String,
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 12.5,
                                     fontWeight: sel ? FontWeight.w800 : FontWeight.w600,
                                     color: sel ? color : textCol,
@@ -301,7 +301,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                     const SizedBox(height: 6),
                     TextField(
                       controller: titleCtrl,
-                      style: GoogleFonts.outfit(fontSize: 14, color: textCol),
+                      style: GoogleFonts.inter(fontSize: 14, color: textCol),
                       decoration: InputDecoration(
                         hintText: 'e.g. Revised Port Clearance Procedures...',
                         hintStyle: GoogleFonts.inter(fontSize: 13, color: textMuted),
@@ -344,7 +344,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx),
-                          child: Text('Cancel', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: textMuted)),
+                          child: Text('Cancel', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: textMuted)),
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton.icon(
@@ -387,7 +387,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                           icon: submitting
                               ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                               : const Icon(Icons.send_rounded, size: 15),
-                          label: Text(submitting ? 'Publishing...' : 'Publish Announcement', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                          label: Text(submitting ? 'Publishing...' : 'Publish Announcement', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13.5)),
                         ),
                       ],
                     ),
@@ -437,7 +437,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text('Edit Announcement', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w800, color: textCol)),
+                          child: Text('Edit Announcement', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800, color: textCol)),
                         ),
                         IconButton(
                           icon: const Icon(Icons.close_rounded, size: 20),
@@ -457,7 +457,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                       children: ['General', 'Urgent Alert', 'Regulatory & Port Advisory', 'System Maintenance', 'Event'].map((c) {
                         final sel = editCategory == c;
                         return ChoiceChip(
-                          label: Text(c, style: GoogleFonts.outfit(fontSize: 12.5, fontWeight: FontWeight.bold, color: sel ? Colors.white : textCol)),
+                          label: Text(c, style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold, color: sel ? Colors.white : textCol)),
                           selected: sel,
                           selectedColor: _kOrange,
                           backgroundColor: isDark ? const Color(0xFF4D2D20) : const Color(0xFFF1F5F9),
@@ -473,7 +473,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                     const SizedBox(height: 6),
                     TextField(
                       controller: titleEditCtrl,
-                      style: GoogleFonts.outfit(fontSize: 14, color: textCol),
+                      style: GoogleFonts.inter(fontSize: 14, color: textCol),
                       decoration: InputDecoration(
                         isDense: true,
                         filled: true,
@@ -505,7 +505,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx),
-                          child: Text('Cancel', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: textMuted)),
+                          child: Text('Cancel', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: textMuted)),
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton.icon(
@@ -543,7 +543,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                           icon: saving
                               ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                               : const Icon(Icons.check_rounded, size: 15),
-                          label: Text('Save Changes', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                          label: Text('Save Changes', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13.5)),
                         ),
                       ],
                     ),
@@ -630,7 +630,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                       children: [
                         Text(
                           'Announcements & Circulars',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: textPrimary,
@@ -659,7 +659,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                       _fetchArchived(page: 1);
                     },
                     icon: const Icon(Icons.refresh_rounded, size: 15, color: _kOrange),
-                    label: Text('Refresh', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
+                    label: Text('Refresh', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton.icon(
@@ -672,7 +672,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                     ),
                     onPressed: _showCreateDialog,
                     icon: const Icon(Icons.add_rounded, size: 16),
-                    label: Text('New Announcement', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
+                    label: Text('New Announcement', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
                   ),
                 ],
               ),
@@ -697,7 +697,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                     Expanded(
                       child: Text(
                         _toastMessage,
-                        style: GoogleFonts.outfit(color: _toastColor, fontWeight: FontWeight.bold, fontSize: 13),
+                        style: GoogleFonts.inter(color: _toastColor, fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                     ),
                   ],
@@ -810,7 +810,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                     const SizedBox(height: 12),
                     Text(
                       _tab == 'archived' ? 'No archived circulars found' : 'No active announcements found',
-                      style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
+                      style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -831,7 +831,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                           elevation: 0,
                         ),
                         icon: const Icon(Icons.add_rounded, size: 15),
-                        label: Text('Create Announcement', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
+                        label: Text('Create Announcement', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
                       ),
                     ],
                   ],
@@ -882,7 +882,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                               ),
                               icon: const Icon(Icons.chevron_left_rounded, size: 14),
-                              label: Text('Prev', style: GoogleFonts.outfit(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                              label: Text('Prev', style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold)),
                             ),
                             const SizedBox(width: 6),
                             OutlinedButton.icon(
@@ -900,7 +900,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                               ),
-                              label: Text('Next', style: GoogleFonts.outfit(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                              label: Text('Next', style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold)),
                               icon: const Icon(Icons.chevron_right_rounded, size: 14),
                             ),
                           ],
@@ -939,7 +939,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
             const SizedBox(width: 6),
             Text(
               label,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
                 color: isSel ? Colors.white : (isDark ? Colors.white : const Color(0xFF334155)),
@@ -954,7 +954,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
               ),
               child: Text(
                 '$count',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569)),
@@ -987,7 +987,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
             color: isSel ? color : (isDark ? Colors.white70 : const Color(0xFF475569)),
@@ -1067,7 +1067,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                     const SizedBox(width: 4),
                     Text(
                       category.toUpperCase(),
-                      style: GoogleFonts.outfit(fontSize: 10.5, fontWeight: FontWeight.w800, color: catColor, letterSpacing: 0.4),
+                      style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w800, color: catColor, letterSpacing: 0.4),
                     ),
                   ],
                 ),
@@ -1121,7 +1121,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                       children: [
                         const Icon(Icons.settings_backup_restore_rounded, size: 12, color: _kGreen),
                         const SizedBox(width: 4),
-                        Text('Restore', style: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.bold, color: _kGreen)),
+                        Text('Restore', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold, color: _kGreen)),
                       ],
                     ),
                   ),
@@ -1134,7 +1134,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
           // Title
           Text(
             title,
-            style: GoogleFonts.outfit(fontSize: 15.5, fontWeight: FontWeight.w800, color: textPrimary),
+            style: GoogleFonts.inter(fontSize: 15.5, fontWeight: FontWeight.w800, color: textPrimary),
           ),
           const SizedBox(height: 4),
 
@@ -1160,7 +1160,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
               },
               child: Text(
                 isExpanded ? 'Show Less' : 'Read Full Circular →',
-                style: GoogleFonts.outfit(fontSize: 12.5, fontWeight: FontWeight.bold, color: _kOrange),
+                style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold, color: _kOrange),
               ),
             ),
           ],

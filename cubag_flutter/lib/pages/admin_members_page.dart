@@ -8,6 +8,7 @@ import '../components/custom_dropdown.dart';
 import '../components/admin_components.dart';
 import '../components/trend_line.dart';
 import '../services/api_service.dart';
+import '../services/socket_service.dart';
 import '../components/fetch_error_view.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
@@ -115,11 +116,43 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
     super.initState();
     _fetch();
     _scrollController.addListener(_onScroll);
+    SocketService().on('member_updated', _onMemberSocketEvent);
+    SocketService().on('member_approved', _onMemberSocketEvent);
+    SocketService().on('members_updated', _onMemberSocketEvent);
+    SocketService().on('compliance_updated', _onMemberSocketEvent);
+    SocketService().on('documents_updated', _onMemberSocketEvent);
+  }
+
+  void _onMemberSocketEvent(dynamic data) {
+    if (!mounted) return;
+    if (data is Map && data['member_id'] != null) {
+      final mid = data['member_id'].toString();
+      final newStatus = data['status']?.toString();
+      if (newStatus != null) {
+        setState(() {
+          for (var m in _members) {
+            if (m['id'].toString() == mid) {
+              m['status'] = newStatus;
+            }
+          }
+          if (_selected?['id']?.toString() == mid) {
+            _selected!['status'] = newStatus;
+          }
+        });
+      }
+    }
+    ApiService.deleteCacheKeysMatching('members/admin');
+    _fetch(refresh: true);
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    SocketService().off('member_updated', _onMemberSocketEvent);
+    SocketService().off('member_approved', _onMemberSocketEvent);
+    SocketService().off('members_updated', _onMemberSocketEvent);
+    SocketService().off('compliance_updated', _onMemberSocketEvent);
+    SocketService().off('documents_updated', _onMemberSocketEvent);
     super.dispose();
   }
 
@@ -243,43 +276,75 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
   }
 
   Future<void> _updateStatus(dynamic id, String status) async {
-    setState(() => _updating = true);
+    final oldMembers = List<Map<String, dynamic>>.from(_members);
+    final oldSelected = _selected != null ? Map<String, dynamic>.from(_selected!) : null;
+
+    // Instant optimistic update
+    setState(() {
+      _updating = true;
+      _members = _members
+          .map(
+            (m) => m['id'] == id
+                ? {
+                    ...m,
+                    'status': status,
+                  }
+                : m,
+          )
+          .toList();
+      if (_selected?['id'] == id) {
+        _selected = {
+          ..._selected!,
+          'status': status,
+        };
+      }
+    });
+
     try {
       final res = await ApiService().put(
         '/members/admin/status/$id',
         data: {'status': status},
       );
       final d = res.data ?? {};
-      setState(() {
-        _members = _members
-            .map(
-              (m) => m['id'] == id
-                  ? {
-                      ...m,
-                      'status': status,
-                      'license_number':
-                          d['license_number'] ?? m['license_number'],
-                      'compliance_score':
-                          d['compliance_score'] ?? m['compliance_score'],
-                      'star_rating': d['star_rating'] ?? m['star_rating'],
-                    }
-                  : m,
-            )
-            .toList();
-        if (_selected?['id'] == id) {
-          _selected = {
-            ..._selected!,
-            'status': status,
-            'compliance_score':
-                d['compliance_score'] ?? _selected!['compliance_score'],
-            'star_rating': d['star_rating'] ?? _selected!['star_rating'],
-          };
-        }
-      });
+      await ApiService.deleteCacheKeysMatching('members/admin');
+      if (mounted) {
+        setState(() {
+          _members = _members
+              .map(
+                (m) => m['id'] == id
+                    ? {
+                        ...m,
+                        'status': status,
+                        'license_number':
+                            d['license_number'] ?? m['license_number'],
+                        'compliance_score':
+                            d['compliance_score'] ?? m['compliance_score'],
+                        'star_rating': d['star_rating'] ?? m['star_rating'],
+                      }
+                    : m,
+              )
+              .toList();
+          if (_selected?['id'] == id) {
+            _selected = {
+              ..._selected!,
+              'status': status,
+              'compliance_score':
+                  d['compliance_score'] ?? _selected!['compliance_score'],
+              'star_rating': d['star_rating'] ?? _selected!['star_rating'],
+            };
+          }
+        });
+      }
     } catch (e, st) {
       AppLogger.error('admin_members_page', e, st);
+      if (mounted) {
+        setState(() {
+          _members = oldMembers;
+          _selected = oldSelected;
+        });
+      }
     }
-    setState(() => _updating = false);
+    if (mounted) setState(() => _updating = false);
   }
 
   Future<void> _updateReviewScore(dynamic id) async {
@@ -428,7 +493,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                       icon: const Icon(Icons.refresh_rounded, size: 18),
                       label: Text(
                         'Refresh',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
                         ),
@@ -606,7 +671,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                                 children: [
                                   Text(
                                     'Member Profile',
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w800,
                                       color: textColor,
@@ -715,7 +780,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     )
                   : Text(
                       _initials(m['name']?.toString() ?? ''),
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 20,
@@ -729,7 +794,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                 children: [
                   Text(
                     m['name']?.toString() ?? '',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w800,
                       fontSize: 22,
                       color: textColor,
@@ -738,7 +803,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   const SizedBox(height: 2),
                   Text(
                     m['email']?.toString() ?? '',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       color: subTextColor,
                       fontSize: 16,
                     ),
@@ -766,7 +831,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
             children: [
               Text(
                 'STANDING & COMPLIANCE',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 14,
                   color: subTextColor,
                   fontWeight: FontWeight.w800,
@@ -787,7 +852,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                       const SizedBox(width: 6),
                       Text(
                         '${starRating.toStringAsFixed(1)} / 5.0',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w900,
                           fontSize: 22,
                           color: textColor,
@@ -810,7 +875,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     ),
                     child: Text(
                       tier.label,
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: tier.color,
                         fontWeight: FontWeight.w800,
                         fontSize: 15,
@@ -834,7 +899,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
               const SizedBox(height: 6),
               Text(
                 'Compliance Score: $complianceScore%',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 16,
                   color: subTextColor,
                   fontWeight: FontWeight.w600,
@@ -846,7 +911,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                 children: [
                   Text(
                     'Manual Review Score: ${_editReviewScore.round()} / 10',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w800,
                       fontSize: 17,
                       color: textColor,
@@ -872,7 +937,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     ),
                     child: Text(
                       'Save Score',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                       ),
@@ -913,7 +978,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
             children: [
               Text(
                 'HISTORICAL COMPLIANCE TREND',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 14,
                   color: subTextColor,
                   fontWeight: FontWeight.w800,
@@ -1011,7 +1076,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
               children: [
                 Text(
                   r[0].toString().toUpperCase(),
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: subTextColor,
                     fontWeight: FontWeight.w800,
@@ -1022,7 +1087,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                 Expanded(
                   child: Text(
                     r[1].toString(),
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
                       color: textColor,
@@ -1067,7 +1132,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     ),
                     child: Text(
                       (ss['label'] as String).toUpperCase(),
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         color: ss['color'] as Color,
                         fontWeight: FontWeight.w800,
@@ -1078,7 +1143,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   const SizedBox(width: 8),
                   Text(
                     'Status Controls',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 16,
                       color: subTextColor,
                       fontWeight: FontWeight.bold,
@@ -1106,7 +1171,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                         ),
                         child: Text(
                           'Activate',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 17,
                           ),
@@ -1131,7 +1196,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                         ),
                         child: Text(
                           'Suspend',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 17,
                           ),
@@ -1155,7 +1220,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                         ),
                         child: Text(
                           'Disable',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 17,
                             color: textColor,
@@ -1176,7 +1241,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
             onPressed: () => setState(() => _selected = null),
             child: Text(
               'Close Profile',
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 color: subTextColor,
                 fontWeight: FontWeight.w600,
               ),
@@ -1289,7 +1354,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
             children: [
               Text(
                 it['label'] as String,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: subInk,
@@ -1305,7 +1370,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                 ),
                 child: Text(
                   it['badge'] as String,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 9.5,
                     fontWeight: FontWeight.w800,
                     color: badgeColor,
@@ -1318,7 +1383,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           const SizedBox(height: 5),
           Text(
             it['value'] as String,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: textInk,
@@ -1440,7 +1505,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
       child: Text(
         label,
         textAlign: align,
-        style: GoogleFonts.outfit(
+        style: GoogleFonts.inter(
           fontSize: 15,
           fontWeight: FontWeight.w800,
           color: textColor.withValues(alpha: 0.7),
@@ -1522,7 +1587,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                               )
                             : Text(
                                 _initials(m['name']?.toString() ?? ''),
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   color: c,
                                   fontWeight: FontWeight.w800,
                                   fontSize: 14,
@@ -1537,7 +1602,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                           children: [
                             Text(
                               m['name']?.toString() ?? '',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15,
                                 color: textColor,
@@ -1578,7 +1643,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                       Expanded(
                         child: Text(
                           m['member_type']?.toString() ?? 'General Member',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: textColor.withValues(alpha: 0.9),
@@ -1607,7 +1672,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                           const SizedBox(width: 4),
                           Text(
                             '${starRating.toStringAsFixed(1)} / 5.0',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
                               color: textColor,
@@ -1642,7 +1707,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                         ),
                         child: Text(
                           tier.label,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 11,
                             color: tier.color,
                             fontWeight: FontWeight.w700,
@@ -1675,7 +1740,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                       ),
                       child: Text(
                         (ss['label'] as String).toUpperCase(),
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 11,
                           color: ss['color'] as Color,
                           fontWeight: FontWeight.w800,
@@ -1694,11 +1759,17 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     children: [
                       if (m['status'] == 'pending' || m['status'] == 'pending_review') ...[
                         ElevatedButton.icon(
-                          onPressed: () => context.push('/admin/compliance'),
+                          onPressed: () async {
+                            await context.push('/admin/compliance');
+                            if (mounted) {
+                              await ApiService.deleteCacheKeysMatching('members/admin');
+                              _fetch(refresh: true);
+                            }
+                          },
                           icon: const Icon(Icons.verified_outlined, size: 14),
                           label: Text(
                             'Review Compliance',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               color: Colors.white,
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
@@ -1726,7 +1797,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                         icon: const Icon(Icons.visibility_outlined, size: 15),
                         label: Text(
                           'View',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1792,7 +1863,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
       children: [
         Text(
           'COMPLIANCE BREAKDOWN MATH',
-          style: GoogleFonts.outfit(
+          style: GoogleFonts.inter(
             fontSize: 14,
             color: subTextColor,
             fontWeight: FontWeight.w800,
@@ -1892,7 +1963,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
               Expanded(
                 child: Text(
                   title,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                     color: textColor,
@@ -1901,7 +1972,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
               ),
               Text(
                 scoreText,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w900,
                   color: color,
                   fontSize: 16,
@@ -1915,7 +1986,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
               padding: const EdgeInsets.only(top: 2, left: 24),
               child: Text(
                 detail,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 15,
                   color: subTextColor,
                   fontWeight: FontWeight.w500,
@@ -1991,7 +2062,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   children: [
                     Text(
                       'ATTACHED BANK DEPOSIT SLIP',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 13.5,
                         color: subTextColor,
                         fontWeight: FontWeight.w800,
@@ -2019,7 +2090,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                 ),
                 child: Text(
                   isPaid ? 'PAID' : 'PENDING REVIEW',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     color: isPaid ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
@@ -2083,7 +2154,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     if (amount > 0) ...[
                       Text(
                         'GH₵ ${amount.toStringAsFixed(2)}',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                           color: isPaid ? const Color(0xFF10B981) : primary,
@@ -2093,7 +2164,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     ],
                     Text(
                       'Ref: $payRef',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: textColor,
@@ -2137,7 +2208,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    textStyle: GoogleFonts.outfit(fontSize: 12.5, fontWeight: FontWeight.bold),
+                    textStyle: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -2150,7 +2221,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      textStyle: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600),
+                      textStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                   ),
               ],
@@ -2161,7 +2232,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
               onTap: () => _showDepositSlipModal(context, receiptUrl, payRef, m['name']?.toString() ?? 'Member', amount),
               child: Text(
                 'View Attached Deposit Slip Image →',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                   color: primary,
@@ -2233,7 +2304,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   Expanded(
                     child: Text(
                       'Deposit Slip · $memberName · Ref: $payRef',
-                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

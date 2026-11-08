@@ -436,7 +436,7 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 28),
               Text(
                 'CUBAG',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: Colors.white,
                   fontSize: 44,
                   fontWeight: FontWeight.w900,
@@ -456,7 +456,7 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 18),
               Text(
                 'Customs Brokers Association of Ghana',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   color: const Color(0xFFF8F4F0),
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -485,7 +485,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   children: [
                     Text(
                       'ACCREDITED CORPORATE MEMBERSHIP',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         color: _kOrange,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
@@ -551,7 +551,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   'Secure Account',
                 ][_step - 1],
                 textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: isMobile ? 23 : 32,
                   fontWeight: FontWeight.w900,
                   color: _kText,
@@ -945,7 +945,7 @@ class _RegisterPageState extends State<RegisterPage> {
         'value': 'Licentiate',
         'label': 'Licentiate',
         'icon': Icons.badge_outlined,
-        'desc': 'Individual licensed customs broker',
+        'desc': 'Individual licensed customs practitioner / member',
       },
       {
         'value': 'Associate',
@@ -1060,7 +1060,7 @@ class _RegisterPageState extends State<RegisterPage> {
         'value': 'sme',
         'label': 'SME',
         'short': 'SME',
-        'desc': 'Registered customs brokerage and logistics enterprise.',
+        'desc': 'Registered customs clearing and logistics enterprise.',
         'icon': Icons.storefront_rounded,
       },
       {
@@ -1621,7 +1621,7 @@ class _RegisterPageState extends State<RegisterPage> {
         keyboardType: TextInputType.number,
         maxLength: 6,
         textAlign: TextAlign.center,
-        style: GoogleFonts.outfit(
+        style: GoogleFonts.inter(
           fontSize: 28,
           fontWeight: FontWeight.bold,
           letterSpacing: 12,

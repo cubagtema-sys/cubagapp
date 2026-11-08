@@ -235,6 +235,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       builder: (ctx) => _MemberReviewDialog(
         member: member,
         onApproved: () {
+          setState(() {
+            _rawMembers.removeWhere((m) => m['id'] == member['id']);
+          });
+          ApiService.deleteCacheKeysMatching('admin/dashboard');
+          ApiService.deleteCacheKeysMatching('members/admin');
           _fetchData();
         },
       ),
@@ -332,7 +337,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         'onTap': () => setState(() => _activeWorkspaceIndex = 0),
       },
       {
-        'label': 'ACCREDITED BROKERS',
+        'label': 'ACCREDITED MEMBERS',
         'value': '$_totalMembers',
         'badge': 'Active Registry',
         'badgeColor': const Color(0xFF6B3E26),
@@ -421,7 +426,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               children: [
                 Text(
                   it['label'] as String,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: subInk,
@@ -436,7 +441,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ),
                   child: Text(
                     it['badge'] as String,
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 9.5,
                       fontWeight: FontWeight.w800,
                       color: badgeColor,
@@ -448,7 +453,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             const SizedBox(height: 6),
             Text(
               it['value'] as String,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
                 color: textInk,
@@ -562,7 +567,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             Flexible(
               child: Text(
                 t['label'] as String,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   color: isSelected ? textInk : subInk,
@@ -582,7 +587,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               ),
               child: Text(
                 t['badge'] as String,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                   color: isSelected ? badgeColor : subInk,
@@ -685,7 +690,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   children: [
                     Text(
                       'Secretariat Counter Desk',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: isDark ? Colors.white : const Color(0xFF1F1612),
@@ -719,7 +724,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               icon: const Icon(Icons.add_rounded, size: 17),
               label: Text(
                 '➕ Record Counter / Cash Payment',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 13.5,
                 ),
@@ -756,7 +761,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     const SizedBox(width: 8),
                     Text(
                       'PORT OPERATIONS DESK',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                         color: textInk,
@@ -773,7 +778,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ),
                   child: Text(
                     'LIVE STATUS',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 9.5,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF10b981),
@@ -807,7 +812,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     ),
                     child: Text(
                       'Manage Port Bulletins →',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
                       ),
@@ -851,7 +856,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               children: [
                 Text(
                   name,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: textInk,
@@ -876,7 +881,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ),
             child: Text(
               status,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.inter(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 color: color,
@@ -913,7 +918,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     const SizedBox(width: 8),
                     Text(
                       'OFFICIAL CUSTOMS FX RATES',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                         color: textInk,
@@ -930,7 +935,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ),
                   child: Text(
                     'INDICATIVE',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontSize: 9.5,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF10b981),
@@ -966,7 +971,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     ),
                     child: Text(
                       'Update FX Tariffs & News →',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
                       ),
@@ -1007,7 +1012,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 ),
                 child: Text(
                   symbol,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF6B3E26),
@@ -1017,7 +1022,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               const SizedBox(width: 8),
               Text(
                 pair,
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: textInk,
@@ -1027,7 +1032,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ),
           Text(
             rate,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w800,
               color: textInk,
@@ -1123,7 +1128,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       children: [
                         Text(
                           'Pending Registration Approvals',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w800,
                             fontSize: 18,
                             color: textColor,
@@ -1157,7 +1162,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         pendingMembers.length > 5
                             ? 'Showing latest 5 of ${pendingMembers.length}'
                             : '${pendingMembers.length} awaiting review',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           color: kAdminOrange,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -1173,7 +1178,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       icon: const Icon(Icons.arrow_forward_rounded, size: 14),
                       label: Text(
                         'View All',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
@@ -1203,7 +1208,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     const SizedBox(height: 10),
                     Text(
                       'All caught up!',
-                      style: GoogleFonts.outfit(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.bold,
                         fontSize: 19,
                         color: textColor,
@@ -1236,13 +1241,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ),
                       child: DataTable(
                         headingRowColor: WidgetStateProperty.all(headerBg),
-                        headingTextStyle: GoogleFonts.outfit(
+                        headingTextStyle: GoogleFonts.inter(
                           fontWeight: FontWeight.w800,
                           fontSize: 14,
                           color: subTextColor,
                           letterSpacing: 0.5,
                         ),
-                        dataTextStyle: GoogleFonts.outfit(
+                        dataTextStyle: GoogleFonts.inter(
                           fontSize: 15,
                           color: textColor,
                         ),
@@ -1297,7 +1302,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                       backgroundColor: primary.withAlpha(35),
                                       child: Text(
                                         _getInitials(name),
-                                        style: GoogleFonts.outfit(
+                                        style: GoogleFonts.inter(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 14,
                                           color: primary,
@@ -1313,7 +1318,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                       children: [
                                         Text(
                                           name,
-                                          style: GoogleFonts.outfit(
+                                          style: GoogleFonts.inter(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 17,
                                             color: textColor,
@@ -1350,7 +1355,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                   ),
                                   child: Text(
                                     type.toUpperCase(),
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,
                                       color: badgeColor,
@@ -1394,7 +1399,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                         hasPayment
                                             ? 'Paid (${paymentRef.length > 8 ? paymentRef.substring(0, 8) : paymentRef})'
                                             : 'Unpaid / Pending',
-                                        style: GoogleFonts.outfit(
+                                        style: GoogleFonts.inter(
                                           fontSize: 15,
                                           fontWeight: FontWeight.bold,
                                           color: hasPayment
@@ -1429,7 +1434,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                   ),
                                   label: Text(
                                     'Review & Approve',
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
                                     ),
@@ -1550,6 +1555,16 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
   }
 
   Future<void> _updateDocStatus(int docId, String status) async {
+    final prevDocs = _documents.map((d) => Map<String, dynamic>.from(d as Map)).toList();
+    // Instant optimistic update
+    setState(() {
+      for (var d in _documents) {
+        if (d is Map && d['id'] == docId) {
+          d['status'] = status;
+        }
+      }
+    });
+
     try {
       final res = await ApiService().put(
         '/documents/admin/doc/$docId/status',
@@ -1567,10 +1582,14 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
             duration: const Duration(seconds: 2),
           ),
         );
+        await ApiService.deleteCacheKeysMatching('documents/admin');
         _fetchDocuments();
+      } else if (mounted) {
+        setState(() => _documents = prevDocs);
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _documents = prevDocs);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error updating document: $e'),
@@ -1656,7 +1675,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                 const SizedBox(width: 8),
                 Text(
                   'Reject Member',
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -1821,7 +1840,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                       children: [
                         Text(
                           'Member Validation & Approval',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 22,
                           ),
@@ -1870,7 +1889,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                                 ).primaryColor.withValues(alpha: 0.15),
                                 child: Text(
                                   name.isNotEmpty ? name[0].toUpperCase() : 'M',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 20,
                                     color: Theme.of(context).primaryColor,
@@ -1884,7 +1903,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                                   children: [
                                     Text(
                                       name,
-                                      style: GoogleFonts.outfit(
+                                      style: GoogleFonts.inter(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 20,
                                       ),
@@ -1979,7 +1998,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                                   hasPayment
                                       ? 'Registration Payment Confirmed'
                                       : 'Payment Reference Pending',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18,
                                     color: hasPayment
@@ -2013,7 +2032,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                       children: [
                         Text(
                           'Registration Documents ($uploadedCount uploaded • $approvedCount approved)',
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 19,
                           ),
@@ -2240,7 +2259,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                           : const Icon(Icons.verified_rounded, size: 18),
                       label: Text(
                         'Approve Member',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                         ),

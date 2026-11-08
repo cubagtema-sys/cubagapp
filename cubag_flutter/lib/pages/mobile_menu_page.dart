@@ -382,7 +382,7 @@ class MobileMenuPage extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(4, 24, 4, 8),
           child: Text(
             title,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w900,
               color: isDark ? const Color(0xFF9ca3af) : const Color(0xFF64748b),
@@ -479,7 +479,7 @@ class MobileMenuPage extends StatelessWidget {
               Expanded(
                 child: Text(
                   item.title,
-                  style: GoogleFonts.outfit(
+                  style: GoogleFonts.inter(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                     color: textColor,

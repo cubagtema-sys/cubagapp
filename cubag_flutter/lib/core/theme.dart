@@ -55,22 +55,22 @@ class AppTheme {
         elevation: 0,
       ),
       textTheme: TextTheme(
-        headlineLarge: GoogleFonts.outfit(
+        headlineLarge: GoogleFonts.inter(
           color: darkBrown,
           fontSize: 26,
           fontWeight: FontWeight.bold,
         ),
-        headlineMedium: GoogleFonts.outfit(
+        headlineMedium: GoogleFonts.inter(
           color: darkBrown,
           fontSize: 22,
           fontWeight: FontWeight.bold,
         ),
-        titleLarge: GoogleFonts.outfit(
+        titleLarge: GoogleFonts.inter(
           color: darkBrown,
           fontSize: 20,
           fontWeight: FontWeight.w700,
         ),
-        titleMedium: GoogleFonts.outfit(
+        titleMedium: GoogleFonts.inter(
           color: darkBrown,
           fontSize: 18,
           fontWeight: FontWeight.w600,
@@ -185,22 +185,22 @@ class AppTheme {
       visualDensity: VisualDensity.adaptivePlatformDensity,
       cardTheme: const CardThemeData(color: codeBgDark, elevation: 0),
       textTheme: TextTheme(
-        headlineLarge: GoogleFonts.outfit(
+        headlineLarge: GoogleFonts.inter(
           color: textHDark,
           fontSize: 26,
           fontWeight: FontWeight.bold,
         ),
-        headlineMedium: GoogleFonts.outfit(
+        headlineMedium: GoogleFonts.inter(
           color: textHDark,
           fontSize: 22,
           fontWeight: FontWeight.bold,
         ),
-        titleLarge: GoogleFonts.outfit(
+        titleLarge: GoogleFonts.inter(
           color: textHDark,
           fontSize: 20,
           fontWeight: FontWeight.w700,
         ),
-        titleMedium: GoogleFonts.outfit(
+        titleMedium: GoogleFonts.inter(
           color: textHDark,
           fontSize: 18,
           fontWeight: FontWeight.w600,

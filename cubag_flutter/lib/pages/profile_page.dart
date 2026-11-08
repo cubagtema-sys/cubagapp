@@ -164,7 +164,7 @@ class _ProfilePageState extends State<ProfilePage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Profile photo updated successfully', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              content: Text('Profile photo updated successfully', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
               backgroundColor: _kGreen,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -177,7 +177,7 @@ class _ProfilePageState extends State<ProfilePage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(msg, style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              content: Text(msg, style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
               backgroundColor: _kRed,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -190,7 +190,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Upload error: $e', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            content: Text('Upload error: $e', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
             backgroundColor: _kRed,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -300,7 +300,7 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               const CircularProgressIndicator(color: _kOrange),
               const SizedBox(height: 16),
-              Text('Loading profile details...', style: GoogleFonts.outfit(color: textMuted)),
+              Text('Loading profile details...', style: GoogleFonts.inter(color: textMuted)),
             ],
           ),
         ),
@@ -401,8 +401,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    _user['name']?.toString() ?? 'Broker Member',
-                    style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: textPrimary),
+                    _user['name']?.toString() ?? 'Member',
+                    style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w900, color: textPrimary),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 2),
@@ -428,7 +428,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         const SizedBox(width: 6),
                         Text(
                           isGoodStanding ? 'Active in Good Standing' : 'Status Pending',
-                          style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: isGoodStanding ? _kGreen : _kAmber),
+                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: isGoodStanding ? _kGreen : _kAmber),
                         ),
                       ],
                     ),
@@ -449,7 +449,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         onPressed: () => _openDigitalIdDialog(tier, expiry, daysLeft, isGoodStanding, isPackagePending),
                         icon: const Icon(Icons.badge_rounded, size: 16),
-                        label: Text('Digital ID', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
+                        label: Text('Digital ID', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
                       ),
                       const SizedBox(width: 10),
                       OutlinedButton.icon(
@@ -461,7 +461,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         onPressed: () => context.go('/compliance'),
                         icon: const Icon(Icons.verified_user_outlined, size: 16, color: _kGreen),
-                        label: Text('Compliance', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
+                        label: Text('Compliance', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
                       ),
                     ],
                   ),
@@ -495,7 +495,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SizedBox(width: 8),
                       Text(
                         'Profile Particulars',
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.inter(
                           fontSize: 16.5,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.2,
@@ -508,7 +508,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   Padding(
                     padding: const EdgeInsets.only(left: 11),
                     child: Text(
-                      'Official customs clearance credentials & verified broker registry',
+                      'Official customs clearance credentials & verified member registry',
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w400,
@@ -640,7 +640,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   Text(
                     '30-Day Compliance Trend',
-                    style: GoogleFonts.outfit(fontSize: 16.5, fontWeight: FontWeight.bold, color: textPrimary),
+                    style: GoogleFonts.inter(fontSize: 16.5, fontWeight: FontWeight.bold, color: textPrimary),
                   ),
                   const SizedBox(height: 12),
                   TrendLineWidget(
@@ -665,7 +665,7 @@ class _ProfilePageState extends State<ProfilePage> {
         backgroundColor: _kOrange.withAlpha(30),
         child: Text(
           _initials,
-          style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.w900, color: _kOrange),
+          style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w900, color: _kOrange),
         ),
       );
 
@@ -729,7 +729,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       Clipboard.setData(ClipboardData(text: value));
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Copied $label: $value', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+                          content: Text('Copied $label: $value', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                           duration: const Duration(seconds: 2),
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -763,7 +763,7 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 7),
           SelectableText(
             value,
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 15,
               fontWeight: FontWeight.w700,
               color: textPrimary,
@@ -797,7 +797,7 @@ class _ProfilePageState extends State<ProfilePage> {
         : (expiry != null ? _formatDate(expiry) : 'Valid Member');
 
     final memberName = _user['name']?.toString().trim() ?? 'Member';
-    final companyName = _user['company']?.toString().trim() ?? 'Customs Brokerage Entity';
+    final companyName = _user['company']?.toString().trim() ?? 'Member Enterprise / Firm';
     final port = _formatPortAbbreviation((_user['port_of_operation'] ?? _user['port'] ?? 'Tema').toString());
 
     return ConstrainedBox(
@@ -873,7 +873,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           children: [
                             Text(
                               'CUBAG',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontWeight: FontWeight.w900,
                                 fontSize: 16,
                                 color: const Color(0xFF0F172A),
@@ -914,7 +914,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           const SizedBox(width: 5),
                           Text(
                             badgeText.toUpperCase(),
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               color: badgeColor,
                               fontWeight: FontWeight.w800,
                               fontSize: 10.5,
@@ -959,7 +959,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         children: [
                           Text(
                             memberName,
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.inter(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF0F172A),
@@ -1025,7 +1025,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         const SizedBox(height: 2),
                         Text(
                           _membershipId,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w800,
                             fontSize: 14,
                             color: const Color(0xFF0F172A),
@@ -1044,7 +1044,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         const SizedBox(height: 2),
                         Text(
                           expireText,
-                          style: GoogleFonts.outfit(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w700,
                             fontSize: 12.5,
                             color: isGoodStanding ? const Color(0xFF334155) : const Color(0xFFEF4444),

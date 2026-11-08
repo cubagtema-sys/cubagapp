@@ -177,14 +177,22 @@ class _State extends State<AdminLicenseRenewalPage> {
   }
 
   Future<void> _updateStatus(int id, String status) async {
-    await _api.putData('members/admin/status/$id', {'status': status});
-    await _fetch();
-    setState(
-      () => _msg = {
+    // Instant optimistic update
+    setState(() {
+      for (var m in _members) {
+        if (m is Map && m['id'] == id) {
+          m['status'] = status;
+        }
+      }
+      _msg = {
         'text': status == 'active' ? 'Member approved ✓' : 'Member rejected.',
         'ok': true,
-      },
-    );
+      };
+    });
+
+    await _api.putData('members/admin/status/$id', {'status': status});
+    await ApiService.deleteCacheKeysMatching('members/admin');
+    await _fetch();
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) setState(() => _msg = {'text': '', 'ok': true});
     });
@@ -276,7 +284,7 @@ class _State extends State<AdminLicenseRenewalPage> {
                   icon: const Icon(Icons.refresh_rounded, size: 18),
                   label: Text(
                     'Refresh',
-                    style: GoogleFonts.outfit(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 17,
                     ),

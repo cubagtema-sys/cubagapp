@@ -361,7 +361,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
               // ── 1. Digital Membership & Profile Card ──────────────────────
               Text(
                 'DIGITAL MEMBERSHIP CREDENTIAL',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.2,
@@ -423,7 +423,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                       isGoodStanding
                                           ? 'ACTIVE IN GOOD STANDING'
                                           : (_loadingFees ? 'CHECKING STATUS...' : 'PENDING PACKAGE SETTLEMENT'),
-                                      style: GoogleFonts.outfit(
+                                      style: GoogleFonts.inter(
                                         color: Colors.white,
                                         fontSize: 11.5,
                                         fontWeight: FontWeight.w800,
@@ -436,7 +436,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               const SizedBox(height: 14),
                               Text(
                                 companyName,
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   color: Colors.white,
                                   fontSize: 22,
                                   fontWeight: FontWeight.w900,
@@ -461,7 +461,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                     children: [
                                       Text(
                                         'MEMBERSHIP ID',
-                                        style: GoogleFonts.outfit(
+                                        style: GoogleFonts.inter(
                                           color: _kOrange,
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
@@ -471,7 +471,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                       const SizedBox(height: 2),
                                       Text(
                                         memNo,
-                                        style: GoogleFonts.outfit(
+                                        style: GoogleFonts.inter(
                                           color: Colors.white,
                                           fontSize: 15,
                                           fontWeight: FontWeight.bold,
@@ -487,7 +487,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                       children: [
                                         Text(
                                           'CLASSIFICATION',
-                                          style: GoogleFonts.outfit(
+                                          style: GoogleFonts.inter(
                                             color: _kOrange,
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
@@ -497,7 +497,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         const SizedBox(height: 2),
                                         Text(
                                           scaleStr,
-                                          style: GoogleFonts.outfit(
+                                          style: GoogleFonts.inter(
                                             color: Colors.white,
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
@@ -548,7 +548,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                       children: [
                                         Text(
                                           'OFFICIAL QR VERIFICATION',
-                                          style: GoogleFonts.outfit(
+                                          style: GoogleFonts.inter(
                                             color: _kOrange,
                                             fontSize: 12,
                                             fontWeight: FontWeight.w800,
@@ -612,7 +612,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                             isGoodStanding
                                                 ? 'ACTIVE IN GOOD STANDING'
                                                 : (_loadingFees ? 'CHECKING STATUS...' : 'PENDING PACKAGE SETTLEMENT'),
-                                            style: GoogleFonts.outfit(
+                                            style: GoogleFonts.inter(
                                               color: Colors.white,
                                               fontSize: 11.5,
                                               fontWeight: FontWeight.w800,
@@ -625,7 +625,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                     const SizedBox(height: 16),
                                     Text(
                                       companyName,
-                                      style: GoogleFonts.outfit(
+                                      style: GoogleFonts.inter(
                                         color: Colors.white,
                                         fontSize: 24,
                                         fontWeight: FontWeight.w900,
@@ -650,7 +650,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                           children: [
                                             Text(
                                               'MEMBERSHIP ID',
-                                              style: GoogleFonts.outfit(
+                                              style: GoogleFonts.inter(
                                                 color: _kOrange,
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.bold,
@@ -660,7 +660,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                             const SizedBox(height: 2),
                                             Text(
                                               memNo,
-                                              style: GoogleFonts.outfit(
+                                              style: GoogleFonts.inter(
                                                 color: Colors.white,
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.bold,
@@ -676,7 +676,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                             children: [
                                               Text(
                                                 'CLASSIFICATION',
-                                                style: GoogleFonts.outfit(
+                                                style: GoogleFonts.inter(
                                                   color: _kOrange,
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.bold,
@@ -686,7 +686,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                               const SizedBox(height: 2),
                                               Text(
                                                 scaleStr,
-                                                style: GoogleFonts.outfit(
+                                                style: GoogleFonts.inter(
                                                   color: Colors.white,
                                                   fontSize: 15,
                                                   fontWeight: FontWeight.bold,
@@ -736,7 +736,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                   const SizedBox(height: 6),
                                   Text(
                                     'SCAN TO VERIFY',
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       color: Colors.white.withAlpha(180),
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
@@ -756,7 +756,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
               // ── 2. Registered Services & Dues Breakdown ───────────────────
               Text(
                 'REGISTERED SERVICES & DUES BREAKDOWN',
-                style: GoogleFonts.outfit(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.2,
@@ -793,7 +793,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                             Expanded(
                               child: Text(
                                 '1. REGISTRATION FEE (ONE-TIME)',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: textColor,
@@ -815,7 +815,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               ),
                               child: Text(
                                 _isRegFeePaid ? 'PAID IN FULL' : 'PENDING PAYMENT',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w900,
                                   color: _isRegFeePaid
@@ -855,7 +855,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               const SizedBox(width: 8),
                               Text(
                                 'GHS $_registrationFeeAmount',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: textColor,
@@ -872,7 +872,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                           children: [
                             Text(
                               'Total:',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 17,
                                 fontWeight: FontWeight.bold,
                                 color: textColor,
@@ -880,7 +880,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                             ),
                             Text(
                               'GHS $_registrationFeeAmount',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
                                 color: _kOrange,
@@ -915,7 +915,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                             Expanded(
                               child: Text(
                                 '2. NEW MEMBERSHIP DUES: ${_packageTitle.toUpperCase()}',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: textColor,
@@ -937,7 +937,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               ),
                               child: Text(
                                 _isPackageFeePaid ? 'PAID IN FULL' : 'PENDING SETTLEMENT',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w900,
                                   color: _isPackageFeePaid
@@ -975,7 +975,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                 ),
                                 Text(
                                   'GHS ${item['amount']?.toString() ?? ''}',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: textColor,
@@ -993,7 +993,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                           children: [
                             Text(
                               'Total:',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 17,
                                 fontWeight: FontWeight.bold,
                                 color: textColor,
@@ -1001,7 +1001,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                             ),
                             Text(
                               'GHS $_packageTotal',
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.inter(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
                                 color: _kOrange,
@@ -1061,7 +1061,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         ? '3. ANNUAL RENEWAL DUES: ${_stripMembershipCategories(_renewalTitle).toUpperCase()}'
                                         : '3. ANNUAL RENEWAL DUES')
                                     : '3. ANNUAL RENEWAL DUES',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: textColor,
@@ -1107,7 +1107,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                                         : (isRenewalDueSoon
                                                             ? 'DUE IN $daysLeft DAYS'
                                                             : 'ASSESSMENT PENDING')))))),
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w900,
                                   color: isRenewalPaid
@@ -1196,7 +1196,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                                 : (isRevision
                                                     ? 'Document Revision Required'
                                                     : 'Renewal Figures Calculated After Document Upload'),
-                                            style: GoogleFonts.outfit(
+                                            style: GoogleFonts.inter(
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
                                               color: textColor,
@@ -1248,7 +1248,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                           : (isRevision
                                               ? 'Submit Revised Documents'
                                               : 'Upload Renewal Documents to Calculate Dues'),
-                                      style: GoogleFonts.outfit(
+                                      style: GoogleFonts.inter(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 15,
                                       ),
@@ -1283,7 +1283,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                   const SizedBox(width: 8),
                                   Text(
                                     'GHS ${item['amount']?.toString() ?? ''}',
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                       color: textColor,
@@ -1301,7 +1301,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                             children: [
                               Text(
                                 'Total:',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 17,
                                   fontWeight: FontWeight.bold,
                                   color: textColor,
@@ -1309,7 +1309,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               ),
                               Text(
                                 'GHS $_renewalTotal',
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.inter(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w900,
                                   color: _kOrange,
@@ -1372,7 +1372,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                   icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
                                   label: Text(
                                     'Pay Annual Renewal Dues',
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15,
                                     ),
@@ -1399,7 +1399,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                       Expanded(
                                         child: Text(
                                           'Installment Plan Active',
-                                          style: GoogleFonts.outfit(
+                                          style: GoogleFonts.inter(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
                                             color: isDark ? Colors.white : const Color(0xFF92400E),
@@ -1444,7 +1444,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         children: [
                                           Text('TOTAL BILLED', style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w600, color: subTextColor)),
                                           const SizedBox(height: 2),
-                                          Text('GHS $_renewalTotal', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: textColor)),
+                                          Text('GHS $_renewalTotal', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: textColor)),
                                         ],
                                       ),
                                       Column(
@@ -1452,7 +1452,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         children: [
                                           Text('PAID TO DATE', style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w600, color: const Color(0xFF059669))),
                                           const SizedBox(height: 2),
-                                          Text('GHS ${_renewalAmountPaid.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF059669))),
+                                          Text('GHS ${_renewalAmountPaid.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF059669))),
                                         ],
                                       ),
                                       Column(
@@ -1460,7 +1460,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         children: [
                                           Text('BALANCE DUE', style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w600, color: const Color(0xFFD97706))),
                                           const SizedBox(height: 2),
-                                          Text('GHS ${_renewalBalanceDue.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFFD97706))),
+                                          Text('GHS ${_renewalBalanceDue.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFFD97706))),
                                         ],
                                       ),
                                     ],
@@ -1518,7 +1518,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                 icon: const Icon(Icons.payment_rounded, size: 18),
                                 label: Text(
                                   'Pay Next Installment / Balance (GHS ${_renewalBalanceDue.toStringAsFixed(2)})',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
                                   ),
@@ -1572,7 +1572,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                 icon: const Icon(Icons.payment_rounded, size: 18),
                                 label: Text(
                                   _allowInstallments ? 'Pay Renewal Dues (Full or Part-Payment)' : 'Pay Annual Renewal Dues',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
                                   ),
@@ -1679,7 +1679,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                   icon: const Icon(Icons.lock_outline_rounded, size: 18),
                                   label: Text(
                                     'Pay Annual Renewal Dues (Documents Required)',
-                                    style: GoogleFonts.outfit(
+                                    style: GoogleFonts.inter(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14.5,
                                     ),
@@ -1705,7 +1705,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                 icon: const Icon(Icons.upload_file_rounded, size: 18),
                                 label: Text(
                                   'Submit Renewal Documents (Step 1)',
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.inter(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
                                   ),
@@ -1736,7 +1736,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    textStyle: GoogleFonts.outfit(
+                    textStyle: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
