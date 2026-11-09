@@ -370,12 +370,61 @@ def my_applications():
     try:
         with conn.cursor() as cursor:
             _ensure_tables(cursor)
+
+            # Auto-reconcile paid applications that may still be lingering in 'draft' or 'awaiting_payment'
+            cursor.execute("""
+                SELECT ca.id, ca.type, ca.status, ca.payment_amount, ca.amount_paid
+                FROM compliance_applications ca
+                WHERE ca.member_id = %s AND ca.status IN ('draft', 'submitted', 'awaiting_payment', 'payment_pending')
+            """, (member_id,))
+            pending_apps = cursor.fetchall()
+
+            for pa in pending_apps:
+                app_id = pa['id']
+                p_amt = float(pa.get('payment_amount') or 0.0)
+                is_ren = (pa.get('type') or '').startswith('renewal')
+
+                if is_ren:
+                    cursor.execute("""
+                        SELECT COALESCE(SUM(amount), 0) AS total_paid
+                        FROM payments
+                        WHERE member_id = %s
+                          AND (application_id = %s OR (description ILIKE '%%renewal%%' OR description ILIKE '%%annual%%'))
+                          AND LOWER(status) IN ('paid', 'completed', 'success', 'successful')
+                    """, (member_id, app_id))
+                else:
+                    cursor.execute("""
+                        SELECT COALESCE(SUM(amount), 0) AS total_paid
+                        FROM payments
+                        WHERE member_id = %s
+                          AND application_id = %s
+                          AND LOWER(status) IN ('paid', 'completed', 'success', 'successful')
+                    """, (member_id, app_id))
+                
+                paid_res = cursor.fetchone()
+                tot_paid = float(paid_res['total_paid'] if paid_res else 0.0)
+
+                if tot_paid > 0 and (p_amt == 0 or tot_paid >= (p_amt - 0.01)):
+                    cursor.execute("""
+                        UPDATE compliance_applications
+                        SET status = 'payment_confirmed', amount_paid = %s, payment_confirmed_at = NOW(), updated_at = NOW()
+                        WHERE id = %s
+                    """, (tot_paid, app_id))
+                elif tot_paid > 0:
+                    cursor.execute("""
+                        UPDATE compliance_applications
+                        SET status = 'partially_paid', amount_paid = %s, updated_at = NOW()
+                        WHERE id = %s
+                    """, (tot_paid, app_id))
+            conn.commit()
+
             cursor.execute("""
                 SELECT ca.*,
                        COUNT(cd.id)                                                    AS docs_total,
                        COUNT(cd.id) FILTER (WHERE cd.file_url IS NOT NULL)             AS docs_uploaded,
                        COUNT(cd.id) FILTER (WHERE cd.status = 'approved')              AS docs_approved,
-                       COUNT(cd.id) FILTER (WHERE cd.status = 'rejected')              AS docs_rejected
+                       COUNT(cd.id) FILTER (WHERE cd.status = 'rejected')              AS docs_rejected,
+                       COUNT(cd.id) FILTER (WHERE (cd.status IN ('pending', 'under_review') OR cd.status IS NULL) AND cd.file_url IS NOT NULL) AS docs_under_review
                 FROM compliance_applications ca
                 LEFT JOIN compliance_documents cd ON cd.application_id = ca.id
                 WHERE ca.member_id = %s
@@ -384,6 +433,7 @@ def my_applications():
             """, (member_id,))
             apps = cursor.fetchall()
             apps_list = []
+            seen_draft_purposes = set()
             for a in apps:
                 d = dict(a)
                 p_amt = float(d.get('payment_amount') or 0.0)
@@ -392,6 +442,20 @@ def my_applications():
                 reqs = _reqs_for_type(d.get('type'))
                 if not d.get('docs_total') or int(d['docs_total']) == 0:
                     d['docs_total'] = len(reqs)
+
+                purpose = 'renewal' if (d.get('type') or '').startswith('renewal') else (d.get('type') or 'default')
+                if d.get('status') == 'draft':
+                    if purpose in seen_draft_purposes:
+                        # Purge older duplicate draft row
+                        try:
+                            cursor.execute("DELETE FROM compliance_documents WHERE application_id = %s", (d['id'],))
+                            cursor.execute("DELETE FROM compliance_applications WHERE id = %s", (d['id'],))
+                            conn.commit()
+                        except Exception:
+                            pass
+                        continue
+                    seen_draft_purposes.add(purpose)
+
                 apps_list.append(d)
         return jsonify({'applications': apps_list}), 200
     except Exception as e:
@@ -408,7 +472,7 @@ def create_application():
     Create a new compliance application (renewal or customs_licence).
     Auto-fills documents from the member's existing 11-doc registration uploads
     where the requirement keys overlap. Includes source upload date for staleness warning.
-    FIX: approved applications no longer block new cycles.
+    Deduplication: Never allows multiple drafts for the same purpose (all renewals share one purpose).
     """
     raw_mid = get_jwt_identity()
     try:
@@ -436,30 +500,56 @@ def create_application():
             # Serialize creation per member to avoid double-tap / race duplicate rows.
             cursor.execute("SELECT id FROM members WHERE id = %s FOR UPDATE", (member_id,))
 
-            # Clean up any legacy duplicate active rows before deciding whether to resume.
-            cursor.execute("""
-                DELETE FROM compliance_applications ca
-                USING (
-                    SELECT id,
-                           ROW_NUMBER() OVER (
-                               PARTITION BY member_id, type
-                               ORDER BY created_at ASC, id ASC
-                           ) AS rn
-                    FROM compliance_applications
-                    WHERE member_id = %s AND type = %s AND status = ANY(%s)
-                ) dup
-                WHERE ca.id = dup.id AND dup.rn > 1
-            """, (member_id, app_type, list(ACTIVE_STATUSES)))
+            is_renewal = app_type.startswith('renewal')
 
-            # FIX #3: Only block if there is a currently-active (non-approved, non-rejected) application
-            cursor.execute("""
-                SELECT * FROM compliance_applications
-                WHERE member_id = %s AND type = %s AND status = ANY(%s)
-            """, (member_id, app_type, list(ACTIVE_STATUSES)))
+            # Clean up duplicate active/draft rows for the same purpose before deciding whether to resume.
+            if is_renewal:
+                cursor.execute("""
+                    DELETE FROM compliance_applications ca
+                    USING (
+                        SELECT id,
+                               ROW_NUMBER() OVER (
+                                   PARTITION BY member_id
+                                   ORDER BY created_at DESC, id DESC
+                               ) AS rn
+                        FROM compliance_applications
+                        WHERE member_id = %s AND type LIKE 'renewal%%' AND status = 'draft'
+                    ) dup
+                    WHERE ca.id = dup.id AND dup.rn > 1
+                """, (member_id,))
+            else:
+                cursor.execute("""
+                    DELETE FROM compliance_applications ca
+                    USING (
+                        SELECT id,
+                               ROW_NUMBER() OVER (
+                                   PARTITION BY member_id, type
+                                   ORDER BY created_at DESC, id DESC
+                               ) AS rn
+                        FROM compliance_applications
+                        WHERE member_id = %s AND type = %s AND status = 'draft'
+                    ) dup
+                    WHERE ca.id = dup.id AND dup.rn > 1
+                """, (member_id, app_type))
+
+            # Query existing active application for this purpose
+            if is_renewal:
+                cursor.execute("""
+                    SELECT * FROM compliance_applications
+                    WHERE member_id = %s AND type LIKE 'renewal%%' AND status = ANY(%s)
+                    ORDER BY id DESC LIMIT 1
+                """, (member_id, list(ACTIVE_STATUSES)))
+            else:
+                cursor.execute("""
+                    SELECT * FROM compliance_applications
+                    WHERE member_id = %s AND type = %s AND status = ANY(%s)
+                    ORDER BY id DESC LIMIT 1
+                """, (member_id, app_type, list(ACTIVE_STATUSES)))
+
             existing = cursor.fetchone()
             if existing:
-                # If existing renewal application is missing fee details, populate them now
-                if app_type.startswith('renewal') and (existing.get('payment_amount') is None or existing.get('fee_breakdown') is None):
+                # Update existing application type and fee details to match current request
+                if is_renewal:
                     try:
                         from routes.auth import get_member_renewal_breakdown
                         cursor.execute("SELECT member_scale, fee_category, member_type, port_of_operation FROM members WHERE id = %s", (member_id,))
@@ -478,12 +568,19 @@ def create_application():
                             if ren:
                                 cursor.execute("""
                                     UPDATE compliance_applications
-                                    SET payment_amount = COALESCE(payment_amount, %s),
-                                        fee_breakdown = COALESCE(fee_breakdown, %s),
-                                        bill_title = COALESCE(bill_title, %s),
+                                    SET type = %s,
+                                        payment_amount = %s,
+                                        fee_breakdown = %s,
+                                        bill_title = %s,
                                         allow_installments = TRUE
                                     WHERE id = %s
-                                """, (ren.get('renewal_fee_amount'), json.dumps(ren.get('renewal_fee_breakdown') or []), ren.get('renewal_fee_title'), existing['id']))
+                                """, (
+                                    app_type,
+                                    ren.get('renewal_fee_amount'),
+                                    json.dumps(ren.get('renewal_fee_breakdown') or []),
+                                    ren.get('renewal_fee_title'),
+                                    existing['id']
+                                ))
                                 conn.commit()
                     except Exception as ex:
                         logger.warning(f"Could not update existing renewal fee: {ex}")

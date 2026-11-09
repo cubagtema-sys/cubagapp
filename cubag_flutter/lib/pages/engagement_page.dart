@@ -342,7 +342,7 @@ class _EngagementPageState extends State<EngagementPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Lodge Inquiry or Grievance',
+            'Lodge Inquiry',
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 16,

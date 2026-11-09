@@ -285,6 +285,71 @@ class _AppLayoutState extends State<AppLayout> {
       builder: (context, notificationService, _) {
         final unreadCount = notificationService.unreadCount;
 
+        if (isSmall) {
+          return InkWell(
+            onTap: () => _showMobileNotificationSheet(
+              context,
+              notificationService,
+              targetRoute,
+              isDark: isDark,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Center(
+                child: SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(
+                        Icons.notifications_none_rounded,
+                        color: iconColor,
+                        size: 24,
+                      ),
+                      if (unreadCount > 0)
+                        Positioned(
+                          right: 1,
+                          top: 1,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 1.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFef4444),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF1A0F0A) : Colors.white,
+                                width: 1.5,
+                              ),
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 14,
+                              minHeight: 14,
+                            ),
+                            child: Text(
+                              unreadCount > 99 ? '99+' : '$unreadCount',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w900,
+                                height: 1.0,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
         Future<void> handleMenuTap(String value) async {
           Navigator.of(context).pop();
           if (value == 'view_all') {
@@ -317,7 +382,7 @@ class _AppLayoutState extends State<AppLayout> {
                 Icon(
                   Icons.notifications_none_rounded,
                   color: iconColor,
-                  size: isSmall ? 22 : 26,
+                  size: 24,
                 ),
                 if (unreadCount > 0)
                   Positioned(
@@ -613,6 +678,73 @@ class _AppLayoutState extends State<AppLayout> {
         ? const Color(0xFF4D2D20)
         : const Color(0xFFe2e8f0);
 
+    if (isSmall) {
+      return InkWell(
+        onTap: () => _showMobileProfileSheet(
+          context,
+          authService,
+          isDark: isDark,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: borderColor, width: 1.5),
+              ),
+              child: SizedBox(
+                width: 28,
+                height: 28,
+                child: ClipOval(
+                  child: photoUrl.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: photoUrl,
+                          width: 28,
+                          height: 28,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: isThemeDark
+                                ? const Color(0xFF3E2418)
+                                : const Color(0xFFf1f5f9),
+                            child: Icon(
+                              Icons.person_rounded,
+                              color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                              size: 18,
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: isThemeDark
+                                ? const Color(0xFF3E2418)
+                                : const Color(0xFFf1f5f9),
+                            child: Icon(
+                              Icons.person_rounded,
+                              color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                              size: 18,
+                            ),
+                          ),
+                        )
+                      : Container(
+                          color: isThemeDark
+                              ? const Color(0xFF3E2418)
+                              : const Color(0xFFf1f5f9),
+                          child: Icon(
+                            Icons.person_rounded,
+                            color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                            size: 18,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return PopupMenuButton<String>(
       padding: EdgeInsets.zero,
       icon: Container(
@@ -622,14 +754,14 @@ class _AppLayoutState extends State<AppLayout> {
           border: Border.all(color: borderColor, width: 1.5),
         ),
         child: SizedBox(
-          width: isSmall ? 28 : 32,
-          height: isSmall ? 28 : 32,
+          width: 32,
+          height: 32,
           child: ClipOval(
             child: photoUrl.isNotEmpty
                 ? CachedNetworkImage(
                     imageUrl: photoUrl,
-                    width: isSmall ? 28 : 32,
-                    height: isSmall ? 28 : 32,
+                    width: 32,
+                    height: 32,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
                       color: isThemeDark
@@ -638,7 +770,7 @@ class _AppLayoutState extends State<AppLayout> {
                       child: Icon(
                         Icons.person_rounded,
                         color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
-                        size: isSmall ? 18 : 20,
+                        size: 20,
                       ),
                     ),
                     errorWidget: (context, url, error) => Container(
@@ -648,7 +780,7 @@ class _AppLayoutState extends State<AppLayout> {
                       child: Icon(
                         Icons.person_rounded,
                         color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
-                        size: isSmall ? 18 : 20,
+                        size: 20,
                       ),
                     ),
                   )
@@ -659,7 +791,7 @@ class _AppLayoutState extends State<AppLayout> {
                     child: Icon(
                       Icons.person_rounded,
                       color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
-                      size: isSmall ? 18 : 20,
+                      size: 20,
                     ),
                   ),
           ),
@@ -910,6 +1042,515 @@ class _AppLayoutState extends State<AppLayout> {
             ),
           ),
         ];
+      },
+    );
+  }
+
+  Widget _buildSheetActionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color textColor,
+    required Color subTextColor,
+    required Color borderCol,
+    required Color cardBg,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderCol, width: 1.0),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF5000).withAlpha(18),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 20, color: const Color(0xFFFF5000)),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 12.5,
+                      color: subTextColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, size: 18, color: subTextColor),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showMobileNotificationSheet(
+    BuildContext context,
+    NotificationService notificationService,
+    String targetRoute, {
+    bool isDark = false,
+  }) {
+    final isThemeDark = Theme.of(context).brightness == Brightness.dark || isDark;
+    final bg = isThemeDark ? const Color(0xFF23140D) : Colors.white;
+    final textColor = isThemeDark ? Colors.white : const Color(0xFF1A0F0A);
+    final subTextColor = isThemeDark ? Colors.white70 : const Color(0xFF64748B);
+    final borderCol = isThemeDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
+    final unreadCount = notificationService.unreadCount;
+    final recent = notificationService.recentNotifications;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bg,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.75,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 10),
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4.5,
+                    decoration: BoxDecoration(
+                      color: isThemeDark ? Colors.white24 : const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF5000).withAlpha(20),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.notifications_active_outlined,
+                          color: Color(0xFFFF5000),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Text(
+                              'Notifications',
+                              style: GoogleFonts.inter(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                              ),
+                            ),
+                            if (unreadCount > 0) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEF4444).withAlpha(25),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '$unreadCount New',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFFEF4444),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(height: 1, color: borderCol),
+                Flexible(
+                  child: recent.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.notifications_off_outlined,
+                                  size: 40,
+                                  color: isThemeDark ? Colors.white38 : const Color(0xFF94A3B8),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'No new notifications',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: textColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'You will be alerted about billings, approvals, and announcements.',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    color: subTextColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          shrinkWrap: true,
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          itemCount: recent.length,
+                          separatorBuilder: (_, _) => Divider(height: 1, indent: 20, endIndent: 20, color: borderCol.withAlpha(80)),
+                          itemBuilder: (ctx, i) {
+                            final n = recent[i];
+                            final isRead = n['read'] == true;
+                            return InkWell(
+                              onTap: () async {
+                                Navigator.of(sheetContext).pop();
+                                final idStr = n['id']?.toString() ?? '';
+                                if (idStr.isNotEmpty) {
+                                  try {
+                                    await ApiService().post('/notifications/mark-read', data: {'notification_id': idStr});
+                                    notificationService.decrementCount();
+                                  } catch (_) {}
+                                }
+                                if (context.mounted) context.go(targetRoute);
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      margin: const EdgeInsets.only(top: 6, right: 12),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: isRead ? Colors.transparent : const Color(0xFFFF5000),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            n['title']?.toString() ?? '',
+                                            style: GoogleFonts.inter(
+                                              fontWeight: isRead ? FontWeight.w600 : FontWeight.w800,
+                                              fontSize: 14.5,
+                                              color: textColor,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            n['message']?.toString() ?? '',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 13,
+                                              color: subTextColor,
+                                              height: 1.35,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                Divider(height: 1, color: borderCol),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF5000),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      onPressed: () {
+                        Navigator.of(sheetContext).pop();
+                        context.go(targetRoute);
+                      },
+                      child: Text(
+                        'View All Notifications',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showMobileProfileSheet(
+    BuildContext context,
+    AuthService authService, {
+    bool isDark = false,
+  }) {
+    final photoUrl = ApiService.resolveImageUrl(authService.userPhotoUrl);
+    final isThemeDark = Theme.of(context).brightness == Brightness.dark || isDark;
+    final bg = isThemeDark ? const Color(0xFF23140D) : Colors.white;
+    final cardBg = isThemeDark ? const Color(0xFF2D1B13) : const Color(0xFFF9F6F2);
+    final textColor = isThemeDark ? Colors.white : const Color(0xFF1A0F0A);
+    final subTextColor = isThemeDark ? Colors.white70 : const Color(0xFF64748B);
+    final borderCol = isThemeDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
+    final primary = const Color(0xFFFF5000);
+
+    final isMember = authService.userRole == 'member';
+    final status = (authService.membershipStatus.isNotEmpty && authService.membershipStatus != 'none')
+        ? authService.membershipStatus.toLowerCase().trim()
+        : (SessionStorage.instance.getStringSync('cubag_member_status') ?? 'pending').toLowerCase().trim();
+    final isRegPaid = authService.isRegistrationFeePaid || (SessionStorage.instance.getStringSync('cubag_registration_fee_paid') == 'true');
+    final isApproved = status == 'active' || status == 'approved';
+    final isPending = isMember && (!isApproved || !isRegPaid);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bg,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4.5,
+                    decoration: BoxDecoration(
+                      color: isThemeDark ? Colors.white24 : const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                // Member Profile Card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: borderCol, width: 1.0),
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 52,
+                        height: 52,
+                        child: ClipOval(
+                          child: photoUrl.isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: photoUrl,
+                                  width: 52,
+                                  height: 52,
+                                  fit: BoxFit.cover,
+                                  errorWidget: (_, _, _) => Container(
+                                    color: primary.withAlpha(25),
+                                    child: Icon(Icons.person_rounded, color: primary, size: 28),
+                                  ),
+                                )
+                              : Container(
+                                  color: primary.withAlpha(25),
+                                  child: Icon(Icons.person_rounded, color: primary, size: 28),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              authService.userName ?? 'Member',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 17,
+                                color: textColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              authService.userEmail ?? (authService.userRole ?? 'Member').toUpperCase(),
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: subTextColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: (isPending ? const Color(0xFFFF5000) : const Color(0xFF10B981)).withAlpha(20),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                isPending ? 'Applicant (Onboarding)' : 'Active Member',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: isPending ? const Color(0xFFFF5000) : const Color(0xFF10B981),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Navigation actions
+                _buildSheetActionTile(
+                  icon: Icons.person_outline_rounded,
+                  title: 'My Profile',
+                  subtitle: 'Personal, contact & company info',
+                  textColor: textColor,
+                  subTextColor: subTextColor,
+                  borderCol: borderCol,
+                  cardBg: cardBg,
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    context.go('/profile');
+                  },
+                ),
+                const SizedBox(height: 8),
+
+                _buildSheetActionTile(
+                  icon: Icons.shield_outlined,
+                  title: 'Compliance Centre',
+                  subtitle: 'Annual renewals & statutory status',
+                  textColor: textColor,
+                  subTextColor: subTextColor,
+                  borderCol: borderCol,
+                  cardBg: cardBg,
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    context.go('/compliance');
+                  },
+                ),
+                const SizedBox(height: 8),
+
+                _buildSheetActionTile(
+                  icon: Icons.settings_outlined,
+                  title: 'Settings',
+                  subtitle: 'Security, password & preferences',
+                  textColor: textColor,
+                  subTextColor: subTextColor,
+                  borderCol: borderCol,
+                  cardBg: cardBg,
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    context.go(
+                      (authService.userRole == 'admin' ||
+                              authService.userRole == 'super_admin' ||
+                              authService.userRole == 'sub_admin')
+                          ? '/admin/settings'
+                          : '/settings',
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Sign Out Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFEF4444),
+                      side: const BorderSide(color: Color(0xFFEF4444), width: 1.2),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () async {
+                      Navigator.of(sheetContext).pop();
+                      await authService.logout();
+                      if (context.mounted) {
+                        context.go('/login');
+                      }
+                    },
+                    icon: const Icon(Icons.logout_rounded, size: 18),
+                    label: Text(
+                      'Sign Out',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
       },
     );
   }

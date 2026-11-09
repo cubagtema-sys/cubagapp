@@ -287,8 +287,11 @@ def get_requirements():
 
         total          = len(result)
         uploaded_count = sum(1 for r in result if r['uploaded'])
+        approved_count = sum(1 for r in result if r['uploaded'] and r.get('status') in ('approved', 'verified'))
+        under_review_count = sum(1 for r in result if r['uploaded'] and (r.get('status') in ('pending', 'under_review') or r.get('status') is None or r.get('status') == 'not_uploaded'))
+        rejected_count = sum(1 for r in result if r.get('status') == 'rejected')
         all_required_approved = all(
-            r['status'] == 'approved' for r in result if r.get('is_required', True)
+            r['status'] in ('approved', 'verified') for r in result if r.get('is_required', True)
         )
         if member_status != 'active':
             if all_required_approved and registration_fee_paid:
@@ -300,6 +303,10 @@ def get_requirements():
             'requirements': result,
             'total': total,
             'uploaded': uploaded_count,
+            'approved': approved_count,
+            'under_review': under_review_count,
+            'rejected': rejected_count,
+            'all_approved': all_required_approved,
             'member_status': member_status,
             'member_type': raw_member_type,
             'registration_fee_paid': registration_fee_paid,

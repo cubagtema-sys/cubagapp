@@ -145,6 +145,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
   bool _loading = true;
   List<dynamic> _applications = [];
   String? _error;
+  String _filter = 'all'; // 'all', 'in_progress', 'completed'
 
   @override
   void initState() {
@@ -405,9 +406,61 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
     );
   }
 
+  Widget _buildFilterTab(String key, String label, int count, bool isDark) {
+    final isSel = _filter == key;
+    return Expanded(
+      child: InkWell(
+        onTap: () => setState(() => _filter = key),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSel ? (isDark ? _kPrimary : Colors.white) : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: isSel && !isDark
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(10),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Center(
+            child: Text(
+              '$label ($count)',
+              style: GoogleFonts.inter(
+                fontSize: 12.5,
+                fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                color: isSel
+                    ? (isDark ? Colors.white : _kTextDark)
+                    : (isDark ? Colors.white60 : const Color(0xFF6F625B)),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final completedApps = _applications.where((a) {
+      final s = (a['status'] ?? '').toString();
+      return s == 'approved' || s == 'payment_confirmed' || s == 'completed';
+    }).toList();
+
+    final inProgressApps = _applications.where((a) {
+      final s = (a['status'] ?? '').toString();
+      return s != 'approved' && s != 'payment_confirmed' && s != 'completed';
+    }).toList();
+
+    final displayedApps = _filter == 'completed'
+        ? completedApps
+        : (_filter == 'in_progress' ? inProgressApps : _applications);
 
     // Count applications that need member attention (revision)
     final revisionCount = _applications
@@ -482,6 +535,29 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                   ),
                   const SizedBox(height: 14),
 
+                  if (_applications.isNotEmpty && !_loading) ...[
+                    // Segmented Filter Bar
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF281710) : const Color(0xFFF1EBE4),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isDark ? _kBorderDark : const Color(0xFFE2D6CB),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          _buildFilterTab('all', 'All', _applications.length, isDark),
+                          _buildFilterTab('in_progress', 'In Progress', inProgressApps.length, isDark),
+                          _buildFilterTab('completed', 'Completed', completedApps.length, isDark),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                  ],
+
                   if (_loading)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 24),
@@ -541,15 +617,49 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                     )
                   else if (_applications.isEmpty)
                     _EmptyState(onStartApplication: _showNewApplicationDialog)
+                  else if (displayedApps.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: isDark ? _kCardDark : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: isDark ? _kBorderDark : const Color(0xFFE8DED6)),
+                      ),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(
+                              _filter == 'completed'
+                                  ? Icons.assignment_turned_in_outlined
+                                  : Icons.hourglass_empty_rounded,
+                              size: 36,
+                              color: isDark ? Colors.white54 : const Color(0xFF6F625B),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              _filter == 'completed'
+                                  ? 'No completed applications yet.'
+                                  : 'No applications in progress.',
+                              style: GoogleFonts.inter(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : _kTextDark,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
                   else
                     ListView.separated(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _applications.length,
+                      itemCount: displayedApps.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 10),
                       itemBuilder: (_, i) => _ApplicationCard(
-                        app: _applications[i],
-                        onTap: () => _openExisting(_applications[i]),
+                        app: displayedApps[i],
+                        onTap: () => _openExisting(displayedApps[i]),
                       ),
                     ),
                   const SizedBox(height: 40),
@@ -1106,6 +1216,9 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                           _ProgressCard(
                             uploaded: uploadedCount,
                             total: totalCount,
+                            status: status,
+                            docsUnderReview: _docs.where((d) => d['uploaded'] == true && (d['status'] == 'pending' || d['status'] == 'under_review' || d['status'] == null)).length,
+                            docsApproved: _docs.where((d) => d['status'] == 'approved' || d['status'] == 'verified').length,
                             isDark: isDark,
                           ),
                           const SizedBox(height: 24),
@@ -1928,15 +2041,45 @@ class _StatusBanner extends StatelessWidget {
 
 class _ProgressCard extends StatelessWidget {
   final int uploaded, total;
+  final String status;
+  final int docsUnderReview;
+  final int docsApproved;
   final bool isDark;
   const _ProgressCard({
     required this.uploaded,
     required this.total,
+    this.status = '',
+    this.docsUnderReview = 0,
+    this.docsApproved = 0,
     required this.isDark,
   });
   @override
   Widget build(BuildContext context) {
     final pct = total > 0 ? uploaded / total : 0.0;
+    final isSubmittedOrReview = status == 'submitted' || status == 'under_review';
+    final isApproved = status == 'approved' || status == 'payment_confirmed';
+
+    String noteText;
+    Color barColor;
+
+    if (isApproved) {
+      noteText = 'All statutory documents vetted and approved.';
+      barColor = _kGreen;
+    } else if (isSubmittedOrReview || docsUnderReview > 0) {
+      if (uploaded >= total && total > 0) {
+        noteText = 'All documents uploaded • Secretariat review in progress.';
+      } else {
+        noteText = '$docsApproved verified • $docsUnderReview under review.';
+      }
+      barColor = _kAmber;
+    } else if (uploaded == total && total > 0) {
+      noteText = 'All documents uploaded. Ready for Secretariat submission.';
+      barColor = _kGreen;
+    } else {
+      noteText = '${total - uploaded} document(s) remaining for vetting';
+      barColor = _kPrimary;
+    }
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -1964,7 +2107,7 @@ class _ProgressCard extends StatelessWidget {
                 '$uploaded / $total',
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
-                  color: _kPrimary,
+                  color: barColor,
                   fontSize: 16,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
@@ -1980,16 +2123,12 @@ class _ProgressCard extends StatelessWidget {
               backgroundColor: isDark
                   ? const Color(0xFF3E2418)
                   : const Color(0xFFE8DED6),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                uploaded == total ? _kGreen : _kPrimary,
-              ),
+              valueColor: AlwaysStoppedAnimation<Color>(barColor),
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            uploaded == total
-                ? 'All documents uploaded. Ready for Secretariat submission.'
-                : '${total - uploaded} document(s) remaining for vetting',
+            noteText,
             style: GoogleFonts.inter(
               fontSize: 13,
               color: isDark ? Colors.white60 : const Color(0xFF6F625B),

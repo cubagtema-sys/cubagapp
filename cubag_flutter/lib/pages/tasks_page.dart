@@ -16,6 +16,7 @@ bool get _isDark => ThemeService.instance.isDark;
 const _kBrown = Color(0xFF6B3E26);
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10B981);
+const _kAmber = Color(0xFFF59E0B);
 const _kRed = Color(0xFFEF4444);
 Color get _kCardBg => _isDark ? const Color(0xFF1E130D) : const Color(0xFFFFFFFF);
 Color get _kSurfaceRaised => _isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
@@ -36,6 +37,9 @@ class _TasksPageState extends State<TasksPage> {
   List<dynamic> _docRequirements = [];
   int _docsTotal = 0;
   int _docsUploaded = 0;
+  int _docsApproved = 0;
+  int _docsUnderReview = 0;
+  int _docsRejected = 0;
   bool _isLoadingDocs = true;
   String _activeTab = 'documents'; // 'documents' or 'tasks'
   String? _uploadingDocKey;
@@ -87,10 +91,20 @@ class _TasksPageState extends State<TasksPage> {
         final total = int.tryParse(data['total']?.toString() ?? '') ?? reqs.length;
         final uploaded = int.tryParse(data['uploaded']?.toString() ?? '') ??
             reqs.where((d) => d is Map && d['uploaded'] == true).length;
+        final approved = int.tryParse(data['approved']?.toString() ?? '') ??
+            reqs.where((d) => d is Map && (d['status'] == 'approved' || d['status'] == 'verified')).length;
+        final underReview = int.tryParse(data['under_review']?.toString() ?? '') ??
+            reqs.where((d) => d is Map && d['uploaded'] == true && d['status'] != 'approved' && d['status'] != 'verified' && d['status'] != 'rejected').length;
+        final rejected = int.tryParse(data['rejected']?.toString() ?? '') ??
+            reqs.where((d) => d is Map && d['status'] == 'rejected').length;
+
         setState(() {
           _docRequirements = reqs;
           _docsTotal = total;
           _docsUploaded = uploaded;
+          _docsApproved = approved;
+          _docsUnderReview = underReview;
+          _docsRejected = rejected;
           _isLoadingDocs = false;
         });
       }
@@ -160,14 +174,49 @@ class _TasksPageState extends State<TasksPage> {
   Widget build(BuildContext context) {
     Provider.of<ThemeService>(context);
     final pendingTasks = _tasks.where((t) => t['done'] != true).toList();
-    final double completionRatio = _docsTotal > 0 ? (_docsUploaded / _docsTotal).clamp(0.0, 1.0) : 0.0;
+
+    // Accurate calculation based on verification & review status
+    final bool isAllApproved = _docsTotal > 0 && _docsApproved == _docsTotal;
+    final bool hasUnderReview = _docsUnderReview > 0;
+    final bool hasRejected = _docsRejected > 0;
+
+    String statusBadgeText;
+    Color statusBadgeColor;
+    double progressValue;
+
+    if (_docsTotal == 0) {
+      statusBadgeText = 'VERIFYING REQUIREMENTS';
+      statusBadgeColor = _kMuted;
+      progressValue = 0.0;
+    } else if (isAllApproved) {
+      statusBadgeText = 'ALL $_docsTotal REQUIREMENTS VERIFIED';
+      statusBadgeColor = _kGreen;
+      progressValue = 1.0;
+    } else if (hasUnderReview) {
+      if (_docsUploaded >= _docsTotal) {
+        statusBadgeText = '$_docsUploaded OF $_docsTotal UPLOADED • $_docsUnderReview UNDER REVIEW';
+      } else {
+        statusBadgeText = '$_docsApproved OF $_docsTotal VERIFIED • $_docsUnderReview UNDER REVIEW';
+      }
+      statusBadgeColor = _kAmber;
+      progressValue = ((_docsApproved + (_docsUnderReview * 0.5)) / _docsTotal).clamp(0.08, 0.95);
+    } else if (hasRejected) {
+      statusBadgeText = '$_docsRejected REVISION REQUIRED';
+      statusBadgeColor = _kRed;
+      progressValue = (_docsApproved / _docsTotal).clamp(0.0, 1.0);
+    } else {
+      statusBadgeText = '$_docsUploaded OF $_docsTotal FILED';
+      statusBadgeColor = _docsUploaded > 0 ? _kOrange : _kMuted;
+      progressValue = (_docsUploaded / _docsTotal).clamp(0.0, 1.0);
+    }
 
     return AppLayout(
       title: 'Tasks & Compliance',
       child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1100),
+            constraints: const BoxConstraints(maxWidth: 880),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               child: Column(
@@ -176,96 +225,129 @@ class _TasksPageState extends State<TasksPage> {
                   // ── Top Header Panel ──────────────────────────────────
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       color: _kCardBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _kBorder, width: 1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: _kBorder, width: 1.0),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withAlpha(_isDark ? 20 : 4),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
+                          color: Colors.black.withAlpha(_isDark ? 30 : 6),
+                          blurRadius: 12,
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Wrap(
-                          alignment: WrapAlignment.spaceBetween,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 12,
-                          runSpacing: 10,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'COMPLIANCE & OBLIGATIONS',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                    color: _kBrown,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  'Filings & Tasks',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w800,
-                                    color: _kText,
-                                    letterSpacing: -0.4,
-                                  ),
-                                ),
-                              ],
-                            ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: (completionRatio >= 1.0 ? _kGreen : _kOrange).withAlpha(20),
-                                borderRadius: BorderRadius.circular(6),
+                                color: statusBadgeColor.withAlpha(25),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Text(
-                                _docsTotal > 0
-                                    ? '$_docsUploaded OF $_docsTotal FILED'
-                                    : 'VERIFYING REQUIREMENTS',
-                                style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: completionRatio >= 1.0 ? _kGreen : _kOrange,
-                                  letterSpacing: 0.5,
-                                  fontFeatures: const [FontFeature.tabularFigures()],
-                                ),
+                              child: Icon(
+                                isAllApproved
+                                    ? Icons.verified_user_rounded
+                                    : (hasUnderReview
+                                        ? Icons.hourglass_top_rounded
+                                        : Icons.assignment_outlined),
+                                color: statusBadgeColor,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'COMPLIANCE & OBLIGATIONS',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: _kBrown,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Filings & Statutory Tasks',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w800,
+                                      color: _kText,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 14),
+                        // Status badge chip
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: statusBadgeColor.withAlpha(20),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: statusBadgeColor.withAlpha(50), width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 7,
+                                height: 7,
+                                decoration: BoxDecoration(
+                                  color: statusBadgeColor,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 7),
+                              Flexible(
+                                child: Text(
+                                  statusBadgeText,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: statusBadgeColor,
+                                    letterSpacing: 0.3,
+                                    fontFeatures: const [FontFeature.tabularFigures()],
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(6),
                           child: LinearProgressIndicator(
-                            value: completionRatio,
-                            minHeight: 6,
+                            value: progressValue,
+                            minHeight: 8,
                             backgroundColor: _kSurfaceRaised,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              completionRatio >= 1.0 ? _kGreen : _kOrange,
-                            ),
+                            valueColor: AlwaysStoppedAnimation<Color>(statusBadgeColor),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
 
                   // ── Segmented Tab Selector ─────────────────────────────
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: _kCardBg,
-                      borderRadius: BorderRadius.circular(10),
+                      color: _kSurfaceRaised,
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: _kBorder, width: 1),
                     ),
                     child: Row(
@@ -273,24 +355,35 @@ class _TasksPageState extends State<TasksPage> {
                         Expanded(
                           child: InkWell(
                             onTap: () => setState(() => _activeTab = 'documents'),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(9),
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
                                 color: _activeTab == 'documents' ? _kBrown : Colors.transparent,
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(9),
                               ),
                               child: Center(
-                                child: Text(
-                                  _docsTotal > 0
-                                      ? 'Documents ($_docsUploaded/$_docsTotal)'
-                                      : 'Documents',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: _activeTab == 'documents' ? Colors.white : _kMuted,
-                                    fontFeatures: const [FontFeature.tabularFigures()],
-                                  ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.description_outlined,
+                                      size: 16,
+                                      color: _activeTab == 'documents' ? Colors.white : _kMuted,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      _docsTotal > 0
+                                          ? 'Documents ($_docsUploaded/$_docsTotal)'
+                                          : 'Documents',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: _activeTab == 'documents' ? Colors.white : _kMuted,
+                                        fontFeatures: const [FontFeature.tabularFigures()],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -299,22 +392,33 @@ class _TasksPageState extends State<TasksPage> {
                         Expanded(
                           child: InkWell(
                             onTap: () => setState(() => _activeTab = 'tasks'),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(9),
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
                                 color: _activeTab == 'tasks' ? _kBrown : Colors.transparent,
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(9),
                               ),
                               child: Center(
-                                child: Text(
-                                  'Action Items (${pendingTasks.length})',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: _activeTab == 'tasks' ? Colors.white : _kMuted,
-                                    fontFeatures: const [FontFeature.tabularFigures()],
-                                  ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.task_alt_rounded,
+                                      size: 16,
+                                      color: _activeTab == 'tasks' ? Colors.white : _kMuted,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Tasks (${pendingTasks.length})',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: _activeTab == 'tasks' ? Colors.white : _kMuted,
+                                        fontFeatures: const [FontFeature.tabularFigures()],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -323,7 +427,7 @@ class _TasksPageState extends State<TasksPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
 
                   // ── Tab Body Content ──────────────────────────────────
                   if (_activeTab == 'documents')
@@ -355,17 +459,22 @@ class _TasksPageState extends State<TasksPage> {
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
           color: _kCardBg,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: _kBorder),
         ),
         child: Center(
           child: Column(
             children: [
-              Icon(Icons.check_circle_outline_rounded, size: 36, color: _kGreen),
-              const SizedBox(height: 10),
+              Icon(Icons.check_circle_outline_rounded, size: 40, color: _kGreen),
+              const SizedBox(height: 12),
               Text(
                 'No compliance documents required at this time.',
-                style: GoogleFonts.inter(fontSize: 14.5, fontWeight: FontWeight.bold, color: _kText),
+                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: _kText),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Your account status and documents are currently in good order.',
+                style: GoogleFonts.inter(fontSize: 13, color: _kMuted),
               ),
             ],
           ),
@@ -377,7 +486,7 @@ class _TasksPageState extends State<TasksPage> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _docRequirements.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      separatorBuilder: (context, index) => const SizedBox(height: 14),
       itemBuilder: (context, idx) {
         final doc = _docRequirements[idx];
         final key = doc['key']?.toString() ?? '';
@@ -397,63 +506,68 @@ class _TasksPageState extends State<TasksPage> {
         Color iconBg;
         Color iconColor;
         IconData statusIcon;
-        String statusText;
-        Color statusTextColor;
+        String statusPillText;
+        Color statusPillBg;
+        Color statusPillTextColor;
+        String statusSubtext;
 
         if (isRejected) {
-          borderColor = _kRed.withAlpha(80);
+          borderColor = _kRed.withAlpha(90);
           iconBg = _kRed.withAlpha(20);
           iconColor = _kRed;
           statusIcon = Icons.error_outline_rounded;
-          statusText = adminNote != null && adminNote.isNotEmpty
-              ? 'Rejected by Secretariat: $adminNote • Re-upload required'
-              : 'Rejected by Secretariat • Re-upload required';
-          statusTextColor = _kRed;
+          statusPillText = 'Revision Required';
+          statusPillBg = _kRed.withAlpha(20);
+          statusPillTextColor = _kRed;
+          statusSubtext = 'Document flagged by Secretariat. Please re-upload.';
         } else if (isApproved) {
-          borderColor = _kGreen.withAlpha(60);
+          borderColor = _kGreen.withAlpha(70);
           iconBg = _kGreen.withAlpha(20);
           iconColor = _kGreen;
           statusIcon = Icons.verified_rounded;
-          statusText = 'Verified & Approved by Secretariat';
-          statusTextColor = _kGreen;
+          statusPillText = 'Verified & Approved';
+          statusPillBg = _kGreen.withAlpha(20);
+          statusPillTextColor = _kGreen;
+          statusSubtext = 'Officially vetted and confirmed in good standing.';
         } else if (isUnderReview) {
-          borderColor = _kOrange.withAlpha(45);
-          iconBg = _kOrange.withAlpha(20);
-          iconColor = _kOrange;
+          borderColor = _kAmber.withAlpha(60);
+          iconBg = _kAmber.withAlpha(20);
+          iconColor = _kAmber;
           statusIcon = Icons.hourglass_top_rounded;
-          statusText = 'Uploaded • Secretariat Review In Progress';
-          statusTextColor = _kOrange;
+          statusPillText = 'Under Review';
+          statusPillBg = _kAmber.withAlpha(25);
+          statusPillTextColor = const Color(0xFFD97706);
+          statusSubtext = 'Uploaded successfully. Secretariat vetting in progress.';
         } else {
           borderColor = _kBorder;
           iconBg = _kOrange.withAlpha(20);
           iconColor = _kOrange;
           statusIcon = Icons.description_outlined;
-          statusText = 'Pending Upload • Required for Good Standing';
-          statusTextColor = _kMuted;
+          statusPillText = 'Pending Upload';
+          statusPillBg = _kSurfaceRaised;
+          statusPillTextColor = _kMuted;
+          statusSubtext = 'Required filing for regulatory compliance.';
         }
 
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: _kCardBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: borderColor,
-              width: 1.2,
-            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor, width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(_isDark ? 15 : 4),
-                blurRadius: 6,
+                color: Colors.black.withAlpha(_isDark ? 20 : 5),
+                blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isNarrow = constraints.maxWidth < 460;
-
-              final infoSection = Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top row: Icon + Document Title + Status Pill
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
@@ -461,15 +575,11 @@ class _TasksPageState extends State<TasksPage> {
                     height: 38,
                     decoration: BoxDecoration(
                       color: iconBg,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(
-                      statusIcon,
-                      color: iconColor,
-                      size: 20,
-                    ),
+                    child: Icon(statusIcon, color: iconColor, size: 20),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -480,174 +590,210 @@ class _TasksPageState extends State<TasksPage> {
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: _kText,
+                            height: 1.3,
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          statusText,
-                          style: GoogleFonts.inter(
-                            fontSize: 12.5,
-                            color: statusTextColor,
-                            fontWeight: (isUploaded || isRejected) ? FontWeight.bold : FontWeight.w500,
-                          ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: statusPillBg,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                statusPillText,
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: statusPillTextColor,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
                 ],
-              );
+              ),
+              const SizedBox(height: 10),
+              Text(
+                statusSubtext,
+                style: GoogleFonts.inter(
+                  fontSize: 12.5,
+                  color: _kMuted,
+                  height: 1.35,
+                ),
+              ),
 
-              final actionSection = Row(
-                mainAxisSize: MainAxisSize.min,
+              // Secretariat Admin Note if rejected/revision required
+              if (isRejected && adminNote != null && adminNote.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _kRed.withAlpha(12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: _kRed.withAlpha(40)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.info_outline_rounded, size: 16, color: _kRed),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Secretariat Note: $adminNote',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: _kRed,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 14),
+              // Action buttons row: Full mobile-friendly touch targets
+              Row(
                 children: [
                   if (isUploaded && fileUrl != null && fileUrl.isNotEmpty) ...[
-                    IconButton(
-                      icon: const Icon(Icons.visibility_outlined, size: 20),
-                      color: _kBrown,
-                      tooltip: 'View Document',
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _kBrown,
+                        side: BorderSide(color: _kBorder),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
                       onPressed: () {
                         InAppDocumentViewer.show(
                           context,
                           url: fileUrl,
                           title: label,
-                          subtitle: 'Official Compliance Document',
+                          subtitle: 'Official Compliance Filing',
                         );
                       },
-                    ),
-                    const SizedBox(width: 6),
-                  ],
-                  if (isUploading)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: _kSurfaceRaised,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: _kBorder),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const SizedBox(
-                            width: 12,
-                            height: 12,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: _kOrange),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Uploading...',
-                            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12.5, color: _kMuted),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (isApproved)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: _kGreen.withAlpha(20),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: _kGreen.withAlpha(80)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.check_circle_rounded, size: 14, color: _kGreen),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Verified',
-                            style: GoogleFonts.inter(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
-                              color: _kGreen,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (isUnderReview)
-                    Opacity(
-                      opacity: 0.75,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: _kSurfaceRaised,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: _kBorder),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.lock_outline_rounded, size: 14, color: _kMuted),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Under Review',
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                                color: _kMuted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  else if (isRejected)
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _kRed,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                        elevation: 0,
-                      ),
-                      onPressed: () => _uploadDocument(key, label),
-                      icon: const Icon(Icons.refresh_rounded, size: 14, color: Colors.white),
+                      icon: const Icon(Icons.visibility_outlined, size: 16),
                       label: Text(
-                        'Replace',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12.5),
-                      ),
-                    )
-                  else
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _kOrange,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                        elevation: 0,
-                      ),
-                      onPressed: () => _uploadDocument(key, label),
-                      icon: const Icon(Icons.upload_rounded, size: 14, color: Colors.white),
-                      label: Text(
-                        'Upload',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12.5),
+                        'Preview',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
                       ),
                     ),
-                ],
-              );
-
-              if (isNarrow) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    infoSection,
-                    const SizedBox(height: 12),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: actionSection,
-                    ),
+                    const SizedBox(width: 10),
                   ],
-                );
-              }
-
-              return Row(
-                children: [
-                  Expanded(child: infoSection),
-                  const SizedBox(width: 14),
-                  actionSection,
+                  Expanded(
+                    child: isUploading
+                        ? Container(
+                            height: 40,
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            decoration: BoxDecoration(
+                              color: _kSurfaceRaised,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: _kBorder),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: _kOrange),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Uploading file...',
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12.5,
+                                    color: _kMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : isApproved
+                            ? Container(
+                                height: 40,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: _kGreen.withAlpha(15),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: _kGreen.withAlpha(50)),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.check_circle_rounded, size: 16, color: _kGreen),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Filing Completed',
+                                      style: GoogleFonts.inter(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                        color: _kGreen,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : isUnderReview
+                                ? Container(
+                                    height: 40,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: _kSurfaceRaised,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: _kBorder),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.lock_clock_rounded, size: 16, color: _kMuted),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Awaiting Secretariat Review',
+                                          style: GoogleFonts.inter(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 12.5,
+                                            color: _kMuted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: isRejected ? _kRed : _kOrange,
+                                      foregroundColor: Colors.white,
+                                      minimumSize: const Size(0, 40),
+                                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      elevation: 0,
+                                    ),
+                                    onPressed: () => _uploadDocument(key, label),
+                                    icon: Icon(
+                                      isRejected ? Icons.refresh_rounded : Icons.upload_file_rounded,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
+                                    label: Text(
+                                      isRejected ? 'Replace Rejected Document' : 'Upload Document',
+                                      style: GoogleFonts.inter(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                  ),
                 ],
-              );
-            },
+              ),
+            ],
           ),
         );
       },
@@ -670,22 +816,22 @@ class _TasksPageState extends State<TasksPage> {
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
           color: _kCardBg,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: _kBorder),
         ),
         child: Center(
           child: Column(
             children: [
-              Icon(Icons.assignment_turned_in_outlined, size: 36, color: _kGreen),
-              const SizedBox(height: 10),
+              Icon(Icons.assignment_turned_in_outlined, size: 40, color: _kGreen),
+              const SizedBox(height: 12),
               Text(
                 'No pending action items.',
-                style: GoogleFonts.inter(fontSize: 14.5, fontWeight: FontWeight.bold, color: _kText),
+                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: _kText),
               ),
               const SizedBox(height: 4),
               Text(
                 'You are fully up to date with your compliance deadlines.',
-                style: GoogleFonts.inter(fontSize: 12.5, color: _kMuted),
+                style: GoogleFonts.inter(fontSize: 13, color: _kMuted),
               ),
             ],
           ),
@@ -697,7 +843,7 @@ class _TasksPageState extends State<TasksPage> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _tasks.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 10),
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, idx) {
         final task = _tasks[idx];
         final title = task['title']?.toString() ?? 'Action Item';
@@ -710,27 +856,26 @@ class _TasksPageState extends State<TasksPage> {
             !done;
 
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: _kCardBg,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: done ? _kGreen.withAlpha(60) : (isOverdue ? _kRed.withAlpha(80) : _kBorder),
               width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(_isDark ? 15 : 4),
-                blurRadius: 6,
+                color: Colors.black.withAlpha(_isDark ? 20 : 5),
+                blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isNarrow = constraints.maxWidth < 460;
-
-              final taskInfo = Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
@@ -738,15 +883,17 @@ class _TasksPageState extends State<TasksPage> {
                     height: 38,
                     decoration: BoxDecoration(
                       color: (done ? _kGreen : (isOverdue ? _kRed : _kOrange)).withAlpha(20),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
-                      done ? Icons.check_circle_rounded : (isOverdue ? Icons.warning_amber_rounded : Icons.pending_actions_rounded),
+                      done
+                          ? Icons.check_circle_rounded
+                          : (isOverdue ? Icons.warning_amber_rounded : Icons.pending_actions_rounded),
                       color: done ? _kGreen : (isOverdue ? _kRed : _kOrange),
                       size: 20,
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -757,26 +904,17 @@ class _TasksPageState extends State<TasksPage> {
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: _kText,
+                            decoration: done ? TextDecoration.lineThrough : null,
                           ),
                         ),
                         if (desc.isNotEmpty) ...[
                           const SizedBox(height: 3),
                           Text(
                             desc,
-                            style: GoogleFonts.inter(fontSize: 12.5, color: _kMuted),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                        if (dueDate != null && dueDate.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            isOverdue ? 'Overdue • Due: $dueDate' : 'Due: $dueDate',
                             style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: isOverdue ? FontWeight.bold : FontWeight.w500,
-                              color: isOverdue ? _kRed : _kMuted,
-                              fontFeatures: const [FontFeature.tabularFigures()],
+                              fontSize: 13,
+                              color: _kMuted,
+                              height: 1.35,
                             ),
                           ),
                         ],
@@ -784,48 +922,42 @@ class _TasksPageState extends State<TasksPage> {
                     ),
                   ),
                 ],
-              );
-
-              final actionBtn = (actionUrl != null && actionUrl.isNotEmpty && !done)
-                  ? ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _kOrange,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                        elevation: 0,
-                      ),
-                      onPressed: () => context.go(actionUrl),
-                      child: Text('Action →', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12.5)),
-                    )
-                  : null;
-
-              if (isNarrow) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+              if (dueDate != null || actionUrl != null) ...[
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    taskInfo,
-                    if (actionBtn != null) ...[
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: actionBtn,
+                    if (dueDate != null)
+                      Text(
+                        isOverdue ? 'Overdue: $dueDate' : 'Due: $dueDate',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isOverdue ? _kRed : _kMuted,
+                        ),
+                      )
+                    else
+                      const SizedBox.shrink(),
+                    if (!done && actionUrl != null && actionUrl.isNotEmpty)
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _kOrange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          elevation: 0,
+                        ),
+                        onPressed: () => context.go(actionUrl),
+                        child: Text(
+                          'Complete Task',
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 12.5),
+                        ),
                       ),
-                    ],
                   ],
-                );
-              }
-
-              return Row(
-                children: [
-                  Expanded(child: taskInfo),
-                  if (actionBtn != null) ...[
-                    const SizedBox(width: 14),
-                    actionBtn,
-                  ],
-                ],
-              );
-            },
+                ),
+              ],
+            ],
           ),
         );
       },

@@ -57,7 +57,6 @@ class _MessagingPageState extends State<MessagingPage> {
     if (widget.initialUserId != null &&
         widget.initialUserId!.isNotEmpty &&
         mounted) {
-      // Find existing conversation or create a temporary one for the UI
       final existing = _conversations.firstWhere(
         (c) =>
             (c as Map?)?['id']?.toString() == widget.initialUserId.toString(),
@@ -67,7 +66,6 @@ class _MessagingPageState extends State<MessagingPage> {
       if (existing != null) {
         _openChat(Map<String, dynamic>.from(existing as Map));
       } else {
-        // If no existing conversation, we start one with whatever data we have
         _openChat({
           'id': widget.initialUserId,
           'name': widget.initialUserName ?? 'CUBAG Member',
@@ -130,7 +128,6 @@ class _MessagingPageState extends State<MessagingPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
   }
 
-  /// Fetches the full message thread for _activeChat instantly using offline cache + background revalidation.
   Future<void> _loadMessages({
     bool showLoading = true,
     bool bypassCache = false,
@@ -196,7 +193,7 @@ class _MessagingPageState extends State<MessagingPage> {
       'id': tempId,
       'from': 'me',
       'text': text,
-      'time': 'Sending...',
+      'time': 'Just now',
       'status': 'sending',
     };
 
@@ -211,16 +208,14 @@ class _MessagingPageState extends State<MessagingPage> {
       );
       if (!mounted) return;
       if (res.statusCode == 200 || res.statusCode == 201) {
-        // Safely convert res.data to a Map before spreading
         final Map<String, dynamic> serverMsg = (res.data is Map)
             ? Map<String, dynamic>.from(res.data as Map)
             : {};
-        // Merge server data with 'sent' status — keep local text as fallback
         final mergedMsg = {
           'id': serverMsg['id'] ?? tempId,
           'from': serverMsg['from'] ?? 'me',
-          'text': serverMsg['text'] ?? text, // always show the message text
-          'time': serverMsg['time'] ?? '',
+          'text': serverMsg['text'] ?? text,
+          'time': serverMsg['time'] ?? 'Just now',
           'status': 'sent',
         };
         setState(() {
@@ -232,10 +227,8 @@ class _MessagingPageState extends State<MessagingPage> {
           }
         });
         _scrollToBottom();
-        // Bust conversations cache and refresh list so latest message shows
         _bustConversationsCache();
         _fetchConversations(showLoading: false);
-        // Re-fetch full thread directly from server without overwriting state with stale cache
         _loadMessages(
           showLoading: false,
           bypassCache: true,
@@ -263,13 +256,12 @@ class _MessagingPageState extends State<MessagingPage> {
     if (_scrollCtrl.hasClients) {
       _scrollCtrl.animateTo(
         _scrollCtrl.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutQuad,
       );
     }
   }
 
-  /// Removes the conversations list from Hive cache so the next fetch is always fresh.
   void _bustConversationsCache() {
     ApiService.deleteCacheKey('cache_v1_messages/conversations');
   }
@@ -282,20 +274,12 @@ class _MessagingPageState extends State<MessagingPage> {
         ? Icons.error_outline_rounded
         : Icons.done_all_rounded;
     final color = status == 'sending'
-        ? Colors.white.withAlpha(180)
+        ? Colors.white70
         : status == 'failed'
-        ? const Color(0xFFfecaca)
-        : const Color(0xFFFF5000);
-    final iconColor = status == 'failed'
-        ? const Color(0xFFf8fafc)
+        ? const Color(0xFFFECACA)
         : Colors.white;
 
-    return Container(
-      width: 18,
-      height: 18,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      child: Center(child: Icon(icon, size: 10, color: iconColor)),
-    );
+    return Icon(icon, size: 12, color: color);
   }
 
   String _getInitials(Map<String, dynamic>? chat) {
@@ -318,44 +302,46 @@ class _MessagingPageState extends State<MessagingPage> {
   Widget _buildEmptyChatPlaceholder(Color primary) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFf8fafc),
+      color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF7F2),
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: primary.withAlpha(15),
-                shape: BoxShape.circle,
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  color: primary.withAlpha(20),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  size: 44,
+                  color: primary,
+                ),
               ),
-              child: Icon(
-                Icons.chat_bubble_outline_rounded,
-                size: 48,
-                color: primary,
+              const SizedBox(height: 18),
+              Text(
+                'Member Messages',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : const Color(0xFF1A0F0A),
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Your Messages',
-              style: GoogleFonts.inter(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: isDark ? Colors.white : const Color(0xFF281710),
+              const SizedBox(height: 6),
+              Text(
+                'Select a conversation to exchange direct messages with fellow CUBAG members & the secretariat.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                  fontSize: 14,
+                  height: 1.4,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Select a conversation from the list\nto start messaging.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                color: isDark ? Colors.white70 : const Color(0xFF64748b),
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                height: 1.4,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -363,123 +349,127 @@ class _MessagingPageState extends State<MessagingPage> {
 
   Widget _buildList(Color primary, {required bool isWide}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final inputBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFf1f5f9);
-    final borderCol = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFcbd5e1).withAlpha(120);
-    final dividerCol = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFf1f5f9);
-    final textCol = isDark ? Colors.white : const Color(0xFF281710);
-    final subTextCol = isDark ? Colors.white70 : const Color(0xFF64748b);
-    final hintCol = isDark ? Colors.white54 : const Color(0xFF94a3b8);
+    final cardBg = isDark ? const Color(0xFF1E120B) : Colors.white;
+    final inputBg = isDark ? const Color(0xFF281710) : const Color(0xFFF4EEE6);
+    final borderCol = isDark ? const Color(0xFF3E2417) : const Color(0xFFE5DDD3);
+    final textCol = isDark ? Colors.white : const Color(0xFF1A0F0A);
+    final subTextCol = isDark ? Colors.white70 : const Color(0xFF64748B);
+    final hintCol = isDark ? Colors.white54 : const Color(0xFF94A3B8);
 
     return Container(
       color: cardBg,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
       child: Column(
         children: [
           // Search box
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
               color: inputBg,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: borderCol, width: 1.0),
             ),
-            child: TextField(
-              controller: _searchCtrl,
-              onChanged: (v) => setState(() => _applySearch(v)),
-              decoration: InputDecoration(
-                prefixIcon: Icon(
+            child: Row(
+              children: [
+                Icon(
                   Icons.search_rounded,
                   color: hintCol,
                   size: 20,
                 ),
-                hintText: 'Search conversations...',
-                hintStyle: GoogleFonts.inter(
-                  color: hintCol,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: _searchCtrl,
+                    onChanged: (v) => setState(() => _applySearch(v)),
+                    decoration: InputDecoration(
+                      hintText: 'Search members or messages...',
+                      hintStyle: GoogleFonts.inter(
+                        color: hintCol,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    style: GoogleFonts.inter(
+                      color: textCol,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                suffixIcon: _search.isNotEmpty
-                    ? GestureDetector(
-                        onTap: () {
-                          _searchCtrl.clear();
-                          setState(() => _applySearch(''));
-                        },
-                        child: Icon(
-                          Icons.clear_rounded,
-                          color: hintCol,
-                          size: 18,
-                        ),
-                      )
-                    : null,
-              ),
-              style: GoogleFonts.inter(
-                color: textCol,
-                fontSize: 15.5,
-                fontWeight: FontWeight.w500,
-              ),
+                if (_search.isNotEmpty)
+                  GestureDetector(
+                    onTap: () {
+                      _searchCtrl.clear();
+                      setState(() => _applySearch(''));
+                    },
+                    child: Icon(
+                      Icons.cancel_rounded,
+                      color: hintCol,
+                      size: 18,
+                    ),
+                  ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
+
           // Conversation list items
           if (_filteredConversations.isEmpty)
             Expanded(
               child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 54,
-                      height: 54,
-                      decoration: BoxDecoration(
-                        color: primary.withAlpha(10),
-                        shape: BoxShape.circle,
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: primary.withAlpha(15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.chat_bubble_outline_rounded,
+                          color: primary,
+                          size: 24,
+                        ),
                       ),
-                      child: Icon(
-                        Icons.chat_bubble_outline_rounded,
-                        color: primary,
-                        size: 24,
+                      const SizedBox(height: 14),
+                      Text(
+                        _search.isEmpty ? 'No messages yet' : 'No results found',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          color: textCol,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      _search.isEmpty ? 'No messages' : 'No results found',
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 17,
-                        color: textCol,
+                      const SizedBox(height: 4),
+                      Text(
+                        _search.isEmpty
+                            ? 'Connect with members via the networking directory.'
+                            : 'Try searching by a different name or keyword.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          color: subTextCol,
+                          fontSize: 13,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _search.isEmpty
-                          ? 'Connect with members via the directory.'
-                          : 'Try a different keyword search.',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        color: subTextCol,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             )
           else
             Expanded(
               child: ListView.separated(
-                padding: EdgeInsets.zero,
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 itemCount: _filteredConversations.length,
-                separatorBuilder: (ctx, i) =>
-                    Divider(height: 1, color: dividerCol),
+                separatorBuilder: (ctx, i) => const SizedBox(height: 8),
                 itemBuilder: (ctx, i) {
                   final conv = _filteredConversations[i];
                   final initials = _getInitials(
@@ -489,94 +479,135 @@ class _MessagingPageState extends State<MessagingPage> {
                   final isActive =
                       _activeChat?['id']?.toString() == conv['id']?.toString();
 
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: isActive && isWide
-                          ? primary.withAlpha(isDark ? 30 : 12)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: ListTile(
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
                       onTap: () => _openChat(Map<String, dynamic>.from(conv)),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      leading: CircleAvatar(
-                        radius: 20,
-                        backgroundColor: isActive && isWide
-                            ? primary
-                            : primary.withAlpha(200),
-                        child: Text(
-                          initials,
-                          style: GoogleFonts.inter(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 15,
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isActive && isWide
+                              ? primary.withAlpha(isDark ? 35 : 15)
+                              : (isDark ? const Color(0xFF24150D) : const Color(0xFFFAF7F2)),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isActive && isWide
+                                ? primary.withAlpha(100)
+                                : (isDark ? const Color(0xFF381F13) : const Color(0xFFEDE4DA)),
+                            width: 1.0,
                           ),
                         ),
-                      ),
-                      title: Text(
-                        conv['name']?.toString() ?? '',
-                        style: GoogleFonts.inter(
-                          fontWeight: unread > 0
-                              ? FontWeight.w900
-                              : FontWeight.w700,
-                          fontSize: 15.5,
-                          color: textCol,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Padding(
-                        padding: const EdgeInsets.only(top: 3),
-                        child: Text(
-                          conv['lastMsg']?.toString() ?? 'No messages yet',
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: unread > 0 ? textCol : subTextCol,
-                            fontWeight: unread > 0
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      trailing: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          if (unread > 0)
+                        child: Row(
+                          children: [
                             Container(
-                              padding: const EdgeInsets.all(5),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFef4444),
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    primary,
+                                    const Color(0xFFD94000),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
                                 shape: BoxShape.circle,
-                              ),
-                              constraints: const BoxConstraints(
-                                minWidth: 18,
-                                minHeight: 18,
                               ),
                               child: Center(
                                 child: Text(
-                                  '$unread',
+                                  initials,
                                   style: GoogleFonts.inter(
                                     color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w900,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
                                   ),
                                 ),
                               ),
-                            )
-                          else if (conv['time'] != null)
-                            Text(
-                              conv['time'].toString(),
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: hintCol,
-                                fontWeight: FontWeight.w600,
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          conv['name']?.toString() ?? '',
+                                          style: GoogleFonts.inter(
+                                            fontWeight: unread > 0
+                                                ? FontWeight.w800
+                                                : FontWeight.w700,
+                                            fontSize: 15,
+                                            color: textCol,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      if (conv['time'] != null)
+                                        Text(
+                                          conv['time'].toString(),
+                                          style: GoogleFonts.inter(
+                                            fontSize: 11.5,
+                                            color: hintCol,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          conv['lastMsg']?.toString() ??
+                                              'Tap to start conversation',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 13,
+                                            color: unread > 0 ? textCol : subTextCol,
+                                            fontWeight: unread > 0
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                      if (unread > 0) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 7,
+                                            vertical: 2.5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFEF4444),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Text(
+                                            '$unread',
+                                            style: GoogleFonts.inter(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -591,89 +622,94 @@ class _MessagingPageState extends State<MessagingPage> {
   Widget _buildChat(Color primary, {required bool isWide}) {
     final initials = _getInitials(_activeChat);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final headerBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final chatBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFf8fafc);
-    final borderCol = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFf1f5f9);
-    final textCol = isDark ? Colors.white : const Color(0xFF281710);
-    final subTextCol = isDark ? Colors.white70 : const Color(0xFF64748b);
+    final headerBg = isDark ? const Color(0xFF23140D) : Colors.white;
+    final chatBg = isDark ? const Color(0xFF170D08) : const Color(0xFFF7F3EE);
+    final borderCol = isDark ? const Color(0xFF3E2417) : const Color(0xFFE5DDD3);
+    final textCol = isDark ? Colors.white : const Color(0xFF1A0F0A);
+    final subTextCol = isDark ? Colors.white70 : const Color(0xFF64748B);
     final receivedBubbleBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final receivedBubbleBorder = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFcbd5e1).withAlpha(80);
-    final inputBarBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final inputFieldBg = isDark
-        ? const Color(0xFF1A0F0A)
-        : const Color(0xFFf8fafc);
-    final inputFieldBorder = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFcbd5e1).withAlpha(100);
-    final hintCol = isDark ? Colors.white54 : const Color(0xFF94a3b8);
+    final receivedBubbleBorder =
+        isDark ? const Color(0xFF3D251A) : const Color(0xFFE2D6CB);
+    final inputBarBg = isDark ? const Color(0xFF23140D) : Colors.white;
+    final inputFieldBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF3ECE4);
+    final hintCol = isDark ? Colors.white54 : const Color(0xFF94A3B8);
 
     return Column(
       children: [
         // Chat Header
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: headerBg,
-            border: Border(bottom: BorderSide(color: borderCol, width: 1.5)),
+            border: Border(bottom: BorderSide(color: borderCol, width: 1.0)),
           ),
-          child: Row(
-            children: [
-              if (!isWide)
-                IconButton(
-                  icon: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: subTextCol,
-                    size: 18,
+          child: SafeArea(
+            bottom: false,
+            child: Row(
+              children: [
+                if (!isWide)
+                  IconButton(
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: textCol,
+                      size: 18,
+                    ),
+                    onPressed: () => setState(() {
+                      _activeChat = null;
+                      _messages = [];
+                    }),
                   ),
-                  onPressed: () => setState(() {
-                    _activeChat = null;
-                    _messages = [];
-                  }),
-                ),
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: primary,
-                child: Text(
-                  initials,
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14,
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [primary, const Color(0xFFD94000)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
                   ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _activeChat!['name']?.toString() ?? '',
+                  child: Center(
+                    child: Text(
+                      initials,
                       style: GoogleFonts.inter(
+                        color: Colors.white,
                         fontWeight: FontWeight.w800,
-                        fontSize: 16.5,
-                        color: textCol,
+                        fontSize: 14,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 1),
-                    Text(
-                      _activeChat!['company']?.toString() ?? 'CUBAG Member',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: subTextCol,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _activeChat!['name']?.toString() ?? '',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          color: textCol,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        _activeChat!['company']?.toString() ?? 'CUBAG Member',
+                        style: GoogleFonts.inter(
+                          fontSize: 12.5,
+                          color: subTextCol,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
 
@@ -685,12 +721,15 @@ class _MessagingPageState extends State<MessagingPage> {
                 ? Center(child: CircularProgressIndicator(color: primary))
                 : _messages.isEmpty
                 ? Center(
-                    child: Text(
-                      'Say hello to ${(_activeChat!['name']?.toString() ?? 'Member').split(' ').first}!',
-                      style: GoogleFonts.inter(
-                        color: subTextCol,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15.5,
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        'Say hello to ${(_activeChat!['name']?.toString() ?? 'Member').split(' ').first}!',
+                        style: GoogleFonts.inter(
+                          color: subTextCol,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                   )
@@ -707,31 +746,42 @@ class _MessagingPageState extends State<MessagingPage> {
                           final msg = _messages[i];
                           final isMe = msg['from'] == 'me';
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.only(bottom: 10),
                             child: Row(
                               mainAxisAlignment: isMe
                                   ? MainAxisAlignment.end
                                   : MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Container(
                                   constraints: BoxConstraints(
-                                    maxWidth: constraints.maxWidth * 0.75,
+                                    maxWidth: constraints.maxWidth * 0.78,
                                   ),
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 14,
                                     vertical: 10,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: isMe ? primary : receivedBubbleBg,
+                                    gradient: isMe
+                                        ? LinearGradient(
+                                            colors: [
+                                              primary,
+                                              const Color(0xFFE64A00),
+                                            ],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          )
+                                        : null,
+                                    color: isMe ? null : receivedBubbleBg,
                                     borderRadius: BorderRadius.only(
-                                      topLeft: const Radius.circular(10),
-                                      topRight: const Radius.circular(10),
+                                      topLeft: const Radius.circular(16),
+                                      topRight: const Radius.circular(16),
                                       bottomLeft: isMe
-                                          ? const Radius.circular(10)
-                                          : const Radius.circular(3),
+                                          ? const Radius.circular(16)
+                                          : const Radius.circular(4),
                                       bottomRight: isMe
-                                          ? const Radius.circular(3)
-                                          : const Radius.circular(10),
+                                          ? const Radius.circular(4)
+                                          : const Radius.circular(16),
                                     ),
                                     border: isMe
                                         ? null
@@ -739,6 +789,13 @@ class _MessagingPageState extends State<MessagingPage> {
                                             color: receivedBubbleBorder,
                                             width: 1.0,
                                           ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withAlpha(isDark ? 20 : 6),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 1),
+                                      ),
+                                    ],
                                   ),
                                   child: Column(
                                     crossAxisAlignment: isMe
@@ -751,11 +808,11 @@ class _MessagingPageState extends State<MessagingPage> {
                                             : msg['text'].toString(),
                                         style: GoogleFonts.inter(
                                           color: isMe ? Colors.white : textCol,
-                                          fontSize: 15.5,
-                                          height: 1.4,
+                                          fontSize: 14.5,
+                                          height: 1.35,
                                           fontWeight: isMe
-                                              ? FontWeight.w600
-                                              : FontWeight.w500,
+                                              ? FontWeight.w500
+                                              : FontWeight.normal,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
@@ -770,15 +827,13 @@ class _MessagingPageState extends State<MessagingPage> {
                                               style: GoogleFonts.inter(
                                                 fontSize: 11,
                                                 color: isMe
-                                                    ? Colors.white.withAlpha(
-                                                        180,
-                                                      )
+                                                    ? Colors.white70
                                                     : hintCol,
-                                                fontWeight: FontWeight.w600,
+                                                fontWeight: FontWeight.w500,
                                               ),
                                             ),
                                             if (isMe) ...[
-                                              const SizedBox(width: 8),
+                                              const SizedBox(width: 4),
                                               _buildMessageStatusIndicator(msg),
                                             ],
                                           ],
@@ -798,73 +853,79 @@ class _MessagingPageState extends State<MessagingPage> {
 
         // Message Input Bar
         Container(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: inputBarBg,
-            border: Border(top: BorderSide(color: borderCol, width: 1.5)),
+            border: Border(top: BorderSide(color: borderCol, width: 1.0)),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: inputFieldBg,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: inputFieldBorder, width: 1.0),
-                  ),
-                  child: TextField(
-                    controller: _msgCtrl,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _send(),
-                    decoration: InputDecoration(
-                      hintText: 'Type a message...',
-                      hintStyle: GoogleFonts.inter(
-                        color: hintCol,
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                    ),
-                    style: GoogleFonts.inter(
-                      color: textCol,
-                      fontSize: 15.5,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Material(
-                color: primary,
-                shape: const CircleBorder(),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(100),
-                  onTap: _isSending ? null : _send,
+          child: SafeArea(
+            top: false,
+            child: Row(
+              children: [
+                Expanded(
                   child: Container(
-                    width: 38,
-                    height: 38,
-                    alignment: Alignment.center,
-                    child: _isSending
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(
-                            Icons.send_rounded,
-                            color: Colors.white,
-                            size: 16,
+                    height: 44,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: inputFieldBg,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: borderCol, width: 1.0),
+                    ),
+                    child: Center(
+                      child: TextField(
+                        controller: _msgCtrl,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _send(),
+                        decoration: InputDecoration(
+                          hintText: 'Type a message...',
+                          hintStyle: GoogleFonts.inter(
+                            color: hintCol,
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w500,
                           ),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        style: GoogleFonts.inter(
+                          color: textCol,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 10),
+                Material(
+                  color: primary,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(100),
+                    onTap: _isSending ? null : _send,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      alignment: Alignment.center,
+                      child: _isSending
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.send_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -878,8 +939,8 @@ class _MessagingPageState extends State<MessagingPage> {
     final width = MediaQuery.of(context).size.width;
     final isWide = width > 900;
     final dividerCol = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFf1f5f9);
+        ? const Color(0xFF3E2417)
+        : const Color(0xFFE5DDD3);
 
     return AppLayout(
       title: 'Messages',
@@ -894,8 +955,8 @@ class _MessagingPageState extends State<MessagingPage> {
           : isWide
           ? Row(
               children: [
-                SizedBox(width: 320, child: _buildList(primary, isWide: true)),
-                Container(width: 1.5, color: dividerCol),
+                SizedBox(width: 340, child: _buildList(primary, isWide: true)),
+                Container(width: 1.0, color: dividerCol),
                 Expanded(
                   child: _activeChat == null
                       ? _buildEmptyChatPlaceholder(primary)
