@@ -271,10 +271,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       child: _loading
           ? const _AdminDashboardSkeleton()
           : SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1300),
+                  constraints: const BoxConstraints(maxWidth: 1440),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -284,18 +284,68 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         pendingMembers.length,
                         isDark,
                       ),
-                      const SizedBox(height: 18),
-                      _buildWorkspaceTabs(context, isDark, pendingMembers.length),
-                      const SizedBox(height: 16),
-                      _buildActiveWorkspaceContent(
-                        context,
-                        pendingMembers,
-                        primary,
-                        cardBg,
-                        borderColor,
-                        textColor,
-                        subTextColor,
-                        isDark,
+                      const SizedBox(height: 20),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isDesktop = constraints.maxWidth >= 1050;
+                          if (isDesktop) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildQuickNavStrip(context, isDark),
+                                const SizedBox(height: 20),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      flex: 62,
+                                      child: _buildPendingApprovalsCard(
+                                        context,
+                                        pendingMembers,
+                                        primary,
+                                        cardBg,
+                                        borderColor,
+                                        textColor,
+                                        subTextColor,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 20),
+                                    Expanded(
+                                      flex: 38,
+                                      child: Column(
+                                        children: [
+                                          _buildCounterPaymentActionCard(context, isDark),
+                                          const SizedBox(height: 16),
+                                          _buildPortOperationalDeskCard(context, isDark),
+                                          const SizedBox(height: 16),
+                                          _buildForexDeskCard(context, isDark),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            );
+                          }
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildWorkspaceTabs(context, isDark, pendingMembers.length),
+                              const SizedBox(height: 16),
+                              _buildActiveWorkspaceContent(
+                                context,
+                                pendingMembers,
+                                primary,
+                                cardBg,
+                                borderColor,
+                                textColor,
+                                subTextColor,
+                                isDark,
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 36),
                     ],
@@ -303,6 +353,95 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 ),
               ),
             ),
+    );
+  }
+
+  Widget _buildQuickNavStrip(BuildContext context, bool isDark) {
+    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final cardBg = isDark ? const Color(0xFF22140E) : Colors.white;
+    final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
+
+    final shortcuts = [
+      {'title': 'Members Directory', 'route': '/admin/members', 'icon': Icons.people_alt_rounded, 'color': const Color(0xFF2563EB)},
+      {'title': 'Registration Vetting', 'route': '/admin/documents', 'icon': Icons.folder_copy_rounded, 'color': kAdminOrange},
+      {'title': 'Document Rules', 'route': '/admin/document-rules', 'icon': Icons.rule_folder_rounded, 'color': const Color(0xFF6366F1)},
+      {'title': 'Compliance Renewal', 'route': '/admin/compliance', 'icon': Icons.verified_user_rounded, 'color': const Color(0xFF10B981)},
+      {'title': 'Broadcast Notices', 'route': '/admin/announcements', 'icon': Icons.campaign_rounded, 'color': const Color(0xFF8B5CF6)},
+      {'title': 'Audit & Ledger', 'route': '/admin/audit-log', 'icon': Icons.security_rounded, 'color': const Color(0xFF64748B)},
+    ];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderCol, width: 1.0),
+      ),
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.bolt_rounded, size: 18, color: kAdminOrange),
+                const SizedBox(width: 6),
+                Text(
+                  'QUICK ACTIONS',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.6,
+                    color: isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(height: 20, width: 1, color: borderCol),
+          const SizedBox(width: 8),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: shortcuts.map((s) {
+                  final col = s['color'] as Color;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: InkWell(
+                      onTap: () => context.go(s['route'] as String),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: col.withAlpha(isDark ? 25 : 12),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: col.withAlpha(isDark ? 60 : 35)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(s['icon'] as IconData, size: 14, color: col),
+                            const SizedBox(width: 6),
+                            Text(
+                              s['title'] as String,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? Colors.white : textInk,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -451,7 +590,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               ],
             ),
             const SizedBox(height: 6),
-            Text(
+            SelectableText(
               it['value'] as String,
               style: GoogleFonts.inter(
                 fontSize: 22,
@@ -1237,32 +1376,32 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     scrollDirection: Axis.horizontal,
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
-                        minWidth: constraints.maxWidth,
+                        minWidth: constraints.maxWidth < 700 ? 700 : constraints.maxWidth,
                       ),
                       child: DataTable(
                         headingRowColor: WidgetStateProperty.all(headerBg),
                         headingTextStyle: GoogleFonts.inter(
                           fontWeight: FontWeight.w800,
-                          fontSize: 14,
+                          fontSize: 12.5,
                           color: subTextColor,
-                          letterSpacing: 0.5,
+                          letterSpacing: 0.6,
                         ),
                         dataTextStyle: GoogleFonts.inter(
-                          fontSize: 15,
+                          fontSize: 14,
                           color: textColor,
                         ),
-                        columnSpacing: 24,
-                        horizontalMargin: 20,
-                        dataRowMinHeight: 62,
-                        dataRowMaxHeight: 74,
+                        columnSpacing: 20,
+                        horizontalMargin: 16,
+                        dataRowMinHeight: 64,
+                        dataRowMaxHeight: 76,
                         columns: const [
                           DataColumn(label: Text('APPLICANT / MEMBER')),
-                          DataColumn(label: Text('CATEGORY / TYPE')),
-                          DataColumn(label: Text('PAYMENT STATUS')),
-                          DataColumn(label: Text('REGISTRATION DATE')),
+                          DataColumn(label: Text('CATEGORY')),
+                          DataColumn(label: Text('PAYMENT')),
+                          DataColumn(label: Text('DATE')),
                           DataColumn(label: Text('ACTIONS')),
                         ],
-                        rows: pendingMembers.take(5).map((m) {
+                        rows: pendingMembers.take(8).map((m) {
                           final name =
                               m['name']?.toString() ?? 'Unnamed Member';
                           final email = m['email']?.toString() ?? '—';
@@ -1294,48 +1433,52 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             cells: [
                               // 1. Applicant / Member
                               DataCell(
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 16,
-                                      backgroundColor: primary.withAlpha(35),
-                                      child: Text(
-                                        _getInitials(name),
-                                        style: GoogleFonts.inter(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                          color: primary,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          name,
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 17,
+                                        backgroundColor: primary.withAlpha(35),
+                                        child: Text(
+                                          _getInitials(name),
                                           style: GoogleFonts.inter(
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 17,
-                                            color: textColor,
-                                          ),
-                                        ),
-                                        Text(
-                                          company.isNotEmpty && company != name
-                                              ? '$company • $email'
-                                              : email,
-                                          style: GoogleFonts.inter(
                                             fontSize: 13,
-                                            color: subTextColor,
+                                            color: primary,
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  ],
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          SelectableText(
+                                            name,
+                                            style: GoogleFonts.inter(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 14.5,
+                                              color: textColor,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          SelectableText(
+                                            company.isNotEmpty && company != name
+                                                ? '$company • $email'
+                                                : email,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 12,
+                                              color: subTextColor,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
 
@@ -1344,7 +1487,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 8,
-                                    vertical: 3,
+                                    vertical: 3.5,
                                   ),
                                   decoration: BoxDecoration(
                                     color: badgeColor.withAlpha(20),
@@ -1356,9 +1499,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                   child: Text(
                                     type.toUpperCase(),
                                     style: GoogleFonts.inter(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w800,
                                       color: badgeColor,
+                                      letterSpacing: 0.4,
                                     ),
                                   ),
                                 ),
@@ -1368,14 +1512,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               DataCell(
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 9,
-                                    vertical: 4,
+                                    horizontal: 8,
+                                    vertical: 3.5,
                                   ),
                                   decoration: BoxDecoration(
                                     color: hasPayment
                                         ? Colors.green.withAlpha(25)
                                         : Colors.amber.withAlpha(25),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
                                       color: hasPayment
                                           ? Colors.green.withAlpha(60)
@@ -1395,13 +1539,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                             : Colors.amber.shade800,
                                       ),
                                       const SizedBox(width: 5),
-                                      Text(
+                                      SelectableText(
                                         hasPayment
                                             ? 'Paid (${paymentRef.length > 8 ? paymentRef.substring(0, 8) : paymentRef})'
                                             : 'Unpaid / Pending',
                                         style: GoogleFonts.inter(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
                                           color: hasPayment
                                               ? Colors.green
                                               : Colors.amber.shade900,
@@ -1414,10 +1558,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
                               // 4. Registration Date
                               DataCell(
-                                Text(
+                                SelectableText(
                                   date.split('T').first,
                                   style: GoogleFonts.inter(
-                                    fontSize: 14,
+                                    fontSize: 13,
                                     color: subTextColor,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -1433,18 +1577,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                     size: 14,
                                   ),
                                   label: Text(
-                                    'Review & Approve',
+                                    'Review',
                                     style: GoogleFonts.inter(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13,
                                     ),
                                   ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: primary,
                                     foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 8,
+                                      horizontal: 12,
+                                      vertical: 7,
                                     ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8),

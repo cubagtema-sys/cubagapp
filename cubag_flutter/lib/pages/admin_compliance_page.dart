@@ -326,10 +326,13 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
       scrollable: false,
       child: Container(
         color: bg,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── TOP HEADER ──
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1440),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── TOP HEADER ──
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
               child: Row(
@@ -475,7 +478,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                                       Icon(Icons.inbox_outlined, size: 40, color: Colors.grey.shade400),
                                       const SizedBox(height: 12),
                                       Text(
-                                        'No $_selectedCategory renewal applications found',
+                                        'No annual renewal applications found',
                                         style: GoogleFonts.inter(
                                           fontSize: 16,
                                           color: textMuted,
@@ -584,8 +587,9 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   TextStyle _tableHeaderStyle(Color textMuted) {
     return GoogleFonts.inter(
@@ -651,7 +655,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
             children: [
               SizedBox(
                 width: 100,
-                child: Text(
+                child: SelectableText(
                   refId,
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
@@ -681,21 +685,17 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          SelectableText(
                             company,
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                               color: textCol,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                          Text(
+                          SelectableText(
                             name + (email.isNotEmpty ? ' • $email' : ''),
                             style: GoogleFonts.inter(fontSize: 12.5, color: subCol),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
@@ -714,7 +714,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        _selectedCategory.toUpperCase(),
+                        'CORPORATE',
                         style: GoogleFonts.inter(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,

@@ -119,21 +119,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
   }
 
   List<Map<String, dynamic>> _getMembersForCategory(String category) {
-    final all = _getAllMembers();
-    return all.where((m) {
-      final mType = (m['member_type']?.toString().toLowerCase() ?? 'corporate');
-      if (category == 'corporate') {
-        return mType.contains('corporate') ||
-            mType.contains('company') ||
-            (!mType.contains('licentiate') && !mType.contains('associate'));
-      } else if (category == 'licentiate') {
-        return mType.contains('licentiate') ||
-            (mType.contains('broker') && !mType.contains('corporate'));
-      } else if (category == 'associate') {
-        return mType.contains('associate');
-      }
-      return true;
-    }).toList();
+    return _getAllMembers();
   }
 
   List<Map<String, dynamic>> get _filtered {
@@ -275,10 +261,13 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
       scrollable: false,
       child: Container(
         color: bg,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── TOP HEADER ──
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1440),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── TOP HEADER ──
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
               child: Row(
@@ -562,8 +551,9 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildApplicantRow(
     Map<String, dynamic> m,
@@ -589,12 +579,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
     final isSme = ((m['member_scale'] as String? ?? 'sme').toLowerCase()) == 'sme';
     final totalExpected = (m['total_required'] as num?)?.toInt() ?? 0;
 
-    Color typeColor = _kOrange;
-    if (memberType.toLowerCase().contains('corporate')) {
-      typeColor = _kIndigo;
-    } else if (memberType.toLowerCase().contains('associate')) {
-      typeColor = _kGreen;
-    }
+    const Color typeColor = _kIndigo;
 
     Color statusColor;
     String statusLabel;
@@ -681,34 +666,32 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          SelectableText(
                             company,
                             style: GoogleFonts.inter(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w700,
                               color: textCol,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 2),
                           Row(
                             children: [
-                              Text(
-                                name,
-                                style: GoogleFonts.inter(fontSize: 13, color: subCol),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              Flexible(
+                                child: SelectableText(
+                                  name,
+                                  style: GoogleFonts.inter(fontSize: 13, color: subCol),
+                                ),
                               ),
                               if (memNo.isNotEmpty && memNo != 'PENDING') ...[
                                 const SizedBox(width: 6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                                   decoration: BoxDecoration(
                                     color: _kOrange.withAlpha(20),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
-                                  child: Text(
+                                  child: SelectableText(
                                     memNo,
                                     style: GoogleFonts.inter(
                                       fontSize: 11,
@@ -906,12 +889,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
     final isSme = ((m['member_scale'] as String? ?? 'sme').toLowerCase()) == 'sme';
     final totalExpected = (m['total_required'] as num?)?.toInt() ?? 0;
 
-    Color typeColor = _kOrange;
-    if (memberType.toLowerCase().contains('corporate')) {
-      typeColor = _kIndigo;
-    } else if (memberType.toLowerCase().contains('associate')) {
-      typeColor = _kGreen;
-    }
+    const Color typeColor = _kIndigo;
 
     Color statusColor;
     String statusLabel;

@@ -213,9 +213,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
   }
 
   Future<void> _bulkToggleCategory(bool enableAll) async {
-    final catName = _selectedCategory == 'licentiate'
-        ? 'Licentiate'
-        : (_selectedCategory == 'associate' ? 'Associate' : 'Corporate');
+    const catName = 'Corporate';
     final scopeName = _selectedScope == 'new' ? 'New Onboarding' : 'Annual Renewal';
 
     final confirm = await showDialog<bool>(
@@ -310,22 +308,20 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
     final optionalRules = currentRules.where((r) => r['is_required'] != true).length;
     final activeRules = currentRules.where((r) => r['is_active'] == true).length;
 
-    String catTitle = 'Corporate Members';
-    if (_selectedCategory == 'licentiate') {
-      catTitle = 'Licentiate Members';
-    } else if (_selectedCategory == 'associate') {
-      catTitle = 'Associate Member';
-    }
+    const String catTitle = 'Corporate Members';
 
     return AppLayout(
       title: 'Compliance & Document Rules',
       scrollable: false,
       child: Container(
         color: bg,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Page Header
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1440),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Page Header
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
               child: AdminHeader(
@@ -695,8 +691,9 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildScopePill(
     String label,
@@ -844,15 +841,13 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
           // Document Name
           Expanded(
             flex: 4,
-            child: Text(
+            child: SelectableText(
               label,
               style: GoogleFonts.inter(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w700,
                 color: textPrimary,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
           ),
 
@@ -861,7 +856,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
             flex: 4,
             child: Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: Text(
+              child: SelectableText(
                 desc.isNotEmpty
                     ? desc
                     : 'Statutory credential verification required for compliance.',
@@ -870,8 +865,6 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                   color: textMuted,
                   height: 1.35,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),

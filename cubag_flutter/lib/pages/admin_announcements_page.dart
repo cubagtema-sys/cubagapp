@@ -601,10 +601,13 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
       scrollable: true,
       child: Container(
         color: bg,
+        alignment: Alignment.topCenter,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1440),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // ── TOP HEADER ──────────────────────────────────────────────────
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -838,83 +841,110 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                 ),
               )
             else
-              Column(
-                children: [
-                  ...displayList.map((ann) => _buildAnnouncementCard(
-                        Map<String, dynamic>.from(ann as Map),
-                        isDark: isDark,
-                        cardBg: cardBg,
-                        border: border,
-                        textPrimary: textPrimary,
-                        textMuted: textMuted,
-                      )),
-                  const SizedBox(height: 10),
-                  // Pagination
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: border),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Showing ${displayList.length} circulars (Page ${_tab == 'active' ? _pageActive : _pageArchived})',
-                          style: GoogleFonts.inter(fontSize: 12.5, color: textMuted),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth >= 950;
+                  return Column(
+                    children: [
+                      if (isWide)
+                        Wrap(
+                          spacing: 14,
+                          runSpacing: 14,
+                          children: displayList.map((ann) {
+                            return SizedBox(
+                              width: (constraints.maxWidth - 14) / 2,
+                              child: _buildAnnouncementCard(
+                                Map<String, dynamic>.from(ann as Map),
+                                isDark: isDark,
+                                cardBg: cardBg,
+                                border: border,
+                                textPrimary: textPrimary,
+                                textMuted: textMuted,
+                              ),
+                            );
+                          }).toList(),
+                        )
+                      else
+                        Column(
+                          children: displayList.map((ann) => _buildAnnouncementCard(
+                                Map<String, dynamic>.from(ann as Map),
+                                isDark: isDark,
+                                cardBg: cardBg,
+                                border: border,
+                                textPrimary: textPrimary,
+                                textMuted: textMuted,
+                              )).toList(),
                         ),
-                        Row(
+                      const SizedBox(height: 16),
+                      // Pagination
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: cardBg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: border),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            OutlinedButton.icon(
-                              onPressed: (_tab == 'active' ? _pageActive : _pageArchived) > 1
-                                  ? () {
-                                      if (_tab == 'active') {
-                                        _fetchActive(page: _pageActive - 1);
-                                      } else {
-                                        _fetchArchived(page: _pageArchived - 1);
-                                      }
-                                    }
-                                  : null,
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(color: border),
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                              ),
-                              icon: const Icon(Icons.chevron_left_rounded, size: 14),
-                              label: Text('Prev', style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                            Text(
+                              'Showing ${displayList.length} circulars (Page ${_tab == 'active' ? _pageActive : _pageArchived})',
+                              style: GoogleFonts.inter(fontSize: 12.5, color: textMuted),
                             ),
-                            const SizedBox(width: 6),
-                            OutlinedButton.icon(
-                              onPressed: (_tab == 'active' ? _hasMoreActive : _hasMoreArchived)
-                                  ? () {
-                                      if (_tab == 'active') {
-                                        _fetchActive(page: _pageActive + 1);
-                                      } else {
-                                        _fetchArchived(page: _pageArchived + 1);
-                                      }
-                                    }
-                                  : null,
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(color: border),
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                              ),
-                              label: Text('Next', style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold)),
-                              icon: const Icon(Icons.chevron_right_rounded, size: 14),
+                            Row(
+                              children: [
+                                OutlinedButton.icon(
+                                  onPressed: (_tab == 'active' ? _pageActive : _pageArchived) > 1
+                                      ? () {
+                                          if (_tab == 'active') {
+                                            _fetchActive(page: _pageActive - 1);
+                                          } else {
+                                            _fetchArchived(page: _pageArchived - 1);
+                                          }
+                                        }
+                                      : null,
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(color: border),
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                  ),
+                                  icon: const Icon(Icons.chevron_left_rounded, size: 14),
+                                  label: Text('Prev', style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                                ),
+                                const SizedBox(width: 6),
+                                OutlinedButton.icon(
+                                  onPressed: (_tab == 'active' ? _hasMoreActive : _hasMoreArchived)
+                                      ? () {
+                                          if (_tab == 'active') {
+                                            _fetchActive(page: _pageActive + 1);
+                                          } else {
+                                            _fetchArchived(page: _pageArchived + 1);
+                                          }
+                                        }
+                                      : null,
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(color: border),
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                  ),
+                                  label: Text('Next', style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                                  icon: const Icon(Icons.chevron_right_rounded, size: 14),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                ],
+                      ),
+                    ],
+                  );
+                },
               ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildTabButton(String label, String key, int count, IconData icon, bool isDark) {
     final isSel = _tab == key;
@@ -1132,17 +1162,16 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
           const SizedBox(height: 8),
 
           // Title
-          Text(
+          SelectableText(
             title,
             style: GoogleFonts.inter(fontSize: 15.5, fontWeight: FontWeight.w800, color: textPrimary),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
 
           // Body
-          Text(
+          SelectableText(
             body,
-            maxLines: isExpanded ? 50 : 3,
-            overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+            maxLines: isExpanded ? 50 : 4,
             style: GoogleFonts.inter(fontSize: 13, color: isDark ? const Color(0xFFD1D5DB) : const Color(0xFF475569), height: 1.4),
           ),
 

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
@@ -466,157 +467,165 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
         children: [
           SingleChildScrollView(
             controller: _scrollController,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AdminHeader(
-                  title: 'Association Members Directory',
-                  subtitle:
-                      'Manage member compliance standings, branch classifications, verify credentials, and review records.',
-                  actions: [
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kAdminOrange,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      onPressed: () => _fetch(refresh: true),
-                      icon: const Icon(Icons.refresh_rounded, size: 18),
-                      label: Text(
-                        'Refresh',
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildTypographicMembersLedger(
-                  total: total,
-                  active: active,
-                  pending: pending,
-                  suspended: suspended,
-                  isDark: isDark,
-                  borderCol: borderColor,
-                  cardBg: cardBg,
-                  textInk: textColor,
-                  subInk: subTextColor,
-                ),
-                const SizedBox(height: 16),
-                AdminToolbar(
-                  searchHint: 'Search members by name, company, email...',
-                  onSearchChanged: (v) => setState(() => _search = v),
-                  filters: [
-                    SizedBox(
-                      width: 150,
-                      child: CustomDropdown<String>(
-                        value: _filterStatus,
-                        prefixIcon: const Icon(
-                          Icons.filter_alt_outlined,
-                          size: 16,
-                          color: Color(0xFF64748b),
-                        ),
-                        items: [
-                          DropdownItem(value: 'all', label: 'All ($total)'),
-                          DropdownItem(
-                            value: 'active',
-                            label: 'Active ($active)',
-                          ),
-                          DropdownItem(
-                            value: 'pending',
-                            label: 'Pending ($pending)',
-                          ),
-                          const DropdownItem(
-                            value: 'inactive',
-                            label: 'Inactive',
-                          ),
-                          const DropdownItem(
-                            value: 'suspended',
-                            label: 'Suspended',
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1440),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AdminHeader(
+                        title: 'Association Members Directory',
+                        subtitle:
+                            'Manage member compliance standings, branch classifications, verify credentials, and review records.',
+                        actions: [
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kAdminOrange,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              elevation: 0,
+                            ),
+                            onPressed: () => _fetch(refresh: true),
+                            icon: const Icon(Icons.refresh_rounded, size: 18),
+                            label: Text(
+                              'Refresh',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
                           ),
                         ],
-                        onChanged: (v) => setState(() => _filterStatus = v),
                       ),
-                    ),
-                    SizedBox(
-                      width: 140,
-                      child: CustomDropdown<String>(
-                        value: _sortBy,
-                        prefixIcon: const Icon(
-                          Icons.sort,
-                          size: 16,
-                          color: Color(0xFF64748b),
-                        ),
-                        items: const [
-                          DropdownItem(value: 'name', label: 'Name (A-Z)'),
-                          DropdownItem(
-                            value: 'score_desc',
-                            label: 'High Score',
+                      const SizedBox(height: 16),
+                      _buildTypographicMembersLedger(
+                        total: total,
+                        active: active,
+                        pending: pending,
+                        suspended: suspended,
+                        isDark: isDark,
+                        borderCol: borderColor,
+                        cardBg: cardBg,
+                        textInk: textColor,
+                        subInk: subTextColor,
+                      ),
+                      const SizedBox(height: 16),
+                      AdminToolbar(
+                        searchHint: 'Search members by name, company, email, TIN...',
+                        onSearchChanged: (v) => setState(() => _search = v),
+                        filters: [
+                          SizedBox(
+                            width: 160,
+                            child: CustomDropdown<String>(
+                              value: _filterStatus,
+                              prefixIcon: const Icon(
+                                Icons.filter_alt_outlined,
+                                size: 16,
+                                color: Color(0xFF64748b),
+                              ),
+                              items: [
+                                DropdownItem(value: 'all', label: 'All ($total)'),
+                                DropdownItem(
+                                  value: 'active',
+                                  label: 'Active ($active)',
+                                ),
+                                DropdownItem(
+                                  value: 'pending',
+                                  label: 'Pending ($pending)',
+                                ),
+                                const DropdownItem(
+                                  value: 'inactive',
+                                  label: 'Inactive',
+                                ),
+                                const DropdownItem(
+                                  value: 'suspended',
+                                  label: 'Suspended',
+                                ),
+                              ],
+                              onChanged: (v) => setState(() => _filterStatus = v),
+                            ),
                           ),
-                          DropdownItem(value: 'score_asc', label: 'At Risk'),
+                          SizedBox(
+                            width: 150,
+                            child: CustomDropdown<String>(
+                              value: _sortBy,
+                              prefixIcon: const Icon(
+                                Icons.sort,
+                                size: 16,
+                                color: Color(0xFF64748b),
+                              ),
+                              items: const [
+                                DropdownItem(value: 'name', label: 'Name (A-Z)'),
+                                DropdownItem(
+                                  value: 'score_desc',
+                                  label: 'High Score',
+                                ),
+                                DropdownItem(value: 'score_asc', label: 'At Risk'),
+                              ],
+                              onChanged: (v) => setState(() => _sortBy = v),
+                            ),
+                          ),
                         ],
-                        onChanged: (v) => setState(() => _sortBy = v),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      if (_loading)
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: 8,
+                          separatorBuilder: (ctx, i) => const SizedBox(height: 12),
+                          itemBuilder: (ctx, i) => const ShimmerListTile(),
+                        )
+                      else if (_hasError && _members.isEmpty)
+                        FetchErrorView(onRetry: () => _fetch(refresh: true))
+                      else if (filtered.isEmpty)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40),
+                            child: Text(
+                              'No members found matching the selected filter.',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ),
+                        )
+                      else
+                        _buildMembersTable(
+                          filtered,
+                          primary,
+                          context,
+                          isDark,
+                          cardBg,
+                          borderColor,
+                          textColor,
+                          subTextColor,
+                        ),
+                      const SizedBox(height: 12),
+                      if (_loadingMore)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                      if (!_loading)
+                        Center(
+                          child: Text(
+                            '${filtered.length} members shown${_total > 0 ? " of $_total" : ""}',
+                            style: const TextStyle(fontSize: 13, color: Colors.grey),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                if (_loading)
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: 8,
-                    separatorBuilder: (ctx, i) => const SizedBox(height: 12),
-                    itemBuilder: (ctx, i) => const ShimmerListTile(),
-                  )
-                else if (_hasError && _members.isEmpty)
-                  FetchErrorView(onRetry: () => _fetch(refresh: true))
-                else if (filtered.isEmpty)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(40),
-                      child: Text(
-                        'No members found.',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ),
-                  )
-                else
-                  _buildMembersTable(
-                    filtered,
-                    primary,
-                    context,
-                    isDark,
-                    cardBg,
-                    borderColor,
-                    textColor,
-                    subTextColor,
-                  ),
-                const SizedBox(height: 12),
-                if (_loadingMore)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: CircularProgressIndicator(),
-                    ),
-                  ),
-                if (!_loading)
-                  Center(
-                    child: Text(
-                      '${filtered.length} members shown${_total > 0 ? " of $_total" : ""}',
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
-                    ),
-                  ),
-              ],
+              ),
             ),
           ),
 
@@ -1083,15 +1092,40 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: Text(
-                    r[1].toString(),
-                    style: GoogleFonts.inter(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: textColor,
-                    ),
-                    textAlign: TextAlign.end,
-                    overflow: TextOverflow.ellipsis,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Flexible(
+                        child: SelectableText(
+                          r[1].toString(),
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: textColor,
+                          ),
+                          textAlign: TextAlign.end,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      IconButton(
+                        icon: const Icon(Icons.copy_rounded, size: 14),
+                        color: subTextColor,
+                        tooltip: 'Copy ${r[0]}',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                        splashRadius: 14,
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: r[1].toString()));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('${r[0]} copied to clipboard'),
+                              duration: const Duration(seconds: 2),
+                              backgroundColor: kAdminOrange,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -1379,7 +1413,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
             ],
           ),
           const SizedBox(height: 5),
-          Text(
+          SelectableText(
             it['value'] as String,
             style: GoogleFonts.inter(
               fontSize: 22,
@@ -1598,24 +1632,22 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
+                            SelectableText(
                               m['name']?.toString() ?? '',
                               style: GoogleFonts.inter(
                                 fontWeight: FontWeight.w700,
-                                fontSize: 15,
+                                fontSize: 14.5,
                                 color: textColor,
                                 letterSpacing: -0.2,
                               ),
-                              overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 2),
-                            Text(
+                            SelectableText(
                               m['email']?.toString() ?? '',
                               style: GoogleFonts.inter(
-                                fontSize: 13,
+                                fontSize: 12.5,
                                 color: subTextColor,
                               ),
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
