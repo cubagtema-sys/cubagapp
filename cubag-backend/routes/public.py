@@ -321,6 +321,7 @@ def public_events_alias():
     return get_public_events()
 
 @public_bp.route('/courses', methods=['GET'])
+@public_bp.route('/cti-courses', methods=['GET'])
 def public_courses_alias():
     return get_public_courses()
 
@@ -333,27 +334,63 @@ def public_surveys_alias():
     return get_public_active_surveys()
 
 @public_bp.route('/complaints', methods=['POST'])
+@public_bp.route('/grievances', methods=['POST'])
 def public_complaint_submit_alias():
     return submit_complaint()
 
+@public_bp.route('/complaints/track', methods=['GET'])
+@public_bp.route('/grievances/track', methods=['GET'])
 @public_bp.route('/complaints/track/<complaint_id>', methods=['GET'])
-def public_complaint_track_alias(complaint_id):
-    return track_complaint(complaint_id)
+@public_bp.route('/grievances/track/<complaint_id>', methods=['GET'])
+def public_complaint_track_alias(complaint_id=None):
+    cid = complaint_id or request.args.get('complaint_id') or request.args.get('id') or request.args.get('ticket')
+    return track_complaint(cid)
 
 @public_bp.route('/openapi.json', methods=['GET'])
 def get_openapi_spec():
     """Returns the OpenAPI 3.0 specification for the CUBAG Public API."""
     try:
         spec_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'openapi.json')
-        with open(spec_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        resp = jsonify(data)
-        resp.headers['Access-Control-Allow-Origin'] = '*'
-        resp.headers['Cache-Control'] = 'public, max-age=300'
-        return resp, 200
+        if os.path.isfile(spec_path):
+            with open(spec_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            resp = jsonify(data)
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            resp.headers['Cache-Control'] = 'public, max-age=300'
+            return resp, 200
     except Exception as e:
-        logger.exception("Error loading openapi.json: %s", e)
-        return jsonify({'error': 'Failed to load API specification'}), 500
+        logger.warning("Error reading static openapi.json: %s. Generating in-memory spec.", e)
+
+    # In-memory guaranteed fallback so 500 is never thrown
+    fallback_spec = {
+        'openapi': '3.0.3',
+        'info': {
+            'title': 'CUBAG Public REST API',
+            'version': '1.0.0',
+            'description': 'Public developer API for CUBAG (Customs Brokers Association of Ghana).'
+        },
+        'servers': [
+            {'url': 'https://cubag-api-server.fly.dev', 'description': 'Production Fly.io Cluster'},
+            {'url': 'http://localhost:5005', 'description': 'Local Development Server'}
+        ],
+        'paths': {
+            '/api/v1/public/portal-summary': {'get': {'summary': 'Composite Homepage Portal Summary'}},
+            '/api/v1/public/stats': {'get': {'summary': 'Top-level Public Association Stats'}},
+            '/api/v1/public/verify-member': {'get': {'summary': 'Verify Member Standing'}},
+            '/api/v1/public/verify-receipt': {'get': {'summary': 'Verify Payment Receipt'}},
+            '/api/v1/public/members': {'get': {'summary': 'Public Directory of Verified Members'}},
+            '/api/v1/public/ports': {'get': {'summary': 'Operational Ports in Ghana'}},
+            '/api/v1/public/news': {'get': {'summary': 'Maritime & Trade Operational News'}},
+            '/api/v1/public/events': {'get': {'summary': 'Upcoming Association Events'}},
+            '/api/v1/public/courses': {'get': {'summary': 'CTI Professional Training Courses'}},
+            '/api/v1/public/complaints': {'post': {'summary': 'Submit Trade Grievance'}},
+            '/api/v1/public/complaints/track/{complaint_id}': {'get': {'summary': 'Track Grievance Progression'}}
+        }
+    }
+    resp = jsonify(fallback_spec)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.headers['Cache-Control'] = 'public, max-age=300'
+    return resp, 200
 
 @public_bp.route('/docs', methods=['GET'])
 def get_swagger_ui():

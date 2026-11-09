@@ -1,0 +1,601 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CUBAG Public REST API",
+    "version": "1.0.0",
+    "description": "Public developer API for CUBAG (Customs Brokers Association of Ghana). Provides member standing verification, secure cryptographic payment receipt validation, port operational news, maritime vessel schedules, public grievances, and Secretariat communications.",
+    "contact": {
+      "name": "CUBAG Central Secretariat Tech Desk",
+      "email": "tech@cubag.org",
+      "url": "https://cubag-api-server.fly.dev"
+    },
+    "license": {
+      "name": "Proprietary / CUBAG Secretariat"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://cubag-api-server.fly.dev",
+      "description": "Production Fly.io Cluster (24/7 Always Active)"
+    },
+    {
+      "url": "http://localhost:5005",
+      "description": "Local Development Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Composite & Portal",
+      "description": "Aggregated public portal views and summary figures"
+    },
+    {
+      "name": "Verification",
+      "description": "Public verification for members and cryptographic receipts"
+    },
+    {
+      "name": "Grievances & Complaints",
+      "description": "Formal trade dispute logging and status tracking"
+    },
+    {
+      "name": "Directory & Ports",
+      "description": "Registered brokerage firms and operating ports"
+    },
+    {
+      "name": "Publications & Events",
+      "description": "CTI training courses, press releases, bulletins, and surveys"
+    }
+  ],
+  "paths": {
+    "/api/v1/public/portal-summary": {
+      "get": {
+        "tags": [
+          "Composite & Portal"
+        ],
+        "summary": "GET Portal Summary (Composite Homepage)",
+        "description": "Fetches aggregated stats, indicative exchange rates, top news, circulars, events, CTI courses, and operating ports in a single round trip.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Bad request / validation failure"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/v1/public/stats": {
+      "get": {
+        "tags": [
+          "Composite & Portal"
+        ],
+        "summary": "GET Key Association Stats",
+        "description": "Returns verified member count, licensed broker count, active ports, and CTI courses count.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Bad request / validation failure"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/v1/public/verify-member": {
+      "get": {
+        "tags": [
+          "Verification (Member & Receipt)"
+        ],
+        "summary": "Verify Member (Company Name)",
+        "description": "Verify Member (Company Name)",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Bad request / validation failure"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "description": "Filter or search parameter for query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ANTWI NYAME"
+          }
+        ]
+      }
+    },
+    "/api/v1/public/verify-receipt": {
+      "get": {
+        "tags": [
+          "Verification (Member & Receipt)"
+        ],
+        "summary": "Verify Payment Receipt (Cryptographic Token)",
+        "description": "Cryptographically secure receipt verification for QR codes. Does not expose private payer identity or internal database IDs.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Bad request / validation failure"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "description": "Filter or search parameter for token",
+            "schema": {
+              "type": "string"
+            },
+            "example": "943d21ee5518af43ba4a9fa039b173ef"
+          },
+          {
+            "name": "amount",
+            "in": "query",
+            "required": false,
+            "description": "Filter or search parameter for amount",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1.00"
+          }
+        ]
+      }
+    },
+    "/api/v1/public/complaints": {
+      "post": {
+        "tags": [
+          "Grievances & Complaints"
+        ],
+        "summary": "Submit Trade Grievance",
+        "description": "Public submission endpoint. Returns a complaint_id and a 128-bit tracking_token. Includes honeypot field hp_field for spam protection.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Bad request / validation failure"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          },
+          "201": {
+            "description": "Created successfully"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "name": "Kwame Asante",
+                "email": "kwame.asante@example.com",
+                "phone": "+233244000111",
+                "category": "Port Demurrage Dispute",
+                "port": "Tema Port",
+                "target_entity": "Shipping Line Agency",
+                "subject": "Excess Detention Charge Assessment",
+                "description": "Container released within free days but detention invoices billed at gate out.",
+                "hp_field": ""
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/complaints/track/CMP-2026-80069": {
+      "get": {
+        "tags": [
+          "Grievances & Complaints"
+        ],
+        "summary": "Track Grievance Progression (With Token)",
+        "description": "Returns live resolution timeline. Strips all personal contact details and private notes.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Bad request / validation failure"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "description": "Filter or search parameter for token",
+            "schema": {
+              "type": "string"
+            },
+            "example": "de64c421cadcb0cab55346be70171c1a"
+          }
+        ]
+      }
+    },
+    "/api/v1/public/members": {
+      "get": {
+        "tags": [
+          "Directory & Ports"
+        ],
+        "summary": "GET Members Directory",
+        "description": "GET Members Directory",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Bad request / validation failure"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "port",
+            "in": "query",
+            "required": false,
+            "description": "Filter or search parameter for port",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Tema Port"
+          }
+        ]
+      }
+    },
+    "/api/v1/public/ports": {
+      "get": {
+        "tags": [
+          "Directory & Ports"
+        ],
+        "summary": "GET Operating Ports",
+        "description": "GET Operating Ports",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Bad request / validation failure"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/v1/public/news": {
+      "get": {
+        "tags": [
+          "Publications & Events"
+        ],
+        "summary": "GET Public News & Press",
+        "description": "GET Public News & Press",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Bad request / validation failure"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/v1/public/bulletins": {
+      "get": {
+        "tags": [
+          "Publications & Events"
+        ],
+        "summary": "GET Port Bulletins",
+        "description": "GET Port Bulletins",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Bad request / validation failure"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/v1/public/events": {
+      "get": {
+        "tags": [
+          "Publications & Events"
+        ],
+        "summary": "GET Upcoming Events",
+        "description": "GET Upcoming Events",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Bad request / validation failure"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Filter or search parameter for type",
+            "schema": {
+              "type": "string"
+            },
+            "example": "all"
+          }
+        ]
+      }
+    },
+    "/api/v1/public/courses": {
+      "get": {
+        "tags": [
+          "Publications & Events"
+        ],
+        "summary": "GET CTI Courses",
+        "description": "GET CTI Courses",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Bad request / validation failure"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/v1/public/gallery": {
+      "get": {
+        "tags": [
+          "Publications & Events"
+        ],
+        "summary": "GET Photo Gallery",
+        "description": "GET Photo Gallery",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Bad request / validation failure"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/v1/public/surveys": {
+      "get": {
+        "tags": [
+          "Publications & Events"
+        ],
+        "summary": "GET Active Public Surveys",
+        "description": "GET Active Public Surveys",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Bad request / validation failure"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PortalSummary": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "stats": {
+            "type": "object"
+          },
+          "hero": {
+            "type": "object"
+          },
+          "announcements": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "news": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "courses": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "gallery": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "surveys": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "VerifyMemberResponse": {
+        "type": "object",
+        "properties": {
+          "found": {
+            "type": "boolean"
+          },
+          "member": {
+            "type": "object",
+            "properties": {
+              "membership_id": {
+                "type": "string"
+              },
+              "company_name": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "standing": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "port": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "ComplaintSubmission": {
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "category",
+          "subject",
+          "description"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Kwame Asante"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "kwame.asante@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+233244000111"
+          },
+          "category": {
+            "type": "string",
+            "example": "Port Demurrage Dispute"
+          },
+          "port": {
+            "type": "string",
+            "example": "Tema Port"
+          },
+          "target_entity": {
+            "type": "string",
+            "example": "Shipping Line Agency"
+          },
+          "subject": {
+            "type": "string",
+            "example": "Excess Detention Charge Assessment"
+          },
+          "description": {
+            "type": "string",
+            "example": "Container released within free days but detention invoices billed at gate out."
+          },
+          "hp_field": {
+            "type": "string",
+            "description": "Honeypot anti-spam field, must be left blank",
+            "example": ""
+          }
+        }
+      }
+    }
+  }
+}

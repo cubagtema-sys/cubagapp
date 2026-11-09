@@ -32,6 +32,7 @@ from flask import Flask, jsonify, request, send_from_directory, send_file, redir
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, get_jwt_identity, verify_jwt_in_request
 from dotenv import load_dotenv
+import datetime
 from datetime import timedelta
 import firebase_admin
 
@@ -515,6 +516,44 @@ for bp, prefix in _BLUEPRINTS:
     # Register without v1 (for compatibility with existing web builds)
     app.register_blueprint(bp, url_prefix=f'/api{prefix}', name=f"{bp.name}_compat")
 
+@app.route('/api', methods=['GET'])
+@app.route('/api/', methods=['GET'])
+@app.route('/api/v1', methods=['GET'])
+@app.route('/api/v1/', methods=['GET'])
+def api_root():
+    return jsonify({
+        'status': 'online',
+        'server': 'CUBAG Unified API Gateway',
+        'version': '1.0.0',
+        'environment': 'production',
+        'timestamp': datetime.datetime.utcnow().isoformat() + 'Z',
+        'health': '/api/health',
+        'ping': '/api/ping',
+        'docs': '/docs',
+        'openapi': '/api/v1/public/openapi.json',
+        'endpoints': {
+            'portal_summary': '/api/v1/public/portal-summary',
+            'stats': '/api/v1/public/stats',
+            'members': '/api/v1/public/members',
+            'ports': '/api/v1/public/ports',
+            'news': '/api/v1/public/news',
+            'events': '/api/v1/public/events',
+            'courses': '/api/v1/public/courses',
+            'bulletins': '/api/v1/public/bulletins',
+            'gallery': '/api/v1/public/gallery',
+            'surveys': '/api/v1/public/surveys',
+            'complaints': '/api/v1/public/complaints',
+            'verify_member': '/api/v1/public/verify-member',
+            'verify_receipt': '/api/v1/public/verify-receipt'
+        }
+    }), 200
+
+@app.route('/openapi.json', methods=['GET'])
+@app.route('/api/openapi.json', methods=['GET'])
+def serve_root_openapi():
+    from routes.public import get_openapi_spec
+    return get_openapi_spec()
+
 @app.route('/api/ping', methods=['GET'])
 @app.route('/api/v1/ping', methods=['GET'])
 def ping():
@@ -735,6 +774,31 @@ def serve_spa(path):
 
     # Fallback if no static files exist
     return jsonify({'status': 'CUBAG API is running', 'message': 'No frontend build found. Use /api/health for API status.'}), 200
+
+
+# ── Global API Error Handlers ────────────────────────────────────────────────
+@app.errorhandler(500)
+def handle_internal_server_error(e):
+    logger.exception("Global 500 handler intercepted exception: %s", e)
+    return jsonify({
+        'success': False,
+        'status': 500,
+        'error': 'Internal Server Error',
+        'message': 'An unexpected server error occurred. The CUBAG API remains active and healthy.'
+    }), 500
+
+@app.errorhandler(Exception)
+def handle_unhandled_exception(e):
+    from werkzeug.exceptions import HTTPException
+    if isinstance(e, HTTPException):
+        return e
+    logger.exception("Unhandled server exception: %s", e)
+    return jsonify({
+        'success': False,
+        'status': 500,
+        'error': 'Internal Server Error',
+        'message': str(e) or 'Internal Server Error'
+    }), 500
 
 
 logger.info("[Init] CUBAG Backend fully loaded and ready to accept requests.")
