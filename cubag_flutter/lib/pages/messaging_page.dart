@@ -802,7 +802,7 @@ class _MessagingPageState extends State<MessagingPage> {
                                         ? CrossAxisAlignment.end
                                         : CrossAxisAlignment.start,
                                     children: [
-                                      Text(
+                                      SelectableText(
                                         (msg['text']?.toString() ?? '').isEmpty
                                             ? '(empty message)'
                                             : msg['text'].toString(),
@@ -953,16 +953,21 @@ class _MessagingPageState extends State<MessagingPage> {
               itemBuilder: (_, _) => const ShimmerListTile(),
             )
           : isWide
-          ? Row(
-              children: [
-                SizedBox(width: 340, child: _buildList(primary, isWide: true)),
-                Container(width: 1.0, color: dividerCol),
-                Expanded(
-                  child: _activeChat == null
-                      ? _buildEmptyChatPlaceholder(primary)
-                      : _buildChat(primary, isWide: true),
+          ? Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1440),
+                child: Row(
+                  children: [
+                    SizedBox(width: 360, child: _buildList(primary, isWide: true)),
+                    Container(width: 1.0, color: dividerCol),
+                    Expanded(
+                      child: _activeChat == null
+                          ? _buildEmptyChatPlaceholder(primary)
+                          : _buildChat(primary, isWide: true),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             )
           : (_activeChat == null
                 ? _buildList(primary, isWide: false)

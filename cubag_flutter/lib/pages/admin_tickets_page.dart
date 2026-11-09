@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
@@ -279,42 +280,48 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
     return AppLayout(
       title: 'Support Tickets',
       scrollable: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          AdminHeader(
-            title: 'Support Tickets & Helpdesk',
-            subtitle: 'Track, manage, and respond to member inquiries and compliance issues.',
-            actions: [
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: isDark ? Colors.white : const Color(0xFF334155),
-                  side: BorderSide(color: border),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: () {
-                  _clearCache();
-                  _fetchTickets(page: 1);
-                },
-                icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: Text('Refresh', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1440),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              AdminHeader(
+                title: 'Support Tickets & Helpdesk',
+                subtitle: 'Track, manage, and respond to member inquiries and compliance issues.',
+                actions: [
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: isDark ? Colors.white : const Color(0xFF334155),
+                      side: BorderSide(color: border),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () {
+                      _clearCache();
+                      _fetchTickets(page: 1);
+                    },
+                    icon: const Icon(Icons.refresh_rounded, size: 16),
+                    label: Text('Refresh', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                  ),
+                ],
               ),
+              const SizedBox(height: 14),
+
+              // Streamlined KPI Row
+              _buildKPIRow(isDark, cardBg, border, textPrimary, textMuted),
+              const SizedBox(height: 16),
+
+              // Active view: Conversation studio or Ticket table
+              if (_selectedTicket != null)
+                _buildConversationStudio(isDark, cardBg, border, textPrimary, textMuted)
+              else
+                _buildTableSection(isDark, cardBg, border, textPrimary, textMuted),
+              const SizedBox(height: 24),
             ],
           ),
-          const SizedBox(height: 14),
-
-          // Streamlined KPI Row
-          _buildKPIRow(isDark, cardBg, border, textPrimary, textMuted),
-          const SizedBox(height: 16),
-
-          // Active view: Conversation studio or Ticket table
-          if (_selectedTicket != null)
-            _buildConversationStudio(isDark, cardBg, border, textPrimary, textMuted)
-          else
-            _buildTableSection(isDark, cardBg, border, textPrimary, textMuted),
-        ],
+        ),
       ),
     );
   }
@@ -577,19 +584,43 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                           cells: [
                             // ID
                             DataCell(
-                              InkWell(
-                                onTap: () => setState(() => _selectedTicket = map),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: _kIndigo.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(6),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  InkWell(
+                                    onTap: () => setState(() => _selectedTicket = map),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: _kIndigo.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: SelectableText(
+                                        '#$id',
+                                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: _kIndigo),
+                                      ),
+                                    ),
                                   ),
-                                  child: Text(
-                                    '#$id',
-                                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: _kIndigo),
+                                  const SizedBox(width: 4),
+                                  IconButton(
+                                    icon: const Icon(Icons.copy_rounded, size: 12),
+                                    color: textMuted,
+                                    tooltip: 'Copy ticket ID',
+                                    visualDensity: VisualDensity.compact,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                                    onPressed: () {
+                                      Clipboard.setData(ClipboardData(text: id));
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Ticket #$id copied to clipboard'),
+                                          duration: const Duration(seconds: 2),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    },
                                   ),
-                                ),
+                                ],
                               ),
                             ),
                             // Member
@@ -600,18 +631,16 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Text(
+                                    SelectableText(
                                       memberName,
                                       style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: textPrimary),
                                       maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
                                     if (company.isNotEmpty)
-                                      Text(
+                                      SelectableText(
                                         company,
                                         style: GoogleFonts.inter(fontSize: 11.5, color: _kOrange, fontWeight: FontWeight.w500),
                                         maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
                                       ),
                                   ],
                                 ),
@@ -628,11 +657,10 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                     Row(
                                       children: [
                                         Expanded(
-                                          child: Text(
+                                          child: SelectableText(
                                             subject,
                                             style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary),
                                             maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
                                         if (replies > 0)
@@ -647,11 +675,10 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                           ),
                                       ],
                                     ),
-                                    Text(
+                                    SelectableText(
                                       message,
                                       style: GoogleFonts.inter(fontSize: 11.5, color: textMuted),
                                       maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
                                 ),
@@ -674,7 +701,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                             ),
                             // Date
                             DataCell(
-                              Text(date, style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
+                              SelectableText(date, style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
                             ),
                             // Actions
                             DataCell(
@@ -841,21 +868,36 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                   label: Text('Back', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12.5)),
                 ),
                 const SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: _kIndigo.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
+                InkWell(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: id));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Ticket #$id copied to clipboard'), duration: const Duration(seconds: 2), behavior: SnackBarBehavior.floating),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _kIndigo.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('#$id', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: _kIndigo)),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.copy_rounded, size: 11, color: _kIndigo),
+                      ],
+                    ),
                   ),
-                  child: Text('#$id', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: _kIndigo)),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
+                  child: SelectableText(
                     subject,
                     style: GoogleFonts.inter(fontSize: 14.5, fontWeight: FontWeight.bold, color: textPrimary),
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1070,7 +1112,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
             ],
           ),
           const SizedBox(height: 6),
-          Text(
+          SelectableText(
             message,
             style: GoogleFonts.inter(fontSize: 13, color: textPrimary, height: 1.4),
           ),

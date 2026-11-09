@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
@@ -395,8 +396,40 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Grievance Record', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)),
-                  Text('$complaintId • Filed $createdAt', style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor)),
+                  Row(
+                    children: [
+                      Text('Grievance Record', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () {
+                          Clipboard.setData(ClipboardData(text: complaintId));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Tracking ID $complaintId copied'),
+                              duration: const Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _kBrown.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(complaintId, style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w700, color: _kOrange)),
+                              const SizedBox(width: 3),
+                              const Icon(Icons.copy_rounded, size: 10, color: _kOrange),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text('Filed $createdAt', style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor)),
                 ],
               ),
             ),
@@ -449,16 +482,16 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Complainant: $name', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: textColor)),
+                      SelectableText('Complainant: $name', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: textColor)),
                       const SizedBox(height: 4),
-                      Text('Contact: $phone | $email', style: GoogleFonts.inter(fontSize: 12, color: subTextColor)),
+                      SelectableText('Contact: $phone | $email', style: GoogleFonts.inter(fontSize: 12, color: subTextColor)),
                       if (company != 'N/A') ...[
                         const SizedBox(height: 2),
-                        Text('Company: $company', style: GoogleFonts.inter(fontSize: 12, color: _kOrange, fontWeight: FontWeight.w500)),
+                        SelectableText('Company: $company', style: GoogleFonts.inter(fontSize: 12, color: _kOrange, fontWeight: FontWeight.w500)),
                       ],
                       if (targetEntity.isNotEmpty) ...[
                         const SizedBox(height: 4),
-                        Text('Target Entity: $targetEntity', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12, color: _kPurple)),
+                        SelectableText('Target Entity: $targetEntity', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12, color: _kPurple)),
                       ],
                     ],
                   ),
@@ -468,7 +501,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                 // Subject & Description
                 Text('SUBJECT', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: subTextColor, letterSpacing: 0.5)),
                 const SizedBox(height: 4),
-                Text(item['subject']?.toString() ?? 'No Subject', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: textColor)),
+                SelectableText(item['subject']?.toString() ?? 'No Subject', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: textColor)),
                 const SizedBox(height: 8),
 
                 Text('DETAILS / GRIEVANCE DESCRIPTION', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: subTextColor, letterSpacing: 0.5)),
@@ -477,13 +510,13 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(color: fieldBg, borderRadius: BorderRadius.circular(8), border: Border.all(color: borderCol)),
-                  child: Text(description, style: GoogleFonts.inter(fontSize: 12.5, color: textColor, height: 1.4)),
+                  child: SelectableText(description, style: GoogleFonts.inter(fontSize: 12.5, color: textColor, height: 1.4)),
                 ),
                 const SizedBox(height: 12),
 
                 // Assigned & Resolution
                 if (assignedTo.isNotEmpty) ...[
-                  Text('Assigned to: $assignedTo', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: subTextColor)),
+                  SelectableText('Assigned to: $assignedTo', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: subTextColor)),
                   const SizedBox(height: 6),
                 ],
                 if (resolutionNotes.isNotEmpty) ...[
@@ -493,7 +526,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(color: _kGreen.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8), border: Border.all(color: _kGreen.withValues(alpha: 0.25))),
-                    child: Text(resolutionNotes, style: GoogleFonts.inter(fontSize: 12.5, color: textColor, height: 1.35)),
+                    child: SelectableText(resolutionNotes, style: GoogleFonts.inter(fontSize: 12.5, color: textColor, height: 1.35)),
                   ),
                 ],
               ],
@@ -538,309 +571,338 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
     return AppLayout(
       title: 'Complaints',
       scrollable: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          AdminHeader(
-            title: 'Dispute & Complaint Investigations',
-            subtitle: 'Investigate, assign, and resolve trade disputes and member conduct complaints.',
-            actions: [
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: textColor,
-                  side: BorderSide(color: borderColor),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: _fetchComplaints,
-                icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: Text('Refresh', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1440),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              AdminHeader(
+                title: 'Dispute & Complaint Investigations',
+                subtitle: 'Investigate, assign, and resolve trade disputes and member conduct complaints.',
+                actions: [
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: textColor,
+                      side: BorderSide(color: borderColor),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: _fetchComplaints,
+                    icon: const Icon(Icons.refresh_rounded, size: 16),
+                    label: Text('Refresh', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                  ),
+                ],
               ),
+              const SizedBox(height: 14),
+
+              // Preserved & Streamlined KPI Cards Row (User requested to keep KPI cards)
+              _buildKPIRow(isDark, cardBg, borderColor, textColor, subTextColor),
+              const SizedBox(height: 16),
+
+              // Main Complaints Table Section
+              Container(
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: borderColor),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.02), blurRadius: 6, offset: const Offset(0, 2)),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Search & Filter Toolbar
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 38,
+                              child: TextField(
+                                controller: _searchCtrl,
+                                onChanged: (_) => setState(() {}),
+                                style: GoogleFonts.inter(fontSize: 13.5, color: textColor),
+                                decoration: InputDecoration(
+                                  hintText: 'Search by ID, name, phone, subject, port, entity...',
+                                  hintStyle: GoogleFonts.inter(fontSize: 12.5, color: subTextColor),
+                                  prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
+                                  filled: true,
+                                  fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
+                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
+                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange, width: 1.2)),
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                                  suffixIcon: _searchCtrl.text.isNotEmpty
+                                      ? IconButton(
+                                          icon: const Icon(Icons.close_rounded, size: 14),
+                                          onPressed: () {
+                                            _searchCtrl.clear();
+                                            setState(() {});
+                                          },
+                                        )
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _buildFilterPill('All', 'all', borderColor, textColor),
+                                const SizedBox(width: 6),
+                                _buildFilterPill('Received', 'Received', borderColor, textColor),
+                                const SizedBox(width: 6),
+                                _buildFilterPill('Under Review', 'Under Review', borderColor, textColor),
+                                const SizedBox(width: 6),
+                                _buildFilterPill('Investigating', 'Investigating', borderColor, textColor),
+                                const SizedBox(width: 6),
+                                _buildFilterPill('Resolved', 'Resolved', borderColor, textColor),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 1),
+
+                    // Content
+                    if (_loading)
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: List.generate(4, (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile())),
+                        ),
+                      )
+                    else if (_hasError)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              const Icon(Icons.error_outline_rounded, color: _kRed, size: 28),
+                              const SizedBox(height: 8),
+                              Text('Failed to load complaints', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: textColor)),
+                              const SizedBox(height: 12),
+                              ElevatedButton(
+                                onPressed: _fetchComplaints,
+                                style: ElevatedButton.styleFrom(backgroundColor: _kOrange, foregroundColor: Colors.white),
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else if (complaints.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(color: _kOrange.withValues(alpha: 0.1), shape: BoxShape.circle),
+                                child: const Icon(Icons.gavel_rounded, size: 28, color: _kOrange),
+                              ),
+                              const SizedBox(height: 12),
+                              Text('No complaints found matching criteria', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
+                              const SizedBox(height: 4),
+                              Text('Logged grievances and disputes will appear here.', style: GoogleFonts.inter(fontSize: 12.5, color: subTextColor)),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          const minWidth = 920.0;
+                          final tableWidth = constraints.maxWidth > minWidth ? constraints.maxWidth : minWidth;
+                          return SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(minWidth: tableWidth),
+                              child: DataTable(
+                                horizontalMargin: 16,
+                                columnSpacing: 18,
+                                headingRowHeight: 40,
+                                dataRowMinHeight: 52,
+                                dataRowMaxHeight: 58,
+                                headingRowColor: WidgetStateProperty.all(
+                                  isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0),
+                                ),
+                                headingTextStyle: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w700, color: subTextColor),
+                                dataTextStyle: GoogleFonts.inter(fontSize: 13, color: textColor),
+                                columns: const [
+                                  DataColumn(label: Text('TRACKING ID')),
+                                  DataColumn(label: Text('COMPLAINANT')),
+                                  DataColumn(label: Text('SUBJECT & STATION')),
+                                  DataColumn(label: Text('STATUS')),
+                                  DataColumn(label: Text('PRIORITY')),
+                                  DataColumn(label: Text('ACTIONS')),
+                                ],
+                                rows: complaints.map((item) {
+                                  final id = item['complaint_id']?.toString() ?? '';
+                                  final name = item['name']?.toString() ?? 'Complainant';
+                                  final phone = item['phone']?.toString() ?? '';
+                                  final subject = item['subject']?.toString() ?? 'No Subject';
+                                  final port = item['port']?.toString() ?? 'Tema Port';
+                                  final category = item['category']?.toString() ?? 'Dispute';
+                                  final status = item['status']?.toString() ?? 'Received';
+                                  final priority = item['priority']?.toString() ?? 'Normal';
+                                  final statusCol = _statusColor(status);
+                                  final priorityCol = _priorityColor(priority);
+
+                                  return DataRow(
+                                    cells: [
+                                      // ID
+                                      DataCell(
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            InkWell(
+                                              onTap: () => _openViewDetailsDialog(item),
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                                decoration: BoxDecoration(color: _kBrown.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                                                child: SelectableText(id, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: _kOrange)),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            IconButton(
+                                              icon: const Icon(Icons.copy_rounded, size: 12),
+                                              color: subTextColor,
+                                              tooltip: 'Copy Tracking ID',
+                                              visualDensity: VisualDensity.compact,
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                                              onPressed: () {
+                                                Clipboard.setData(ClipboardData(text: id));
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text('Tracking ID $id copied to clipboard'),
+                                                    duration: const Duration(seconds: 2),
+                                                    behavior: SnackBarBehavior.floating,
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      // Complainant
+                                      DataCell(
+                                        ConstrainedBox(
+                                          constraints: const BoxConstraints(maxWidth: 180),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              SelectableText(name, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: textColor), maxLines: 1),
+                                              if (phone.isNotEmpty) SelectableText(phone, style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor), maxLines: 1),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      // Subject & Station
+                                      DataCell(
+                                        ConstrainedBox(
+                                          constraints: const BoxConstraints(maxWidth: 280),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              SelectableText(subject, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textColor), maxLines: 1),
+                                              SelectableText('$port • $category', style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor), maxLines: 1),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      // Status
+                                      DataCell(
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: statusCol.withValues(alpha: 0.12),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: statusCol.withValues(alpha: 0.3)),
+                                          ),
+                                          child: Text(status.toUpperCase(), style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w800, color: statusCol)),
+                                        ),
+                                      ),
+                                      // Priority
+                                      DataCell(
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: priorityCol.withValues(alpha: 0.12),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(priority.toUpperCase(), style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.bold, color: priorityCol)),
+                                        ),
+                                      ),
+                                      // Actions
+                                      DataCell(
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            ElevatedButton(
+                                              onPressed: () => _openViewDetailsDialog(item),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: isDark ? const Color(0xFF4D2D20) : const Color(0xFFF1F5F9),
+                                                foregroundColor: textColor,
+                                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                                minimumSize: Size.zero,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                                elevation: 0,
+                                              ),
+                                              child: Text('Case Details', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            ElevatedButton(
+                                              onPressed: () => _openUpdateDialog(item),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: _kOrange,
+                                                foregroundColor: Colors.white,
+                                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                                minimumSize: Size.zero,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                                elevation: 0,
+                                              ),
+                                              child: Text('Update', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                    // Table Summary Footer
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      child: Text(
+                        'Showing ${complaints.length} of ${_complaints.length} registered grievances',
+                        style: GoogleFonts.inter(fontSize: 12, color: subTextColor),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
-          const SizedBox(height: 14),
-
-          // Preserved & Streamlined KPI Cards Row (User requested to keep KPI cards)
-          _buildKPIRow(isDark, cardBg, borderColor, textColor, subTextColor),
-          const SizedBox(height: 16),
-
-          // Main Complaints Table Section
-          Container(
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: borderColor),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.02), blurRadius: 6, offset: const Offset(0, 2)),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Search & Filter Toolbar
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 38,
-                          child: TextField(
-                            controller: _searchCtrl,
-                            onChanged: (_) => setState(() {}),
-                            style: GoogleFonts.inter(fontSize: 13.5, color: textColor),
-                            decoration: InputDecoration(
-                              hintText: 'Search by ID, name, phone, subject, port, entity...',
-                              hintStyle: GoogleFonts.inter(fontSize: 12.5, color: subTextColor),
-                              prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
-                              filled: true,
-                              fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
-                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
-                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange, width: 1.2)),
-                              contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
-                              suffixIcon: _searchCtrl.text.isNotEmpty
-                                  ? IconButton(
-                                      icon: const Icon(Icons.close_rounded, size: 14),
-                                      onPressed: () {
-                                        _searchCtrl.clear();
-                                        setState(() {});
-                                      },
-                                    )
-                                  : null,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _buildFilterPill('All', 'all', borderColor, textColor),
-                            const SizedBox(width: 6),
-                            _buildFilterPill('Received', 'Received', borderColor, textColor),
-                            const SizedBox(width: 6),
-                            _buildFilterPill('Under Review', 'Under Review', borderColor, textColor),
-                            const SizedBox(width: 6),
-                            _buildFilterPill('Investigating', 'Investigating', borderColor, textColor),
-                            const SizedBox(width: 6),
-                            _buildFilterPill('Resolved', 'Resolved', borderColor, textColor),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-
-                // Content
-                if (_loading)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: List.generate(4, (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile())),
-                    ),
-                  )
-                else if (_hasError)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          const Icon(Icons.error_outline_rounded, color: _kRed, size: 28),
-                          const SizedBox(height: 8),
-                          Text('Failed to load complaints', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: textColor)),
-                          const SizedBox(height: 12),
-                          ElevatedButton(
-                            onPressed: _fetchComplaints,
-                            style: ElevatedButton.styleFrom(backgroundColor: _kOrange, foregroundColor: Colors.white),
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                else if (complaints.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: _kOrange.withValues(alpha: 0.1), shape: BoxShape.circle),
-                            child: const Icon(Icons.gavel_rounded, size: 28, color: _kOrange),
-                          ),
-                          const SizedBox(height: 12),
-                          Text('No complaints found matching criteria', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
-                          const SizedBox(height: 4),
-                          Text('Logged grievances and disputes will appear here.', style: GoogleFonts.inter(fontSize: 12.5, color: subTextColor)),
-                        ],
-                      ),
-                    ),
-                  )
-                else
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      const minWidth = 920.0;
-                      final tableWidth = constraints.maxWidth > minWidth ? constraints.maxWidth : minWidth;
-                      return SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(minWidth: tableWidth),
-                          child: DataTable(
-                            horizontalMargin: 16,
-                            columnSpacing: 18,
-                            headingRowHeight: 40,
-                            dataRowMinHeight: 52,
-                            dataRowMaxHeight: 58,
-                            headingRowColor: WidgetStateProperty.all(
-                              isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0),
-                            ),
-                            headingTextStyle: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w700, color: subTextColor),
-                            dataTextStyle: GoogleFonts.inter(fontSize: 13, color: textColor),
-                            columns: const [
-                              DataColumn(label: Text('TRACKING ID')),
-                              DataColumn(label: Text('COMPLAINANT')),
-                              DataColumn(label: Text('SUBJECT & STATION')),
-                              DataColumn(label: Text('STATUS')),
-                              DataColumn(label: Text('PRIORITY')),
-                              DataColumn(label: Text('ACTIONS')),
-                            ],
-                            rows: complaints.map((item) {
-                              final id = item['complaint_id']?.toString() ?? '';
-                              final name = item['name']?.toString() ?? 'Complainant';
-                              final phone = item['phone']?.toString() ?? '';
-                              final subject = item['subject']?.toString() ?? 'No Subject';
-                              final port = item['port']?.toString() ?? 'Tema Port';
-                              final category = item['category']?.toString() ?? 'Dispute';
-                              final status = item['status']?.toString() ?? 'Received';
-                              final priority = item['priority']?.toString() ?? 'Normal';
-                              final statusCol = _statusColor(status);
-                              final priorityCol = _priorityColor(priority);
-
-                              return DataRow(
-                                cells: [
-                                  // ID
-                                  DataCell(
-                                    InkWell(
-                                      onTap: () => _openViewDetailsDialog(item),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                        decoration: BoxDecoration(color: _kBrown.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                                        child: Text(id, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: _kOrange)),
-                                      ),
-                                    ),
-                                  ),
-                                  // Complainant
-                                  DataCell(
-                                    ConstrainedBox(
-                                      constraints: const BoxConstraints(maxWidth: 180),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(name, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: textColor), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                          if (phone.isNotEmpty) Text(phone, style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor)),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  // Subject & Station
-                                  DataCell(
-                                    ConstrainedBox(
-                                      constraints: const BoxConstraints(maxWidth: 280),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(subject, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textColor), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                          Text('$port • $category', style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor)),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  // Status
-                                  DataCell(
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: statusCol.withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(color: statusCol.withValues(alpha: 0.3)),
-                                      ),
-                                      child: Text(status.toUpperCase(), style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w800, color: statusCol)),
-                                    ),
-                                  ),
-                                  // Priority
-                                  DataCell(
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: priorityCol.withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(priority.toUpperCase(), style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.bold, color: priorityCol)),
-                                    ),
-                                  ),
-                                  // Actions
-                                  DataCell(
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        ElevatedButton(
-                                          onPressed: () => _openViewDetailsDialog(item),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: isDark ? const Color(0xFF4D2D20) : const Color(0xFFF1F5F9),
-                                            foregroundColor: textColor,
-                                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                                            minimumSize: Size.zero,
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                            elevation: 0,
-                                          ),
-                                          child: Text('Case Details', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        ElevatedButton(
-                                          onPressed: () => _openUpdateDialog(item),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: _kOrange,
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                                            minimumSize: Size.zero,
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                            elevation: 0,
-                                          ),
-                                          child: Text('Update', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
-                // Table Summary Footer
-                const Divider(height: 1),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  child: Text(
-                    'Showing ${complaints.length} of ${_complaints.length} registered grievances',
-                    style: GoogleFonts.inter(fontSize: 12, color: subTextColor),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-        ],
+        ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
@@ -331,260 +332,331 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
     return AppLayout(
       title: 'Port Operational News',
       scrollable: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          AdminHeader(
-            title: 'Port Bulletins & Status Updates',
-            subtitle: 'Live operational notices and harbor clearance advisories across Ghana ports.',
-            actions: [
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: isDark ? Colors.white : const Color(0xFF334155),
-                  side: BorderSide(color: borderCol),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: _fetchBulletins,
-                icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: Text('Refresh', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kOrange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  elevation: 0,
-                ),
-                onPressed: () => _showBulletinDialog(),
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: Text('Post Bulletin', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // Maintained KPI Cards Row (Interactive)
-          _buildKPIRow(isDark, cardBg, borderCol, textColor, subTextColor, total, active, inactive),
-          const SizedBox(height: 16),
-
-          // Filter & Search Toolbar
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderCol),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 38,
-                    child: TextField(
-                      controller: _searchCtrl,
-                      onChanged: (v) => setState(() => _searchQuery = v.trim()),
-                      style: GoogleFonts.inter(fontSize: 13.5, color: textColor),
-                      decoration: InputDecoration(
-                        hintText: 'Search by port, terminal code, or operational notice...',
-                        hintStyle: GoogleFonts.inter(fontSize: 12.5, color: subTextColor),
-                        prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
-                        filled: true,
-                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderCol)),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderCol)),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
-                        suffixIcon: _searchQuery.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.close_rounded, size: 14),
-                                onPressed: () {
-                                  _searchCtrl.clear();
-                                  setState(() => _searchQuery = '');
-                                },
-                              )
-                            : null,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _filterPill('All ($total)', _filterTab == 0, () => setState(() => _filterTab = 0), borderCol, textColor),
-                      const SizedBox(width: 6),
-                      _filterPill('Active ($active)', _filterTab == 1, () => setState(() => _filterTab = 1), borderCol, textColor, activeColor: _kGreen),
-                      const SizedBox(width: 6),
-                      _filterPill('Archived ($inactive)', _filterTab == 2, () => setState(() => _filterTab = 2), borderCol, textColor, activeColor: _kSlate),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Content List
-          if (_loading)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: List.generate(3, (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile())),
-              ),
-            )
-          else if (_error != null)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(_error!, style: const TextStyle(color: Colors.red)),
-              ),
-            )
-          else if (bulletins.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(36),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: borderCol),
-              ),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(Icons.anchor_rounded, size: 36, color: subTextColor),
-                    const SizedBox(height: 8),
-                    Text('No port bulletins found', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
-                  ],
-                ),
-              ),
-            )
-          else
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: bulletins.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 10),
-              itemBuilder: (ctx, i) {
-                final b = bulletins[i];
-                final isActive = b['is_active'] == true;
-                final statusStr = b['status']?.toString() ?? 'Operational';
-                final badgeColor = _badgeColor(statusStr);
-
-                return Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: cardBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: borderCol),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.02), blurRadius: 4, offset: const Offset(0, 2)),
-                    ],
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: _kOrange.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1440),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isDesktop = constraints.maxWidth >= 950;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  AdminHeader(
+                    title: 'Port Bulletins & Status Updates',
+                    subtitle: 'Live operational notices and harbor clearance advisories across Ghana ports.',
+                    actions: [
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: isDark ? Colors.white : const Color(0xFF334155),
+                          side: BorderSide(color: borderCol),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
-                        child: const Icon(Icons.anchor_rounded, color: _kOrange, size: 20),
+                        onPressed: _fetchBulletins,
+                        icon: const Icon(Icons.refresh_rounded, size: 16),
+                        label: Text('Refresh', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  b['port_name']?.toString() ?? '',
-                                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15, color: textColor),
-                                ),
-                                if (b['code'] != null && b['code'].toString().isNotEmpty) ...[
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                    decoration: BoxDecoration(
-                                      color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF1F5F9),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      b['code'].toString(),
-                                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 11, color: subTextColor),
-                                    ),
-                                  ),
-                                ],
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: badgeColor.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: badgeColor.withValues(alpha: 0.3)),
-                                  ),
-                                  child: Text(
-                                    statusStr.toUpperCase(),
-                                    style: GoogleFonts.inter(
-                                      color: badgeColor,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 10,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              b['notice']?.toString() ?? '',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                height: 1.35,
-                                color: isDark ? Colors.white70 : const Color(0xFF334155),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _kOrange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          elevation: 0,
+                        ),
+                        onPressed: () => _showBulletinDialog(),
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: Text('Post Bulletin', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Maintained KPI Cards Row (Interactive)
+                  _buildKPIRow(isDark, cardBg, borderCol, textColor, subTextColor, total, active, inactive),
+                  const SizedBox(height: 16),
+
+                  // Filter & Search Toolbar
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: cardBg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: borderCol),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 38,
+                            child: TextField(
+                              controller: _searchCtrl,
+                              onChanged: (v) => setState(() => _searchQuery = v.trim()),
+                              style: GoogleFonts.inter(fontSize: 13.5, color: textColor),
+                              decoration: InputDecoration(
+                                hintText: 'Search by port, terminal code, or operational notice...',
+                                hintStyle: GoogleFonts.inter(fontSize: 12.5, color: subTextColor),
+                                prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
+                                filled: true,
+                                fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderCol)),
+                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderCol)),
+                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange, width: 1.2)),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
+                                suffixIcon: _searchQuery.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.close_rounded, size: 14),
+                                        onPressed: () {
+                                          _searchCtrl.clear();
+                                          setState(() => _searchQuery = '');
+                                        },
+                                      )
+                                    : null,
                               ),
                             ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _filterPill('All ($total)', _filterTab == 0, () => setState(() => _filterTab = 0), borderCol, textColor),
+                              const SizedBox(width: 6),
+                              _filterPill('Active ($active)', _filterTab == 1, () => setState(() => _filterTab = 1), borderCol, textColor, activeColor: _kGreen),
+                              const SizedBox(width: 6),
+                              _filterPill('Archived ($inactive)', _filterTab == 2, () => setState(() => _filterTab = 2), borderCol, textColor, activeColor: _kSlate),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Content List
+                  if (_loading)
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: List.generate(3, (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile())),
+                      ),
+                    )
+                  else if (_error != null)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(_error!, style: const TextStyle(color: Colors.red)),
+                      ),
+                    )
+                  else if (bulletins.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(36),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: borderCol),
+                      ),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.anchor_rounded, size: 36, color: subTextColor),
+                            const SizedBox(height: 8),
+                            Text('No port bulletins found', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit_outlined, size: 16),
-                            color: _kBlue,
-                            tooltip: 'Edit Bulletin',
-                            visualDensity: VisualDensity.compact,
-                            onPressed: () => _showBulletinDialog(b),
+                    )
+                  else
+                    Wrap(
+                      spacing: 14,
+                      runSpacing: 14,
+                      children: bulletins.map((b) {
+                        final cardWidth = isDesktop ? (constraints.maxWidth - 14) / 2 : constraints.maxWidth;
+                        return SizedBox(
+                          width: cardWidth,
+                          child: _buildBulletinCard(b, isDark, cardBg, borderCol, textColor, subTextColor),
+                        );
+                      }).toList(),
+                    ),
+                  const SizedBox(height: 32),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBulletinCard(
+    dynamic b,
+    bool isDark,
+    Color cardBg,
+    Color borderCol,
+    Color textColor,
+    Color subTextColor,
+  ) {
+    final isActive = b['is_active'] == true;
+    final statusStr = b['status']?.toString() ?? 'Operational';
+    final badgeColor = _badgeColor(statusStr);
+    final portName = b['port_name']?.toString() ?? '';
+    final code = b['code']?.toString() ?? '';
+    final notice = b['notice']?.toString() ?? '';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderCol),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.anchor_rounded, color: badgeColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: SelectableText(
+                            portName,
+                            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15, color: textColor),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.archive_outlined, size: 16),
-                            color: _kRed,
-                            tooltip: 'Archive',
-                            visualDensity: VisualDensity.compact,
-                            onPressed: () => _deleteBulletin(b),
-                          ),
-                          Transform.scale(
-                            scale: 0.75,
-                            child: Switch(
-                              value: isActive,
-                              activeThumbColor: _kGreen,
-                              onChanged: (_) => _toggleStatus(b),
+                        ),
+                        if (code.isNotEmpty) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: borderCol),
+                            ),
+                            child: SelectableText(
+                              code,
+                              style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 11, color: subTextColor),
                             ),
                           ),
                         ],
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: badgeColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: badgeColor.withValues(alpha: 0.3)),
                       ),
-                    ],
-                  ),
-                );
-              },
+                      child: Text(
+                        statusStr.toUpperCase(),
+                        style: GoogleFonts.inter(
+                          color: badgeColor,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Transform.scale(
+                scale: 0.8,
+                child: Switch(
+                  value: isActive,
+                  activeThumbColor: _kGreen,
+                  onChanged: (_) => _toggleStatus(b),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: borderCol.withValues(alpha: 0.7)),
             ),
-          const SizedBox(height: 24),
+            child: SelectableText(
+              notice,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                height: 1.45,
+                color: isDark ? Colors.white70 : const Color(0xFF334155),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton.icon(
+                style: TextButton.styleFrom(
+                  foregroundColor: subTextColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  visualDensity: VisualDensity.compact,
+                ),
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: notice));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Notice copied to clipboard'),
+                      duration: Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.copy_rounded, size: 14),
+                label: Text('Copy Notice', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w600)),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    color: _kBlue,
+                    tooltip: 'Edit Bulletin',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _showBulletinDialog(b),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.archive_outlined, size: 16),
+                    color: _kRed,
+                    tooltip: 'Archive',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _deleteBulletin(b),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
     );
