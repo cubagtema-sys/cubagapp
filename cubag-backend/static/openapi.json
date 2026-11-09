@@ -3,14 +3,14 @@
   "info": {
     "title": "CUBAG Public REST API",
     "version": "1.0.0",
-    "description": "Public developer API for CUBAG (Customs Brokers Association of Ghana). Provides member standing verification, secure cryptographic payment receipt validation, port operational news, maritime vessel schedules, public grievances, and Secretariat communications.",
+    "description": "Official Developer & Public REST API for CUBAG (Customs Brokers Association of Ghana). Provides real-time accredited member standing verification, tamper-evident cryptographic payment receipt validation, maritime vessel schedules, port operational news, and formal trade dispute tracking.",
     "contact": {
-      "name": "CUBAG Central Secretariat Tech Desk",
+      "name": "CUBAG Tech Desk & Secretariat",
       "email": "tech@cubag.org",
       "url": "https://cubag-api-server.fly.dev"
     },
     "license": {
-      "name": "Proprietary / CUBAG Secretariat"
+      "name": "Proprietary / CUBAG Secretariat 2026"
     }
   },
   "servers": [
@@ -26,45 +26,87 @@
   "tags": [
     {
       "name": "Composite & Portal",
-      "description": "Aggregated public portal views and summary figures"
+      "description": "Aggregated homepage views and high-level association metrics"
     },
     {
       "name": "Verification",
-      "description": "Public verification for members and cryptographic receipts"
+      "description": "Accredited membership standing and cryptographic payment verification"
     },
     {
       "name": "Grievances & Complaints",
-      "description": "Formal trade dispute logging and status tracking"
+      "description": "Formal trade grievance lodgement and status progression tracking"
     },
     {
       "name": "Directory & Ports",
-      "description": "Registered brokerage firms and operating ports"
+      "description": "Accredited corporate brokerage firms and operating ports in Ghana"
     },
     {
       "name": "Publications & Events",
-      "description": "CTI training courses, press releases, bulletins, and surveys"
+      "description": "CTI training courses, trade press releases, port bulletins, and public surveys"
+    },
+    {
+      "name": "System & Health",
+      "description": "Gateway uptime and latency checks"
     }
   ],
   "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "System & Health"
+        ],
+        "summary": "API Gateway Health Check",
+        "description": "Returns 200 OK when the backend server is operational and database pool is active.",
+        "responses": {
+          "200": {
+            "description": "Service healthy",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "CUBAG API is running"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ping": {
+      "get": {
+        "tags": [
+          "System & Health"
+        ],
+        "summary": "Latency Ping",
+        "description": "Lightweight latency ping probe.",
+        "responses": {
+          "200": {
+            "description": "Pong response",
+            "content": {
+              "text/plain": {
+                "example": "pong"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/public/portal-summary": {
       "get": {
         "tags": [
           "Composite & Portal"
         ],
-        "summary": "GET Portal Summary (Composite Homepage)",
-        "description": "Fetches aggregated stats, indicative exchange rates, top news, circulars, events, CTI courses, and operating ports in a single round trip.",
+        "summary": "Composite Portal Summary",
+        "description": "Aggregates hero banner, top association stats, news feeds, upcoming events, CTI courses, and active surveys in a single roundtrip to power website homepages.",
         "responses": {
           "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Bad request / validation failure"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "500": {
-            "description": "Internal server error"
+            "description": "Composite portal payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalSummary"
+                }
+              }
+            }
           }
         }
       }
@@ -74,20 +116,21 @@
         "tags": [
           "Composite & Portal"
         ],
-        "summary": "GET Key Association Stats",
-        "description": "Returns verified member count, licensed broker count, active ports, and CTI courses count.",
+        "summary": "Key Association Statistics",
+        "description": "Returns quick public statistics: total accredited members, operating ports, compliance rate, and certified customs brokers.",
         "responses": {
           "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Bad request / validation failure"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "500": {
-            "description": "Internal server error"
+            "description": "Statistics object",
+            "content": {
+              "application/json": {
+                "example": {
+                  "active_members": 152,
+                  "operating_ports": 4,
+                  "compliance_rate": 98,
+                  "certified_brokers": 340
+                }
+              }
+            }
           }
         }
       }
@@ -95,65 +138,49 @@
     "/api/v1/public/verify-member": {
       "get": {
         "tags": [
-          "Verification (Member & Receipt)"
+          "Verification"
         ],
-        "summary": "Verify Member (Company Name)",
-        "description": "Verify Member (Company Name)",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Bad request / validation failure"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        },
+        "summary": "Verify Member Standing",
+        "description": "Checks if a company or individual has active accredited standing with CUBAG. Accepts CUBAG Member ID (e.g. CUBAG-2026-0008), company name, or TIN.",
         "parameters": [
           {
             "name": "query",
             "in": "query",
-            "required": false,
-            "description": "Filter or search parameter for query",
+            "required": true,
+            "description": "CUBAG ID (e.g. CUBAG-2026-0008) or Company Name (e.g. ANTWI NYAME)",
             "schema": {
               "type": "string"
             },
-            "example": "ANTWI NYAME"
+            "example": "CUBAG-2026-0008"
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Verification result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyMemberResult"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/public/verify-receipt": {
       "get": {
         "tags": [
-          "Verification (Member & Receipt)"
+          "Verification"
         ],
-        "summary": "Verify Payment Receipt (Cryptographic Token)",
-        "description": "Cryptographically secure receipt verification for QR codes. Does not expose private payer identity or internal database IDs.",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Bad request / validation failure"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        },
+        "summary": "Verify Payment Receipt",
+        "description": "Validates the cryptographic authenticity of an official CUBAG digital receipt using its 32-character SHA-256 validation token.",
         "parameters": [
           {
             "name": "token",
             "in": "query",
-            "required": false,
-            "description": "Filter or search parameter for token",
+            "required": true,
+            "description": "32-character cryptographic token printed on receipt or QR code",
             "schema": {
               "type": "string"
             },
@@ -163,13 +190,32 @@
             "name": "amount",
             "in": "query",
             "required": false,
-            "description": "Filter or search parameter for amount",
+            "description": "Optional amount check for double-entry verification (e.g. 1383.00)",
             "schema": {
-              "type": "string"
-            },
-            "example": "1.00"
+              "type": "number"
+            }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Receipt verification result",
+            "content": {
+              "application/json": {
+                "example": {
+                  "valid": true,
+                  "receipt": {
+                    "receipt_number": "REC-2026-0089",
+                    "payment_category": "Annual Renewal Dues",
+                    "amount": 1383.0,
+                    "payer_name": "Apex Logistics Ghana Ltd",
+                    "payment_date": "2026-11-08T14:22:10Z",
+                    "verified": true
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/public/complaints": {
@@ -178,80 +224,87 @@
           "Grievances & Complaints"
         ],
         "summary": "Submit Trade Grievance",
-        "description": "Public submission endpoint. Returns a complaint_id and a 128-bit tracking_token. Includes honeypot field hp_field for spam protection.",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Bad request / validation failure"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "500": {
-            "description": "Internal server error"
-          },
-          "201": {
-            "description": "Created successfully"
-          }
-        },
+        "description": "Allows members and the trading public to formally lodge trade grievances, demurrage disputes, or customs operational issues directly into the Secretariat registry.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
-              },
-              "example": {
-                "name": "Kwame Asante",
-                "email": "kwame.asante@example.com",
-                "phone": "+233244000111",
-                "category": "Port Demurrage Dispute",
-                "port": "Tema Port",
-                "target_entity": "Shipping Line Agency",
-                "subject": "Excess Detention Charge Assessment",
-                "description": "Container released within free days but detention invoices billed at gate out.",
-                "hp_field": ""
+                "$ref": "#/components/schemas/ComplaintSubmission"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Complaint successfully lodged",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "complaint_id": "CMP-2026-62358",
+                  "tracking_token": "085b01758a64e41b847d019ebf52cda9",
+                  "message": "Complaint lodged successfully. Keep your tracking token secure.",
+                  "data": {
+                    "complaint_id": "CMP-2026-62358",
+                    "port": "Tema Port",
+                    "category": "Port Demurrage Dispute",
+                    "status": "Received"
+                  }
+                }
               }
             }
           }
         }
       }
     },
-    "/api/v1/public/complaints/track/CMP-2026-80069": {
+    "/api/v1/public/complaints/track/{complaint_id}": {
       "get": {
         "tags": [
           "Grievances & Complaints"
         ],
-        "summary": "Track Grievance Progression (With Token)",
-        "description": "Returns live resolution timeline. Strips all personal contact details and private notes.",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Bad request / validation failure"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        },
+        "summary": "Track Grievance Progression",
+        "description": "Retrieves real-time stage progression and committee timeline for a previously submitted complaint. Requires the tracking token issued at submission.",
         "parameters": [
           {
-            "name": "token",
-            "in": "query",
-            "required": false,
-            "description": "Filter or search parameter for token",
+            "name": "complaint_id",
+            "in": "path",
+            "required": true,
+            "description": "Official Complaint ID (e.g. CMP-2026-62358)",
             "schema": {
               "type": "string"
             },
-            "example": "de64c421cadcb0cab55346be70171c1a"
+            "example": "CMP-2026-62358"
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "description": "Tracking secret token issued upon lodgement",
+            "schema": {
+              "type": "string"
+            },
+            "example": "085b01758a64e41b847d019ebf52cda9"
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Grievance progression status and committee milestones",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplaintTrackerResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid tracking token"
+          },
+          "404": {
+            "description": "Complaint ID not found"
+          }
+        }
       }
     },
     "/api/v1/public/members": {
@@ -259,34 +312,41 @@
         "tags": [
           "Directory & Ports"
         ],
-        "summary": "GET Members Directory",
-        "description": "GET Members Directory",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Bad request / validation failure"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        },
+        "summary": "Accredited Members Directory",
+        "description": "Returns list of officially accredited freight forwarding and customs brokerage firms in Ghana.",
         "parameters": [
           {
             "name": "port",
             "in": "query",
             "required": false,
-            "description": "Filter or search parameter for port",
+            "description": "Filter by operating port (e.g. Tema Port, Takoradi Port, KIA)",
             "schema": {
               "type": "string"
             },
             "example": "Tema Port"
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "List of accredited members",
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "membership_id": "CUBAG-2026-0008",
+                      "company_name": "Antwi Nyame Freight Services Ltd",
+                      "status": "Active",
+                      "standing": "Good Standing",
+                      "port": "Tema Port"
+                    }
+                  ],
+                  "total": 1
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/public/ports": {
@@ -294,20 +354,43 @@
         "tags": [
           "Directory & Ports"
         ],
-        "summary": "GET Operating Ports",
-        "description": "GET Operating Ports",
+        "summary": "Operational Ports Directory",
+        "description": "Returns all active ports, frontiers, and cargo terminals where CUBAG operates in Ghana.",
         "responses": {
           "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Bad request / validation failure"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "500": {
-            "description": "Internal server error"
+            "description": "List of ports",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ports": [
+                    {
+                      "name": "Tema Port",
+                      "code": "GH-TEM",
+                      "type": "Sea Port",
+                      "region": "Greater Accra"
+                    },
+                    {
+                      "name": "Takoradi Port",
+                      "code": "GH-TKD",
+                      "type": "Sea Port",
+                      "region": "Western Region"
+                    },
+                    {
+                      "name": "Kotoka International Airport (KIA)",
+                      "code": "GH-ACC",
+                      "type": "Air Cargo Terminal",
+                      "region": "Greater Accra"
+                    },
+                    {
+                      "name": "Aflao Border",
+                      "code": "GH-AFL",
+                      "type": "Land Frontier",
+                      "region": "Volta Region"
+                    }
+                  ]
+                }
+              }
+            }
           }
         }
       }
@@ -317,20 +400,26 @@
         "tags": [
           "Publications & Events"
         ],
-        "summary": "GET Public News & Press",
-        "description": "GET Public News & Press",
+        "summary": "Maritime & Operational News",
+        "description": "Returns vetted port trade alerts, shipping line notices, ICUMS operational updates, and association news.",
         "responses": {
           "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Bad request / validation failure"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "500": {
-            "description": "Internal server error"
+            "description": "Recent news items",
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "id": 1,
+                      "title": "ICUMS System Maintenance Notice",
+                      "category": "Operational",
+                      "date": "2026-11-08",
+                      "summary": "Ghana Revenue Authority ICUMS scheduled downtime notice."
+                    }
+                  ]
+                }
+              }
+            }
           }
         }
       }
@@ -340,20 +429,18 @@
         "tags": [
           "Publications & Events"
         ],
-        "summary": "GET Port Bulletins",
-        "description": "GET Port Bulletins",
+        "summary": "Official Secretariat Bulletins",
+        "description": "Official press releases and compliance directives published by the Executive Committee.",
         "responses": {
           "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Bad request / validation failure"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "500": {
-            "description": "Internal server error"
+            "description": "Bulletins list",
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": []
+                }
+              }
+            }
           }
         }
       }
@@ -363,34 +450,31 @@
         "tags": [
           "Publications & Events"
         ],
-        "summary": "GET Upcoming Events",
-        "description": "GET Upcoming Events",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Bad request / validation failure"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        },
+        "summary": "Upcoming Events & Seminars",
+        "description": "Lists upcoming trade conferences, general meetings, and stakeholder seminars.",
         "parameters": [
           {
             "name": "type",
             "in": "query",
             "required": false,
-            "description": "Filter or search parameter for type",
             "schema": {
               "type": "string"
             },
             "example": "all"
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Upcoming events",
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": []
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/public/courses": {
@@ -398,20 +482,29 @@
         "tags": [
           "Publications & Events"
         ],
-        "summary": "GET CTI Courses",
-        "description": "GET CTI Courses",
+        "summary": "CTI Professional Training Courses",
+        "description": "Returns active customs clearance, brokerage, tariff valuation, and freight forwarding training courses organized by the Customs Training Institute (CTI).",
         "responses": {
           "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Bad request / validation failure"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "500": {
-            "description": "Internal server error"
+            "description": "Available training courses",
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": [
+                    {
+                      "id": 1,
+                      "title": "Freight Forwarding Fundamentals",
+                      "duration": "4 Weeks",
+                      "fee": "GHS 1",
+                      "mode": "Hybrid",
+                      "start_date": "15 Dec 2026",
+                      "description": "Foundational customs clearance and brokerage procedures."
+                    }
+                  ],
+                  "total": 1
+                }
+              }
+            }
           }
         }
       }
@@ -421,20 +514,18 @@
         "tags": [
           "Publications & Events"
         ],
-        "summary": "GET Photo Gallery",
-        "description": "GET Photo Gallery",
+        "summary": "Photo Gallery",
+        "description": "Photo albums from association events, executive inaugurations, and port inspection visits.",
         "responses": {
           "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Bad request / validation failure"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "500": {
-            "description": "Internal server error"
+            "description": "Gallery albums",
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": []
+                }
+              }
+            }
           }
         }
       }
@@ -444,20 +535,18 @@
         "tags": [
           "Publications & Events"
         ],
-        "summary": "GET Active Public Surveys",
-        "description": "GET Active Public Surveys",
+        "summary": "Active Public & Member Surveys",
+        "description": "Current surveys gathering feedback on port efficiency, shipping line fees, and customs delays.",
         "responses": {
           "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Bad request / validation failure"
-          },
-          "404": {
-            "description": "Resource not found"
-          },
-          "500": {
-            "description": "Internal server error"
+            "description": "Active surveys",
+            "content": {
+              "application/json": {
+                "example": {
+                  "items": []
+                }
+              }
+            }
           }
         }
       }
@@ -472,16 +561,24 @@
             "type": "boolean"
           },
           "stats": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+              "active_members": {
+                "type": "integer",
+                "example": 152
+              },
+              "operating_ports": {
+                "type": "integer",
+                "example": 4
+              },
+              "compliance_rate": {
+                "type": "integer",
+                "example": 98
+              }
+            }
           },
           "hero": {
             "type": "object"
-          },
-          "announcements": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
           },
           "news": {
             "type": "array",
@@ -501,13 +598,7 @@
               "type": "object"
             }
           },
-          "gallery": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          },
-          "surveys": {
+          "announcements": {
             "type": "array",
             "items": {
               "type": "object"
@@ -515,32 +606,35 @@
           }
         }
       },
-      "VerifyMemberResponse": {
+      "VerifyMemberResult": {
         "type": "object",
         "properties": {
           "found": {
-            "type": "boolean"
+            "type": "boolean",
+            "example": true
           },
           "member": {
             "type": "object",
             "properties": {
               "membership_id": {
-                "type": "string"
+                "type": "string",
+                "example": "CUBAG-2026-0008"
               },
               "company_name": {
-                "type": "string"
+                "type": "string",
+                "example": "Antwi Nyame Freight Services Ltd"
               },
               "status": {
-                "type": "string"
+                "type": "string",
+                "example": "Active"
               },
               "standing": {
-                "type": "string"
-              },
-              "category": {
-                "type": "string"
+                "type": "string",
+                "example": "Good Standing"
               },
               "port": {
-                "type": "string"
+                "type": "string",
+                "example": "Tema Port"
               }
             }
           }
@@ -591,8 +685,73 @@
           },
           "hp_field": {
             "type": "string",
-            "description": "Honeypot anti-spam field, must be left blank",
+            "description": "Anti-spam honeypot field, must be empty",
             "example": ""
+          }
+        }
+      },
+      "ComplaintTrackerResult": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "complaint_id": {
+                "type": "string",
+                "example": "CMP-2026-62358"
+              },
+              "category": {
+                "type": "string",
+                "example": "Port Demurrage Dispute"
+              },
+              "port": {
+                "type": "string",
+                "example": "Tema Port"
+              },
+              "status": {
+                "type": "string",
+                "example": "Received"
+              },
+              "created_at": {
+                "type": "string",
+                "example": "2026-11-09T18:39:53.484215"
+              },
+              "timeline": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "step": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "Complaint Lodged"
+                    },
+                    "desc": {
+                      "type": "string"
+                    },
+                    "done": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "active": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "date": {
+                      "type": "string",
+                      "example": "09 Nov 2026, 06:39 PM"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
