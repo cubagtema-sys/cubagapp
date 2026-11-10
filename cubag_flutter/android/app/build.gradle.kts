@@ -17,7 +17,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.cubag_flutter"
-    compileSdk = flutter.compileSdkVersion
+    // Google Play requires targetSdk 36 (Android 16) for new apps/updates from 31 Aug 2026.
+    compileSdk = maxOf(flutter.compileSdkVersion, 36)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -34,7 +35,7 @@ android {
     defaultConfig {
         applicationId = "com.cubag_flutter"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = maxOf(flutter.targetSdkVersion, 36)
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -52,10 +53,11 @@ android {
 
     buildTypes {
         release {
+            // BUG-03: never ship a debug-signed release. Without key.properties
+            // the release build fails (see the taskGraph check below) instead of
+            // silently falling back to the debug key, which Play rejects.
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
-            } else {
-                signingConfig = signingConfigs.getByName("debug")
             }
         }
     }
@@ -63,6 +65,19 @@ android {
 
 flutter {
     source = "../.."
+}
+
+gradle.taskGraph.whenReady {
+    val buildingRelease = allTasks.any { t ->
+        t.project == project && t.name.contains("Release") &&
+            (t.name.startsWith("assemble") || t.name.startsWith("bundle") || t.name.startsWith("package"))
+    }
+    if (buildingRelease && !keystorePropertiesFile.exists()) {
+        throw GradleException(
+            "Release signing is not configured: create android/key.properties " +
+                "(storeFile, storePassword, keyAlias, keyPassword). See docs/CUBAG_NEXT_STEPS.md."
+        )
+    }
 }
 
 dependencies {

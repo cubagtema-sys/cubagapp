@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../components/app_layout.dart';
 import '../components/in_app_legal_viewer.dart';
+import '../utils/session_storage.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/biometric_service.dart';
@@ -66,6 +67,12 @@ class _SettingsPageState extends State<SettingsPage> {
       );
       if (!mounted) return;
       if (res.statusCode == 200) {
+        // The backend revokes all older sessions and returns a fresh token.
+        final newToken = res.data is Map ? res.data['token'] : null;
+        if (newToken is String && newToken.isNotEmpty) {
+          await SessionStorage.instance.setString('cubag_token', newToken);
+        }
+        if (!mounted) return;
         setState(() {
           _message = 'Password updated successfully';
         });

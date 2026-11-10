@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../services/calendar_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
+import '../utils/course_payment_policy.dart';
 
 import '../services/socket_service.dart';
 import 'package:go_router/go_router.dart';
@@ -166,6 +167,9 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
 
     final cleanFeeNum = double.tryParse(feeStr.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
     final isFreeCourse = cleanFeeNum == 0.0;
+
+    // Approved policy: on iOS, online/hybrid paid courses never open a payment flow.
+    if (!isFreeCourse && !CoursePaymentPolicy.canPayInApp(course)) return;
 
     if (!isFreeCourse) {
       final feeParam = Uri.encodeComponent('CTI Course: $title');
@@ -718,6 +722,18 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
     );
   }
 
+  String _enrollmentLabel(String? status) {
+    switch ((status ?? '').toLowerCase()) {
+      case 'completed':
+        return 'Completed';
+      case 'pending':
+      case 'pending_payment':
+        return 'Enrolment pending';
+      default:
+        return 'Enrolled';
+    }
+  }
+
   Widget _buildMiniBadge(IconData icon, String text, Color color, {bool isDark = false}) {
     final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
     final bgCol = isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
@@ -1012,11 +1028,23 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
   ) {
     final title = course['title']?.toString() ?? 'Course';
     final fee = course['fee']?.toString() ?? 'GHS 1,500';
-    final mode = course['mode']?.toString() ?? 'Hybrid';
     final startDate = course['start_date']?.toString() ?? 'TBD';
     final duration = course['duration']?.toString() ?? '4 Weeks';
     final desc = course['description']?.toString() ?? '';
     final isEnrolled = course['is_enrolled'] == true;
+    final enrollmentStatus = course['enrollment_status']?.toString();
+    final deliveryMode = CoursePaymentPolicy.modeOf(course);
+    final feeNum = double.tryParse(fee.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
+    final isFree = feeNum == 0.0;
+    final canPayInApp = CoursePaymentPolicy.canPayInApp(course);
+    final canEnrollHere = isFree || canPayInApp;
+    final modeIcon = deliveryMode == CourseDeliveryMode.online
+        ? Icons.wifi_rounded
+        : deliveryMode == CourseDeliveryMode.hybrid
+            ? Icons.devices_rounded
+            : deliveryMode == CourseDeliveryMode.inPerson
+                ? Icons.location_on_rounded
+                : Icons.help_outline_rounded;
     final daysLeft = _getDaysRemaining(startDate);
     final surfaceRaised = isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
     final indexStr = (idx + 1).toString().padLeft(2, '0');
@@ -1092,7 +1120,12 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
             children: [
               _buildMiniBadge(Icons.calendar_today_rounded, startDate, _kBrown, isDark: isDark),
               _buildMiniBadge(Icons.schedule_rounded, duration, _kBrown, isDark: isDark),
-              _buildMiniBadge(Icons.domain_rounded, mode, _kBrown, isDark: isDark),
+              Semantics(
+                label: 'Delivery mode: ${CoursePaymentPolicy.label(deliveryMode)}',
+                child: _buildMiniBadge(modeIcon, CoursePaymentPolicy.label(deliveryMode), _kBrown, isDark: isDark),
+              ),
+              if (!isEnrolled && !isFree && canPayInApp)
+                _buildMiniBadge(Icons.phone_iphone_rounded, 'Pay in app', _kGreen, isDark: isDark),
               if (daysLeft != null && daysLeft >= 0)
                 _buildMiniBadge(Icons.alarm_on_rounded, 'Commences in $daysLeft d', _kGreen, isDark: isDark),
             ],
@@ -1113,21 +1146,38 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                   fontFeatures: [FontFeature.tabularFigures()],
                 ),
               ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isEnrolled ? _kGreen : _kOrange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  minimumSize: const Size(0, 34),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                  elevation: 0,
+              if (isEnrolled || canEnrollHere)
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isEnrolled ? _kGreen : _kOrange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    minimumSize: const Size(0, 44),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    elevation: 0,
+                  ),
+                  onPressed: isEnrolled ? null : () => _openEnrollmentSheet(course),
+                  child: Text(
+                    isEnrolled ? _enrollmentLabel(enrollmentStatus) : 'Enroll Now',
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                )
+              else
+                // iOS, online/hybrid: show enrolment status only (no payment
+                // button, link or instructions — approved store policy).
+                Container(
+                  key: const Key('course-status-only'),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: surfaceRaised,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: border, width: 1.0),
+                  ),
+                  child: Text(
+                    'Not enrolled',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: textMuted),
+                  ),
                 ),
-                onPressed: isEnrolled ? null : () => _openEnrollmentSheet(course),
-                child: Text(
-                  isEnrolled ? 'Enrolled' : 'Enroll Now',
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                ),
-              ),
             ],
           ),
         ],

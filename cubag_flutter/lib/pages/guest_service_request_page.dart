@@ -8,6 +8,8 @@ import '../components/app_logo.dart';
 import '../services/api_service.dart';
 import '../services/calendar_service.dart';
 import '../services/theme_service.dart';
+import '../utils/course_payment_policy.dart';
+import '../utils/platform_info.dart';
 
 // ── CUBAG Dynamic Brand Color Hierarchy ──────────────────────────────────────
 bool get _isDark => ThemeService.instance.isDark;
@@ -84,6 +86,13 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
       }
     }
     return null;
+  }
+
+  /// Approved policy: on iOS only in-person courses may be paid in-app.
+  bool get _coursePayableInApp {
+    final data = _selectedCourseData;
+    if (data == null) return !PlatformInfo.isIOSApp;
+    return CoursePaymentPolicy.canPayInApp(data);
   }
 
   String get _currentCourseFee {
@@ -212,6 +221,12 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
   Future<void> _submitRequest() async {
     if (!_formKey.currentState!.validate()) return;
     if (_serviceType == 'cti_training') {
+      if (!_coursePayableInApp) {
+        // iOS online/hybrid course: record the enrolment request only — no
+        // payment flow, link or instructions.
+        await _executeSubmission();
+        return;
+      }
       _showCoursePaymentDialog();
       return;
     }
@@ -237,7 +252,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
         'payment_method': paymentMethod ?? 'Mobile Money (Paystack)',
         'fee_paid': _serviceType == 'cti_training' ? _currentCourseFee : null,
         'details': _serviceType == 'cti_training' && courseVal.isNotEmpty
-            ? 'Course Enrolment: $courseVal\nPayment Status: Paid in Full ($_currentCourseFee)\n\n${_detailsCtrl.text.trim()}'
+            ? 'Course Enrolment: $courseVal\nPayment Status: ${isPaid ? 'Paid in Full ($_currentCourseFee)' : 'Not paid'}\n\n${_detailsCtrl.text.trim()}'
                 .trim()
             : _detailsCtrl.text.trim(),
       };
@@ -1827,7 +1842,9 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                     : Text(
                         _serviceType == 'clearing_agent'
                             ? 'Find Accredited Members Now'
-                            : 'Proceed to Course Payment ($_currentCourseFee)',
+                            : (_coursePayableInApp
+                                ? 'Proceed to Course Payment ($_currentCourseFee)'
+                                : 'Submit Enrolment Request'),
                         style: GoogleFonts.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

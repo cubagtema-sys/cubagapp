@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
+import '../utils/session_storage.dart';
 import '../services/api_service.dart';
 
 const _kOrange = Color(0xFFFF5000);
@@ -215,6 +216,12 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
       );
 
       if (res.statusCode == 200) {
+        // The backend revokes all older sessions and returns a fresh token.
+        final newToken = res.data is Map ? res.data['token'] : null;
+        if (newToken is String && newToken.isNotEmpty) {
+          await SessionStorage.instance.setString('cubag_token', newToken);
+        }
+        if (!mounted) return;
         setState(() {
           _pwMessage = 'Password updated successfully.';
           _pwSuccess = true;

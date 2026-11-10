@@ -364,13 +364,35 @@ class _ProfilePageState extends State<ProfilePage> {
                           final nav = Navigator.of(ctx);
                           setSheetState(() => saving = true);
                           try {
-                            final res = await ApiService().put(
+                            var res = await ApiService().put(
                               '/auth/profile',
                               data: {
                                 'email': emailCtrl.text.trim().toLowerCase(),
                                 'phone': phoneCtrl.text.trim(),
                               },
                             );
+                            // SEC-15: a new email must be confirmed with a code
+                            // sent to that address before it is applied.
+                            if (res.statusCode == 202 && res.data is Map &&
+                                res.data['email_verification_required'] == true) {
+                              if (!ctx.mounted) return;
+                              final code = await _promptEmailChangeCode(
+                                ctx,
+                                res.data['pending_email']?.toString() ?? emailCtrl.text.trim(),
+                              );
+                              if (code == null) {
+                                setSheetState(() => saving = false);
+                                return;
+                              }
+                              res = await ApiService().put(
+                                '/auth/profile',
+                                data: {
+                                  'email': emailCtrl.text.trim().toLowerCase(),
+                                  'phone': phoneCtrl.text.trim(),
+                                  'email_otp': code,
+                                },
+                              );
+                            }
                             if (res.statusCode == 200) {
                               final updatedData = (res.data is Map && res.data['member'] != null)
                                   ? res.data['member']
@@ -517,6 +539,42 @@ class _ProfilePageState extends State<ProfilePage> {
     final d = DateTime.tryParse(str);
     if (d == null) return '—';
     return '${d.day} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.month - 1]} ${d.year}';
+  }
+
+  /// Asks for the 6-digit code emailed to [email]. Returns null if cancelled.
+  Future<String?> _promptEmailChangeCode(BuildContext ctx, String email) {
+    final codeCtrl = TextEditingController();
+    return showDialog<String>(
+      context: ctx,
+      builder: (dCtx) => AlertDialog(
+        title: const Text('Confirm your new email'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Enter the 6-digit code we sent to $email.'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: codeCtrl,
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Verification code'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dCtx).pop(), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              final c = codeCtrl.text.trim();
+              if (c.length == 6) Navigator.of(dCtx).pop(c);
+            },
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    ).whenComplete(codeCtrl.dispose);
   }
 
   @override

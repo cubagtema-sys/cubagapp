@@ -210,7 +210,7 @@ CORS(
     app,
     origins="*",          # Allow ALL origins — mobile APKs send null/no Origin
     supports_credentials=False,   # Must be False when origins="*"
-    allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With", "Cache-Control", "cache-control", "Pragma", "Origin", "X-CSRF-Token", "X-Tracking-Token", "X-API-Key"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With", "Cache-Control", "cache-control", "Pragma", "Origin", "X-CSRF-Token", "X-Tracking-Token", "X-API-Key", "X-Client-Platform"],
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 )
 

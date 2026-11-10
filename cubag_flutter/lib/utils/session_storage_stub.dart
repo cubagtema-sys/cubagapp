@@ -43,16 +43,21 @@ class StubSessionStorage implements SessionStorage {
 
       // Secure token migration and synchronization with robust error trapping
       try {
-        final secureToken = await _secureStorage.read(key: 'cubag_token');
+        // SEC-13: the session token lives ONLY in secure storage
+        // (Keychain / EncryptedSharedPreferences). Migrate and delete any
+        // legacy plaintext copy from SharedPreferences.
+        final secureToken = await _secureStorage.read(key: _tokenKey);
+        final legacyToken = prefs.getString(_tokenKey);
         if (secureToken != null && secureToken.isNotEmpty) {
-          _memCache['cubag_token'] = secureToken;
-          await prefs.setString('cubag_token', secureToken);
-        } else if (_memCache.containsKey('cubag_token')) {
-          final legacyToken = _memCache['cubag_token']!;
-          if (legacyToken.isNotEmpty) {
-            try {
-              await _secureStorage.write(key: 'cubag_token', value: legacyToken);
-            } catch (_) {}
+          _memCache[_tokenKey] = secureToken;
+          if (legacyToken != null) await prefs.remove(_tokenKey);
+        } else if (legacyToken != null && legacyToken.isNotEmpty) {
+          try {
+            await _secureStorage.write(key: _tokenKey, value: legacyToken);
+            await prefs.remove(_tokenKey);
+          } catch (_) {
+            // Secure storage unavailable on this device: keep legacy copy so the
+            // user isn't signed out; it is still removed on logout.
           }
         }
       } catch (e) {
@@ -68,9 +73,15 @@ class StubSessionStorage implements SessionStorage {
   @override
   String? getStringSync(String key) => _memCache[key];
 
+  static const String _tokenKey = 'cubag_token';
+
   @override
   void setStringSync(String key, String value) {
     _memCache[key] = value;
+    if (key == _tokenKey) {
+      setString(key, value);
+      return;
+    }
     _getPrefs().then((prefs) {
       prefs.setString(key, value);
     }).catchError((_) {});
@@ -82,18 +93,20 @@ class StubSessionStorage implements SessionStorage {
   @override
   Future<void> setString(String key, String value) async {
     _memCache[key] = value;
+    if (key == _tokenKey) {
+      try {
+        await _secureStorage.write(key: _tokenKey, value: value);
+        return;
+      } catch (e) {
+        // Rare: secure storage broken on device. Fall back to prefs so the
+        // session survives a restart (removed again on logout).
+        debugPrint('SecureStorage write failed for cubag_token: $e');
+      }
+    }
     try {
       final prefs = await _getPrefs();
       await prefs.setString(key, value);
     } catch (_) {}
-
-    if (key == 'cubag_token') {
-      try {
-        await _secureStorage.write(key: 'cubag_token', value: value);
-      } catch (e) {
-        debugPrint('SecureStorage write failed for cubag_token: $e');
-      }
-    }
   }
 
   @override

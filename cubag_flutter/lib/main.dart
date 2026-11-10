@@ -24,6 +24,16 @@ void main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   if (!kIsWeb) {
     FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+    // RESP-02: phone layouts are portrait-designed; lock phones to portrait.
+    // Tablets (shortest side >= 600dp) keep rotation.
+    final views = widgetsBinding.platformDispatcher.views;
+    if (views.isNotEmpty) {
+      final v = views.first;
+      final shortest = v.physicalSize.shortestSide / v.devicePixelRatio;
+      if (shortest > 0 && shortest < 600) {
+        unawaited(SystemChrome.setPreferredOrientations(const [DeviceOrientation.portraitUp]));
+      }
+    }
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,

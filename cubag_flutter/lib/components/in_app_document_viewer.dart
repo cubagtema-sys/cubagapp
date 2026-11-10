@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:dio/dio.dart';
+import 'package:printing/printing.dart';
 import '../services/api_service.dart';
 import '../utils/session_storage.dart';
 import 'cors_image_widget.dart';
@@ -74,13 +76,43 @@ class _InAppDocumentViewerState extends State<InAppDocumentViewer> {
   String? _errorMessage;
   bool _isImage = false;
 
+  /// Android can't render PDFs in a WebView. Previously these were sent to the
+  /// Google Docs viewer — which leaked the member's session token (in the URL)
+  /// and the document itself to a third party (SEC-25). Authenticated or
+  /// private PDFs are now downloaded directly and rendered on-device.
+  bool _renderPdfNatively = false;
+
+  bool get _isPrivateUrl =>
+      widget.url.contains('token=') ||
+      widget.url.contains('/api/') ||
+      widget.url.contains('/members/') ||
+      widget.url.contains('token%3D');
+
   @override
   void initState() {
     super.initState();
     _checkFileType();
     if (!_isImage && !kIsWeb) {
-      _initWebView();
+      if (defaultTargetPlatform == TargetPlatform.android && _looksLikePdf) {
+        _renderPdfNatively = true;
+        _isLoading = false;
+      } else {
+        _initWebView();
+      }
     }
+  }
+
+  bool get _looksLikePdf {
+    final clean = widget.url.toLowerCase().split('?').first;
+    return clean.endsWith('.pdf') || widget.url.contains('certificate') || widget.url.contains('format=pdf');
+  }
+
+  Future<Uint8List> _downloadPdfBytes() async {
+    final res = await Dio().get<List<int>>(
+      widget.url,
+      options: Options(responseType: ResponseType.bytes, followRedirects: true),
+    );
+    return Uint8List.fromList(res.data ?? const <int>[]);
   }
 
   void _checkFileType() {
@@ -111,7 +143,7 @@ class _InAppDocumentViewerState extends State<InAppDocumentViewer> {
           widget.url.contains('10.0.2.2') ||
           widget.url.contains('127.0.0.1') ||
           widget.url.contains('localhost');
-      if (!isLocal && (clean.endsWith('.pdf') || widget.url.contains('certificate'))) {
+      if (!isLocal && !_isPrivateUrl && (clean.endsWith('.pdf') || widget.url.contains('certificate'))) {
         targetUrl =
             'https://docs.google.com/gview?embedded=true&url=${Uri.encodeComponent(widget.url)}';
       }
@@ -369,6 +401,23 @@ class _InAppDocumentViewerState extends State<InAppDocumentViewer> {
                 ],
               ),
             ],
+          ),
+        ),
+      );
+    }
+
+    if (_renderPdfNatively) {
+      return PdfPreview(
+        build: (_) => _downloadPdfBytes(),
+        allowPrinting: true,
+        allowSharing: true,
+        canChangeOrientation: false,
+        canChangePageFormat: false,
+        canDebug: false,
+        onError: (ctx, err) => const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text('This document could not be displayed. Please try again.', textAlign: TextAlign.center),
           ),
         ),
       );

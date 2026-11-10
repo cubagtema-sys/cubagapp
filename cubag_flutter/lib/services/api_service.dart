@@ -7,6 +7,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../core/router.dart';
 import 'auth_service.dart';
 import '../utils/app_logger.dart';
+import '../utils/platform_info.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -15,9 +16,12 @@ class ApiService {
   late Dio _dio;
 
   static String get _base {
-    // ── 0. Saved custom API URL (set dynamically by user) ───────────────────
+    // ── 0. Saved custom API URL — DEBUG BUILDS ONLY (SEC-11). Release builds
+    //       must never send credentials to a user-entered server.
     try {
-      final customUrl = SessionStorage.instance.getStringSync('custom_api_url');
+      final customUrl = kReleaseMode
+          ? null
+          : SessionStorage.instance.getStringSync('custom_api_url');
       if (customUrl != null && customUrl.trim().isNotEmpty) {
         // If it was pointing to an old LAN/dev IP, ignore it so it falls back to Fly.io
         if (!customUrl.contains('192.168.') && !customUrl.contains(':5005')) {
@@ -75,6 +79,7 @@ class ApiService {
 
   /// Updates the active baseUrl at runtime and saves it to local storage.
   static Future<void> updateBaseUrl(String newUrl) async {
+    if (kReleaseMode) return; // SEC-11: never re-point a release build
     String clean = newUrl.trim();
     if (clean.isEmpty) return;
     if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
@@ -177,6 +182,9 @@ class ApiService {
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           options.headers['X-CSRF-Token'] ??= 'cubag_app_client_mobile_csrf_token_v1';
+          // Lets the backend apply platform-specific store rules (e.g. CTI
+          // course payments on iOS).
+          options.headers['X-Client-Platform'] = PlatformInfo.clientPlatform;
           final token =
               SessionStorage.instance.getStringSync('cubag_token') ??
               await SessionStorage.instance.getString('cubag_token');

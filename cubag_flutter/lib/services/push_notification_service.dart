@@ -36,10 +36,12 @@ class PushNotificationService {
       await _localNotifications.initialize(
         const InitializationSettings(
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          // BUG-07: never prompt at cold start. Permission is requested
+          // after sign-in via requestPermissionsAndSyncToken().
           iOS: DarwinInitializationSettings(
-            requestAlertPermission: true,
-            requestBadgePermission: true,
-            requestSoundPermission: true,
+            requestAlertPermission: false,
+            requestBadgePermission: false,
+            requestSoundPermission: false,
           ),
         ),
         onDidReceiveNotificationResponse: (NotificationResponse response) {
@@ -56,19 +58,6 @@ class PushNotificationService {
             AndroidFlutterLocalNotificationsPlugin
           >();
       await androidPlugin?.createNotificationChannel(_channel);
-      await androidPlugin?.requestNotificationsPermission();
-
-      // ── Request FCM permissions ─────────────────────────────────────────────
-      final settings = await _messaging.requestPermission(
-        alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: false,
-        sound: true,
-      );
-      debugPrint('FCM permission status: ${settings.authorizationStatus}');
 
       // Enable foreground banners and sound on iOS
       await _messaging.setForegroundNotificationPresentationOptions(

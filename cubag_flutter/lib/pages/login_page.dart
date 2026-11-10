@@ -620,9 +620,11 @@ class _LoginPageState extends State<LoginPage> {
               ],
             ),
           ),
-          if (_error!.toLowerCase().contains('reach') ||
-              _error!.toLowerCase().contains('server') ||
-              _error!.toLowerCase().contains('connection'))
+          // SEC-11: developer server switcher — debug builds only.
+          if (!kReleaseMode &&
+              (_error!.toLowerCase().contains('reach') ||
+                  _error!.toLowerCase().contains('server') ||
+                  _error!.toLowerCase().contains('connection')))
             Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: Center(
