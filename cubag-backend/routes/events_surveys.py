@@ -72,7 +72,8 @@ def get_public_courses():
                 ORDER BY id ASC
                 LIMIT 50
             """)
-            courses = cursor.fetchall()
+            from config.course_payment_policy import annotate_course
+            courses = [annotate_course(dict(c)) for c in cursor.fetchall()]
         return jsonify({'items': courses, 'total': len(courses)}), 200
     except Exception as e:
         logger.exception("Error in get_public_courses: %s", e)
@@ -1125,7 +1126,8 @@ def get_member_courses():
             for c in courses:
                 cid = c['id']
                 en = enrolled_map.get(cid)
-                c_data = dict(c)
+                from config.course_payment_policy import annotate_course
+                c_data = annotate_course(dict(c))
                 c_data['is_enrolled'] = en is not None
                 c_data['enrollment_status'] = en['status'] if en else None
                 c_data['enrollment_id'] = en['enrollment_id'] if en else None
@@ -1281,8 +1283,9 @@ def get_my_course_enrollments():
             """, (member_id,))
             rows = cursor.fetchall()
             items = []
+            from config.course_payment_policy import annotate_course
             for r in rows:
-                item = dict(r)
+                item = annotate_course(dict(r))
                 if hasattr(item.get('enrolled_at'), 'isoformat'):
                     item['enrolled_at'] = item['enrolled_at'].isoformat()
                 if hasattr(item.get('payment_confirmed_at'), 'isoformat'):

@@ -39,7 +39,8 @@ def get_cti_course_amount(cursor, course_name: str) -> float:
     """Resolve CTI / guest course fee from DB. Raises ValueError if fee is not configured."""
     if not cursor:
         raise ValueError("Database cursor required for fee lookup")
-    name = (course_name or '').strip()
+    from config.course_payment_policy import strip_course_prefix
+    name = strip_course_prefix(course_name or '') or (course_name or '').strip()
     try:
         if name:
             cursor.execute(

@@ -184,6 +184,14 @@ def public_initiate_momo():
         conn_fees = get_db()
         try:
             with conn_fees.cursor() as cursor:
+                # Approved CTI policy: no in-app payment for online/hybrid courses on iOS.
+                from config.course_payment_policy import course_payment_block
+                _blocked = course_payment_block(
+                    cursor, course_id=data.get('course_id'), description=course_name,
+                    meta={'type': 'cti_course', 'course_title': course_name}, service_type=service_type,
+                )
+                if _blocked:
+                    return jsonify(_blocked[0]), _blocked[1]
                 amount = get_cti_course_amount(cursor, course_name)
         finally:
             conn_fees.close()
@@ -443,6 +451,16 @@ def create_payment():
             member = cursor.fetchone()
             if not member:
                 return jsonify({'message': 'Member not found'}), 404
+
+            # Approved CTI policy: no in-app payment for online/hybrid courses on iOS.
+            from config.course_payment_policy import course_payment_block
+            _meta = data.get('meta') if isinstance(data.get('meta'), dict) else {}
+            _blocked = course_payment_block(
+                cursor, course_id=_meta.get('course_id') or data.get('course_id'),
+                description=description, meta=_meta,
+            )
+            if _blocked:
+                return jsonify(_blocked[0]), _blocked[1]
 
             desc_lower = description.lower() if description else ''
             is_renewal_payment = 'renewal' in desc_lower or ('license' in desc_lower and 'new' not in desc_lower and 'package' not in desc_lower and 'entrance' not in desc_lower)
