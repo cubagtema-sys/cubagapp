@@ -1781,14 +1781,26 @@ def payment_webhook():
     This endpoint does NOT require a JWT — it's called by WhitsunPay server.
     Signature verification is handled by checking against the shared webhook secret.
     """
-    import hashlib, hmac as hmac_lib
+    import hashlib, hmac as hmac_lib, time as _time
     secret = os.getenv('WHITSUNPAY_WEBHOOK_SECRET', '')
     sig    = request.headers.get('X-Whitsun-Signature', '')
+    ts     = request.headers.get('X-Whitsun-Timestamp', '')
     body   = request.get_data()
 
-    if secret:
+    # SEC-19: fail closed (previously an unset secret accepted unsigned calls)
+    # and reject stale/replayed deliveries, matching /payments/webhook.
+    if not secret:
+        if os.getenv('FLASK_DEBUG', 'false').lower() != 'true':
+            logger.error('[Compliance webhook] WHITSUNPAY_WEBHOOK_SECRET not set — refusing webhook')
+            return jsonify({'message': 'Webhook secret not configured'}), 503
+    else:
+        try:
+            if abs(int(_time.time()) - int(ts)) > 300:
+                return jsonify({'message': 'Timestamp too old'}), 401
+        except (TypeError, ValueError):
+            return jsonify({'message': 'Missing or invalid timestamp header'}), 401
         expected = 'sha256=' + hmac_lib.new(secret.encode(), body, hashlib.sha256).hexdigest()
-        if not hmac_lib.compare_digest(sig, expected):
+        if not hmac_lib.compare_digest(sig or '', expected):
             return jsonify({'message': 'Invalid signature'}), 401
 
     event     = request.get_json() or {}

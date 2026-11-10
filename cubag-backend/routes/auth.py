@@ -89,6 +89,48 @@ def _send_email(to_email: str, subject: str, body_text: str, body_html: str = No
     return False
 
 
+def _issue_token(member_id, role, token_version=0):
+    """Single place that mints access tokens (role + token_version claims)."""
+    from datetime import timedelta
+    ttl = timedelta(hours=8) if role in ('admin', 'sub_admin', 'super_admin') else timedelta(hours=48)
+    return create_access_token(
+        identity=str(member_id),
+        additional_claims={'role': role, 'tv': int(token_version or 0)},
+        expires_delta=ttl,
+    )
+
+
+def _invalidate_status_cache(member_id):
+    try:
+        cache.delete(f'live_status_v2_{member_id}')
+        cache.delete(f'live_status_{member_id}')
+    except Exception:
+        pass
+
+
+def _purge_member_personal_data(cursor, member_id):
+    """Best-effort removal of personal content linked to a deleted account.
+    Each statement is isolated with a savepoint so a missing table/column in an
+    older schema cannot abort the whole deletion."""
+    statements = [
+        ("UPDATE member_documents SET file_url = NULL WHERE member_id = %s", (member_id,)),
+        ("DELETE FROM member_districts WHERE member_id = %s", (member_id,)),
+        ("DELETE FROM notifications WHERE member_id = %s", (member_id,)),
+        ("UPDATE messages SET message = '[deleted]' WHERE sender_id = %s", (member_id,)),
+    ]
+    for sql, params in statements:
+        try:
+            cursor.execute("SAVEPOINT purge_step")
+            cursor.execute(sql, params)
+            cursor.execute("RELEASE SAVEPOINT purge_step")
+        except Exception as e:
+            logger.info('[delete-account] purge step skipped (%s): %s', sql.split()[0:3], e)
+            try:
+                cursor.execute("ROLLBACK TO SAVEPOINT purge_step")
+            except Exception:
+                pass
+
+
 @auth_bp.route('/debug-smtp', methods=['GET'])
 @admin_required
 def debug_smtp():
@@ -395,6 +437,12 @@ def login():
     if not identifier or not password:
         return jsonify({'message': 'Email or phone number and password are required'}), 400
 
+    # SEC-17: per-account lockout, independent of client IP (IP limits can be
+    # evaded by rotating addresses). 10 wrong passwords -> 15 minute lock.
+    _login_key = identifier.lower()
+    if otp_attempt_limited('login', _login_key, max_attempts=10):
+        return jsonify({'message': 'Too many failed sign-in attempts. Please wait 15 minutes or reset your password.'}), 429
+
     conn = get_db()
     try:
         with conn.cursor() as cursor:
@@ -422,6 +470,7 @@ def login():
                 member = cursor.fetchone()
 
             if not member:
+                record_otp_failure('login', _login_key)
                 return jsonify({'message': 'Invalid credentials'}), 401
 
             # Check password (both exact and stripped of mobile/autofill accidental whitespace)
@@ -436,10 +485,15 @@ def login():
                     return False
 
             if not (_verify_password(member['password_hash'], raw_pw) or _verify_password(member['password_hash'], stripped_pw)):
+                record_otp_failure('login', _login_key)
                 return jsonify({'message': 'Invalid credentials'}), 401
+            clear_otp_failures('login', _login_key)
 
             # ── Block suspended / inactive accounts ───────────────────────────
             member_status = str(member.get('status') or 'active').lower()
+            # SEC-07: deleted accounts can never sign in again.
+            if member_status == 'deleted':
+                return jsonify({'message': 'Invalid credentials'}), 401
             if member_status == 'suspended':
                 return jsonify({
                     'message': 'Your account has been suspended. Please contact the CUBAG Secretariat for assistance.'
@@ -487,7 +541,8 @@ def login():
             token_ttl = timedelta(hours=8) if role in ('admin', 'sub_admin', 'super_admin') else timedelta(hours=48)
             token = create_access_token(
                 identity=str(member['id']),
-                additional_claims={'role': role},
+                # 'tv' = token_version; bumping it in the DB revokes old tokens (SEC-16)
+                additional_claims={'role': role, 'tv': int(member.get('token_version') or 0)},
                 expires_delta=token_ttl,
             )
 
@@ -1325,6 +1380,8 @@ def update_profile():
     new_email = (data.get('email') or '').strip().lower()
     new_phone = (data.get('phone') or '').strip()
     districts = data.get('districts')
+    email_otp = str(data.get('email_otp') or data.get('otp') or '').strip()
+    email_change_pending = False
 
     if not new_email and not new_phone and districts is None:
         return jsonify({'message': 'No profile fields provided to update'}), 400
@@ -1340,11 +1397,50 @@ def update_profile():
                 if cursor.fetchone():
                     return jsonify({'message': 'Email address is already registered by another account'}), 409
 
+            # SEC-15: an email change only takes effect after the member proves
+            # control of the NEW address with a one-time code.
+            apply_email = False
+            old_email = None
+            if new_email:
+                cursor.execute("SELECT email FROM members WHERE id = %s", (member_id,))
+                old_email = ((cursor.fetchone() or {}).get('email') or '').strip().lower()
+                if new_email == old_email:
+                    new_email = ''
+                elif not email_otp:
+                    import secrets
+                    code = str(secrets.randbelow(900000) + 100000)
+                    cursor.execute("""
+                        INSERT INTO otp_codes (email, code, type)
+                        VALUES (%s, %s, 'email_change')
+                        ON CONFLICT (email, type) DO UPDATE
+                          SET code = EXCLUDED.code, created_at = CURRENT_TIMESTAMP
+                    """, (new_email, code))
+                    cursor.execute("UPDATE members SET pending_email = %s WHERE id = %s", (new_email, member_id))
+                    conn.commit()
+                    send_verification_email(new_email, code)
+                    clear_otp_failures('email_change', new_email)
+                    email_change_pending = True
+                else:
+                    if otp_attempt_limited('email_change', new_email):
+                        return jsonify({'message': 'Too many incorrect codes. Please request a new one.'}), 429
+                    cursor.execute("""
+                        SELECT 1 FROM otp_codes o JOIN members m ON LOWER(m.pending_email) = LOWER(o.email)
+                        WHERE m.id = %s AND LOWER(o.email) = LOWER(%s) AND o.code = %s
+                          AND o.type = 'email_change' AND o.created_at > NOW() - INTERVAL '15 minutes'
+                    """, (member_id, new_email, email_otp))
+                    if not cursor.fetchone():
+                        record_otp_failure('email_change', new_email)
+                        return jsonify({'message': 'Invalid or expired verification code'}), 400
+                    clear_otp_failures('email_change', new_email)
+                    cursor.execute("DELETE FROM otp_codes WHERE LOWER(email) = LOWER(%s) AND type = 'email_change'", (new_email,))
+                    apply_email = True
+
             updates = []
             params = []
-            if new_email:
+            if new_email and apply_email:
                 updates.append("email = %s")
                 params.append(new_email)
+                updates.append("pending_email = NULL")
             if new_phone:
                 updates.append("phone = %s")
                 params.append(new_phone)
@@ -1399,6 +1495,25 @@ def update_profile():
             except Exception:
                 pass
 
+            if apply_email and old_email:
+                try:
+                    _send_email(
+                        old_email,
+                        'Your CUBAG email address was changed',
+                        'The email address on your CUBAG account was changed. If you did not do this, '
+                        'contact the CUBAG Secretariat immediately.',
+                    )
+                except Exception:
+                    logger.debug('old-email notice failed', exc_info=True)
+
+            if email_change_pending:
+                return jsonify({
+                    'message': 'We sent a 6-digit code to your new email address. Enter it to confirm the change.',
+                    'email_verification_required': True,
+                    'pending_email': new_email,
+                    'member': updated_member,
+                }), 202
+
             return jsonify({
                 'message': 'Profile updated successfully',
                 'member': updated_member
@@ -1406,7 +1521,7 @@ def update_profile():
     except Exception as e:
         conn.rollback()
         logger.error(f'[update_profile] {e}')
-        return jsonify({'message': f'Failed to update profile: {str(e)}'}), 500
+        return jsonify({'message': 'Failed to update profile. Please try again.'}), 500
     finally:
         conn.close()
 
@@ -1541,15 +1656,24 @@ def change_password():
     conn = get_db()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT password_hash FROM members WHERE id = %s", (member_id,))
+            cursor.execute("SELECT password_hash, role FROM members WHERE id = %s", (member_id,))
             member = cursor.fetchone()
             if not member or not check_password_hash(member['password_hash'], current_password):
-                return jsonify({'message': 'Incorrect current password'}), 401
+                # 400, not 401: a 401 makes the app sign the user out.
+                return jsonify({'message': 'Incorrect current password'}), 400
 
             hashed_pw = generate_password_hash(new_password)
-            cursor.execute("UPDATE members SET password_hash = %s WHERE id = %s", (hashed_pw, member_id))
+            # SEC-16: bump token_version so every other session is signed out.
+            cursor.execute(
+                "UPDATE members SET password_hash = %s, token_version = COALESCE(token_version, 0) + 1 "
+                "WHERE id = %s RETURNING token_version",
+                (hashed_pw, member_id),
+            )
+            new_tv = int((cursor.fetchone() or {}).get('token_version') or 0)
             conn.commit()
-            return jsonify({'message': 'Password changed successfully'}), 200
+            _invalidate_status_cache(member_id)
+            new_token = _issue_token(member_id, member.get('role') or 'member', new_tv)
+            return jsonify({'message': 'Password changed successfully', 'token': new_token}), 200
     except Exception as e:
         logger.error(f'[change-password] {e}')
         return jsonify({'message': 'Password change failed. Please try again.'}), 500
@@ -1604,16 +1728,28 @@ def delete_account():
     conn = get_db()
     try:
         with conn.cursor() as cursor:
+            # SEC-07: a deleted account must not be able to sign in again by any
+            # identifier, and every existing token is revoked. Personal fields
+            # are cleared; payment records are retained (financial record-keeping)
+            # but are no longer linked to a usable account.
             cursor.execute("""
-                UPDATE members 
+                UPDATE members
                 SET status = 'deleted',
-                    email = CONCAT('deleted_', id, '_', email),
+                    email = CONCAT('deleted_', id, '@deleted.invalid'),
                     phone = NULL,
                     fcm_token = NULL,
+                    password_hash = NULL,
+                    agency_code = NULL,
+                    license_number = NULL,
+                    digital_address = NULL,
+                    profile_photo = NULL,
+                    token_version = COALESCE(token_version, 0) + 1,
                     updated_at = NOW()
                 WHERE id = %s
             """, (member_id,))
+            _purge_member_personal_data(cursor, member_id)
             conn.commit()
+        _invalidate_status_cache(member_id)
         return jsonify({'message': 'Account deleted successfully', 'status': 'deleted'}), 200
     except Exception as e:
         logger.error(f'[delete-account] {e}')
@@ -1740,7 +1876,12 @@ def reset_password():
             if not member_row:
                 return jsonify({'message': 'Account not found'}), 400
             hashed_pw = generate_password_hash(new_password)
-            cursor.execute("UPDATE members SET password_hash = %s WHERE id = %s", (hashed_pw, member_row['id']))
+            # SEC-16: a reset revokes every existing session (stolen tokens included).
+            cursor.execute(
+                "UPDATE members SET password_hash = %s, token_version = COALESCE(token_version, 0) + 1 WHERE id = %s",
+                (hashed_pw, member_row['id']),
+            )
+            _invalidate_status_cache(member_row['id'])
             cursor.execute("DELETE FROM otp_codes WHERE LOWER(email) = LOWER(%s) AND type = 'password_reset'", (actual_email,))
             conn.commit()
             

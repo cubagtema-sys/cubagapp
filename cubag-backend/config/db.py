@@ -162,7 +162,9 @@ def init_db():
                 ADD COLUMN IF NOT EXISTS good_standing BOOLEAN DEFAULT TRUE,
                 ADD COLUMN IF NOT EXISTS renewal_fee_amount NUMERIC(10,2),
                 ADD COLUMN IF NOT EXISTS renewal_fee_breakdown TEXT,
-                ADD COLUMN IF NOT EXISTS renewal_fee_title TEXT;
+                ADD COLUMN IF NOT EXISTS renewal_fee_title TEXT,
+                ADD COLUMN IF NOT EXISTS token_version INT DEFAULT 0,
+                ADD COLUMN IF NOT EXISTS pending_email VARCHAR(150);
             """)
 
             # OTP Codes table for pre-registration verification

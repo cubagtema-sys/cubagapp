@@ -526,7 +526,7 @@ def sub_admin_required(permission: str):
                     log_backend_error('Decorator sub_admin_required Error', f"Permission: {permission}\nError: {str(e)}\nTraceback:\n{tb}")
                 except Exception as log_err:
                     logger.error(f"Failed to log decorator error to DB: {log_err}")
-                return jsonify({'message': str(e), 'traceback': tb}), 500
+                return jsonify({'message': 'An internal error occurred'}), 500
             finally:
                 conn.close()
             return fn(*args, **kwargs)

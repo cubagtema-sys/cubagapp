@@ -1039,28 +1039,43 @@ def set_manual_review_score(member_id):
 
 @members_bp.route('/<int:member_id>/certificate-pdf', methods=['GET'])
 def generate_certificate_pdf(member_id):
+    # SEC-03: certificates are official documents — only the member themself
+    # (or an admin with the 'members' permission) may generate one, and only
+    # for an active member in good standing. This endpoint must never write to
+    # the database (licence numbers are assigned in the admin approval flow).
+    from config.authz import caller_id_from_request, has_admin_permission
+    caller_id = caller_id_from_request(allow_query_token=True)
+    if not caller_id:
+        return jsonify({'message': 'Authentication required'}), 401
+
+    conn = get_db()
     try:
-        conn = get_db()
         with conn.cursor() as cursor:
+            is_owner = str(caller_id) == str(member_id)
+            if not is_owner and not has_admin_permission(cursor, caller_id, 'members'):
+                return jsonify({'message': 'Not authorised to view this certificate'}), 403
+
             cursor.execute("""
-                SELECT name, company, license_number, member_type, port_of_operation, status, license_expiry_date
+                SELECT id, name, company, license_number, member_type, port_of_operation, status,
+                       license_expiry_date, good_standing, package_fee_paid
                 FROM members WHERE id = %s
             """, (member_id,))
             member = cursor.fetchone()
 
-        if not member:
-            return jsonify({'message': 'Member not found'}), 404
+            if not member:
+                return jsonify({'message': 'Member not found'}), 404
 
-        # Auto-heal license number if active but missing
+            is_good, _reasons = eval_good_standing(member, cursor)
+            if str(member.get('status') or '').lower() not in ('active', 'approved') or not is_good:
+                return jsonify({
+                    'message': 'A certificate is only available for active members in good standing.'
+                }), 403
+
         lic_num = member.get('license_number')
         if not lic_num or str(lic_num).lower() in ('pending', 'none', 'n/a', ''):
-            import datetime
-            year = datetime.datetime.now().year
-            new_license = f"CUBAG-LIC-{year}-{member_id:04d}"
-            with conn.cursor() as cursor:
-                cursor.execute("UPDATE members SET license_number = %s WHERE id = %s", (new_license, member_id))
-            conn.commit()
-            member['license_number'] = new_license
+            return jsonify({
+                'message': 'Your licence number has not been issued yet. Please contact the Secretariat.'
+            }), 409
 
         buffer = io.BytesIO()
         c = canvas.Canvas(buffer, pagesize=landscape(A4))
@@ -1136,7 +1151,7 @@ def generate_certificate_pdf(member_id):
         c.setFillColor(colors.HexColor("#64748b"))
         c.drawCentredString(width/2.0, height - 2.95 * inch, "This is to officially certify that")
         
-        company_name = (member.get('company') or member.get('name') or 'HART LOGISTICS').strip().upper()
+        company_name = (member.get('company') or member.get('name') or '').strip().upper()
         c.setFont("Helvetica-Bold", 26)
         c.setFillColor(colors.HexColor("#0f172a"))
         c.drawCentredString(width/2.0, height - 3.42 * inch, company_name)
@@ -1168,8 +1183,8 @@ def generate_certificate_pdf(member_id):
         
         c.setFont("Helvetica-Bold", 10)
         c.setFillColor(colors.HexColor("#1e293b"))
-        port_txt = member.get('port_of_operation') or 'KIA Air Cargo'
-        lic_num = member.get('license_number') or 'Pending'
+        port_txt = member.get('port_of_operation') or '—'
+        lic_num = member.get('license_number')
         c.drawCentredString(width/2.0, box_y + 9, f"License No:  {lic_num}    |    Port of Operation:  {port_txt}")
         
         # 6. Validity Date Footer Line
@@ -1255,6 +1270,6 @@ def generate_certificate_pdf(member_id):
 
     except Exception as e:
         logger.exception("PDF Generation failed: %s", e)
-        return str(e), 500
+        return jsonify({'message': 'Could not generate the certificate. Please try again.'}), 500
     finally:
         conn.close()

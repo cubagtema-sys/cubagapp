@@ -38,6 +38,10 @@ CSRF_EXEMPT_ENDPOINTS = {
     '/api/auth/reset-password',
     '/api/v1/payments/webhook',
     '/api/payments/webhook',
+    # Compliance payment webhook (server-to-server, HMAC-signed). Was missing,
+    # so WhitsunPay deliveries were rejected with 403 by the CSRF check.
+    '/api/v1/compliance/payment-webhook',
+    '/api/compliance/payment-webhook',
     '/api/v1/payments/public/initiate-momo',
     '/api/payments/public/initiate-momo',
     '/api/v1/members/public/initiate-momo',

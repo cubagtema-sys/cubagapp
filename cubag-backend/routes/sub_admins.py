@@ -21,6 +21,7 @@ ALL_PERMISSIONS = [
     'members', 'payments', 'tickets', 'announcements',
     'schedules', 'events', 'surveys', 'intelligence', 'audit_log',
     'fees', 'settings', 'compliance', 'documents', 'messaging', 'notifications',
+    'complaints', 'gdpr',
 ]
 
 

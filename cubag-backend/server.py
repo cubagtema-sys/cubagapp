@@ -84,6 +84,14 @@ logger.info(f"JWT_SECRET_KEY env = {'SET' if os.getenv('JWT_SECRET_KEY') else 'N
 from config.db import get_db, init_db
 from config.cache import cache
 from config.csrf import validate_csrf_token, CSRF_PROTECTED_METHODS, CSRF_EXEMPT_ENDPOINTS
+from config.authz import BLOCKED_STATUSES, BLOCKED_STATUS_MESSAGES
+
+# Auth endpoints that are called without a valid session; account-status
+# enforcement must not run on them.
+_UNAUTHENTICATED_AUTH_ENDPOINTS = {
+    'login', 'register', 'send-otp', 'verify-email', 'verify-otp', 'resend-otp',
+    'forgot-password', 'reset-password',
+}
 from routes.auth import auth_bp
 from routes.members import members_bp
 from routes.announcements import announcements_bp
@@ -328,43 +336,59 @@ def enforce_account_status():
     if request.method == 'OPTIONS':
         return None
 
-    # Only check protected API routes (skip auth, public, static)
-    _OPEN_PREFIXES = ('/api/v1/auth/', '/api/auth/', '/static/', '/#')
-    if any(request.path.startswith(p) for p in _OPEN_PREFIXES):
+    # Skip static files and the unauthenticated auth endpoints only.
+    # (/auth/me, /auth/profile, /auth/delete-account etc. ARE enforced.)
+    if request.path.startswith('/static/'):
         return None
     if not request.path.startswith('/api/v1/') and not request.path.startswith('/api/'):
         return None
+    _auth_tail = request.path.split('/auth/', 1)[1].rstrip('/') if '/auth/' in request.path else None
+    if _auth_tail in _UNAUTHENTICATED_AUTH_ENDPOINTS:
+        return None
 
+    # BUG-02: an expired/invalid token must not turn into a 503. Leave it to the
+    # route: @jwt_required routes answer 401 (client logs out), public routes
+    # simply ignore it.
     try:
         verify_jwt_in_request(optional=True)
         member_id = get_jwt_identity()
-        if not member_id:
-            return None  # unauthenticated request — let route handle it
+    except Exception:
+        return None
+    if not member_id:
+        return None  # unauthenticated request — let route handle it
 
-        cache_key = f'live_status_{member_id}'
-        status = cache.get(cache_key)
-        if status is None:
+    try:
+        from flask_jwt_extended import get_jwt
+        token_tv = int((get_jwt() or {}).get('tv', 0) or 0)
+
+        cache_key = f'live_status_v2_{member_id}'
+        cached = cache.get(cache_key)
+        if not isinstance(cached, (tuple, list)):
             conn = get_db()
             try:
                 with conn.cursor() as cursor:
                     cursor.execute(
-                        "SELECT status FROM members WHERE id = %s",
+                        "SELECT status, COALESCE(token_version, 0) AS token_version FROM members WHERE id = %s",
                         (member_id,)
                     )
                     row = cursor.fetchone()
-                    status = str(row.get('status') or '').lower() if row else ''
-                    cache.set(cache_key, status, timeout=15)
+                    cached = (
+                        str(row.get('status') or '').lower() if row else 'deleted',
+                        int(row.get('token_version') or 0) if row else 0,
+                    )
+                    cache.set(cache_key, cached, timeout=15)
             finally:
                 conn.close()
+        status, db_tv = cached[0], int(cached[1])
 
-        if status == 'suspended':
-            return jsonify({
-                'message': 'Your account has been suspended. Please contact the CUBAG Secretariat.'
-            }), 403
-        if status == 'inactive':
-            return jsonify({
-                'message': 'Your account is inactive. Please contact the CUBAG Secretariat.'
-            }), 403
+        # SEC-16: tokens issued before a password change/reset/deletion are revoked.
+        if token_tv < db_tv:
+            return jsonify({'message': 'Your session has expired. Please sign in again.'}), 401
+
+        # SEC-07: deleted accounts can no longer use existing tokens.
+        if status in BLOCKED_STATUSES:
+            code = 401 if status == 'deleted' else 403
+            return jsonify({'message': BLOCKED_STATUS_MESSAGES[status]}), code
 
     except Exception as e:
         logger.error('[enforce_account_status] Status check failed: %s', e)
@@ -797,8 +821,57 @@ def handle_unhandled_exception(e):
         'success': False,
         'status': 500,
         'error': 'Internal Server Error',
-        'message': str(e) or 'Internal Server Error'
+        'message': 'An unexpected server error occurred. Please try again.'
     }), 500
+
+
+# SEC-18: many handlers historically returned `str(e)` (SQL, table names, file
+# paths) in 5xx responses. Rather than touching ~50 call sites, scrub every
+# 5xx JSON body centrally in production and return a correlation id instead.
+_GENERIC_5XX = 'Something went wrong on our side. Please try again.'
+_LEAKY_KEYS = ('traceback', 'error_details', 'details', 'exception', 'trace')
+
+
+@app.after_request
+def _scrub_server_error_bodies(response):
+    try:
+        if response.status_code < 500 or IS_DEBUG or not response.is_json:
+            return response
+        data = response.get_json(silent=True)
+        if not isinstance(data, dict):
+            return response
+        import uuid as _uuid
+        error_id = _uuid.uuid4().hex[:12]
+        logger.error('[5xx %s] %s %s -> %s', error_id, request.method, request.path,
+                     {k: data.get(k) for k in ('message', 'error') + _LEAKY_KEYS if k in data})
+        for k in _LEAKY_KEYS:
+            data.pop(k, None)
+        # Keep messages we wrote deliberately for users; replace raw exception text.
+        msg = str(data.get('message') or '')
+        if msg and not _looks_user_safe(msg):
+            data['message'] = _GENERIC_5XX
+        data['error_id'] = error_id
+        response.set_data(json.dumps(data))
+        response.headers['Content-Length'] = str(len(response.get_data()))
+    except Exception:
+        pass
+    return response
+
+
+import re as _re
+_SAFE_MSG_RE = _re.compile(r"^[A-Za-z0-9 .,'!?()\-]{1,160}$")
+_LEAK_WORDS = ('error', 'exception', 'relation', 'column', 'psycopg', 'syntax', 'violates',
+               'duplicate key', 'nonetype', 'attribute', 'traceback', 'errno', 'timeout',
+               'connection', 'cursor', 'sql', 'key ', 'null value', 'constraint')
+
+
+def _looks_user_safe(msg: str) -> bool:
+    """Heuristic: hand-written user messages are short plain sentences; raw
+    exception text contains quotes, colons, underscores, paths or DB jargon."""
+    if not _SAFE_MSG_RE.match(msg):
+        return False
+    low = msg.lower()
+    return not any(w in low for w in _LEAK_WORDS)
 
 
 logger.info("[Init] CUBAG Backend fully loaded and ready to accept requests.")

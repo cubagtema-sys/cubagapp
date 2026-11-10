@@ -5,7 +5,7 @@ import logging
 from flask import Blueprint, jsonify, request, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from config.db import get_db
-from utils import admin_required
+from utils import admin_required, sub_admin_required
 from config.gdpr_compliance import GDPRComplianceManager
 from config.audit_logging import get_data_access_logger
 
@@ -68,7 +68,7 @@ def export_my_data():
 
 
 @gdpr_bp.route('/export/member/<int:member_id>', methods=['GET'])
-@admin_required
+@sub_admin_required('gdpr')  # SEC-06: was any sub-admin
 def export_member_data_admin(member_id):
     """Admin endpoint to export any member's data."""
     admin_id = get_jwt_identity()
@@ -120,7 +120,7 @@ def export_member_data_admin(member_id):
 
 
 @gdpr_bp.route('/deletion/request', methods=['POST'])
-@admin_required
+@sub_admin_required('gdpr')  # SEC-06: was any sub-admin
 def request_data_deletion():
     """Request deletion of member data (admin only)."""
     admin_id = get_jwt_identity()
@@ -148,7 +148,7 @@ def request_data_deletion():
 
 
 @gdpr_bp.route('/deletion/approve/<int:request_id>', methods=['POST'])
-@admin_required
+@sub_admin_required('gdpr')  # SEC-06: was any sub-admin
 def approve_data_deletion(request_id):
     """Approve and process a data deletion request (admin only)."""
     admin_id = get_jwt_identity()
@@ -170,7 +170,7 @@ def approve_data_deletion(request_id):
 
 
 @gdpr_bp.route('/deletion/requests', methods=['GET'])
-@admin_required
+@sub_admin_required('gdpr')  # SEC-06: was any sub-admin
 def get_deletion_requests():
     """Get all data deletion requests (admin only)."""
     admin_id = get_jwt_identity()

@@ -1,7 +1,7 @@
 import logging
 from flask import Blueprint, jsonify, request
 from config.db import get_db
-from utils import admin_required
+from utils import admin_required, sub_admin_required
 
 logger = logging.getLogger(__name__)
 compliance_settings_bp = Blueprint('compliance_settings', __name__)
@@ -62,7 +62,7 @@ def get_settings():
         conn.close()
 
 @compliance_settings_bp.route('/', methods=['PUT'])
-@admin_required
+@sub_admin_required('fees')  # SEC-06: was any sub-admin
 def update_settings():
     data = request.get_json() or {}
     conn = get_db()

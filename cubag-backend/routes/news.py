@@ -352,17 +352,10 @@ def get_global_news():
 
 @news_bp.route('/proxy-image', methods=['GET'])
 def proxy_image():
-    url = request.args.get('url')
-    if not url:
-        return jsonify({'message': 'URL required'}), 400
-    try:
-        r = requests.get(url, stream=True, timeout=10)
-        if r.status_code == 200:
-            from flask import Response
-            return Response(r.iter_content(chunk_size=10*1024), content_type=r.headers.get('content-type'))
-        return jsonify({'message': 'Failed to fetch image'}), r.status_code
-    except Exception as e:
-        return jsonify({'message': str(e)}), 500
+    """SEC-05: this used to fetch ANY url for anyone (open proxy / SSRF).
+    It now delegates to the hardened, authenticated, host-allow-listed proxy."""
+    from routes.uploads import proxy_image as _hardened_proxy
+    return _hardened_proxy()
 
 @news_bp.route('/test/refresh', methods=['POST'])
 @sub_admin_required('announcements')

@@ -17,14 +17,19 @@ logger = logging.getLogger(__name__)
 _TRUSTED_HOPS = max(1, int(os.getenv('TRUSTED_PROXY_HOPS', '1') or '1'))
 
 
+# SEC-17: only trust the client-IP header that the platform we actually run on
+# sets (and overwrites). Any other header is client-controlled and spoofable.
+# Fly.io (production): Fly-Client-IP. Render/other: X-Forwarded-For.
+# Cloudflare in front: CF-Connecting-IP.
+_CLIENT_IP_HEADER = (os.getenv('CLIENT_IP_HEADER', 'Fly-Client-IP') or '').strip().lower()
+
+
 def _client_ip():
-    # Fly.io edge proxy provides the validated client IP directly
-    fly_ip = request.headers.get('Fly-Client-IP')
-    if fly_ip and fly_ip.strip():
-        return fly_ip.strip()
-    cf_ip = request.headers.get('CF-Connecting-IP')
-    if cf_ip and cf_ip.strip():
-        return cf_ip.strip()
+    if _CLIENT_IP_HEADER and _CLIENT_IP_HEADER != 'x-forwarded-for':
+        val = request.headers.get(_CLIENT_IP_HEADER)
+        if val and val.strip():
+            return val.strip()
+        return request.remote_addr or '127.0.0.1'
     forwarded = request.headers.get('X-Forwarded-For', '')
     if forwarded:
         parts = [p.strip() for p in forwarded.split(',') if p.strip()]

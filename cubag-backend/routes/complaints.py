@@ -12,6 +12,7 @@ from flask import Blueprint, jsonify, request
 from config.db import get_db
 from flask_jwt_extended import jwt_required, get_jwt
 from config.rate_limit import rate_limit
+from utils import sub_admin_required, log_admin_action
 
 logger = logging.getLogger(__name__)
 
@@ -462,7 +463,7 @@ def track_complaint(complaint_id):
 
 @complaints_bp.route('', methods=['GET'])
 @complaints_bp.route('/', methods=['GET'])
-@jwt_required()
+@sub_admin_required('complaints')  # SEC-01: admin-only (was any logged-in member)
 def list_complaints():
     """
     List complaints for admin or management review.
@@ -517,7 +518,7 @@ def list_complaints():
         conn.close()
 
 @complaints_bp.route('/<complaint_id>/status', methods=['PUT'])
-@jwt_required()
+@sub_admin_required('complaints')  # SEC-02: admin-only (was any logged-in member)
 def update_complaint_status(complaint_id):
     """
     Updates the status, resolution notes, and handler of a complaint.
@@ -554,6 +555,12 @@ def update_complaint_status(complaint_id):
         for k, v in d.items():
             if hasattr(v, 'isoformat'):
                 d[k] = v.isoformat()
+        try:
+            from flask_jwt_extended import get_jwt_identity
+            log_admin_action(get_jwt_identity(), 'Updated complaint status', 'complaint', None,
+                             d.get('complaint_id'), f"Status: {new_status}")
+        except Exception:
+            logger.debug('complaint audit log failed', exc_info=True)
         try:
             from socket_instance import socketio
             socketio.emit('complaints_updated', {'complaint_id': complaint_id, 'status': new_status})
