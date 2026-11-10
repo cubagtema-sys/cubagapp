@@ -680,15 +680,22 @@ class _MessagingPageState extends State<MessagingPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (final e in reasons.entries)
-                  RadioListTile<String>(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    value: e.key,
-                    groupValue: reason,
-                    title: Text(e.value),
-                    onChanged: (v) => setD(() => reason = v ?? reason),
+                RadioGroup<String>(
+                  groupValue: reason,
+                  onChanged: (v) => setD(() => reason = v ?? reason),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final e in reasons.entries)
+                        RadioListTile<String>(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          value: e.key,
+                          title: Text(e.value),
+                        ),
+                    ],
                   ),
+                ),
                 TextField(
                   controller: detailsCtrl,
                   maxLength: 1000,

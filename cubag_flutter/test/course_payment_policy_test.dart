@@ -8,7 +8,7 @@ Map<String, dynamic> course(String mode, {bool? serverFlag}) => {
       'title': 'Course',
       'mode': mode,
       'fee': 'GHS 1,500',
-      if (serverFlag != null) 'in_app_payment_available': serverFlag,
+      'in_app_payment_available': ?serverFlag,
     };
 
 void main() {

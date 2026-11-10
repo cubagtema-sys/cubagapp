@@ -81,7 +81,29 @@ All Flutter / native changes. They were syntax-checked for bracket balance only.
 | AND-01 | `compileSdk`/`targetSdk` ≥ 36 | `android/app/build.gradle.kts` |
 | BUG-03 | Release build fails without `key.properties` (no more debug-signed releases) | `android/app/build.gradle.kts` |
 
-## Verify first (on your Mac, before anything else) — STILL PENDING
+## Verification run 1 — results (10 Nov 2026, 15:40–15:44 PST, `verify_cubag.command`, Flutter 3.44.8 / Dart 3.12.2)
+
+Logs: `docs/verify_logs/` (untracked).
+
+| Step | Result | Notes |
+|---|---|---|
+| `flutter pub get` | pass | |
+| `flutter analyze` | pass, 0 errors, 0 warnings, 3 infos | 2 deprecated `Radio` params in the new report dialog, 1 style hint in the new test |
+| `flutter test` | **84 passed, 0 failed** | includes `course_payment_policy_test.dart` |
+| `flutter build apk --debug` | **FAILED** | manifest merger: `usesCleartextTraffic` true (debug manifest) vs false (main). Pre-existing conflict, not from this branch's changes |
+| `flutter build appbundle --release` | failed as designed | "Release signing is not configured" — the BUG-03 guard. Needs `android/key.properties` (owner) |
+| `pod install` | pass | CocoaPods base-configuration warning for the Profile config; Firebase CocoaPods deprecation notice |
+| `flutter build ios --release --no-codesign` | **pass** | `Runner.app` 38.1 MB, bundle id `com.cubag.app`; entitlements + privacy manifest compile |
+| backend `pytest tests_security` (on macOS, real venv) | **75 passed** | |
+
+Fixes made after run 1 (commit follows this checkpoint) — **not yet re-verified, run `verify_cubag.command` again**:
+- `android/app/src/debug/AndroidManifest.xml`: `tools:replace="android:usesCleartextTraffic"` so the debug APK builds.
+- `lib/pages/messaging_page.dart`: report dialog uses `RadioGroup` (clears the 2 deprecation infos).
+- `test/course_payment_policy_test.dart`: null-aware map element (clears the style info).
+
+Still unverified at any level: an Android build of any kind (so `targetSdk 36` is unconfirmed in a merged manifest), and every on-device behaviour — CTI payment UI on iOS/Android, email-change OTP dialog, secure token storage and sign-out after password change, signed-URL document viewing, messaging report/block. These need a simulator/device pass; the mobile rows stay `[~]` until then.
+
+## Verify first (on your Mac, before anything else) — run 2 needed
 
 I can't run Flutter/Xcode/Gradle myself (no SDK in this cloud workspace, and I deliberately did not try to drive this through screen/Terminal automation — that would have required typing into Terminal, which the access I was granted explicitly disallows, as a safeguard against an agent running arbitrary shell commands that way).
 
@@ -93,7 +115,7 @@ A ready-to-run script is already sitting at `CUSTOMS/verify_cubag.command` (exec
 4. Runs the backend `pytest tests_security -q` for a final cross-check.
 5. Logs everything to `docs/verify_logs/*.log` plus a `docs/verify_logs/summary.txt`.
 
-It does not read `.env`, does not touch any server, and takes roughly 10–20 minutes. As of this checkpoint `docs/verify_logs/` is still empty — it hasn't been run yet. Once it has, tell me (or I'll check the logs) and I'll fix anything it flags and flip the relevant `[~]` rows to `[x]` in the checklist.
+It does not read `.env`, does not touch any server, and takes roughly 10–20 minutes. Run 1 is recorded above. Run it once more to confirm the three post-run fixes (debug APK should now build; analyze should report 0 issues).
 
 Then the manual iOS check for the CTI policy (directive §3.4 items 1–3 visually): on an iPhone, open CTI Courses → an Online and a Hybrid course show details, a mode badge and "Not enrolled"/"Enrolled" with **no** payment button; an In-person course shows "Enroll Now" and "Pay in app" and opens the payment screen. Repeat on Android: all three can be paid. Same for the email-change OTP flow, secure token storage + forced logout after password change, signed-URL document viewing, and messaging report/block — all are backend-tested (see table above) but not yet exercised through the actual Flutter UI.
 
