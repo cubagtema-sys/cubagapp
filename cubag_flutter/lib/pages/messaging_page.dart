@@ -619,6 +619,118 @@ class _MessagingPageState extends State<MessagingPage> {
     );
   }
 
+  Future<void> _toggleBlockActiveChat({required bool block}) async {
+    final chat = _activeChat;
+    final id = chat?['id'];
+    if (id == null) return;
+    if (block) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (d) => AlertDialog(
+          title: const Text('Block this member?'),
+          content: const Text('They will no longer be able to send you messages.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Cancel')),
+            ElevatedButton(onPressed: () => Navigator.pop(d, true), child: const Text('Block')),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    try {
+      final res = block
+          ? await ApiService().post('messages/$id/block')
+          : await ApiService().delete('messages/$id/block');
+      if (!mounted) return;
+      final okStatus = (res.statusCode ?? 500) < 300;
+      if (okStatus) setState(() => _activeChat = {...?_activeChat, 'blocked': block});
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(okStatus
+            ? (block ? 'Member blocked.' : 'Member unblocked.')
+            : 'Could not update. Please try again.'),
+      ));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not update. Please try again.')),
+      );
+    }
+  }
+
+  Future<void> _reportActiveChat() async {
+    final id = _activeChat?['id'];
+    if (id == null) return;
+    const reasons = {
+      'spam': 'Spam',
+      'harassment': 'Harassment or bullying',
+      'abusive': 'Abusive or offensive language',
+      'fraud': 'Fraud or scam',
+      'inappropriate': 'Inappropriate content',
+      'other': 'Something else',
+    };
+    String reason = 'spam';
+    final detailsCtrl = TextEditingController();
+    final submit = await showDialog<bool>(
+      context: context,
+      builder: (d) => StatefulBuilder(
+        builder: (d, setD) => AlertDialog(
+          title: const Text('Report member'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final e in reasons.entries)
+                  RadioListTile<String>(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    value: e.key,
+                    groupValue: reason,
+                    title: Text(e.value),
+                    onChanged: (v) => setD(() => reason = v ?? reason),
+                  ),
+                TextField(
+                  controller: detailsCtrl,
+                  maxLength: 1000,
+                  maxLines: 3,
+                  decoration: const InputDecoration(hintText: 'Add details (optional)'),
+                ),
+                const Text('Reporting also blocks this member.', style: TextStyle(fontSize: 12)),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Cancel')),
+            ElevatedButton(onPressed: () => Navigator.pop(d, true), child: const Text('Report')),
+          ],
+        ),
+      ),
+    );
+    final details = detailsCtrl.text.trim();
+    detailsCtrl.dispose();
+    if (submit != true) return;
+    try {
+      final res = await ApiService().post('messages/$id/report', data: {
+        'reason': reason,
+        'details': details,
+        'block': true,
+      });
+      if (!mounted) return;
+      final okStatus = (res.statusCode ?? 500) < 300;
+      if (okStatus) setState(() => _activeChat = {...?_activeChat, 'blocked': true});
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(okStatus
+            ? 'Thank you. The Secretariat will review this report.'
+            : 'Could not send the report. Please try again.'),
+      ));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not send the report. Please try again.')),
+      );
+    }
+  }
+
   Widget _buildChat(Color primary, {required bool isWide}) {
     final initials = _getInitials(_activeChat);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -707,6 +819,23 @@ class _MessagingPageState extends State<MessagingPage> {
                       ),
                     ],
                   ),
+                ),
+                // UGC safety (Apple 1.2 / Google Play): report & block.
+                PopupMenuButton<String>(
+                  tooltip: 'More options',
+                  icon: Icon(Icons.more_vert_rounded, color: textCol),
+                  onSelected: (v) {
+                    if (v == 'report') _reportActiveChat();
+                    if (v == 'block') _toggleBlockActiveChat(block: true);
+                    if (v == 'unblock') _toggleBlockActiveChat(block: false);
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(value: 'report', child: Text('Report member')),
+                    if (_activeChat?['blocked'] == true)
+                      const PopupMenuItem(value: 'unblock', child: Text('Unblock member'))
+                    else
+                      const PopupMenuItem(value: 'block', child: Text('Block member')),
+                  ],
                 ),
               ],
             ),
