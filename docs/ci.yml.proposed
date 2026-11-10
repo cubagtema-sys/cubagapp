@@ -1,0 +1,44 @@
+name: CUBAG CI
+
+on:
+  push:
+    branches: [ main, master, develop, 'release/**' ]
+  pull_request:
+
+jobs:
+  backend-security-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./cubag-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'   # matches Dockerfile
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest
+      - name: Security regression tests (fake DB, no network)
+        run: python -m pytest tests_security -q
+
+  flutter:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./cubag_flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'      # TODO: pin to the exact version you build releases with
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test

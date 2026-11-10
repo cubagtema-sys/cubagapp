@@ -98,14 +98,14 @@ _Last updated: 10 Nov 2026 (implementation session 1) — branch `release/p0-har
 | [ ] | P0 | AND-09 / IOS-16 | Content rating questionnaire (Play) and age rating (Apple) | ratings issued |
 | [ ] | P1 | UI-08 | New high-resolution square logo master; adaptive Android icon; regenerate icons and splash | icon is sharp at 1024 px |
 | [ ] | P1 | AND-10 / 2.4 | Screenshots (iPhone 6.9", iPad 13" if enabled, Play phone + feature graphic) | consoles accept |
-| [ ] | P1 | BUG-10 / IOS-15 | Label or hide static vessel/intelligence data | reviewer can't mistake it for live |
-| [~] | P1 | BUG-11 | Remove invented fallbacks on certificates/verification; signatories and years from settings | pending member → no certificate |
+| [x] | P1 | BUG-10 / IOS-15 | Label or hide static vessel/intelligence data | reviewer can't mistake it for live |
+| [x] | P1 | BUG-11 | Remove invented fallbacks on certificates/verification; signatories and years from settings | pending member → no certificate |
 
 ## Phase 4 — Functional hardening & testing
 
 | Status | Pri | ID | Task | Test |
 |---|---|---|---|---|
-| [ ] | P1 | BUG-06 | Un-ignore `.github/`, pin Flutter/Python versions matching real builds, make CI green | CI runs on PR |
+| [!] | P1 | BUG-06 | Un-ignore `.github/`, pin Flutter/Python versions matching real builds, make CI green | CI runs on PR |
 | [ ] | P1 | INC-09 | Backend tests for every SEC fix (authorisation matrix: anon/member/sub-admin(no perm)/sub-admin(perm)/admin) against a disposable Postgres | tests pass in CI |
 | [ ] | P1 | INC-09 | Flutter: router redirect tests (exist), login/registration widget tests, API error-mapping tests | tests pass in CI |
 | [ ] | P1 | — | Manual smoke test on 4–5 devices: register → OTP → documents → pay → approval → dashboard → renew → message → delete account | test log signed off |

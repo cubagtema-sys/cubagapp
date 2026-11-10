@@ -975,13 +975,14 @@ def verify_member_by_id_public(member_id):
             if m and is_good:
                 today_str = datetime.date.today().strftime('%d %b %Y')
                 expiry = m.get('license_expiry_date')
-                valid_until = expiry.strftime('%d %b %Y') if expiry else '31 Dec 2026'
+                valid_until = expiry.strftime('%d %b %Y') if expiry else None
 
                 return jsonify({
                     'verified': True,
                     'member_name': m.get('company') or m.get('name'),
-                    'membership_number': m.get('membership_number') or f'CUBAG-2026-{member_id:04d}',
-                    'license_number': m.get('license_number') or f'LIC-CUBAG-2026-{member_id:04d}',
+                    # BUG-11: never invent official numbers on a public verification page.
+                    'membership_number': m.get('membership_number'),
+                    'license_number': m.get('license_number'),
                     'primary_port': m.get('primary_port') or 'Tema',
                     'category': m.get('member_type') or 'Corporate',
                     'status': 'Verified Member',

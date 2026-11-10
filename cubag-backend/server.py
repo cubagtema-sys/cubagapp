@@ -592,11 +592,16 @@ def health():
 @app.route('/api/v1/vessels', methods=['GET'])
 def get_vessels():
     try:
-        from ais_stream import ais_manager
+        from ais_stream import ais_manager, AIS_API_KEY
+        # BUG-10: without an AIS key the stream runs a *simulation*. Never
+        # present simulated positions as live vessel data.
+        if not AIS_API_KEY:
+            return jsonify({'items': [], 'total': 0, 'live': False,
+                            'message': 'Live vessel data is currently unavailable.'}), 200
         with ais_manager.lock:
             vessels = list(ais_manager.active_vessels.values())
         # B-31 fix: wrap in 'items' for consistent Flutter data service parsing
-        return jsonify({'items': vessels, 'total': len(vessels)}), 200
+        return jsonify({'items': vessels, 'total': len(vessels), 'live': True}), 200
     except Exception as e:
         logger.error(f"Error in /api/vessels: {e}")
         return jsonify({'items': [], 'total': 0}), 200
@@ -626,6 +631,11 @@ def get_vessel_registry():
         {'name': 'African Wind',         'mmsi': '305537000', 'imo': '9372107', 'flag': 'Antigua Barbuda',  'type': 'General Cargo',              'length': '132', 'width': '16', 'callsign': 'V2CG9', 'departure_port': 'Tema, Ghana', 'atd': '2026-06-08 18:00 UTC', 'destination': 'Takoradi, Ghana', 'eta': '2026-06-09 08:00 UTC'},
         {'name': 'Oslo Trader',          'mmsi': '636014459', 'imo': '9239082', 'flag': 'Liberia',          'type': 'Container Ship',             'length': '200', 'width': '30', 'callsign': 'A8HF8', 'departure_port': 'Abidjan, Ivory Coast', 'atd': '2026-06-09 04:00 UTC', 'destination': 'Tema, Ghana', 'eta': '2026-06-10 10:00 UTC'},
     ]
+    # BUG-10: this is reference data only — drop the hard-coded (stale) departure
+    # and arrival times so they can't be mistaken for live schedules.
+    for v in registry:
+        for k in ('atd', 'eta', 'departure_port', 'destination'):
+            v.pop(k, None)
     return jsonify(registry), 200
 
 

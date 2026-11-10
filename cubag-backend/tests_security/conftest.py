@@ -25,8 +25,15 @@ os.environ['FLASK_DEBUG'] = 'false'          # exercise production code paths
 os.environ['SENTRY_DSN'] = ''
 os.environ['WHITSUNPAY_WEBHOOK_SECRET'] = 'whsec-test'
 os.environ.setdefault('CLIENT_IP_HEADER', 'Fly-Client-IP')
-os.environ.pop('AIS_API_KEY', None)
-os.environ.pop('REDIS_URL', None)
+# Blank every outbound integration BEFORE the app (and load_dotenv) runs, so a
+# developer's real .env can never make tests send email, push notifications,
+# MoMo prompts or storage calls. load_dotenv() does not override existing keys.
+for _k in ('AIS_API_KEY', 'REDIS_URL', 'RESEND_API_KEY', 'SMTP_HOST', 'SMTP_USER', 'SMTP_PASS',
+           'SMTP_PASSWORD', 'WHITSUNPAY_API_KEY', 'WHITSUNPAY_CLIENT_ID', 'x-api-key', 'x-client-id',
+           'WHITSUNPAY_CALLBACK_URL', 'SUPABASE_URL', 'SUPABASE_SERVICE_KEY', 'SUPABASE_ANON_KEY',
+           'FIREBASE_CREDENTIALS_JSON', 'FIREBASE_SERVICE_ACCOUNT', 'DB_HOST', 'DB_PASSWORD'):
+    os.environ[_k] = ''
+os.environ['FIREBASE_CREDENTIALS'] = '/nonexistent/firebase-key.json'
 
 import pytest  # noqa: E402
 from fakedb import FAKE_DB  # noqa: E402

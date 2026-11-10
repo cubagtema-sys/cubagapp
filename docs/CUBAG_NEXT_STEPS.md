@@ -7,9 +7,9 @@ _Checkpoint written 10 Nov 2026 at the end of implementation session 1. Resume f
 | | |
 |---|---|
 | Branch | `release/p0-hardening` (created from `main` @ `ebc211d`) |
-| Commits | `f3ff2b2` security batch 1 · `4a9374c` CTI course policy (backend) · `483ed2f` mobile store blockers + CTI UI · `6884696` SEC-04/SEC-10/SEC-21 · `2ed89e5` messaging report/block · (this checkpoint commit) |
+| Commits | (see `git log release/p0-hardening`) `f3ff2b2` security batch 1 · `4a9374c` CTI course policy (backend) · `483ed2f` mobile store blockers + CTI UI · `6884696` SEC-04/SEC-10/SEC-21 · `2ed89e5` messaging report/block · (this checkpoint commit) |
 | Pushed? | **No.** Local branch only. Nothing deployed. |
-| Backend tests | `cd cubag-backend && python -m pytest tests_security -q` → **72 passed** (last run this session, Linux workspace on your Mac, Python 3.10, fake DB, no network). |
+| Backend tests | `cd cubag-backend && python -m pytest tests_security -q` → **75 passed** (last run this session, Linux workspace on your Mac, Python 3.10, fake DB, no network). |
 | Flutter | **Not compiled or tested here** (no Flutter SDK available). Run `flutter analyze` and `flutter test` first; see "Verify first" below. |
 | Legacy backend tests (`tests/`) | Not run — they need a live database login. |
 
@@ -102,13 +102,22 @@ Then the manual iOS check for the CTI policy (directive §3.4 items 1–3 visual
 2. **SEC-14** biometric: replace stored password with a revocable device token (`POST /auth/biometric-token`, stored hashed; revoke on logout/password change/deletion).
 3. **PERF-08** encrypt the Hive `api_cache` box (`HiveAesCipher`, key in secure storage).
 4. **BUG-04** crash reporting (Crashlytics or `sentry_flutter`) — adds a dependency; confirm choice.
-5. **BUG-10** stop presenting simulated data as live: `ais_stream.py` runs a **simulation** when `AIS_API_KEY` is missing and `/api/vessels` serves it as live; default intelligence data in `data/intelligence.json`. Label or hide.
-6. **BUG-11** remaining invented fallbacks in public verification (`routes/members.py` `verify_member_by_id_public`: `'31 Dec 2026'`, generated membership/licence numbers).
+5. **BUG-10 (rest)**: `/api/vessels` no longer serves the AIS *simulation* as live, and the static registry no longer carries stale ETAs (done, tested). Still to do: label the default market-intelligence data (`data/intelligence.json`) in the app, and make the vessel screen show an empty state when `live` is false.
+6. ~~BUG-11~~ done (certificate + public verification no longer invent numbers/dates).
 7. **SEC-12** admin MFA (email OTP step-up on web admin login).
 8. **SEC-20** pay by fee/bill id instead of free-text description.
-9. **BUG-06** CI: un-ignore `.github/`, pin Flutter version used locally, run `tests_security` + `flutter test`.
+9. **BUG-06** CI — blocked for me: `.github/workflows/ci.yml` is a protected file that remote tools can't write. A ready-to-use workflow is in `docs/ci.yml.proposed`: copy it to `.github/workflows/ci.yml`, remove the `.github/` line from the root `.gitignore`, and pin the Flutter version you build with.
 10. Store docs: privacy policy rewrite (legal review), public URLs, Data safety / App Privacy answers (use `PrivacyInfo.xcprivacy` + `CUBAG_STORE_READINESS.md` §6), reviewer demo account.
 11. Phase 5–6 (DB migrations/indexes, UI/UX token pass) per roadmap.
+
+## Test-safety note
+
+`tests_security/conftest.py` blanks every outbound integration (email, MoMo,
+Supabase, Firebase, AIS) before the app loads, because the app calls
+`load_dotenv()` and your local `cubag-backend/.env` contains live credentials.
+Earlier runs in this session loaded that `.env` before the blanking was added;
+the workspace had no route to those services (checked: Resend, WhitsunPay,
+FCM and Supabase were all unreachable), so no email, MoMo prompt or push was sent.
 
 ## How tests are run here (for the next session)
 
