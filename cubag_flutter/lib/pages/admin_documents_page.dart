@@ -1184,12 +1184,13 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
     if (mounted) setState(() => _actionLoading[docId] = false);
   }
 
-  void _showDocPreviewModal(
+  Future<void> _showDocPreviewModal(
     BuildContext context,
     String title,
     String fileUrl,
-  ) {
-    final cleanUrl = ApiService.resolveImageUrl(fileUrl);
+  ) async {
+    final cleanUrl = await ApiService.signedDocumentUrl(ApiService.resolveImageUrl(fileUrl));
+    if (!context.mounted) return;
     final isImage =
         cleanUrl.toLowerCase().contains('.png') ||
         cleanUrl.toLowerCase().contains('.jpg') ||
@@ -1962,7 +1963,10 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                           ),
                           const SizedBox(width: 10),
                           InkWell(
-                            onTap: () => launchUrl(Uri.parse(fileUrl), mode: LaunchMode.externalApplication),
+                            onTap: () async => launchUrl(
+                              Uri.parse(await ApiService.signedDocumentUrl(ApiService.resolveImageUrl(fileUrl))),
+                              mode: LaunchMode.externalApplication,
+                            ),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                               child: Row(

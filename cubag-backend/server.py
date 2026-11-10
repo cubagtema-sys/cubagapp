@@ -662,11 +662,31 @@ def _upload_path_is_sensitive(filename: str) -> bool:
 
 
 def _require_jwt_for_sensitive_upload(filename: str):
-    # Prevent path traversal attacks
+    """SEC-04: sensitive documents (receipts, compliance/member documents) are
+    served only with a valid short-lived signed token (?t=, from
+    /uploads/sign) or to an authenticated owner/admin. Previously this function
+    only blocked '..' and never checked authorisation."""
     normalized = os.path.normpath(filename).replace('\\', '/').lstrip('/')
     if '..' in normalized.split('/'):
         return jsonify({'message': 'Invalid file path'}), 400
-    return None
+    if not _upload_path_is_sensitive(normalized):
+        return None
+    from config.file_access import verify_local_file_token, can_access
+    t = request.args.get('t', '')
+    if t and verify_local_file_token(t, normalized):
+        return None
+    from config.authz import caller_id_from_request
+    caller = caller_id_from_request(allow_query_token=True)
+    if not caller:
+        return jsonify({'message': 'Authentication required'}), 401
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            if can_access(cursor, caller, normalized):
+                return None
+    finally:
+        conn.close()
+    return jsonify({'message': 'Not authorised to view this document'}), 403
 
 
 @app.route('/static/uploads/<path:filename>')
@@ -691,7 +711,8 @@ def serve_uploads(filename):
         if os.path.isfile(p):
             resp = send_file(p)
             resp.headers['Access-Control-Allow-Origin'] = '*'
-            resp.headers['Cache-Control'] = 'public, max-age=3600'
+            resp.headers['Cache-Control'] = ('private, no-store' if _upload_path_is_sensitive(filename)
+                                             else 'public, max-age=3600')
             return resp
 
     ext = os.path.splitext(filename)[1].lower()

@@ -86,6 +86,46 @@ def upload_image():
         return jsonify({'message': str(e)}), 500
 
 
+@uploads_bp.route('/sign', methods=['GET'])
+@jwt_required()
+def sign_file_url():
+    """SEC-04: exchange a stored document URL for a short-lived signed URL.
+
+    Only the document owner or an admin with the matching permission may sign.
+    Non-sensitive URLs (gallery, avatars) are returned unchanged.
+    """
+    from flask_jwt_extended import get_jwt_identity
+    from config.db import get_db
+    from config.file_access import parse_storage_url, is_sensitive, can_access, signed_url_for
+
+    raw = (request.args.get('url') or '').strip()
+    if not raw:
+        return jsonify({'message': 'url is required'}), 400
+    kind, _bucket, path = parse_storage_url(raw)
+    if not kind:
+        return jsonify({'url': raw, 'expires_in': None}), 200
+    try:
+        sensitive = is_sensitive(path)
+    except Exception:
+        return jsonify({'message': 'Invalid file path'}), 400
+    if not sensitive:
+        return jsonify({'url': raw, 'expires_in': None}), 200
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            if not can_access(cursor, get_jwt_identity(), path):
+                return jsonify({'message': 'Not authorised to view this document'}), 403
+    finally:
+        conn.close()
+    try:
+        api_base = request.host_url.rstrip('/') + '/api/v1'
+        return jsonify({'url': signed_url_for(raw, api_base=api_base), 'expires_in': 300}), 200
+    except Exception as e:
+        logger.warning('[sign_file_url] signing failed: %s', e)
+        return jsonify({'message': 'Document is temporarily unavailable'}), 503
+
+
 @uploads_bp.route('/gallery/<filename>', methods=['GET'])
 def serve_gallery_image(filename):
     """Serve uploaded gallery image from local disk with caching and CORS headers."""

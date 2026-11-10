@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 import 'cors_image_stub.dart'
     if (dart.library.html) 'cors_image_web.dart'
     if (dart.library.io) 'cors_image_mobile.dart'
@@ -24,6 +25,25 @@ class CorsImageWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // SEC-04: sensitive documents need a short-lived signed URL.
+    if (ApiService.isSensitiveDocumentUrl(url)) {
+      return FutureBuilder<String>(
+        future: ApiService.signedDocumentUrl(url),
+        builder: (context, snap) {
+          if (!snap.hasData) {
+            return placeholder ?? SizedBox(width: width, height: height);
+          }
+          return platform_impl.buildCorsImage(
+            snap.data!,
+            width: width,
+            height: height,
+            fit: fit,
+            placeholder: placeholder,
+            errorWidget: errorWidget,
+          );
+        },
+      );
+    }
     return platform_impl.buildCorsImage(
       url,
       width: width,

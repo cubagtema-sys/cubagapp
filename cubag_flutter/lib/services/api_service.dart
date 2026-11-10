@@ -239,6 +239,44 @@ class ApiService {
 
   static String _cleanCachePath(String p) => p.startsWith('/') ? p.substring(1) : p;
 
+  // ── SEC-04: private documents ────────────────────────────────────────────
+  static const List<String> _sensitiveDocMarkers = [
+    '/receipts/', '/compliance/', '/compliance_docs/', '/documents/',
+    '/member_documents/', '/member_docs/', '/private/', '/bank/',
+  ];
+  static final Map<String, (String, DateTime)> _signedUrlCache = {};
+
+  /// True for stored receipts / compliance / member documents.
+  static bool isSensitiveDocumentUrl(String url) =>
+      (url.contains('/storage/v1/object/') || url.contains('/uploads/')) &&
+      _sensitiveDocMarkers.any(url.contains);
+
+  /// Exchanges a stored document URL for a short-lived signed URL that only
+  /// the owner (or an authorised admin) can obtain. Public assets are returned
+  /// unchanged. Falls back to the original URL if signing is unavailable, so
+  /// this is safe to deploy before the storage bucket is made private.
+  static Future<String> signedDocumentUrl(String rawUrl) async {
+    final url = rawUrl.trim();
+    if (url.isEmpty || !isSensitiveDocumentUrl(url)) return url;
+    final cached = _signedUrlCache[url];
+    if (cached != null && DateTime.now().isBefore(cached.$2)) return cached.$1;
+    try {
+      final res = await _instance._dio.get(
+        'uploads/sign',
+        queryParameters: {'url': url},
+        options: Options(validateStatus: (s) => s != null && s < 500),
+      );
+      final signed = res.data is Map ? res.data['url'] : null;
+      if (res.statusCode == 200 && signed is String && signed.isNotEmpty) {
+        _signedUrlCache[url] = (signed, DateTime.now().add(const Duration(minutes: 4)));
+        return signed;
+      }
+    } catch (e) {
+      debugPrint('[ApiService] signedDocumentUrl failed: $e');
+    }
+    return url;
+  }
+
   String _path(String p) => p.startsWith('/') ? p.substring(1) : p;
 
   /// Synchronously retrieves cached JSON data from Hive for 0ms instant UI painting on initState.

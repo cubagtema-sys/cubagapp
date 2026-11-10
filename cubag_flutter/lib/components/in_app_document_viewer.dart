@@ -39,6 +39,8 @@ class InAppDocumentViewer extends StatefulWidget {
 
     // Resolve relative URL to full backend URL using ApiService.resolveImageUrl
     String resolvedUrl = ApiService.resolveImageUrl(cleanUrl);
+    // SEC-04: private documents are opened through a short-lived signed URL.
+    resolvedUrl = await ApiService.signedDocumentUrl(resolvedUrl);
 
     // Attach auth token if hitting protected backend endpoints (not static files)
     if (!resolvedUrl.contains('/static/') && (resolvedUrl.contains('/api/') || resolvedUrl.contains('/members/'))) {

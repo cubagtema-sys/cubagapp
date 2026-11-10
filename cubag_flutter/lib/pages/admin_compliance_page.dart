@@ -1440,7 +1440,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                   IconButton(
                     icon: const Icon(Icons.open_in_new_rounded),
                     onPressed: () async {
-                      final resolved = ApiService.resolveImageUrl(fileUrl);
+                      final resolved = await ApiService.signedDocumentUrl(ApiService.resolveImageUrl(fileUrl));
                       final uri = Uri.parse(resolved);
                       if (await canLaunchUrl(uri)) {
                         await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -3234,7 +3234,7 @@ class _AdminDocRowState extends State<_AdminDocRow> {
                 const SizedBox(width: 8),
                 InkWell(
                   onTap: () async {
-                    final resolved = ApiService.resolveImageUrl(fileUrl);
+                    final resolved = await ApiService.signedDocumentUrl(ApiService.resolveImageUrl(fileUrl));
                     final uri = Uri.parse(resolved);
                     if (await canLaunchUrl(uri)) {
                       await launchUrl(uri, mode: LaunchMode.externalApplication);

@@ -31,6 +31,17 @@ _UPLOADS_ROOT = os.path.join(_BACKEND_ROOT, 'uploads')
 SUPABASE_URL    = os.getenv('SUPABASE_URL', '').strip().strip('\'"')
 SUPABASE_KEY    = os.getenv('SUPABASE_SERVICE_KEY', '').strip().strip('\'"')
 SUPABASE_BUCKET = os.getenv('SUPABASE_BUCKET', 'uploads').strip().strip('\'"')
+# SEC-04: optional separate PUBLIC bucket for assets that must stay publicly
+# readable (gallery, profile photos). When set, the main bucket can be private.
+SUPABASE_PUBLIC_BUCKET = os.getenv('SUPABASE_PUBLIC_BUCKET', '').strip().strip('\'"')
+_PUBLIC_SUBFOLDERS = ('gallery', 'avatars', 'logos', 'announcements', 'events', 'news')
+
+
+def _bucket_for(subfolder: str) -> str:
+    top = (subfolder or '').split('/', 1)[0]
+    if SUPABASE_PUBLIC_BUCKET and top in _PUBLIC_SUBFOLDERS:
+        return SUPABASE_PUBLIC_BUCKET
+    return SUPABASE_BUCKET
 
 from typing import Optional
 
@@ -67,11 +78,12 @@ def supabase_available() -> bool:
     return bool(_supabase_ok)
 
 
-def _upload_to_supabase(file_bytes: bytes, cloud_path: str, content_type: str) -> Optional[str]:
-    """Try uploading to Supabase. Returns public URL on success, None otherwise."""
+def _upload_to_supabase(file_bytes: bytes, cloud_path: str, content_type: str, bucket: str = None) -> Optional[str]:
+    """Try uploading to Supabase. Returns the object URL on success, None otherwise."""
     if not supabase_available():
         return None
-    storage_url = f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{cloud_path}"
+    bucket = bucket or SUPABASE_BUCKET
+    storage_url = f"{SUPABASE_URL}/storage/v1/object/{bucket}/{cloud_path}"
     try:
         resp = http_req.post(
             storage_url,
@@ -85,7 +97,8 @@ def _upload_to_supabase(file_bytes: bytes, cloud_path: str, content_type: str) -
             timeout=20,
         )
         if resp.status_code in (200, 201):
-            return f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{cloud_path}"
+            # Stored as the public-style URL (path is parsed back for signing).
+            return f"{SUPABASE_URL}/storage/v1/object/public/{bucket}/{cloud_path}"
         logger.warning("[FileStorage] Supabase upload error %s: %s", resp.status_code, resp.text[:200])
     except Exception as e:
         logger.warning("[FileStorage] Supabase upload exception: %s", e)
@@ -148,9 +161,10 @@ def save_file(
         file_bytes = file_bytes.read()
 
     import mimetypes
+    # SEC-21: never trust the client's Content-Type (an HTML file declared as
+    # text/html would be served as a web page). Derive it from the extension.
     guessed, _ = mimetypes.guess_type(original_filename)
-    if guessed and (content_type == 'image/jpeg' or not content_type):
-        content_type = guessed
+    content_type = guessed or 'application/octet-stream'
 
     ext = original_filename.rsplit('.', 1)[1].lower() if '.' in original_filename else 'jpg'
     unique_id = uuid.uuid4().hex
@@ -158,7 +172,7 @@ def save_file(
     cloud_path = f"{subfolder}/{safe_filename}"
 
     # Try Supabase first
-    url = _upload_to_supabase(file_bytes, cloud_path, content_type)
+    url = _upload_to_supabase(file_bytes, cloud_path, content_type, bucket=_bucket_for(subfolder))
     if url:
         logger.info("[FileStorage] Saved to Supabase: %s", cloud_path)
         return url

@@ -1553,7 +1553,9 @@ def upload_photo():
     # Read Supabase config at request time (not module load time)
     supabase_url = os.getenv('SUPABASE_URL', '').strip().strip('\'"')
     supabase_key = os.getenv('SUPABASE_SERVICE_KEY', '').strip().strip('\'"')
-    photo_bucket = os.getenv('SUPABASE_BUCKET', 'uploads').strip().strip('\'"')
+    # Profile photos are public assets: use the public bucket when configured (SEC-04).
+    photo_bucket = (os.getenv('SUPABASE_PUBLIC_BUCKET') or os.getenv('SUPABASE_BUCKET') or 'uploads').strip().strip('\'"')
+    content_type = {'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp'}.get(ext, 'image/jpeg')
 
     public_url = None
     if supabase_url and supabase_key:
