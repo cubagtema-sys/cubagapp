@@ -1,24 +1,21 @@
 """SEC-04: sensitive documents are only served to owners/admins via short-lived signed URLs."""
-import os
 import uuid
 
 import pytest
 
 API = '/api/v1'
-BACKEND = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 @pytest.fixture()
-def local_receipt():
-    """A real file under uploads/receipts so serve_uploads can find it."""
-    folder = os.path.join(BACKEND, 'uploads', 'receipts')
-    os.makedirs(folder, exist_ok=True)
+def local_receipt(tmp_path, monkeypatch):
+    """A real file under <cwd>/uploads/receipts (serve_uploads checks cwd too).
+    Uses a temp directory so the real uploads/ folder is never touched."""
+    folder = tmp_path / 'uploads' / 'receipts'
+    folder.mkdir(parents=True)
     name = f'test_receipt_{uuid.uuid4().hex}.jpg'
-    path = os.path.join(folder, name)
-    with open(path, 'wb') as fh:
-        fh.write(b'\xff\xd8\xff\xe0testjpeg')
+    (folder / name).write_bytes(b'\xff\xd8\xff\xe0testjpeg')
+    monkeypatch.chdir(tmp_path)
     yield name
-    os.remove(path)
 
 
 def _receipt_owner(db, owner_id):
