@@ -1,17 +1,40 @@
 # CUBAG — Implementation Checkpoint & Next Steps
 
-_Checkpoint written 10 Nov 2026 at the end of implementation session 1. Resume from here; don't redo completed items._
+_Checkpoint written 10 Nov 2026 at the end of implementation session 1; updated same day (verification batch) with reconciled test counts and a fixture fix. Resume from here; don't redo completed items._
+
+## ⚠ Action needed: rotate the secrets you pasted into this chat
+
+You pasted the real `cubag-backend/.env` file (with live `DB_PASSWORD`, `DATABASE_URL`, `SECRET_KEY`, `JWT_SECRET_KEY`, `SMTP_PASS`, `RESEND_API_KEY`, `WHITSUNPAY_API_KEY` (`wp_live_...`), `WHITSUNPAY_WEBHOOK_SECRET`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `AIS_API_KEY`, and the full Firebase service-account private key) directly into the conversation. None of those values were used, logged, or sent anywhere by me — I never need them for this work and never connect to your production services — but once a secret has been typed into a chat it should be treated as potentially exposed. Please rotate **all** of the above (new DB password, new Supabase service/anon keys via Supabase dashboard, new JWT/Flask secret keys, new SMTP app password, new Resend key, new WhitsunPay API key + webhook secret, and a new Firebase service-account key with the old one revoked in the Firebase/GCP console) — this is the same rotation already listed as owner action #3 below, now more urgent.
 
 ## Where things stand
 
 | | |
 |---|---|
 | Branch | `release/p0-hardening` (created from `main` @ `ebc211d`) |
-| Commits | (see `git log release/p0-hardening`) `f3ff2b2` security batch 1 · `4a9374c` CTI course policy (backend) · `483ed2f` mobile store blockers + CTI UI · `6884696` SEC-04/SEC-10/SEC-21 · `2ed89e5` messaging report/block · (this checkpoint commit) |
+| Commits | (see `git log release/p0-hardening`) `f3ff2b2` security batch 1 · `4a9374c` CTI course policy (backend) · `483ed2f` mobile store blockers + CTI UI · `6884696` SEC-04/SEC-10/SEC-21 · `2ed89e5` messaging report/block · `125173a` docs checkpoint · `aee1419` BUG-10/11 + test isolation · `b191564` SEC-04 test fixture fix (this session) |
 | Pushed? | **No.** Local branch only. Nothing deployed. |
-| Backend tests | `cd cubag-backend && python -m pytest tests_security -q` → **75 passed** (last run this session, Linux workspace on your Mac, Python 3.10, fake DB, no network). |
-| Flutter | **Not compiled or tested here** (no Flutter SDK available). Run `flutter analyze` and `flutter test` first; see "Verify first" below. |
-| Legacy backend tests (`tests/`) | Not run — they need a live database login. |
+| Backend tests | `cd cubag-backend && python -m pytest tests_security -q` → **75 collected, 75 passed, 0 errors** (reconciled and re-run this session; see breakdown below). |
+| Flutter | **Not compiled or tested here** — no Flutter SDK in this workspace. `verify_cubag.command` is sitting in `CUSTOMS/` for you to double-click; see "Verify first" below. Not run yet as of this checkpoint. |
+| Legacy backend tests (`tests/`) | Not run — different suite, needs a live database login (`TEST_ADMIN_EMAIL`/`TEST_ADMIN_PASSWORD` + real Postgres), not exercised in this session. |
+
+### Backend test count, reconciled
+
+An earlier checkpoint said "75 passed" without listing every file, which didn't add up against the 4 files it named. Exact collected counts, per file, confirmed via `pytest tests_security --collect-only -q`:
+
+| File | Tests | Covers |
+|---|---|---|
+| `test_batch1_authz.py` | 35 | SEC-01/02/03/05/06/07/15/16/17/18/19, BUG-02 |
+| `test_cti_course_payments.py` | 19 | CTI online/hybrid iOS payment block (directive §3) |
+| `test_sec04_private_documents.py` | 11 | Signed URLs, access control on sensitive docs |
+| `test_messaging_safety.py` | 7 | Block/report |
+| `test_bug10_11_no_fake_data.py` | 3 | BUG-10 (AIS not presented as live), BUG-11 (no invented licence/verification data) |
+| **Total** | **75** | |
+
+The earlier "72 vs 75" discrepancy was simply that the checkpoint's file list omitted `test_bug10_11_no_fake_data.py` (3 tests) — nothing was miscounted or fabricated, just under-listed.
+
+**All 75 are fake-DB unit tests** (`tests_security/`, using `fakedb.py`'s in-memory stand-in for `psycopg2` — no real Postgres, no network). They verify request/response behaviour, authorization logic and payload shape, not real SQL correctness, real constraint behaviour, or real Supabase RLS. The separate `cubag-backend/tests/` directory holds real-Postgres integration tests that need a live database and admin credentials; those were **not run** in this session and are a distinct, additional layer of coverage still owed before this is called "tested" end-to-end for the DB-dependent paths.
+
+**Fixture bug found and fixed during this reconciliation pass:** a re-run surfaced `75 passed, 4 errors` — `PermissionError` in `test_sec04_private_documents.py`'s `local_receipt` fixture, which was writing/deleting a file directly inside the real `cubag-backend/uploads/receipts/` folder. Rewrote it to use pytest's `tmp_path` + `monkeypatch.chdir()` so it never touches that real folder. Re-ran: clean `75 passed`, confirmed no stray files left behind. Committed as `b191564` on `release/p0-hardening`.
 
 ## Completed (with evidence)
 
@@ -58,21 +81,21 @@ All Flutter / native changes. They were syntax-checked for bracket balance only.
 | AND-01 | `compileSdk`/`targetSdk` ≥ 36 | `android/app/build.gradle.kts` |
 | BUG-03 | Release build fails without `key.properties` (no more debug-signed releases) | `android/app/build.gradle.kts` |
 
-## Verify first (on your Mac, before anything else)
+## Verify first (on your Mac, before anything else) — STILL PENDING
 
-```bash
-cd ~/Downloads/CUB-26/CUSTOMS && git checkout release/p0-hardening
-cd cubag_flutter
-flutter pub get
-flutter analyze            # fix anything flagged in the files listed above
-flutter test               # includes test/course_payment_policy_test.dart
-cd ios && pod install && cd ..
-flutter build ios --release --no-codesign   # checks pbxproj + privacy manifest
-flutter build appbundle --release           # will FAIL until android/key.properties exists (intended)
-cd ../cubag-backend && python -m pytest tests_security -q   # in your venv
-```
+I can't run Flutter/Xcode/Gradle myself (no SDK in this cloud workspace, and I deliberately did not try to drive this through screen/Terminal automation — that would have required typing into Terminal, which the access I was granted explicitly disallows, as a safeguard against an agent running arbitrary shell commands that way).
 
-Then the manual iOS check for the CTI policy (directive §3.4 items 1–3 visually): on an iPhone, open CTI Courses → an Online and a Hybrid course show details, a mode badge and "Not enrolled"/"Enrolled" with **no** payment button; an In-person course shows "Enroll Now" and "Pay in app" and opens the payment screen. Repeat on Android: all three can be paid.
+A ready-to-run script is already sitting at `CUSTOMS/verify_cubag.command` (executable). **Please double-click it in Finder** (or right-click → Open if Gatekeeper blocks it the first time). It:
+
+1. Runs `flutter pub get`, `flutter analyze`, `flutter test`.
+2. Builds `flutter build apk --debug` and `flutter build appbundle --release` (the release build is **expected to fail** until `android/key.properties` exists — that's BUG-03 working as intended, not a bug).
+3. Runs `pod install` and `flutter build ios --release --no-codesign`.
+4. Runs the backend `pytest tests_security -q` for a final cross-check.
+5. Logs everything to `docs/verify_logs/*.log` plus a `docs/verify_logs/summary.txt`.
+
+It does not read `.env`, does not touch any server, and takes roughly 10–20 minutes. As of this checkpoint `docs/verify_logs/` is still empty — it hasn't been run yet. Once it has, tell me (or I'll check the logs) and I'll fix anything it flags and flip the relevant `[~]` rows to `[x]` in the checklist.
+
+Then the manual iOS check for the CTI policy (directive §3.4 items 1–3 visually): on an iPhone, open CTI Courses → an Online and a Hybrid course show details, a mode badge and "Not enrolled"/"Enrolled" with **no** payment button; an In-person course shows "Enroll Now" and "Pay in app" and opens the payment screen. Repeat on Android: all three can be paid. Same for the email-change OTP flow, secure token storage + forced logout after password change, signed-URL document viewing, and messaging report/block — all are backend-tested (see table above) but not yet exercised through the actual Flutter UI.
 
 ## Owner actions / decisions still required (`[!]`)
 

@@ -167,13 +167,27 @@ _Last updated: 10 Nov 2026 (implementation session 1) — branch `release/p0-har
 
 ### Progress summary
 
-| Phase | P0 | P1 | P2 | P3 | Done |
+_Recalculated directly from the `[ ]/[~]/[x]/[!]` marker on every row above — not hand-maintained. If you edit a row's status, re-run the count._
+
+| Phase | Rows | Done `[x]` | In progress `[~]` | Blocked `[!]` | Not started `[ ]` |
 |---|---|---|---|---|---|
-| 0 Owner verifications | 10 | 2 | 0 | 0 | 0 |
-| 1 Backend security | 12 | 7 | 6 | 0 | 0 |
-| 2 Mobile & store blockers | 11 | 10 | 0 | 0 | 0 |
-| 3 Compliance & listing | 6 | 4 | 0 | 0 | 0 |
-| 4 Functional & testing | 0 | 5 | 2 | 0 | 0 |
-| 5 DB & ops | 0 | 4 | 4 | 1 | 0 |
-| 6 UI/UX & responsive | 0 | 4 | 9 | 5 | 0 |
-| 7 Cleanup | 0 | 0 | 3 | 5 | 0 |
+| 0 Owner verifications | 12 | 1 | 0 | 0 | 11 |
+| 1 Backend security | 25 | 13 | 5 | 2 | 5 |
+| 2 Mobile & store blockers | 21 | 0 | 12 | 4 | 5 |
+| 3 Compliance & listing | 10 | 2 | 0 | 0 | 8 |
+| 4 Functional & testing | 7 | 0 | 0 | 1 | 6 |
+| 5 DB & ops | 9 | 0 | 0 | 0 | 9 |
+| 6 UI/UX & responsive | 18 | 0 | 0 | 0 | 18 |
+| 7 Cleanup | 8 | 0 | 0 | 0 | 8 |
+| **Total** | **110** | **16** | **17** | **7** | **70** |
+
+By priority (same rows, split the other way):
+
+| Priority | Rows | Done | In progress | Blocked | Not started |
+|---|---|---|---|---|---|
+| P0 | 39 | 10 | 12 | 5 | 12 |
+| P1 | 36 | 6 | 5 | 2 | 23 |
+| P2 | 24 | 1 | 3 | 0 | 20 |
+| P3 | 11 | 0 | 0 | 0 | 11 |
+
+**Reading this correctly:** "Done" (`[x]`) means implemented *and* its automated test passed. "In progress" (`[~]`) is implemented but unverified — this is every Flutter/iOS/Android row right now, because no `flutter analyze`/`flutter test`/device build has completed yet (see `CUBAG_NEXT_STEPS.md`, verification batch). None of the 12 `[~]` P0 rows should be treated as release-ready until that verification lands.
