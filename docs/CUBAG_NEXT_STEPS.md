@@ -6,7 +6,67 @@ _Checkpoint written 10 Nov 2026 at the end of implementation session 1; updated 
 
 You pasted the real `cubag-backend/.env` file (with live `DB_PASSWORD`, `DATABASE_URL`, `SECRET_KEY`, `JWT_SECRET_KEY`, `SMTP_PASS`, `RESEND_API_KEY`, `WHITSUNPAY_API_KEY` (`wp_live_...`), `WHITSUNPAY_WEBHOOK_SECRET`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `AIS_API_KEY`, and the full Firebase service-account private key) directly into the conversation. None of those values were used, logged, or sent anywhere by me — I never need them for this work and never connect to your production services — but once a secret has been typed into a chat it should be treated as potentially exposed. Please rotate **all** of the above (new DB password, new Supabase service/anon keys via Supabase dashboard, new JWT/Flask secret keys, new SMTP app password, new Resend key, new WhitsunPay API key + webhook secret, and a new Firebase service-account key with the old one revoked in the Firebase/GCP console) — this is the same rotation already listed as owner action #3 below, now more urgent.
 
-## Where things stand
+## Session 2 status (10 Nov 2026, ~16:15 PST) — read this first
+
+Full evidence: `docs/CUBAG_VERIFICATION_LOG.md`. Device test sheet: `docs/CUBAG_DEVICE_TEST_CHECKLIST.md`.
+
+| Phase of the second directive | Status |
+|---|---|
+| 1 Second verification run | **Blocked on the owner**: `verify_cubag.command` has not been run since `a8b41f8`. Backend fake-DB suite re-run: 75 passed. Flutter analyze/tests, iOS build and the Android debug build are **not** re-verified. |
+| 2 Android release signing | Reviewed (below). Configuration is correct; `android/key.properties` and a keystore do not exist — owner action. |
+| 3 Real PostgreSQL | Done on a local PostgreSQL 16: new `tests_pg/` 21 passed; legacy `tests/` 9–10 pre-existing failures; 3 real bugs found and fixed (`da03dd5`). |
+| 4 Device verification | Checklist written. **Nothing tested on a simulator or device.** |
+| 5 SEC-14 | **Not started** — held until phase 1 completes, as instructed. |
+| 6 Docs | Updated. |
+
+Commits this session: `b191564` test fixture · `12bab57` docs · `a8b41f8` debug manifest + analyzer infos · `da03dd5` delete-account / fresh-DB fixes · `e88b117` `tests_pg` + legacy guard · `71546e0` note · docs commit after this one.
+
+### Android release signing (phase 2)
+
+- `android/app/build.gradle.kts` reads `android/key.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`) into a `release` signing config. Release builds use it only when the file exists; otherwise any `assemble/bundle/package…Release` task stops with "Release signing is not configured". There is no fallback to the debug key. Debug builds use the default debug key and are unaffected.
+- `key.properties`: **does not exist**. Keystore (`*.jks` / `*.keystore`): **none in the project**. Neither has ever been committed (checked `git ls-files` and `git log --all`).
+- `android/.gitignore` already ignores `key.properties`, `**/*.keystore`, `**/*.jks`.
+- Run 1 confirmed the guard fires. A signed release build has never been produced.
+
+To create the upload key (do this yourself; I must not generate or hold production signing credentials):
+
+```bash
+keytool -genkey -v -keystore ~/cubag-upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+```
+
+Then create `cubag_flutter/android/key.properties` (never commit it):
+
+```properties
+storePassword=<the password you chose>
+keyPassword=<the password you chose>
+keyAlias=upload
+storeFile=/Users/guyman-gh/cubag-upload-keystore.jks
+```
+
+Back up the keystore and passwords somewhere safe outside the repo, enrol in Play App Signing when you create the app in Play Console, then run `flutter build appbundle --release`. Decide the application ID (`com.cubag_flutter` vs `com.cubag.app`) **before** the first upload — iOS already uses `com.cubag.app`.
+
+### Running the real-PostgreSQL suite on your Mac
+
+Needs a local PostgreSQL (e.g. `brew install postgresql@16 && brew services start postgresql@16`). It refuses anything that is not a local server and a database named `*_test`.
+
+```bash
+createdb cubag_test
+cd ~/Downloads/CUB-26/CUSTOMS/cubag-backend
+TEST_DATABASE_URL="host=127.0.0.1 port=5432 dbname=cubag_test" ./venv/bin/python -m pytest tests_pg -q
+```
+
+This matters because my run used a test-only driver adapter in place of `psycopg2` (see the verification log).
+
+### Open findings from this session
+
+1. `complaints` and `cti_course_enrollments` are used by the code but created nowhere in the repository (DB-01). Needed from you: `pg_dump --schema-only` of production (schema only, no data) so real definitions can be put in migrations.
+2. Legacy `tests/`: payment state machine allows `failed → paid`; a legacy test says it must not. Decision needed.
+3. Legacy `tests/`: 8 tests are out of date with behaviour that predates this branch (CSRF 403 before 401; webhook timestamp header). Not changed.
+4. `otp_codes.code` stores verification codes in plain text (pre-existing). Not changed; candidate for hashing.
+5. The messaging report queue has API endpoints but no admin screen yet.
+6. `cubag-backend/routes/front-page.php`: untracked, never in git history, created 10 Nov 13:31 PST, 3,708 bytes, SHA-256 `3260c7ad…13c4`. It is a WordPress template that shows member statistics from the public `/api/v1/public/stats` endpoint. It contains no `eval`, shell, upload or request-input code, nothing in the project references it, and Flask does not serve or execute PHP. Not created by me; left untouched. It looks like a website snippet saved into the wrong folder — only you can confirm where it came from.
+
+## Where things stand (session 1 detail)
 
 | | |
 |---|---|
@@ -15,7 +75,7 @@ You pasted the real `cubag-backend/.env` file (with live `DB_PASSWORD`, `DATABAS
 | Pushed? | **No.** Local branch only. Nothing deployed. |
 | Backend tests | `cd cubag-backend && python -m pytest tests_security -q` → **75 collected, 75 passed, 0 errors** (reconciled and re-run this session; see breakdown below). |
 | Flutter | **Not compiled or tested here** — no Flutter SDK in this workspace. `verify_cubag.command` is sitting in `CUSTOMS/` for you to double-click; see "Verify first" below. Not run yet as of this checkpoint. |
-| Legacy backend tests (`tests/`) | Not run — different suite, needs a live database login (`TEST_ADMIN_EMAIL`/`TEST_ADMIN_PASSWORD` + real Postgres), not exercised in this session. |
+| Legacy backend tests (`tests/`) | Run in session 2 against a local PostgreSQL 16 only — see "Session 2 status" above and the verification log. |
 
 ### Backend test count, reconciled
 
@@ -32,7 +92,7 @@ An earlier checkpoint said "75 passed" without listing every file, which didn't 
 
 The earlier "72 vs 75" discrepancy was simply that the checkpoint's file list omitted `test_bug10_11_no_fake_data.py` (3 tests) — nothing was miscounted or fabricated, just under-listed.
 
-**All 75 are fake-DB unit tests** (`tests_security/`, using `fakedb.py`'s in-memory stand-in for `psycopg2` — no real Postgres, no network). They verify request/response behaviour, authorization logic and payload shape, not real SQL correctness, real constraint behaviour, or real Supabase RLS. The separate `cubag-backend/tests/` directory holds real-Postgres integration tests that need a live database and admin credentials; those were **not run** in this session and are a distinct, additional layer of coverage still owed before this is called "tested" end-to-end for the DB-dependent paths.
+**All 75 are fake-DB unit tests** (`tests_security/`, using `fakedb.py`'s in-memory stand-in for `psycopg2` — no real Postgres, no network). They verify request/response behaviour, authorization logic and payload shape, not real SQL correctness, real constraint behaviour, or real Supabase RLS. Real-PostgreSQL coverage is separate: `tests_pg/` (added in session 2, 21 tests) and the legacy `tests/` directory; results are in `CUBAG_VERIFICATION_LOG.md`.
 
 **Fixture bug found and fixed during this reconciliation pass:** a re-run surfaced `75 passed, 4 errors` — `PermissionError` in `test_sec04_private_documents.py`'s `local_receipt` fixture, which was writing/deleting a file directly inside the real `cubag-backend/uploads/receipts/` folder. Rewrote it to use pytest's `tmp_path` + `monkeypatch.chdir()` so it never touches that real folder. Re-ran: clean `75 passed`, confirmed no stray files left behind. Committed as `b191564` on `release/p0-hardening`.
 

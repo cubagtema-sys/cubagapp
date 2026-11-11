@@ -4,11 +4,13 @@ Status: `[ ]` Not started · `[~]` In progress · `[x]` Completed · `[!]` Block
 Priority: **P0** must fix before release · **P1** production readiness · **P2** quality & experience · **P3** optional
 IDs refer to `CUBAG_AUDIT_REPORT.md` (SEC/BUG/UI/RESP/DB/PERF/IOS/AND/INC). Phases match `CUBAG_IMPLEMENTATION_ROADMAP.md`.
 
-_Last updated: 10 Nov 2026 (implementation session 1) — branch `release/p0-hardening`._
+_Last updated: 10 Nov 2026 (session 2, second verification directive) — branch `release/p0-hardening`._
 
 **Status rules used:** `[x]` = implemented **and** its automated tests ran and passed (backend: `python -m pytest tests_security`).
-`[~]` = implemented but not yet verified end-to-end — all Flutter/iOS/Android changes are `[~]` until `flutter analyze`,
-`flutter test` and a device build pass (no Flutter SDK was available in the implementation environment).
+`[~]` = implemented but not yet verified end-to-end. Verification run 1 (10 Nov): `flutter analyze` 0 errors, `flutter test` 84/84,
+iOS release build (no codesign) passes; the Android debug build failed on a pre-existing manifest conflict (fixed, not re-run) and
+nothing has been exercised on a device or simulator yet — so Flutter/iOS/Android rows stay `[~]`. Run 2 has not been executed.
+Real-PostgreSQL results and the device test sheet are in `CUBAG_VERIFICATION_LOG.md` and `CUBAG_DEVICE_TEST_CHECKLIST.md`. See `CUBAG_NEXT_STEPS.md`.
 `[!]` = blocked on an owner action or decision (see `CUBAG_NEXT_STEPS.md`).
 
 ---
@@ -106,7 +108,7 @@ _Last updated: 10 Nov 2026 (implementation session 1) — branch `release/p0-har
 | Status | Pri | ID | Task | Test |
 |---|---|---|---|---|
 | [!] | P1 | BUG-06 | Un-ignore `.github/`, pin Flutter/Python versions matching real builds, make CI green | CI runs on PR |
-| [ ] | P1 | INC-09 | Backend tests for every SEC fix (authorisation matrix: anon/member/sub-admin(no perm)/sub-admin(perm)/admin) against a disposable Postgres | tests pass in CI |
+| [~] | P1 | INC-09 | Backend tests for every SEC fix (authorisation matrix: anon/member/sub-admin(no perm)/sub-admin(perm)/admin) against a disposable Postgres — `tests_pg/` added (21 pass on local PostgreSQL 16); not the full matrix, not in CI | tests pass in CI |
 | [ ] | P1 | INC-09 | Flutter: router redirect tests (exist), login/registration widget tests, API error-mapping tests | tests pass in CI |
 | [ ] | P1 | — | Manual smoke test on 4–5 devices: register → OTP → documents → pay → approval → dashboard → renew → message → delete account | test log signed off |
 | [ ] | P1 | BUG-09 / PERF-07 | Move rating recalculation off read paths | `GET /members/<id>` performs no writes |
@@ -117,7 +119,7 @@ _Last updated: 10 Nov 2026 (implementation session 1) — branch `release/p0-har
 
 | Status | Pri | ID | Task | Test |
 |---|---|---|---|---|
-| [ ] | P1 | DB-01 | Export current schema → versioned migrations; remove runtime DDL from request handlers | fresh DB builds from migrations |
+| [!] | P1 | DB-01 | Export current schema → versioned migrations; remove runtime DDL from request handlers — fresh DB now initialises (41 tables) but `complaints` and `cti_course_enrollments` have no DDL in the repo; needs a schema-only dump of production | fresh DB builds from migrations |
 | [ ] | P1 | DB-03 | Index review from Supabase query stats; add `LOWER(email)` and normalised phone | p95 of login/payments < 300 ms |
 | [ ] | P1 | DB-05 | Use the Supabase pooler; pool max ≈ 10–12 | no connection-limit errors under load test |
 | [ ] | P1 | DB-07 | Delete the unused deployment config; prune CSP/allow-lists | — |
@@ -175,18 +177,18 @@ _Recalculated directly from the `[ ]/[~]/[x]/[!]` marker on every row above — 
 | 1 Backend security | 25 | 13 | 5 | 2 | 5 |
 | 2 Mobile & store blockers | 21 | 0 | 12 | 4 | 5 |
 | 3 Compliance & listing | 10 | 2 | 0 | 0 | 8 |
-| 4 Functional & testing | 7 | 0 | 0 | 1 | 6 |
-| 5 DB & ops | 9 | 0 | 0 | 0 | 9 |
+| 4 Functional & testing | 7 | 0 | 1 | 1 | 5 |
+| 5 DB & ops | 9 | 0 | 0 | 1 | 8 |
 | 6 UI/UX & responsive | 18 | 0 | 0 | 0 | 18 |
 | 7 Cleanup | 8 | 0 | 0 | 0 | 8 |
-| **Total** | **110** | **16** | **17** | **7** | **70** |
+| **Total** | **110** | **16** | **18** | **8** | **68** |
 
 By priority (same rows, split the other way):
 
 | Priority | Rows | Done | In progress | Blocked | Not started |
 |---|---|---|---|---|---|
 | P0 | 39 | 10 | 12 | 5 | 12 |
-| P1 | 36 | 6 | 5 | 2 | 23 |
+| P1 | 36 | 6 | 6 | 3 | 21 |
 | P2 | 24 | 1 | 3 | 0 | 20 |
 | P3 | 11 | 0 | 0 | 0 | 11 |
 
