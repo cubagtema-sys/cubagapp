@@ -378,9 +378,9 @@ def register():
                 try:
                     cursor.execute("""
                         INSERT INTO member_districts (member_id, district_id, district_name)
-                        SELECT %s, id, %s FROM districts WHERE LOWER(name) = LOWER(%s)
+                        SELECT %s::int, id, %s FROM districts WHERE LOWER(name) = LOWER(%s)
                         UNION ALL
-                        SELECT %s, NULL, %s WHERE NOT EXISTS (SELECT 1 FROM districts WHERE LOWER(name) = LOWER(%s))
+                        SELECT %s::int, NULL, %s WHERE NOT EXISTS (SELECT 1 FROM districts WHERE LOWER(name) = LOWER(%s))
                         ON CONFLICT (member_id, district_name) DO NOTHING
                     """, (new_id, p_name, p_name, new_id, p_name, p_name))
                 except Exception as ex_md:
@@ -875,16 +875,22 @@ def get_member_renewal_breakdown(member_scale, fee_category, cursor, member_type
         tied_districts = [d.strip() for d in str(port_of_operation).split(',') if d.strip()]
         if member_id and cursor and tied_districts:
             try:
+                cursor.execute("SAVEPOINT md_autosync")
                 for d_name in tied_districts:
                     cursor.execute("""
                         INSERT INTO member_districts (member_id, district_id, district_name)
-                        SELECT %s, id, %s FROM districts WHERE LOWER(name) = LOWER(%s)
+                        SELECT %s::int, id, %s FROM districts WHERE LOWER(name) = LOWER(%s)
                         UNION ALL
-                        SELECT %s, NULL, %s WHERE NOT EXISTS (SELECT 1 FROM districts WHERE LOWER(name) = LOWER(%s))
+                        SELECT %s::int, NULL, %s WHERE NOT EXISTS (SELECT 1 FROM districts WHERE LOWER(name) = LOWER(%s))
                         ON CONFLICT (member_id, district_name) DO NOTHING
                     """, (member_id, d_name, d_name, member_id, d_name, d_name))
+                cursor.execute("RELEASE SAVEPOINT md_autosync")
             except Exception as e:
-                logger.debug(f'Auto-sync member_districts: {e}')
+                logger.warning(f'Auto-sync member_districts failed: {e}')
+                try:
+                    cursor.execute("ROLLBACK TO SAVEPOINT md_autosync")
+                except Exception:
+                    pass
 
     if not tied_districts:
         tied_districts = ['Tema Port']
@@ -1050,8 +1056,9 @@ def get_me():
             if not member:
                 return jsonify({'message': 'Member not found'}), 404
                 
-            from utils import calculate_and_update_member_rating
-            rating_data = calculate_and_update_member_rating(member_id, cursor)
+            # BUG-09: read-only rating on GET /me (saved by scheduler / sign-in).
+            from utils import compute_member_rating
+            rating_data = compute_member_rating(member_id, cursor)
 
             # Fetch rating history (capped to last 30 entries for speed)
             cursor.execute("""
@@ -1468,9 +1475,9 @@ def update_profile():
                     for d_name in d_list:
                         cursor.execute("""
                             INSERT INTO member_districts (member_id, district_id, district_name)
-                            SELECT %s, id, %s FROM districts WHERE LOWER(name) = LOWER(%s)
+                            SELECT %s::int, id, %s FROM districts WHERE LOWER(name) = LOWER(%s)
                             UNION ALL
-                            SELECT %s, NULL, %s WHERE NOT EXISTS (SELECT 1 FROM districts WHERE LOWER(name) = LOWER(%s))
+                            SELECT %s::int, NULL, %s WHERE NOT EXISTS (SELECT 1 FROM districts WHERE LOWER(name) = LOWER(%s))
                             ON CONFLICT (member_id, district_name) DO NOTHING
                         """, (member_id, d_name, d_name, member_id, d_name, d_name))
                 except Exception as ex_dist:

@@ -446,13 +446,9 @@ def my_applications():
                 purpose = 'renewal' if (d.get('type') or '').startswith('renewal') else (d.get('type') or 'default')
                 if d.get('status') == 'draft':
                     if purpose in seen_draft_purposes:
-                        # Purge older duplicate draft row
-                        try:
-                            cursor.execute("DELETE FROM compliance_documents WHERE application_id = %s", (d['id'],))
-                            cursor.execute("DELETE FROM compliance_applications WHERE id = %s", (d['id'],))
-                            conn.commit()
-                        except Exception:
-                            pass
+                        # BUG-08: an older duplicate draft is hidden from the list,
+                        # not deleted. Listing used to DELETE it together with any
+                        # documents the member had uploaded to it.
                         continue
                     seen_draft_purposes.add(purpose)
 
@@ -723,10 +719,18 @@ def sign_upload(app_id):
 
 def _notify_admins_doc_updated(cursor, app_id, member_id, label, is_replacement=False):
     """Notify all admins when a member uploads or replaces a compliance document and ensure application is under review."""
+    # Runs inside the upload transaction. It used to query a column that does
+    # not exist (members.company_name); the swallowed error left the transaction
+    # aborted, so the document INSERT was silently rolled back while the member
+    # was told the upload succeeded. A savepoint now isolates any failure here.
     try:
-        cursor.execute("SELECT name, company_name FROM members WHERE id = %s", (member_id,))
+        cursor.execute("SAVEPOINT notify_admins")
+    except Exception:
+        return
+    try:
+        cursor.execute("SELECT name, company FROM members WHERE id = %s", (member_id,))
         m = cursor.fetchone() or {}
-        member_name = m.get('company_name') or m.get('name') or f"Member #{member_id}"
+        member_name = m.get('company') or m.get('name') or f"Member #{member_id}"
 
         # Transition application to under_review if submitted, revision requested, or already undergoing review
         cursor.execute("""
@@ -751,8 +755,13 @@ def _notify_admins_doc_updated(cursor, app_id, member_id, label, is_replacement=
                     send_push_notification(adm['fcm_token'], alert_title, alert_body, {'app_id': str(app_id), 'type': 'compliance'})
                 except Exception:
                     pass
+        cursor.execute("RELEASE SAVEPOINT notify_admins")
     except Exception as e:
         logger.warning(f"[Compliance] Failed notifying admins of doc update: {e}")
+        try:
+            cursor.execute("ROLLBACK TO SAVEPOINT notify_admins")
+        except Exception:
+            pass
 
 
 _UPLOAD_EDITABLE_STATUSES = ('draft', 'revision_requested', 'rejected', 'under_review', 'submitted')
@@ -1151,6 +1160,9 @@ def _get_logo_base64():
     return ""
 
 
+_CERTIFICATE_STATUSES = ('approved', 'completed')
+
+
 @compliance_bp.route('/applications/<int:app_id>/certificate', methods=['GET'])
 def get_certificate(app_id):
     """
@@ -1158,69 +1170,61 @@ def get_certificate(app_id):
     Supports ?format=pdf to seamlessly redirect to the vector PDF stream.
     Authentication accepts ?token=<jwt> query parameter or Authorization Bearer header.
     """
-    from flask_jwt_extended import decode_token, verify_jwt_in_request, get_jwt_identity
-    token = request.args.get('token', '').strip()
-    member_id = None
-    is_admin = False
-
-    if token:
-        try:
-            decoded = decode_token(token)
-            member_id = int(decoded.get('sub', 0))
-            is_admin = decoded.get('role') in ('admin', 'sub_admin', 'super_admin')
-        except Exception:
-            pass
-
-    if not member_id:
-        try:
-            verify_jwt_in_request(optional=True)
-            ident = get_jwt_identity()
-            if ident:
-                member_id = int(ident)
-        except Exception:
-            pass
+    # SEC (11 Nov): this endpoint used to serve ANY application's certificate to
+    # a caller with no token at all, for applications in any status.
+    from config.authz import caller_id_from_request, has_admin_permission
+    caller_id = caller_id_from_request(allow_query_token=True)
+    if not caller_id:
+        return jsonify({'message': 'Authentication required'}), 401
 
     conn = get_db()
     try:
         with conn.cursor() as cursor:
-            if is_admin or not member_id:
-                cursor.execute("""
-                    SELECT ca.*, m.name AS member_name, m.email AS member_email,
-                           m.company AS member_company, m.license_number, m.port_of_operation,
-                           m.member_type, m.member_scale, m.license_expiry_date
-                    FROM compliance_applications ca
-                    JOIN members m ON m.id = ca.member_id
-                    WHERE ca.id = %s
-                """, (app_id,))
-            else:
-                cursor.execute("""
-                    SELECT ca.*, m.name AS member_name, m.email AS member_email,
-                           m.company AS member_company, m.license_number, m.port_of_operation,
-                           m.member_type, m.member_scale, m.license_expiry_date
-                    FROM compliance_applications ca
-                    JOIN members m ON m.id = ca.member_id
-                    WHERE ca.id = %s AND ca.member_id = %s
-                """, (app_id, member_id))
+            is_admin = has_admin_permission(cursor, caller_id, 'members')
+            cursor.execute("""
+                SELECT ca.*, m.name AS member_name, m.email AS member_email,
+                       m.company AS member_company, m.license_number, m.port_of_operation,
+                       m.member_type, m.member_scale, m.license_expiry_date
+                FROM compliance_applications ca
+                JOIN members m ON m.id = ca.member_id
+                WHERE ca.id = %s
+            """, (app_id,))
             app = cursor.fetchone()
-            if not app:
+            if not app or (not is_admin and str(app['member_id']) != str(caller_id)):
                 return jsonify({'message': 'Certificate record not found'}), 404
+            if str(app.get('status') or '').lower() not in _CERTIFICATE_STATUSES:
+                return jsonify({'message': 'A certificate is only available once the application is approved.'}), 409
 
-            # If user requested PDF format directly, redirect to PDF generator
+            # The app asks for the PDF. Forward the caller's own ?token= so the
+            # PDF route (which enforces sign-in and good standing) can read it;
+            # dropping it broke certificate downloads after SEC-03.
             if request.args.get('format') == 'pdf':
                 from flask import redirect
-                return redirect(f"/api/v1/members/{app['member_id']}/certificate-pdf")
+                from urllib.parse import urlencode
+                target = f"/api/v1/members/{app['member_id']}/certificate-pdf"
+                qtoken = (request.args.get('token') or '').strip()
+                return redirect(target + ('?' + urlencode({'token': qtoken}) if qtoken else ''))
 
-    except Exception as e:
-        logger.exception(f"[Certificate] Failed fetching cert: {e}")
-        return jsonify({'message': str(e)}), 500
+    except Exception:
+        logger.exception("[Certificate] Failed fetching cert")
+        return jsonify({'message': 'Could not load the certificate. Please try again.'}), 500
     finally:
         conn.close()
 
+    # BUG-11: never print invented values on an official certificate.
+    if not (app.get('member_company') or app.get('member_name')):
+        return jsonify({'message': 'Certificate cannot be issued: member name is missing. Please contact the CUBAG Secretariat.'}), 409
+    lic_check = app.get('license_number')
+    if not lic_check or str(lic_check).lower() in ('pending', 'none', 'n/a', ''):
+        return jsonify({'message': 'Certificate cannot be issued: no licence number has been assigned yet. Please contact the CUBAG Secretariat.'}), 409
+    if not app.get('license_expiry_date'):
+        return jsonify({'message': 'Certificate cannot be issued: licence validity date is not set. Please contact the CUBAG Secretariat.'}), 409
+
     # Format fields to exact executive standards
-    company_name = (app.get('member_company') or app.get('member_name') or 'HART LOGISTICS').strip().upper()
+    company_name = (app.get('member_company') or app.get('member_name')).strip().upper()
     rep_name = (app.get('member_name') or '').strip().upper()
     
-    raw_scale = app.get('member_scale') or app.get('member_type') or 'Individual Broker'
+    raw_scale = app.get('member_scale') or app.get('member_type') or 'Customs Broker'
     scale_lower = raw_scale.lower()
     if 'broker' not in scale_lower:
         type_display = f"{raw_scale.title()} Broker"
@@ -1228,11 +1232,8 @@ def get_certificate(app_id):
         type_display = raw_scale.title()
 
     lic_num = app.get('license_number')
-    if not lic_num or str(lic_num).lower() in ('pending', 'none', 'n/a', ''):
-        year = datetime.now().year
-        lic_num = f"CUBAG-LIC-{year}-{app['member_id']:04d}"
 
-    port_txt = app.get('port_of_operation') or 'KIA Air Cargo'
+    port_txt = app.get('port_of_operation') or ''
 
     expiry = app.get('license_expiry_date')
     if expiry:
@@ -1243,9 +1244,6 @@ def get_certificate(app_id):
                 expiry_date_str = expiry
         else:
             expiry_date_str = expiry.strftime('%d %B %Y')
-    else:
-        from datetime import timedelta
-        expiry_date_str = (datetime.now() + timedelta(days=365)).strftime('%d %B %Y')
 
     logo_b64 = _get_logo_base64()
     pdf_download_url = f"/api/v1/members/{app['member_id']}/certificate-pdf"

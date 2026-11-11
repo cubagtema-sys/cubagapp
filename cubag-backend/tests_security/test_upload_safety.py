@@ -88,3 +88,62 @@ def test_bug13_owner_upload_still_works(client, auth, db, storage):
     # ownership is checked before storing AND re-checked under a row lock before the DB write
     assert len(db.executed(r'SELECT type, status FROM compliance_applications WHERE id = %s AND member_id = %s')) == 2
     assert db.executed(r'FOR UPDATE')
+
+
+# ── compliance certificate (new finding, 11 Nov) ──────────────────────────────
+def _cert_row(status='approved', **over):
+    row = {'id': 5, 'member_id': OWNER, 'status': status, 'member_name': 'Ama Mensah',
+           'member_email': 'ama@example.test', 'member_company': 'Mensah Clearing Ltd',
+           'license_number': 'CUBAG-LIC-2026-0010', 'port_of_operation': 'Tema',
+           'member_type': 'corporate', 'member_scale': None, 'license_expiry_date': '2027-11-30'}
+    row.update(over)
+    return row
+
+
+def test_certificate_requires_sign_in(client, db):
+    db.on(r'FROM compliance_applications ca', [_cert_row()])
+    r = client.get('/api/v1/compliance/applications/5/certificate')
+    assert r.status_code == 401
+    assert 'Mensah' not in r.get_data(as_text=True)
+
+
+def test_certificate_hidden_from_other_members(client, auth, db):
+    db.on(r'FROM compliance_applications ca', [_cert_row()])
+    r = client.get('/api/v1/compliance/applications/5/certificate', headers=auth(OTHER))
+    assert r.status_code == 404 and 'Mensah' not in r.get_data(as_text=True)
+
+
+@pytest.mark.parametrize('status', ['draft', 'submitted', 'under_review', 'rejected', 'payment_pending'])
+def test_certificate_only_for_approved_applications(client, auth, db, status):
+    db.on(r'FROM compliance_applications ca', [_cert_row(status=status)])
+    assert client.get('/api/v1/compliance/applications/5/certificate', headers=auth(OWNER)).status_code == 409
+
+
+def test_certificate_owner_and_admin(client, auth, db):
+    db.on(r'FROM compliance_applications ca', [_cert_row()])
+    for uid in (OWNER, 1):
+        r = client.get('/api/v1/compliance/applications/5/certificate', headers=auth(uid))
+        assert r.status_code == 200, (uid, r.get_json())
+        assert 'MENSAH CLEARING LTD' in r.get_data(as_text=True)
+
+
+@pytest.mark.parametrize('missing', [
+    {'member_company': None, 'member_name': None},
+    {'license_number': None}, {'license_number': 'Pending'}, {'license_expiry_date': None},
+])
+def test_certificate_never_invents_values(client, auth, db, missing):
+    db.on(r'FROM compliance_applications ca', [_cert_row(**missing)])
+    r = client.get('/api/v1/compliance/applications/5/certificate', headers=auth(OWNER))
+    assert r.status_code == 409
+    text = r.get_data(as_text=True)
+    for invented in ('HART LOGISTICS', 'KIA Air Cargo', 'CUBAG-LIC-'):
+        assert invented not in text
+
+
+def test_certificate_pdf_redirect_keeps_the_token(client, db, token):
+    """Regression: SEC-03 made the PDF route require sign-in; the redirect dropped ?token=."""
+    db.on(r'FROM compliance_applications ca', [_cert_row()])
+    t = token(OWNER)
+    r = client.get(f'/api/v1/compliance/applications/5/certificate?token={t}&format=pdf')
+    assert r.status_code == 302
+    assert r.headers['Location'].endswith(f'/api/v1/members/{OWNER}/certificate-pdf?token={t}')
