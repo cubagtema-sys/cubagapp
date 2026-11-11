@@ -144,9 +144,9 @@ Real-PostgreSQL results and the device test sheet are in `CUBAG_VERIFICATION_LOG
 
 | Status | Pri | ID | Task | Test |
 |---|---|---|---|---|
-| [ ] | P1 | UI-02 | Contrast-safe orange for text (≈`#C2410C`), darker muted text (≈`#64748B`) | all text ≥ 4.5:1 |
-| [ ] | P1 | UI-03 | Tooltips/semantic labels on icon buttons and tappable cards (core 10 screens first) | TalkBack/VoiceOver walkthrough |
-| [ ] | P1 | RESP-03 | Keyboard-safe bottom sheets/dialogs with text fields | iPhone SE: no field hidden by keyboard |
+| [x] | P1 | UI-02 | Contrast-safe orange for text (`#C2410C`, `AppColors.accentOrangeText`) on 90 text uses; muted grey `#94A3B8`/`#9CA3AF` → `#5F6B7E` (≥ 4.9:1 on white/cream) — `1ccd231`. **Open decision:** white text on orange buttons is 3.28:1 | all text ≥ 4.5:1 |
+| [~] | P1 | UI-03 | Tooltips on all 73 icon-only IconButtons, Semantics on 12 icon-only taps, lint test guards it — `2576d39`. Remaining: TalkBack/VoiceOver walkthrough on device | TalkBack/VoiceOver walkthrough |
+| [x] | P1 | RESP-03 | Keyboard-safe sheets/dialogs: all input bottom sheets already safe; member input dialogs made scrollable | iPhone SE: no field hidden by keyboard (device check pending) |
 | [ ] | P1 | RESP-05 | Safe-area check on screens without AppBar | notch/punch-hole devices |
 | [ ] | P2 | UI-01 | Design tokens via `ThemeExtension` (colours, radius, spacing, type scale); migrate pages as touched | new code uses tokens only |
 | [ ] | P2 | UI-04 | Raise text-scale cap to ≥1.3, fix overflows; target 2.0 | 200% system font usable |
