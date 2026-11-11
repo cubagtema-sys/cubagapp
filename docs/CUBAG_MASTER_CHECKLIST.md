@@ -4,7 +4,7 @@ Status: `[ ]` Not started · `[~]` In progress · `[x]` Completed · `[!]` Block
 Priority: **P0** must fix before release · **P1** production readiness · **P2** quality & experience · **P3** optional
 IDs refer to `CUBAG_AUDIT_REPORT.md` (SEC/BUG/UI/RESP/DB/PERF/IOS/AND/INC). Phases match `CUBAG_IMPLEMENTATION_ROADMAP.md`.
 
-_Last updated: 11 Nov 2026 (bug section) — branch `release/p0-hardening`._
+_Last updated: 11 Nov 2026 (session 4: SEC-12, SEC-20, BUG-10 forex) — branch `release/p0-hardening`._
 
 **Status rules used:** `[x]` = implemented **and** its automated tests ran and passed (backend: `python -m pytest tests_security`).
 `[~]` = implemented but not yet verified end-to-end. Verification run 2 (10 Nov 22:42 PST): `flutter analyze` 0 issues, `flutter test` 84/84,
@@ -53,12 +53,12 @@ Real-PostgreSQL results and the device test sheet are in `CUBAG_VERIFICATION_LOG
 | [x] | P0 | SEC-06 | Permission checks on GDPR routes and compliance settings | `routes/gdpr.py`, `routes/compliance_settings.py` | sub-admin(events) → 403 |
 | [x] | P0 | SEC-19 | Compliance webhook: fail closed + timestamp check (reuse payments implementation) | `routes/compliance.py:1775` | unsigned → 401 |
 | [x] | P0 | BUG-02 | Return 401 (not 503) for expired/invalid JWT in `enforce_account_status` | `server.py:321-373` | expired token → 401 |
-| [ ] | P1 | SEC-12 | Admin MFA (email-OTP or TOTP step-up) | `routes/auth.py`, admin web login | admin login requires second factor |
+| [~] | P1 | SEC-12 | Admin MFA (email-OTP or TOTP step-up) — done `67c062c`: backend tested (11 tests); login dialog unverified on device; needs working email on the server | `routes/auth.py`, admin web login | admin login requires second factor |
 | [x] | P1 | SEC-16 | `token_version` column; bump on password change/reset/deletion; check per request | `auth.py`, `server.py` | old token rejected after reset |
 | [~] | P1 | SEC-15 | Email change requires OTP to the new address; notify the old one | `routes/auth.py:1318` | change without OTP → 400 |
 | [x] | P1 | SEC-17 | Trust only the active platform's client-IP header; per-account login failure counter | `config/rate_limit.py`, `auth.py` | spoofed header doesn't reset limit |
 | [x] | P1 | SEC-18 | Replace `str(e)` responses with generic messages + correlation ID (≈50 sites + global handler) | `routes/*.py`, `server.py:791` | forced error shows no internals |
-| [ ] | P1 | SEC-20 | Pay by `bill_id`/`fee_id` (server-derived amount); reject unmatched descriptions | `routes/payments.py`, `config/payment_validation.py` | tampered amount rejected |
+| [~] | P1 | SEC-20 | Pay by `bill_id`/`fee_id` (server-derived amount); reject unmatched descriptions — exploit closed `36ed0b4` (installments only on bills; unlocking keywords must match a fee; 27 tests). Still open: client sends description, not fee id (app fee list `cubag_fees_v2` ≠ server `fee_schedules`) | `routes/payments.py`, `config/payment_validation.py` | tampered amount rejected |
 | [!] | P1 | SEC-09 | Send email from a CUBAG domain with SPF/DKIM/DMARC | env + DNS | mail-tester score ≥ 9 |
 | [~] | P2 | SEC-21 | Set Content-Type from extension; magic-byte check | `file_storage.py`, upload routes | `.png` containing HTML rejected |
 | [ ] | P2 | SEC-22 | Restrict CORS/Socket.IO origins to real web origins | `server.py:201`, `socket_instance.py` | foreign origin blocked (web) |
@@ -108,7 +108,7 @@ Real-PostgreSQL results and the device test sheet are in `CUBAG_VERIFICATION_LOG
 | [ ] | P0 | AND-09 / IOS-16 | Content rating questionnaire (Play) and age rating (Apple) | ratings issued |
 | [ ] | P1 | UI-08 | New high-resolution square logo master; adaptive Android icon; regenerate icons and splash | icon is sharp at 1024 px |
 | [ ] | P1 | AND-10 / 2.4 | Screenshots (iPhone 6.9", iPad 13" if enabled, Play phone + feature graphic) | consoles accept |
-| [x] | P1 | BUG-10 / IOS-15 | Label or hide static vessel/intelligence data | reviewer can't mistake it for live |
+| [x] | P1 | BUG-10 / IOS-15 | Label or hide static vessel/intelligence data (forex labelled SAMPLE until admin publishes: `c589758`) | reviewer can't mistake it for live |
 | [x] | P1 | BUG-11 | Remove invented fallbacks on certificates/verification; signatories and years from settings | pending member → no certificate |
 
 ## Phase 4 — Functional hardening & testing

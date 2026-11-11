@@ -6,6 +6,23 @@ _Checkpoint written 10 Nov 2026 at the end of implementation session 1; updated 
 
 You pasted the real `cubag-backend/.env` file (with live `DB_PASSWORD`, `DATABASE_URL`, `SECRET_KEY`, `JWT_SECRET_KEY`, `SMTP_PASS`, `RESEND_API_KEY`, `WHITSUNPAY_API_KEY` (`wp_live_...`), `WHITSUNPAY_WEBHOOK_SECRET`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `AIS_API_KEY`, and the full Firebase service-account private key) directly into the conversation. None of those values were used, logged, or sent anywhere by me — I never need them for this work and never connect to your production services — but once a secret has been typed into a chat it should be treated as potentially exposed. Please rotate **all** of the above (new DB password, new Supabase service/anon keys via Supabase dashboard, new JWT/Flask secret keys, new SMTP app password, new Resend key, new WhitsunPay API key + webhook secret, and a new Firebase service-account key with the old one revoked in the Firebase/GCP console) — this is the same rotation already listed as owner action #3 below, now more urgent.
 
+## Session 4 status (11 Nov 2026, ~10:30 PST) — read this first
+
+Run on the owner's Mac. Verification run 4 (`run_20261111_094503`, HEAD `f144138`) and run 5 (`run_20261111_102311`, HEAD `67c062c`): analyze 0 issues, `flutter test` 99/99, Android debug + iOS release builds pass, merged manifest targetSdk 36, backend fake-DB 170/170. Release AAB still stops at the signing guard (expected). Run 5's `pub get` failed only on a DNS blip to pub.dev; packages were cached and every later step passed. `pubspec.lock` did not change, so nothing to commit. `tests_pg` not re-run: local PostgreSQL wasn't running.
+
+| Commit | Item | Notes |
+|---|---|---|
+| `c589758` | BUG-10 / IOS-15 | `/intelligence` returns `is_sample`, `sample_sections`, `updated_at`. Dashboard + Intelligence Hub say "SAMPLE" instead of "Official"/"BOG Indicative" until an admin publishes real rates. |
+| `36ed0b4` | SEC-20 | **Was critical:** a GHS 0.01 "installment" of a registration/package/course fee unlocked it, and a renewal installment with no bill added a full licence year, because completion is decided by description keywords. Installments now need a bill; descriptions with unlocking keywords (licence, bill, onboarding, dossier, …) must match a fee. "Other" payments unchanged. App hides the installment toggle where no bill backs it. |
+| `67c062c` | SEC-12 | Admin/sub-admin/super-admin sign-in needs a 6-digit emailed code (`POST /auth/login/mfa`). New table `admin_mfa_challenges` (init_db). Emergency off-switch `ADMIN_MFA_REQUIRED=false`. |
+
+Owner notes:
+- **Before deploying SEC-12, confirm server email works** (Resend/SMTP), or admins can't sign in. Fix the sender domain at the same time (SEC-09).
+- SEC-20 behaviour change: registration, package and course fees can no longer be paid in parts; only Secretariat-issued bills and renewal bills can. Tell the Secretariat.
+- Pre-existing bug found, **not fixed**: in `_mark_payment_as_paid`, `is_renewal_payment` requires `'new' not in description`, but "renewal" contains "new", so it is only true for descriptions like "Annual Dues". Renewals usually go through the bill path instead, so impact is limited. Needs a careful fix and test.
+- `routes/auth.py` fee-status flags (`has_pkg_payment` etc.) still count any paid payment by keyword. That's safe now that partial non-bill payments are refused, but should move to totals when pay-by-fee-id is done.
+- Device rows to add: admin code dialog (web), sample forex badge, installment toggle hidden for registration/package.
+
 ## Session 3 status (11 Nov 2026) — read this first
 
 **URGENT owner action (SEC-26):** deploy commit `df9b3e0`, then rotate the Supabase service-role key (Project Settings → API), update it on the server, and review Supabase API logs for service-role requests that did not come from the server. Rotate *after* deploying, or the new key leaks the same way.
