@@ -27,3 +27,43 @@ def test_public_verification_does_not_invent_numbers(client, db):
         assert body['membership_number'] is None
         assert body['license_number'] is None
         assert body['valid_until'] is None
+
+
+def _intel(client):
+    from config.cache import cache
+    cache.clear()
+    r = client.get(f'{API}/intelligence/')
+    assert r.status_code == 200
+    return r.get_json()
+
+
+def test_intelligence_defaults_are_labelled_sample(client, db):
+    body = _intel(client)
+    assert body['is_sample'] is True
+    assert set(body['sample_sections']) == {'ports', 'bunkers', 'alerts', 'forex'}
+    assert body['updated_at'] is None
+
+
+def test_admin_entered_forex_is_not_sample(client, db):
+    import datetime as dt
+    db.on(r'FROM platform_settings WHERE config_key', [{
+        'config_value': {'forex': {'USD': '11.10', 'EUR': '12.00', 'GBP': '14.00', 'CNY': '1.55'}},
+        'updated_at': dt.datetime(2026, 11, 11, 9, 0)}])
+    body = _intel(client)
+    assert body['is_sample'] is False
+    assert 'forex' not in body['sample_sections'] and 'ports' in body['sample_sections']
+    assert body['forex']['USD'] == '11.10'
+    assert body['updated_at'].startswith('2026-11-11T09:00')
+
+
+def test_defaults_saved_back_unchanged_stay_sample(client, db):
+    from routes.intelligence import DEFAULT_DATA
+    db.on(r'FROM platform_settings WHERE config_key', [{'config_value': dict(DEFAULT_DATA), 'updated_at': None}])
+    assert _intel(client)['is_sample'] is True
+
+
+def test_meta_fields_are_never_stored(client, db, auth):
+    from routes.intelligence import save_data
+    save_data({'forex': {'USD': '1'}, 'is_sample': True, 'sample_sections': ['x'], 'updated_at': 'y'})
+    stored = [p for s, p in db.executed(r'INSERT INTO platform_settings')]
+    assert stored and 'is_sample' not in stored[-1][1] and 'sample_sections' not in stored[-1][1]

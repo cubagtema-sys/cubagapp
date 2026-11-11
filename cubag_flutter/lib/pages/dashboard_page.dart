@@ -12,6 +12,7 @@ import '../services/push_notification_service.dart';
 import '../services/socket_service.dart';
 import '../services/theme_service.dart';
 import '../utils/session_storage.dart';
+import '../utils/intelligence_data.dart';
 
 // Balanced CUBAG Brand Palette & Editorial Tokens
 bool get _isDark => ThemeService.instance.isDark;
@@ -45,6 +46,7 @@ class _DashboardPageState extends State<DashboardPage> {
     'GBP': '—',
     'CNY': '—',
   };
+  bool _forexIsSample = false;
   Map<String, dynamic> _user = {};
   static String? _lastShownBillId;
 
@@ -85,15 +87,11 @@ class _DashboardPageState extends State<DashboardPage> {
       _surveys = ApiService.ensureList(cachedSurveys);
       _loadingSurveys = false;
     }
-    final cachedIntel = ApiService.getCachedSync('intelligence');
-    if (cachedIntel is Map && cachedIntel['forex'] is Map) {
-      final forexMap = cachedIntel['forex'] as Map;
-      _forex = {
-        'USD': forexMap['USD']?.toString() ?? '—',
-        'EUR': forexMap['EUR']?.toString() ?? '—',
-        'GBP': forexMap['GBP']?.toString() ?? '—',
-        'CNY': forexMap['CNY']?.toString() ?? '—',
-      };
+    final cachedForex =
+        ForexSnapshot.fromIntelligence(ApiService.getCachedSync('intelligence'));
+    if (cachedForex != null) {
+      _forex = cachedForex.rates;
+      _forexIsSample = cachedForex.isSample;
     }
     _loading = false;
 
@@ -638,17 +636,11 @@ class _DashboardPageState extends State<DashboardPage> {
       bool hasError = false,
     }) {
       if (!mounted) return;
-      if (data != null &&
-          data is Map &&
-          data['forex'] != null &&
-          data['forex'] is Map) {
-        final forexMap = data['forex'] as Map;
-        final usd = forexMap['USD']?.toString() ?? '—';
-        final eur = forexMap['EUR']?.toString() ?? '—';
-        final gbp = forexMap['GBP']?.toString() ?? '—';
-        final cny = forexMap['CNY']?.toString() ?? '—';
+      final snap = ForexSnapshot.fromIntelligence(data);
+      if (snap != null) {
         setState(() {
-          _forex = {'USD': usd, 'EUR': eur, 'GBP': gbp, 'CNY': cny};
+          _forex = snap.rates;
+          _forexIsSample = snap.isSample;
         });
       }
     });
@@ -980,9 +972,9 @@ class _DashboardPageState extends State<DashboardPage> {
         'action': () => context.go('/tasks'),
       },
       {
-        'title': 'OFFICIAL USD/GHS',
+        'title': _forexIsSample ? 'USD/GHS (SAMPLE)' : 'OFFICIAL USD/GHS',
         'value': _forex['USD'] != null && _forex['USD'] != '—' ? '${_forex['USD']}' : '—',
-        'sub': 'Bank of Ghana Indicative',
+        'sub': _forexIsSample ? 'Sample, not official' : 'Bank of Ghana Indicative',
         'color': _kBrown,
         'icon': Icons.currency_exchange_rounded,
         'isStatus': false,
@@ -1551,7 +1543,7 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Row(
               children: [
                 Text(
-                  'OFFICIAL FOREX RATES',
+                  _forexIsSample ? 'FOREX RATES' : 'OFFICIAL FOREX RATES',
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w900,
                     fontSize: 13,
@@ -1563,14 +1555,16 @@ class _DashboardPageState extends State<DashboardPage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: _kGreen.withAlpha(20),
+                    color: _forexIsSample
+                        ? const Color(0xFFFEF3C7)
+                        : _kGreen.withAlpha(20),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    'BOG INDICATIVE',
+                    _forexIsSample ? 'SAMPLE' : 'BOG INDICATIVE',
                     style: GoogleFonts.inter(
                       fontSize: 10,
-                      color: _kGreen,
+                      color: _forexIsSample ? const Color(0xFF92400E) : _kGreen,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.5,
                     ),
@@ -1584,6 +1578,13 @@ class _DashboardPageState extends State<DashboardPage> {
             padding: const EdgeInsets.all(14),
             child: Column(
               children: [
+                if (_forexIsSample) ...[
+                  Text(
+                    ForexSnapshot.sampleNotice,
+                    style: GoogleFonts.inter(fontSize: 12, color: _kMuted),
+                  ),
+                  const SizedBox(height: 10),
+                ],
                 _forexRow('\$', 'USD/GHS', _forex['USD'] ?? '—', 'US Dollar'),
                 const SizedBox(height: 8),
                 _forexRow('€', 'EUR/GHS', _forex['EUR'] ?? '—', 'Euro'),

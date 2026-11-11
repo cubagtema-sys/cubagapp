@@ -3,6 +3,7 @@ import '../components/app_layout.dart';
 import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
+import '../utils/intelligence_data.dart';
 
 class LiveDataPage extends StatefulWidget {
   const LiveDataPage({super.key});
@@ -20,6 +21,8 @@ class _LiveDataPageState extends State<LiveDataPage> {
     'CNY': '—',
   };
   bool _forexLoading = true;
+  bool _forexIsSample = false;
+  String _forexUpdated = '';
   bool _newsLoading = true;
   List<Map<String, String>> _news = [];
   String _lastUpdated = '';
@@ -76,18 +79,12 @@ class _LiveDataPageState extends State<LiveDataPage> {
       bool hasError = false,
     }) {
       if (!mounted) return;
-      if (data != null &&
-          data is Map &&
-          data['forex'] != null &&
-          data['forex'] is Map) {
-        final forexMap = data['forex'] as Map;
+      final snap = ForexSnapshot.fromIntelligence(data);
+      if (snap != null) {
         setState(() {
-          _forex = {
-            'USD': forexMap['USD']?.toString() ?? '—',
-            'EUR': forexMap['EUR']?.toString() ?? '—',
-            'GBP': forexMap['GBP']?.toString() ?? '—',
-            'CNY': forexMap['CNY']?.toString() ?? '—',
-          };
+          _forex = snap.rates;
+          _forexIsSample = snap.isSample;
+          _forexUpdated = snap.updatedLabel;
           _forexLoading = false;
         });
       } else if (!isCached) {
@@ -225,17 +222,33 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                       size: 18,
                                     ),
                                     const SizedBox(width: 8),
-                                    Text(
-                                      'Official Customs Forex Rates',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 15.5,
-                                        color: text,
-                                        letterSpacing: -0.2,
+                                    Expanded(
+                                      child: Text(
+                                        _forexIsSample
+                                            ? 'Forex Rates (sample)'
+                                            : 'Official Customs Forex Rates',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 15.5,
+                                          color: text,
+                                          letterSpacing: -0.2,
+                                        ),
                                       ),
                                     ),
+                                    if (!_forexLoading && _forexIsSample)
+                                      const _SampleBadge(),
                                   ],
                                 ),
+                                if (!_forexLoading &&
+                                    (_forexIsSample || _forexUpdated.isNotEmpty)) ...[
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    _forexIsSample
+                                        ? ForexSnapshot.sampleNotice
+                                        : _forexUpdated,
+                                    style: TextStyle(fontSize: 12, color: muted),
+                                  ),
+                                ],
                                 const SizedBox(height: 14),
                                 if (_forexLoading)
                                   GridView.count(
@@ -610,6 +623,35 @@ class _BlinkingDotState extends State<_BlinkingDot>
         width: 6,
         height: 6,
         decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
+      ),
+    );
+  }
+}
+
+
+/// Amber "SAMPLE" chip for placeholder data (BUG-10 / IOS-15).
+class _SampleBadge extends StatelessWidget {
+  const _SampleBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Sample data, not official',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEF3C7),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: const Text(
+          'SAMPLE',
+          style: TextStyle(
+            fontSize: 10,
+            color: Color(0xFF92400E),
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
+          ),
+        ),
       ),
     );
   }

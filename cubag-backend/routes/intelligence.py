@@ -1,4 +1,4 @@
-import os
+import copy
 import json
 import logging
 from flask import Blueprint, request, jsonify
@@ -42,14 +42,36 @@ DEFAULT_DATA = {
 SETTING_KEY = 'intelligence_data'
 
 
+# Response-only fields; never stored.
+META_KEYS = ('is_sample', 'sample_sections', 'updated_at')
+
+
+def _with_meta(data, updated_at=None):
+    """Mark every section that is still the built-in placeholder (BUG-10/IOS-15).
+
+    A section counts as sample when its value equals DEFAULT_DATA, whether it
+    came from the fallback or was saved back unchanged by the admin page.
+    """
+    out = copy.deepcopy(data)
+    for k in META_KEYS:
+        out.pop(k, None)
+    sample = [k for k, v in DEFAULT_DATA.items() if out.get(k, v) == v]
+    for k in sample:
+        out.setdefault(k, copy.deepcopy(DEFAULT_DATA[k]))
+    out['sample_sections'] = sample
+    out['is_sample'] = 'forex' in sample
+    out['updated_at'] = updated_at.isoformat() if hasattr(updated_at, 'isoformat') else updated_at
+    return out
+
+
 def load_data():
-    """Load from DB platform_settings table, fall back to defaults."""
+    """Load from DB platform_settings table, fall back to (labelled) defaults."""
     try:
         conn = get_db()
         try:
             with conn.cursor() as cursor:
                 cursor.execute(
-                    "SELECT config_value FROM platform_settings WHERE config_key = %s",
+                    "SELECT config_value, updated_at FROM platform_settings WHERE config_key = %s",
                     (SETTING_KEY,)
                 )
                 row = cursor.fetchone()
@@ -59,21 +81,19 @@ def load_data():
                     try:
                         data = json.loads(data)
                     except Exception:
-                        data = DEFAULT_DATA.copy()
+                        data = None
                 if isinstance(data, dict):
-                    for k, v in DEFAULT_DATA.items():
-                        if k not in data:
-                            data[k] = v
-                    return data
+                    return _with_meta(data, row.get('updated_at'))
         finally:
             conn.close()
     except Exception as e:
         logger.exception("[intelligence] DB load failed: %s", e)
-    return DEFAULT_DATA
+    return _with_meta({})
 
 
 def save_data(data):
     """Upsert intelligence data into DB platform_settings table."""
+    data = {k: v for k, v in (data or {}).items() if k not in META_KEYS}
     conn = get_db()
     try:
         with conn.cursor() as cursor:
@@ -96,7 +116,9 @@ def get_intelligence():
 @intelligence_bp.route('/', methods=['POST'])
 @sub_admin_required('intelligence')
 def update_intelligence():
-    data = request.json
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"message": "Expected a JSON object"}), 400
     save_data(data)
     cache.clear()  # Invalidate intelligence cache on update
     return jsonify({"message": "Intelligence data updated successfully"}), 200
