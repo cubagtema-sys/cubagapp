@@ -77,76 +77,60 @@ class AuthHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // One line: [back] seal  name / motto — sitting close under the status bar.
     return SafeArea(
       bottom: false,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
+          onBack == null ? CubagSpace.lg : CubagSpace.xs,
+          CubagSpace.md,
           CubagSpace.lg,
-          onBack == null ? CubagSpace.xxl : CubagSpace.xs,
           CubagSpace.lg,
-          CubagSpace.xl,
         ),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            constraints: const BoxConstraints(maxWidth: 456),
+            child: Row(
               children: [
-                if (onBack != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: CubagSpace.xs),
-                    child: IconButton(
-                      tooltip: 'Back',
-                      onPressed: onBack,
-                      style: IconButton.styleFrom(
-                        foregroundColor: CubagColors.onCocoa,
-                        padding: EdgeInsets.zero,
-                        alignment: Alignment.centerLeft,
-                      ),
-                      icon: const Icon(Icons.arrow_back_rounded),
-                    ),
+                if (onBack != null) ...[
+                  IconButton(
+                    tooltip: 'Back',
+                    onPressed: onBack,
+                    color: CubagColors.onCocoa,
+                    icon: const Icon(Icons.arrow_back_rounded),
                   ),
-                Row(
-                  children: [
-                    Container(
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: CubagColors.paper,
+                  const SizedBox(width: CubagSpace.xxs),
+                ],
+                Container(
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: CubagColors.paper,
+                  ),
+                  padding: const EdgeInsets.all(3),
+                  child: const AppLogo(size: 56, borderRadius: 28, showShadow: false),
+                ),
+                const SizedBox(width: CubagSpace.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        // Two balanced lines, never a lone "Ghana".
+                        'Customs Brokers\nAssociation of Ghana',
+                        semanticsLabel: 'Customs Brokers Association of Ghana',
+                        style: CubagType.title.copyWith(
+                          color: CubagColors.onCocoa,
+                          fontSize: 20,
+                          height: 25 / 20,
+                        ),
                       ),
-                      padding: const EdgeInsets.all(3),
-                      child: const AppLogo(
-                        size: 64,
-                        borderRadius: 32,
-                        showShadow: false,
+                      const SizedBox(height: 2),
+                      Text(
+                        'Honesty and Efficiency',
+                        style: CubagType.small.copyWith(color: CubagColors.onCocoaMuted),
                       ),
-                    ),
-                    const SizedBox(width: CubagSpace.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            // Two balanced lines, never a lone "Ghana".
-                            'Customs Brokers\nAssociation of Ghana',
-                            semanticsLabel:
-                                'Customs Brokers Association of Ghana',
-                            style: CubagType.title.copyWith(
-                              color: CubagColors.onCocoa,
-                              fontSize: 22,
-                              height: 27 / 22,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Honesty and Efficiency',
-                            style: CubagType.small.copyWith(
-                              color: CubagColors.onCocoaMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),

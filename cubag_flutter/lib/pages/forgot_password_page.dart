@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../components/auth_scaffold.dart';
@@ -9,6 +8,16 @@ import '../services/api_service.dart';
 import '../utils/validators.dart';
 
 enum _Step { request, setPassword, done }
+
+/// The code from what the member typed or pasted: the 8 digits, or the
+/// whole link from the reset email (…reset-password?token=12345678&…).
+String extractResetCode(String input) {
+  final fromLink = RegExp(r'token=(\d{8})').firstMatch(input);
+  if (fromLink != null) return fromLink.group(1)!;
+  final digits = input.replaceAll(RegExp(r'\D'), '');
+  return digits.length == 8 ? digits : input.trim();
+}
+
 
 /// Password reset, entirely in the app:
 ///  1. email -> "Send code" (POST /auth/forgot-password; the server answers the
@@ -100,7 +109,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   }
 
   Future<void> _setPassword() async {
-    final code = _codeCtrl.text.trim();
+    final code = _codeFromLink ? _codeCtrl.text.trim() : extractResetCode(_codeCtrl.text);
     if (!_codeFromLink && !RegExp(r'^\d{8}$').hasMatch(code)) {
       setState(() => _error = 'Enter the 8-digit code from the email.');
       return;
@@ -223,7 +232,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           Text(
             _codeFromLink
                 ? 'For $email. Use at least 8 characters.'
-                : 'If there\'s an account for $email, we\'ve sent an 8-digit code. It expires in 1 hour.',
+                : 'If there\'s an account for $email, we\'ve emailed you a code (or a reset link). It expires in 1 hour.',
             style: CubagType.small,
           ),
           const SizedBox(height: CubagSpace.lg),
@@ -235,14 +244,24 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               enabled: !_loading,
               keyboardType: TextInputType.number,
               autofillHints: const [AutofillHints.oneTimeCode],
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(8),
-              ],
+              autocorrect: false,
+              // A pasted reset link is turned into its code straight away.
+              onChanged: (v) {
+                if (v.contains('token=')) {
+                  final c = extractResetCode(v);
+                  _codeCtrl.value = TextEditingValue(
+                    text: c,
+                    selection: TextSelection.collapsed(offset: c.length),
+                  );
+                }
+              },
               textInputAction: TextInputAction.next,
               onFieldSubmitted: (_) => _pwFocus.requestFocus(),
               style: CubagType.figure.copyWith(fontSize: 20, letterSpacing: 4),
-              decoration: const InputDecoration(hintText: '8-digit code'),
+              decoration: const InputDecoration(
+                hintText: '8-digit code',
+                helperText: 'Or paste the reset link from the email.',
+              ),
             ),
             const SizedBox(height: CubagSpace.md),
           ],
