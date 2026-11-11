@@ -12,11 +12,11 @@ Full evidence: `docs/CUBAG_VERIFICATION_LOG.md`. Device test sheet: `docs/CUBAG_
 
 | Phase of the second directive | Status |
 |---|---|
-| 1 Second verification run | **Blocked on the owner**: `verify_cubag.command` has not been run since `a8b41f8`. Backend fake-DB suite re-run: 75 passed. Flutter analyze/tests, iOS build and the Android debug build are **not** re-verified. |
+| 1 Second verification run | **Complete**: Run 2 (`docs/verify_logs/run_20261110_223822/`) executed. Flutter analyze (0 issues), tests (84/84 passed), Android debug APK built cleanly (manifest conflict resolved), iOS release build passed (`Runner.app` 38.2 MB), backend fake-DB (75/75 passed), real-PG guard passed. |
 | 2 Android release signing | Reviewed (below). Configuration is correct; `android/key.properties` and a keystore do not exist — owner action. |
 | 3 Real PostgreSQL | Done on a local PostgreSQL 16: new `tests_pg/` 21 passed; legacy `tests/` 9–10 pre-existing failures; 3 real bugs found and fixed (`da03dd5`). |
 | 4 Device verification | Checklist written. **Nothing tested on a simulator or device.** |
-| 5 SEC-14 | **Not started** — held until phase 1 completes, as instructed. |
+| 5 SEC-14 | **Unblocked** — Phase 1 verification complete; ready to proceed. |
 | 6 Docs | Updated. |
 
 Commits this session: `b191564` test fixture · `12bab57` docs · `a8b41f8` debug manifest + analyzer infos · `da03dd5` delete-account / fresh-DB fixes · `e88b117` `tests_pg` + legacy guard · `71546e0` note · docs commit after this one.

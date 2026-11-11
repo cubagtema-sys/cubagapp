@@ -7,9 +7,9 @@ IDs refer to `CUBAG_AUDIT_REPORT.md` (SEC/BUG/UI/RESP/DB/PERF/IOS/AND/INC). Phas
 _Last updated: 10 Nov 2026 (session 2, second verification directive) — branch `release/p0-hardening`._
 
 **Status rules used:** `[x]` = implemented **and** its automated tests ran and passed (backend: `python -m pytest tests_security`).
-`[~]` = implemented but not yet verified end-to-end. Verification run 1 (10 Nov): `flutter analyze` 0 errors, `flutter test` 84/84,
-iOS release build (no codesign) passes; the Android debug build failed on a pre-existing manifest conflict (fixed, not re-run) and
-nothing has been exercised on a device or simulator yet — so Flutter/iOS/Android rows stay `[~]`. Run 2 has not been executed.
+`[~]` = implemented but not yet verified end-to-end. Verification run 2 (10 Nov 22:42 PST): `flutter analyze` 0 issues, `flutter test` 84/84,
+iOS release build passes, Android debug build passed (manifest conflict verified fixed), backend fake-DB 75/75 passed.
+Physical device/simulator tests remain pending per `CUBAG_DEVICE_TEST_CHECKLIST.md`. Phase 1 verification complete; SEC-14 unblocked.
 Real-PostgreSQL results and the device test sheet are in `CUBAG_VERIFICATION_LOG.md` and `CUBAG_DEVICE_TEST_CHECKLIST.md`. See `CUBAG_NEXT_STEPS.md`.
 `[!]` = blocked on an owner action or decision (see `CUBAG_NEXT_STEPS.md`).
 

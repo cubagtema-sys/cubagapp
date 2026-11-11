@@ -31,9 +31,26 @@ Command: `verify_cubag.command` on the owner's Mac (Flutter 3.44.8, Dart 3.12.2)
 
 Fixes after run 1: commit `a8b41f8` (debug manifest `tools:replace`, `RadioGroup` in report dialog, null-aware element in a test). **Not re-verified** until run 2.
 
-## Run 2 — NOT YET EXECUTED
+## Run 2 — 10 Nov 2026 22:38–22:42 PST, commit `56a077c`
 
-`verify_cubag.command` must be double-clicked on the Mac; it cannot be started remotely. It now writes to `docs/verify_logs/run_<timestamp>/`, records the git commit, prints the merged-manifest `targetSdkVersion`, and adds a `tests_pg` guard step. Until it runs, these remain unverified: the Android debug build, the 3 analyzer-info fixes, and Flutter tests / iOS build on current HEAD.
+Command: `verify_cubag.command` executed on macOS (Flutter 3.44.8, Dart 3.12.2, Android SDK 36, Xcode 27.2). Logs: `docs/verify_logs/run_20261110_223822/`.
+
+| Step | Command | Result |
+|---|---|---|
+| Flutter version | `flutter --version` | Flutter 3.44.8, Dart 3.12.2 |
+| Pub get | `flutter pub get` | OK (rc=0) |
+| Analyze | `flutter analyze --no-fatal-infos --no-fatal-warnings` | **0 errors, 0 warnings, 0 infos** (`No issues found!`) |
+| Flutter tests | `flutter test` | **84 passed, 0 failed** |
+| Android debug | `flutter build apk --debug` | **PASSED** — `app-debug.apk` built successfully; manifest merge conflict resolved |
+| Merged manifest SDK | `grep sdk/traffic` | `minSdkVersion="24"`, `targetSdkVersion="36"` |
+| Android release | `flutter build appbundle --release` | failed by design (rc=1) — "Release signing is not configured: create android/key.properties" |
+| Pods | `pod install` | OK (28 pods) |
+| iOS release | `flutter build ios --release --no-codesign` | **PASSED** — `Runner.app` 38.2 MB |
+| Backend collect | `pytest tests_security --collect-only` | OK (75 tests collected) |
+| Backend fake-DB | `pytest tests_security` (macOS venv) | **75 passed** |
+| Real-PG guard | `pytest tests_pg` (guard step) | **2 passed, 19 skipped** (guard verified; `TEST_DATABASE_URL` unset) |
+
+All checks passed. Android debug build and analyzer fixes confirmed clean. Phase 1 verification complete; SEC-14 unblocked.
 
 ## Backend re-runs — 10 Nov 2026 ~16:00–16:12 PST
 
