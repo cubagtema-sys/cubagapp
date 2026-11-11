@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../services/api_service.dart';
@@ -284,7 +283,7 @@ class _State extends State<AdminLicenseRenewalPage> {
                   icon: const Icon(Icons.refresh_rounded, size: 18),
                   label: Text(
                     'Refresh',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 17,
                     ),

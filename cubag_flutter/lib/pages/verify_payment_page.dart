@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../components/app_logo.dart';
@@ -122,7 +121,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
               const SizedBox(height: 16),
               Text(
                 'VERIFYING TREASURY RECEIPT...',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 13,
                   letterSpacing: 1.2,
@@ -132,7 +131,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
               const SizedBox(height: 6),
               Text(
                 'Contacting CUBAG Live Clearance Ledger',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 13,
                   color: const Color(0xFF8C7A70),
                 ),
@@ -184,7 +183,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                   const SizedBox(height: 16),
                   Text(
                     'Receipt Unverified',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF1E130D),
@@ -194,7 +193,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                   Text(
                     _error ?? 'No payment record found with this reference token.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 13.5,
                       color: const Color(0xFF786A61),
                       height: 1.5,
@@ -210,7 +209,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                       ),
                       child: Text(
                         'Ref: ${_resolveRef()}',
-                        style: GoogleFonts.sourceCodePro(
+                        style: TextStyle(fontFeatures: const [FontFeature.tabularFigures()], 
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: _kBrown,
@@ -234,7 +233,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                       ),
                       child: Text(
                         'Return to CUBAG Portal',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
@@ -289,7 +288,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
             const SizedBox(width: 10),
             Text(
               'CUBAG Official Clearance',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 color: const Color(0xFF1E130D),
                 fontWeight: FontWeight.w800,
                 fontSize: 16,
@@ -348,7 +347,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                           children: [
                             Text(
                               statusLabel,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 color: statusColor,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 14,
@@ -362,7 +361,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                                   : (isRejected
                                       ? 'Secretariat flagged / rejected transaction'
                                       : 'Receipt queued for Secretariat reconciliation'),
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 12,
                                 color: const Color(0xFF6F625B),
                               ),
@@ -381,7 +380,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                     children: [
                       Text(
                         'Total Amount Settled',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF8C7A70),
@@ -391,7 +390,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                       const SizedBox(height: 4),
                       Text(
                         _formatAmount(p['amount']),
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
                           color: const Color(0xFF1E130D),
@@ -408,7 +407,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                         ),
                         child: Text(
                           desc,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                             color: _kBrown,
@@ -461,7 +460,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                           children: [
                             Text(
                               'AUTHENTICATED BY CUBAG TREASURY',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                                 color: _kBrown,
@@ -471,7 +470,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                             const SizedBox(height: 2),
                             Text(
                               'Customs Brokers Association of Ghana • Verified against live treasury database',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 10.5,
                                 color: const Color(0xFF8C7A70),
                                 height: 1.3,
@@ -502,7 +501,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                       ),
                       child: Text(
                         'Open CUBAG Portal',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
@@ -528,7 +527,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
             width: 140,
             child: Text(
               label,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 12.5,
                 color: const Color(0xFF8C7A70),
                 fontWeight: FontWeight.w500,
@@ -540,12 +539,12 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
               value,
               textAlign: TextAlign.right,
               style: isMono
-                  ? GoogleFonts.sourceCodePro(
+                  ? TextStyle(fontFeatures: const [FontFeature.tabularFigures()], 
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF1E130D),
                     )
-                  : GoogleFonts.inter(
+                  : TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF1E130D),

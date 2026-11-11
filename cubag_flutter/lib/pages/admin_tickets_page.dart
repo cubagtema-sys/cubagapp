@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../services/api_service.dart';
@@ -180,15 +179,15 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: Text('Archive Support Ticket', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: Text('Archive Support Ticket', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         content: Text(
           'Are you sure you want to archive Ticket #$ticketId?',
-          style: GoogleFonts.inter(fontSize: 13),
+          style: TextStyle(fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: GoogleFonts.inter(color: _kSlate)),
+            child: Text('Cancel', style: TextStyle(color: _kSlate)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -197,7 +196,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
               foregroundColor: Colors.white,
               elevation: 0,
             ),
-            child: Text('Archive', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            child: Text('Archive', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -215,7 +214,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+        content: Text(msg, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
@@ -304,7 +303,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                       _fetchTickets(page: 1);
                     },
                     icon: const Icon(Icons.refresh_rounded, size: 16),
-                    label: Text('Refresh', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                    label: Text('Refresh', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                   ),
                 ],
               ),
@@ -407,11 +406,11 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                 children: [
                   Text(
                     value,
-                    style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w800, color: textPrimary),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: textPrimary),
                   ),
                   Text(
                     label,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
                       color: isSel ? color : textMuted,
@@ -460,10 +459,10 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                     child: TextField(
                       controller: _searchCtrl,
                       onChanged: _onSearchChanged,
-                      style: GoogleFonts.inter(fontSize: 13.5, color: textPrimary),
+                      style: TextStyle(fontSize: 13.5, color: textPrimary),
                       decoration: InputDecoration(
                         hintText: 'Search by ID, subject, member name, company...',
-                        hintStyle: GoogleFonts.inter(fontSize: 12.5, color: textMuted),
+                        hintStyle: TextStyle(fontSize: 12.5, color: textMuted),
                         prefixIcon: Icon(Icons.search_rounded, size: 16, color: textMuted),
                         filled: true,
                         fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
@@ -525,12 +524,12 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                   const SizedBox(height: 12),
                   Text(
                     'No tickets found in this view',
-                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: textPrimary),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textPrimary),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Member inquiries and helpdesk tickets will appear here.',
-                    style: GoogleFonts.inter(fontSize: 12.5, color: textMuted),
+                    style: TextStyle(fontSize: 12.5, color: textMuted),
                   ),
                 ],
               ),
@@ -553,12 +552,12 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                       headingRowColor: WidgetStateProperty.all(
                         isDark ? const Color(0xFF22140E) : const Color(0xFFFAF6F0),
                       ),
-                      headingTextStyle: GoogleFonts.inter(
+                      headingTextStyle: TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w700,
                         color: textMuted,
                       ),
-                      dataTextStyle: GoogleFonts.inter(
+                      dataTextStyle: TextStyle(
                         fontSize: 13,
                         color: textPrimary,
                       ),
@@ -599,7 +598,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                       ),
                                       child: SelectableText(
                                         '#$id',
-                                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: _kIndigo),
+                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _kIndigo),
                                       ),
                                     ),
                                   ),
@@ -635,13 +634,13 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                   children: [
                                     SelectableText(
                                       memberName,
-                                      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: textPrimary),
+                                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textPrimary),
                                       maxLines: 1,
                                     ),
                                     if (company.isNotEmpty)
                                       SelectableText(
                                         company,
-                                        style: GoogleFonts.inter(fontSize: 11.5, color: AppColors.accentOrangeText, fontWeight: FontWeight.w500),
+                                        style: TextStyle(fontSize: 11.5, color: AppColors.accentOrangeText, fontWeight: FontWeight.w500),
                                         maxLines: 1,
                                       ),
                                   ],
@@ -661,7 +660,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                         Expanded(
                                           child: SelectableText(
                                             subject,
-                                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary),
+                                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary),
                                             maxLines: 1,
                                           ),
                                         ),
@@ -673,13 +672,13 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                               color: _kBlue.withValues(alpha: 0.12),
                                               borderRadius: BorderRadius.circular(8),
                                             ),
-                                            child: Text('$replies', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: _kBlue)),
+                                            child: Text('$replies', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _kBlue)),
                                           ),
                                       ],
                                     ),
                                     SelectableText(
                                       message,
-                                      style: GoogleFonts.inter(fontSize: 11.5, color: textMuted),
+                                      style: TextStyle(fontSize: 11.5, color: textMuted),
                                       maxLines: 1,
                                     ),
                                   ],
@@ -697,13 +696,13 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                 ),
                                 child: Text(
                                   _statusLabel(status).toUpperCase(),
-                                  style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w800, color: statusCol),
+                                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: statusCol),
                                 ),
                               ),
                             ),
                             // Date
                             DataCell(
-                              SelectableText(date, style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
+                              SelectableText(date, style: TextStyle(fontSize: 12, color: textMuted)),
                             ),
                             // Actions
                             DataCell(
@@ -720,7 +719,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                                       elevation: 0,
                                     ),
-                                    child: Text('Respond', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                    child: Text('Respond', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
                                   ),
                                   const SizedBox(width: 4),
                                   PopupMenuButton<String>(
@@ -736,14 +735,14 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                     },
                                     itemBuilder: (ctx) => [
                                       if (status != 'open')
-                                        PopupMenuItem(value: 'open', child: Text('Mark Open', style: GoogleFonts.inter(fontSize: 13))),
+                                        PopupMenuItem(value: 'open', child: Text('Mark Open', style: TextStyle(fontSize: 13))),
                                       if (status != 'pending')
-                                        PopupMenuItem(value: 'pending', child: Text('Mark In Progress', style: GoogleFonts.inter(fontSize: 13))),
+                                        PopupMenuItem(value: 'pending', child: Text('Mark In Progress', style: TextStyle(fontSize: 13))),
                                       if (status != 'resolved')
-                                        PopupMenuItem(value: 'resolved', child: Text('Mark Resolved', style: GoogleFonts.inter(fontSize: 13, color: _kGreen, fontWeight: FontWeight.bold))),
+                                        PopupMenuItem(value: 'resolved', child: Text('Mark Resolved', style: TextStyle(fontSize: 13, color: _kGreen, fontWeight: FontWeight.bold))),
                                       const PopupMenuDivider(),
                                       if (status != 'archived')
-                                        PopupMenuItem(value: 'archive', child: Text('Archive', style: GoogleFonts.inter(fontSize: 13, color: _kRed))),
+                                        PopupMenuItem(value: 'archive', child: Text('Archive', style: TextStyle(fontSize: 13, color: _kRed))),
                                     ],
                                   ),
                                 ],
@@ -767,7 +766,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
               children: [
                 Text(
                   'Showing ${_tickets.length} of $_total (Page $_page)',
-                  style: GoogleFonts.inter(fontSize: 12, color: textMuted),
+                  style: TextStyle(fontSize: 12, color: textMuted),
                 ),
                 Row(
                   children: [
@@ -777,7 +776,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                       onPressed: _page > 1 ? () => _fetchTickets(page: _page - 1) : null,
                       visualDensity: VisualDensity.compact,
                     ),
-                    Text('$_page', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+                    Text('$_page', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                     IconButton(
                       tooltip: 'Next page',
                       icon: const Icon(Icons.chevron_right_rounded, size: 18),
@@ -819,7 +818,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontSize: 12,
             fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
             color: isSel ? color : (isDark ? Colors.white70 : const Color(0xFF475569)),
@@ -869,7 +868,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   icon: const Icon(Icons.arrow_back_rounded, size: 14),
-                  label: Text('Back', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                  label: Text('Back', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5)),
                 ),
                 const SizedBox(width: 10),
                 InkWell(
@@ -889,7 +888,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('#$id', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: _kIndigo)),
+                        Text('#$id', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _kIndigo)),
                         const SizedBox(width: 4),
                         const Icon(Icons.copy_rounded, size: 11, color: _kIndigo),
                       ],
@@ -900,7 +899,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                 Expanded(
                   child: SelectableText(
                     subject,
-                    style: GoogleFonts.inter(fontSize: 14.5, fontWeight: FontWeight.bold, color: textPrimary),
+                    style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: textPrimary),
                     maxLines: 1,
                   ),
                 ),
@@ -917,7 +916,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                     child: DropdownButton<String>(
                       value: ['open', 'pending', 'resolved', 'archived'].contains(status) ? status : 'open',
                       dropdownColor: cardBg,
-                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: statusCol),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: statusCol),
                       items: const [
                         DropdownMenuItem(value: 'open', child: Text('OPEN')),
                         DropdownMenuItem(value: 'pending', child: Text('IN PROGRESS')),
@@ -941,14 +940,14 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
             color: isDark ? const Color(0xFF1A0F0A).withValues(alpha: 0.5) : const Color(0xFFFAF6F0),
             child: Row(
               children: [
-                Text('From: ', style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
-                Text(memberName, style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold, color: textPrimary)),
+                Text('From: ', style: TextStyle(fontSize: 12, color: textMuted)),
+                Text(memberName, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: textPrimary)),
                 if (company.isNotEmpty) ...[
-                  Text(' • ', style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
-                  Text(company, style: GoogleFonts.inter(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.w600)),
+                  Text(' • ', style: TextStyle(fontSize: 12, color: textMuted)),
+                  Text(company, style: TextStyle(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.w600)),
                 ],
                 const Spacer(),
-                Text(date, style: GoogleFonts.inter(fontSize: 11.5, color: textMuted)),
+                Text(date, style: TextStyle(fontSize: 11.5, color: textMuted)),
               ],
             ),
           ),
@@ -1001,16 +1000,16 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                 // Reply Composer
                 Text(
                   'REPLY TO MEMBER',
-                  style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5),
                 ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _replyCtrl,
                   maxLines: 3,
-                  style: GoogleFonts.inter(fontSize: 13.5, color: textPrimary),
+                  style: TextStyle(fontSize: 13.5, color: textPrimary),
                   decoration: InputDecoration(
                     hintText: 'Type administrative response or instructions...',
-                    hintStyle: GoogleFonts.inter(fontSize: 12.5, color: textMuted),
+                    hintStyle: TextStyle(fontSize: 12.5, color: textMuted),
                     filled: true,
                     fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
@@ -1039,7 +1038,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       ),
-                      child: Text('Reply & Resolve', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: Text('Reply & Resolve', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton.icon(
@@ -1054,7 +1053,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                       icon: _sendingReply
                           ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                           : const Icon(Icons.send_rounded, size: 14),
-                      label: Text(_sendingReply ? 'Sending...' : 'Send Reply', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12)),
+                      label: Text(_sendingReply ? 'Sending...' : 'Send Reply', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
                   ],
                 ),
@@ -1097,7 +1096,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
             children: [
               Text(
                 sender,
-                style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold, color: isAdmin ? _kOrange : textPrimary),
+                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: isAdmin ? _kOrange : textPrimary),
               ),
               const SizedBox(width: 6),
               Container(
@@ -1108,17 +1107,17 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                 ),
                 child: Text(
                   tag,
-                  style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: isAdmin ? _kOrange : _kIndigo),
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isAdmin ? _kOrange : _kIndigo),
                 ),
               ),
               const Spacer(),
-              Text(time, style: GoogleFonts.inter(fontSize: 11, color: textMuted)),
+              Text(time, style: TextStyle(fontSize: 11, color: textMuted)),
             ],
           ),
           const SizedBox(height: 6),
           SelectableText(
             message,
-            style: GoogleFonts.inter(fontSize: 13, color: textPrimary, height: 1.4),
+            style: TextStyle(fontSize: 13, color: textPrimary, height: 1.4),
           ),
         ],
       ),

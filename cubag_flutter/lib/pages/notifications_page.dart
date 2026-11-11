@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../services/api_service.dart';
 import '../services/cache_service.dart';
@@ -272,7 +271,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
             const SizedBox(height: 16),
             Text(
               'No Notifications',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF475569),
@@ -400,7 +399,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     child: Text(
                                       (cat['label']?.toString() ?? 'SYSTEM')
                                           .toUpperCase(),
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 12,
                                         color: color,
                                         fontWeight: FontWeight.w900,
@@ -412,7 +411,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     const SizedBox(height: 4),
                                     Text(
                                       dateStr,
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 13,
                                         color: const Color(0xFF5F6B7E),
                                       ),
@@ -426,7 +425,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         const SizedBox(height: 16),
                         Text(
                           n['title']?.toString() ?? '',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF1A0F0A),
@@ -443,7 +442,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           ),
                           child: SelectableText(
                             n['message']?.toString() ?? '',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 16,
                               color: const Color(0xFF4D2D20),
                               height: 1.55,
@@ -466,7 +465,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               ),
                               label: Text(
                                 'Delete',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   color: Colors.red,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -484,7 +483,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               onPressed: () => Navigator.pop(ctx),
                               child: Text(
                                 'Close',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -609,7 +608,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                         n['title']?.toString() ?? '',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontSize: 15,
                                           fontWeight: isRead
                                               ? FontWeight.w600
@@ -640,7 +639,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   n['message']?.toString() ?? '',
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 13.5,
                                     height: 1.35,
                                     color: isDark
@@ -662,7 +661,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       ),
                                       child: Text(
                                         label.toUpperCase(),
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontSize: 10.5,
                                           fontWeight: FontWeight.w800,
                                           letterSpacing: 0.4,
@@ -682,7 +681,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       const SizedBox(width: 4),
                                       Text(
                                         dateStr,
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w500,
                                           color: isDark
@@ -781,7 +780,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             children: [
                               Text(
                                 'Activity Feed',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w800,
                                   color: isDark
@@ -792,7 +791,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               const SizedBox(height: 2),
                               Text(
                                 'Latest system alerts and personal notifications.',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   color: isDark
                                       ? Colors.white70
                                       : const Color(0xFF64748b),
@@ -833,7 +832,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             Expanded(
                               child: Text(
                                 'You have $unread unread notification${unread == 1 ? '' : 's'}',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                   color: isDark
@@ -943,7 +942,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             searchQuery.isNotEmpty
                                 ? 'SEARCH RESULTS (${filtered.length})'
                                 : 'LATEST UPDATES (${filtered.length})',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 13,
                               color: isDark
@@ -975,7 +974,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   const SizedBox(width: 4),
                                   Text(
                                     'Clear',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.accentOrangeText,

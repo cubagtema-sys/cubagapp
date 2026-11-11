@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
@@ -449,7 +448,7 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 28),
               Text(
                 'CUBAG',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: Colors.white,
                   fontSize: 44,
                   fontWeight: FontWeight.w900,
@@ -469,7 +468,7 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 18),
               Text(
                 'Customs Brokers Association of Ghana',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: const Color(0xFFF8F4F0),
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -479,7 +478,7 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 12),
               Text(
                 'The official gateway for licensed customs clearing and logistics firms in Ghana.',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: const Color(0xFFC8ADA0),
                   fontSize: 15,
                   height: 1.6,
@@ -498,7 +497,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   children: [
                     Text(
                       'ACCREDITED CORPORATE MEMBERSHIP',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: AppColors.accentOrangeText,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
@@ -508,7 +507,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 6),
                     Text(
                       'ICUMS access, port pass endorsement, legal counsel, and continuous professional CTI training.',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: Colors.white70,
                         fontSize: 13,
                         height: 1.5,
@@ -564,7 +563,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   'Secure Account',
                 ][_step - 1],
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: isMobile ? 23 : 32,
                   fontWeight: FontWeight.w900,
                   color: _kText,
@@ -1435,7 +1434,7 @@ class _RegisterPageState extends State<RegisterPage> {
               Expanded(
                 child: Text(
                   'Select one or multiple districts where your company operates. District clearance tariffs will apply per registered district (${_selectedDistricts.length} selected):',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 12.5,
                     color: _kMuted,
                     height: 1.35,
@@ -1457,7 +1456,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   : const Icon(Icons.radio_button_unchecked_rounded, size: 17, color: Color(0xFF5F6B7E)),
               label: Text(
                 district,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 13.5,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   color: isSelected ? Colors.white : _kText,
@@ -1679,7 +1678,7 @@ class _RegisterPageState extends State<RegisterPage> {
         keyboardType: TextInputType.number,
         maxLength: 6,
         textAlign: TextAlign.center,
-        style: GoogleFonts.inter(
+        style: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.bold,
           letterSpacing: 12,

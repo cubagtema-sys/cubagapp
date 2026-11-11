@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class InAppLegalViewer {
   static void show(BuildContext context, {required String title, required String subtitle, required List<Map<String, String>> sections}) {
@@ -37,7 +36,7 @@ class InAppLegalViewer {
                       children: [
                         Text(
                           title,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w900,
                             color: const Color(0xFF1A0F0A),
@@ -46,7 +45,7 @@ class InAppLegalViewer {
                         const SizedBox(height: 2),
                         Text(
                           subtitle,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 13,
                             color: const Color(0xFF64748b),
                           ),
@@ -75,7 +74,7 @@ class InAppLegalViewer {
                       children: [
                         Text(
                           section['heading'] ?? '',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF1A0F0A),
@@ -84,7 +83,7 @@ class InAppLegalViewer {
                         const SizedBox(height: 6),
                         SelectableText(
                           section['body'] ?? '',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 14.5,
                             height: 1.6,
                             color: const Color(0xFF475569),
@@ -109,7 +108,7 @@ class InAppLegalViewer {
                   onPressed: () => Navigator.pop(ctx),
                   child: Text(
                     'Close',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
               ),

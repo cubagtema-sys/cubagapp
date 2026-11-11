@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../components/app_layout.dart';
@@ -170,7 +169,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
   }
 
   TextStyle _headerColStyle(Color textMuted) {
-    return GoogleFonts.inter(
+    return TextStyle(
       fontSize: 15,
       fontWeight: FontWeight.w700,
       letterSpacing: 0.6,
@@ -201,7 +200,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
             const SizedBox(width: 6),
             Text(
               label,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 13.5,
                 fontWeight: isSel ? FontWeight.w700 : FontWeight.w600,
                 color: isSel ? activeColor : (isDark ? Colors.white70 : const Color(0xFF6B5E55)),
@@ -216,7 +215,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
               ),
               child: Text(
                 '$count',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.bold,
                   color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF7A6B60)),
@@ -279,7 +278,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                       children: [
                         Text(
                           'Applicant Documents',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: textPrimary,
@@ -289,7 +288,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                         const SizedBox(height: 2),
                         Text(
                           'Review statutory compliance certificates, company records, and membership vetting.',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 13.5,
                             color: textMuted,
                           ),
@@ -314,7 +313,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                     icon: const Icon(Icons.rule_folder_rounded, size: 16, color: _kOrange),
                     label: Text(
                       'Document Rules',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13.5),
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -330,7 +329,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                     icon: const Icon(Icons.refresh_rounded, size: 16),
                     label: Text(
                       'Refresh',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13.5),
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
                     ),
                   ),
                 ],
@@ -354,10 +353,10 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                     ),
                     child: TextField(
                       onChanged: _onSearchChanged,
-                      style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
+                      style: TextStyle(fontSize: 14, color: textPrimary),
                       decoration: InputDecoration(
                         hintText: 'Search by company, applicant name, TIN, or member ID...',
-                        hintStyle: GoogleFonts.inter(fontSize: 13.5, color: textMuted),
+                        hintStyle: TextStyle(fontSize: 13.5, color: textMuted),
                         prefixIcon: Icon(Icons.search_rounded, size: 18, color: textMuted),
                         border: InputBorder.none,
                         isDense: true,
@@ -438,7 +437,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                                       const SizedBox(height: 12),
                                       Text(
                                         'No applicant records found',
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontSize: 17,
                                           fontWeight: FontWeight.bold,
                                           color: textPrimary,
@@ -447,7 +446,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                                       const SizedBox(height: 4),
                                       Text(
                                         'Try adjusting your search query or switching filters.',
-                                        style: GoogleFonts.inter(fontSize: 13.5, color: textMuted),
+                                        style: TextStyle(fontSize: 13.5, color: textMuted),
                                       ),
                                     ],
                                   ),
@@ -630,7 +629,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                 width: 36,
                 child: Text(
                   '$index',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: subCol,
@@ -654,7 +653,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                           company.isNotEmpty
                               ? company[0].toUpperCase()
                               : (name.isNotEmpty ? name[0].toUpperCase() : 'C'),
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
                             color: typeColor,
@@ -669,7 +668,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                         children: [
                           SelectableText(
                             company,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w700,
                               color: textCol,
@@ -681,7 +680,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                               Flexible(
                                 child: SelectableText(
                                   name,
-                                  style: GoogleFonts.inter(fontSize: 13, color: subCol),
+                                  style: TextStyle(fontSize: 13, color: subCol),
                                 ),
                               ),
                               if (memNo.isNotEmpty && memNo != 'PENDING') ...[
@@ -694,7 +693,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                                   ),
                                   child: SelectableText(
                                     memNo,
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
                                       color: AppColors.accentOrangeText,
@@ -728,7 +727,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                             memberType.toLowerCase().contains('corporate')
                                 ? (isSme ? 'Corporate • SME' : 'Large Corporate')
                                 : memberType,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w700,
                               color: typeColor,
@@ -740,7 +739,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                     const SizedBox(height: 2),
                     Text(
                       port,
-                      style: GoogleFonts.inter(fontSize: 12, color: subCol),
+                      style: TextStyle(fontSize: 12, color: subCol),
                       maxLines: 1,
                     ),
                   ],
@@ -753,7 +752,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                         children: [
                           const Icon(Icons.check_circle_outline_rounded, size: 14, color: _kGreen),
                           const SizedBox(width: 5),
-                          Text('No Docs Required', style: GoogleFonts.inter(fontSize: 12.5, color: _kGreen, fontWeight: FontWeight.w600)),
+                          Text('No Docs Required', style: TextStyle(fontSize: 12.5, color: _kGreen, fontWeight: FontWeight.w600)),
                         ],
                       )
                     : Column(
@@ -763,7 +762,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                             children: [
                               Text(
                                 '$uploaded / $totalExpected Docs',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                   color: uploaded >= totalExpected ? _kGreen : textCol,
@@ -773,7 +772,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                                 const SizedBox(width: 4),
                                 Text(
                                   '($approved ✓)',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                     color: _kGreen,
@@ -817,7 +816,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                         const SizedBox(width: 4),
                         Text(
                           statusLabel,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: statusColor,
@@ -853,7 +852,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('Review', style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                        Text('Review', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
                         const SizedBox(width: 4),
                         Icon(Icons.arrow_forward_rounded, size: 12, color: _kOrange),
                       ],
@@ -949,7 +948,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                   child: Center(
                     child: Text(
                       company.isNotEmpty ? company[0].toUpperCase() : (name.isNotEmpty ? name[0].toUpperCase() : 'C'),
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                         color: typeColor,
@@ -964,7 +963,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                     children: [
                       Text(
                         company,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 14.5,
                           fontWeight: FontWeight.w700,
                           color: textCol,
@@ -974,7 +973,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                       ),
                       Text(
                         name + (memNo.isNotEmpty && memNo != 'PENDING' ? ' • $memNo' : ''),
-                        style: GoogleFonts.inter(fontSize: 12.5, color: subCol),
+                        style: TextStyle(fontSize: 12.5, color: subCol),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -995,7 +994,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                       const SizedBox(width: 4),
                       Text(
                         statusLabel,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: statusColor,
@@ -1019,7 +1018,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                     memberType.toLowerCase().contains('corporate')
                         ? (isSme ? 'Corporate • SME' : 'Large Corporate')
                         : memberType,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: typeColor,
@@ -1027,11 +1026,11 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(port, style: GoogleFonts.inter(fontSize: 12, color: subCol)),
+                Text(port, style: TextStyle(fontSize: 12, color: subCol)),
                 const Spacer(),
                 Text(
                   totalExpected == 0 ? 'Exempt' : '$uploaded/$totalExpected Docs${approved > 0 ? ' ($approved ✓)' : ''}',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: uploaded >= totalExpected ? _kGreen : textCol,
@@ -1220,7 +1219,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                   Expanded(
                     child: Text(
                       title,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -1297,19 +1296,19 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
             Expanded(
               child: Text(
                 'Verify & Approve Documents',
-                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ],
         ),
         content: Text(
           'This will approve all uploaded documents and verify the applicant for membership. Continue?',
-          style: GoogleFonts.inter(fontSize: 14, height: 1.5),
+          style: TextStyle(fontSize: 14, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -1374,7 +1373,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
   void _snack(String msg, Color bg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        content: Text(msg, style: TextStyle(fontWeight: FontWeight.w600)),
         backgroundColor: bg,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -1462,7 +1461,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                           const SizedBox(height: 14),
                           Text(
                             'Unable to load applicant documents.',
-                            style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
                           ),
                           const SizedBox(height: 8),
                           ElevatedButton.icon(
@@ -1529,7 +1528,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                   company.isNotEmpty
                                       ? company[0].toUpperCase()
                                       : 'C',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
@@ -1547,7 +1546,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                         Flexible(
                                           child: Text(
                                             company,
-                                            style: GoogleFonts.inter(
+                                            style: TextStyle(
                                               fontSize: 17,
                                               fontWeight: FontWeight.w800,
                                               color: textPrimary,
@@ -1570,7 +1569,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                           ),
                                           child: Text(
                                             memberType.toUpperCase(),
-                                            style: GoogleFonts.inter(
+                                            style: TextStyle(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w800,
                                               color: headerTypeColor,
@@ -1590,7 +1589,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                             ),
                                             child: Text(
                                               scale == 'sme' ? "SME" : "LARGE CORP",
-                                              style: GoogleFonts.inter(
+                                              style: TextStyle(
                                                 fontSize: 10.5,
                                                 fontWeight: FontWeight.bold,
                                                 color: scale == 'sme' ? _kOrange : _kIndigo,
@@ -1610,7 +1609,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                           children: [
                                             Icon(Icons.person_rounded, size: 13, color: textMuted),
                                             const SizedBox(width: 4),
-                                            Text(name, style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: textMuted)),
+                                            Text(name, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: textMuted)),
                                           ],
                                         ),
                                         if (phone.isNotEmpty)
@@ -1619,7 +1618,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                             children: [
                                               Icon(Icons.phone_rounded, size: 13, color: textMuted),
                                               const SizedBox(width: 4),
-                                              Text(phone, style: GoogleFonts.inter(fontSize: 12.5, color: textMuted)),
+                                              Text(phone, style: TextStyle(fontSize: 12.5, color: textMuted)),
                                             ],
                                           ),
                                         if (tin.isNotEmpty)
@@ -1628,7 +1627,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                             children: [
                                               Icon(Icons.tag_rounded, size: 13, color: textMuted),
                                               const SizedBox(width: 4),
-                                              Text('TIN: $tin', style: GoogleFonts.inter(fontSize: 12.5, color: textMuted)),
+                                              Text('TIN: $tin', style: TextStyle(fontSize: 12.5, color: textMuted)),
                                             ],
                                           ),
                                         Row(
@@ -1636,7 +1635,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                           children: [
                                             Icon(Icons.anchor_rounded, size: 13, color: textMuted),
                                             const SizedBox(width: 4),
-                                            Text(port, style: GoogleFonts.inter(fontSize: 12.5, color: textMuted)),
+                                            Text(port, style: TextStyle(fontSize: 12.5, color: textMuted)),
                                           ],
                                         ),
                                       ],
@@ -1657,7 +1656,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                   children: [
                                     Text(
                                       'FEE STATUS',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w800,
                                         color: hasPaid ? _kGreen : _kAmber,
@@ -1672,7 +1671,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                           : (regFeeAmt > 0
                                                 ? 'UNPAID (GH₵ ${regFeeAmt.toStringAsFixed(0)})'
                                                 : 'UNPAID'),
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w800,
                                         color: hasPaid ? _kGreen : _kAmber,
@@ -1715,7 +1714,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                             : (total > 0
                                                   ? 'Approve All ($total/$total)'
                                                   : 'Approve Application')),
-                                  style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.bold),
+                                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
@@ -1752,7 +1751,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                         indicatorColor: _kOrange,
                         labelColor: _kOrange,
                         unselectedLabelColor: textMuted,
-                        labelStyle: GoogleFonts.inter(
+                        labelStyle: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1806,7 +1805,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
           const SizedBox(width: 5),
           Text(
             label,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
               color: isDark ? Colors.white70 : const Color(0xFF64748B),
@@ -1815,7 +1814,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
           const SizedBox(width: 5),
           Text(
             value,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.bold,
               color: isDark ? Colors.white : const Color(0xFF0F172A),
@@ -1843,7 +1842,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
             const SizedBox(height: 10),
             Text(
               'No statutory documents in this section.',
-              style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: textPrimary),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textPrimary),
             ),
           ],
         ),
@@ -1914,7 +1913,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                         Expanded(
                           child: Text(
                             label,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 14.5,
                               fontWeight: FontWeight.bold,
                               color: textPrimary,
@@ -1930,7 +1929,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                           ),
                           child: Text(
                             pillLabel,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                               color: pillColor,
@@ -1944,7 +1943,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                       isUploaded
                           ? 'File: $fileName • Uploaded: ${uploadedAt ?? "Recently"}'
                           : 'Applicant has not uploaded this statutory certificate yet.',
-                      style: GoogleFonts.inter(fontSize: 12, color: textMuted),
+                      style: TextStyle(fontSize: 12, color: textMuted),
                     ),
                     if (isUploaded) ...[
                       const SizedBox(height: 6),
@@ -1958,7 +1957,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                 children: [
                                   const Icon(Icons.remove_red_eye_rounded, size: 13, color: _kOrange),
                                   const SizedBox(width: 4),
-                                  Text('Preview', style: GoogleFonts.inter(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.w600)),
+                                  Text('Preview', style: TextStyle(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.w600)),
                                 ],
                               ),
                             ),
@@ -1975,7 +1974,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                 children: [
                                   Icon(Icons.open_in_new_rounded, size: 13, color: textMuted),
                                   const SizedBox(width: 4),
-                                  Text('Open in Tab', style: GoogleFonts.inter(fontSize: 12, color: textMuted, fontWeight: FontWeight.w600)),
+                                  Text('Open in Tab', style: TextStyle(fontSize: 12, color: textMuted, fontWeight: FontWeight.w600)),
                                 ],
                               ),
                             ),
@@ -2002,7 +2001,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                       children: [
                         const Icon(Icons.verified_rounded, size: 14, color: _kGreen),
                         const SizedBox(width: 5),
-                        Text('Approved', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: _kGreen)),
+                        Text('Approved', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _kGreen)),
                       ],
                     ),
                   )
@@ -2020,7 +2019,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                         ),
                         onPressed: _actionLoading[id] == true ? null : () => _setStatus(id, 'approved', key),
                         icon: const Icon(Icons.check_rounded, size: 13),
-                        label: Text('Approve', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
+                        label: Text('Approve', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                       ),
                       const SizedBox(width: 6),
                       OutlinedButton.icon(
@@ -2032,7 +2031,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                         ),
                         onPressed: _actionLoading[id] == true ? null : () => _setStatus(id, 'rejected', key),
                         icon: const Icon(Icons.close_rounded, size: 13),
-                        label: Text('Reject', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
+                        label: Text('Reject', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),

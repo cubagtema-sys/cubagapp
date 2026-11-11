@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../services/theme_service.dart';
 import '../components/app_logo.dart';
@@ -250,7 +249,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                               const SizedBox(width: 6),
                               Text(
                                 'STAKEHOLDER GRIEVANCE MECHANISM',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 1.0,
@@ -263,7 +262,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                         const SizedBox(height: 12),
                         Text(
                           'Public Complaints & Dispute Portal',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: isMobile ? 24 : 30,
                             fontWeight: FontWeight.w900,
                             color: _kText,
@@ -272,7 +271,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                         const SizedBox(height: 6),
                         Text(
                           'Lodge issues with shipping lines, terminal operators, customs bottlenecks or port authorities for official CUBAG advocacy and resolution.',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: isMobile ? 15 : 16,
                             color: _kMuted,
                             height: 1.5,
@@ -339,7 +338,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                   children: [
                     Text(
                       'CUBAG',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: _isDark ? Colors.white : _kBrown,
                         fontSize: 17,
                         fontWeight: FontWeight.w900,
@@ -357,7 +356,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                       ),
                       child: Text(
                         'GRIEVANCE DESK',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           color: AppColors.accentOrangeText,
                           fontSize: 10.5,
                           fontWeight: FontWeight.bold,
@@ -368,7 +367,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                 ),
                 Text(
                   'Complaints & Tracking Order',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     color: _isDark ? Colors.white.withAlpha(220) : _kMuted,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -389,7 +388,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
             ),
             label: Text(
               isMobile ? 'Sign In' : 'Member Sign In',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 color: _isDark ? Colors.white : _kBrown,
                 fontSize: 14.5,
                 fontWeight: FontWeight.bold,
@@ -481,7 +480,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
             const SizedBox(width: 8),
             Text(
               title,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 15.5,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                 color: isSelected ? Colors.white : _kMuted,
@@ -518,7 +517,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
           children: [
             Text(
               'Lodge an Official Complaint / Grievance',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 color: _kBrown,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -527,7 +526,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
             const SizedBox(height: 4),
             Text(
               'Your submission will be immediately assigned to the CUBAG Secretariat Standing Committee.',
-              style: GoogleFonts.inter(color: _kMuted, fontSize: 14.5),
+              style: TextStyle(color: _kMuted, fontSize: 14.5),
             ),
             const SizedBox(height: 24),
 
@@ -669,7 +668,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                           value: c,
                           child: Text(
                             c,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               color: _kText,
                               fontSize: 15.5,
                               fontWeight: FontWeight.w600,
@@ -707,7 +706,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                           value: p,
                           child: Text(
                             p,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               color: _kText,
                               fontSize: 15.5,
                               fontWeight: FontWeight.w600,
@@ -759,11 +758,11 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
               validator: (v) => (v == null || v.trim().isEmpty)
                   ? 'Please describe the issue in detail'
                   : null,
-              style: GoogleFonts.inter(color: _kText, fontSize: 16),
+              style: TextStyle(color: _kText, fontSize: 16),
               decoration: InputDecoration(
                 hintText:
                     'Provide full details including declaration numbers, BL numbers, dates, personnel names, and financial amounts involved...',
-                hintStyle: GoogleFonts.inter(color: _kMuted, fontSize: 15),
+                hintStyle: TextStyle(color: _kMuted, fontSize: 15),
                 filled: true,
                 fillColor: _kCream,
                 contentPadding: const EdgeInsets.all(16),
@@ -812,7 +811,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                       )
                     : Text(
                         'Submit Formal Complaint',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -868,7 +867,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                   children: [
                     Text(
                       'Complaint Logged Successfully!',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 20,
                         color: _kText,
@@ -877,7 +876,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                     const SizedBox(height: 2),
                     Text(
                       'Your formal grievance is now registered with the CUBAG Secretariat.',
-                      style: GoogleFonts.inter(color: _kMuted, fontSize: 14.5),
+                      style: TextStyle(color: _kMuted, fontSize: 14.5),
                     ),
                   ],
                 ),
@@ -890,7 +889,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
 
           Text(
             'YOUR COMPLAINT TRACKING ID:',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               color: _kMuted,
               fontSize: 13,
               fontWeight: FontWeight.bold,
@@ -912,7 +911,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                 Expanded(
                   child: SelectableText(
                     _newComplaintId ?? '',
-                    style: GoogleFonts.spaceMono(
+                    style: TextStyle(fontFeatures: const [FontFeature.tabularFigures()], 
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: _kBrown,
@@ -957,7 +956,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                   icon: Icon(Icons.add_rounded, size: 16, color: _kBrown),
                   label: Text(
                     'Lodge Another',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: _kBrown,
                       fontWeight: FontWeight.bold,
                     ),
@@ -986,7 +985,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                   icon: const Icon(Icons.track_changes_rounded, size: 16),
                   label: Text(
                     'Track Live Status',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _kBrown,
@@ -1033,7 +1032,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
             children: [
               Text(
                 'Enter Complaint Tracking ID',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: _kBrown,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -1042,7 +1041,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
               const SizedBox(height: 4),
               Text(
                 'Format: CMP-YYYY-XXXXX (found on your submission receipt)',
-                style: GoogleFonts.inter(color: _kMuted, fontSize: 14),
+                style: TextStyle(color: _kMuted, fontSize: 14),
               ),
               const SizedBox(height: 14),
 
@@ -1059,14 +1058,14 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                         controller: _trackCtrl,
                         textCapitalization: TextCapitalization.characters,
                         onSubmitted: (_) => _trackComplaint(),
-                        style: GoogleFonts.spaceMono(
+                        style: TextStyle(fontFeatures: const [FontFeature.tabularFigures()], 
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
                           color: _kText,
                         ),
                         decoration: InputDecoration(
                           hintText: 'e.g. CMP-2026-92945',
-                          hintStyle: GoogleFonts.spaceMono(
+                          hintStyle: TextStyle(fontFeatures: const [FontFeature.tabularFigures()], 
                             fontSize: 15,
                             color: _kMuted,
                           ),
@@ -1109,7 +1108,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                             )
                           : Text(
                               'Track Order',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
@@ -1138,7 +1137,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                       Expanded(
                         child: Text(
                           _trackError!,
-                          style: GoogleFonts.inter(color: _kRed, fontSize: 14),
+                          style: TextStyle(color: _kRed, fontSize: 14),
                         ),
                       ),
                     ],
@@ -1196,7 +1195,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                   children: [
                     Text(
                       'COMPLAINT TRACKING ORDER',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: _kBrown,
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
@@ -1206,7 +1205,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                     const SizedBox(height: 4),
                     SelectableText(
                       c['complaint_id']?.toString() ?? '',
-                      style: GoogleFonts.spaceMono(
+                      style: TextStyle(fontFeatures: const [FontFeature.tabularFigures()], 
                         fontSize: isMobile ? 20 : 24,
                         fontWeight: FontWeight.bold,
                         color: _kText,
@@ -1227,7 +1226,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                 ),
                 child: Text(
                   status.toUpperCase(),
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     color: statusColor,
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
@@ -1260,7 +1259,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
           const SizedBox(height: 24),
           Text(
             'LIVE INVESTIGATION TIMELINE',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               color: _kBrown,
               fontSize: 14,
               fontWeight: FontWeight.bold,
@@ -1336,7 +1335,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                             children: [
                               Text(
                                 item['title']?.toString() ?? '',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: isDone || isActive ? _kText : _kMuted,
@@ -1346,7 +1345,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                                   item['date'] != 'Pending')
                                 Text(
                                   item['date'].toString(),
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     color: _kMuted,
                                   ),
@@ -1356,7 +1355,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                           const SizedBox(height: 4),
                           Text(
                             item['desc']?.toString() ?? '',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 14.5,
                               color: _kMuted,
                               height: 1.4,
@@ -1390,7 +1389,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                       const SizedBox(width: 8),
                       Text(
                         'Official Secretariat Resolution Notice:',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           color: _kGreen,
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
@@ -1401,7 +1400,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                   const SizedBox(height: 8),
                   Text(
                     c['resolution_notes'].toString(),
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: _kText,
                       fontSize: 15,
                       height: 1.5,
@@ -1426,7 +1425,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
             width: 150,
             child: Text(
               label,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 14.5,
                 color: _kMuted,
                 fontWeight: FontWeight.w500,
@@ -1436,7 +1435,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
           Expanded(
             child: Text(
               value,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 15,
                 color: _kText,
                 fontWeight: FontWeight.w600,
@@ -1450,7 +1449,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
 
   Widget _formLabel(String label) => Text(
     label,
-    style: GoogleFonts.inter(
+    style: TextStyle(
       color: _kBrown,
       fontSize: 15,
       fontWeight: FontWeight.bold,
@@ -1470,10 +1469,10 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
       keyboardType: keyboardType,
       inputFormatters: formatters,
       validator: validator,
-      style: GoogleFonts.inter(color: _kText, fontSize: 16),
+      style: TextStyle(color: _kText, fontSize: 16),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: GoogleFonts.inter(color: _kMuted, fontSize: 15),
+        hintStyle: TextStyle(color: _kMuted, fontSize: 15),
         prefixIcon: Icon(icon, size: 18, color: _kMuted),
         filled: true,
         fillColor: _kCream,

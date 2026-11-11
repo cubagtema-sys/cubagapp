@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../components/custom_dropdown.dart';
@@ -458,7 +457,7 @@ class _State extends State<AdminSurveysPage>
       SnackBar(
         content: Text(
           msg,
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: isError ? _kRed : _kGreen,
         behavior: SnackBarBehavior.floating,
@@ -550,7 +549,7 @@ class _State extends State<AdminSurveysPage>
                   ),
                   onPressed: () => _fetch(refresh: true),
                   icon: const Icon(Icons.refresh_rounded, size: 16, color: _kOrange),
-                  label: Text('Refresh', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15)),
+                  label: Text('Refresh', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
@@ -583,7 +582,7 @@ class _State extends State<AdminSurveysPage>
                     _tab == 'create'
                         ? 'View Active Polls'
                         : 'New Poll / Ballot',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
@@ -762,7 +761,7 @@ class _State extends State<AdminSurveysPage>
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Text(
                   '${surveys.length} of $total polls shown',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 13,
                     color: subTextColor,
                     fontWeight: FontWeight.w500,
@@ -797,7 +796,7 @@ class _State extends State<AdminSurveysPage>
             const SizedBox(height: 16),
             Text(
               'No polls found',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
                 color: subTextColor,
@@ -806,7 +805,7 @@ class _State extends State<AdminSurveysPage>
             const SizedBox(height: 6),
             Text(
               'Create a new poll using the "New Poll" tab.',
-              style: GoogleFonts.inter(fontSize: 16, color: subTextColor),
+              style: TextStyle(fontSize: 16, color: subTextColor),
             ),
           ],
         ),
@@ -845,7 +844,7 @@ class _State extends State<AdminSurveysPage>
           const SizedBox(width: 4),
           Text(
             label,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
               color: color,
@@ -936,7 +935,7 @@ class _State extends State<AdminSurveysPage>
                 const SizedBox(width: 8),
                 Text(
                   type.toUpperCase(),
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                     color: color,
@@ -960,7 +959,7 @@ class _State extends State<AdminSurveysPage>
                   ),
                   child: Text(
                     statusLabel,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                       color: statusColor,
@@ -977,7 +976,7 @@ class _State extends State<AdminSurveysPage>
               children: [
                 Text(
                   s['title'] ?? '',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                     color: textColor,
@@ -989,7 +988,7 @@ class _State extends State<AdminSurveysPage>
                     s['description'],
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 13,
                       color: subTextColor,
                       height: 1.4,
@@ -1006,7 +1005,7 @@ class _State extends State<AdminSurveysPage>
                     const SizedBox(width: 6),
                     Text(
                       deadline != null ? 'Deadline: $deadline' : 'No deadline',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 14,
                         color: subTextColor,
                         fontWeight: FontWeight.w500,
@@ -1023,7 +1022,7 @@ class _State extends State<AdminSurveysPage>
                         icon: const Icon(Icons.bar_chart_rounded, size: 16),
                         label: Text(
                           'Results',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1111,21 +1110,21 @@ class _State extends State<AdminSurveysPage>
         ),
         title: Text(
           'Delete Poll',
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             color: textColor,
           ),
         ),
         content: Text(
           'Are you sure you want to permanently delete "${s['title']}"? All responses will also be deleted.',
-          style: GoogleFonts.inter(color: subTextColor),
+          style: TextStyle(color: subTextColor),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               'Cancel',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 color: subTextColor,
                 fontWeight: FontWeight.bold,
               ),
@@ -1146,7 +1145,7 @@ class _State extends State<AdminSurveysPage>
             ),
             child: Text(
               'Delete',
-              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -1191,7 +1190,7 @@ class _State extends State<AdminSurveysPage>
                     const SizedBox(width: 8),
                     Text(
                       'Back',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: textColor,
                       ),
@@ -1210,7 +1209,7 @@ class _State extends State<AdminSurveysPage>
                       Expanded(
                         child: Text(
                           s['title'] ?? '',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 22,
                             color: textColor,
@@ -1226,7 +1225,7 @@ class _State extends State<AdminSurveysPage>
                   const SizedBox(height: 2),
                   Text(
                     '$type • Deadline: ${s['deadline'] ?? 'None'}',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: subTextColor,
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -1262,7 +1261,7 @@ class _State extends State<AdminSurveysPage>
                 _resultsLoading
                     ? 'Refreshing...'
                     : 'Auto-refresh in ${_countdown}s',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: color,
@@ -1276,7 +1275,7 @@ class _State extends State<AdminSurveysPage>
                 },
                 child: Text(
                   'Refresh Now',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: color,
@@ -1302,7 +1301,7 @@ class _State extends State<AdminSurveysPage>
           Center(
             child: Text(
               'Could not load results.',
-              style: GoogleFonts.inter(color: subTextColor),
+              style: TextStyle(color: subTextColor),
             ),
           )
         else
@@ -1420,7 +1419,7 @@ class _State extends State<AdminSurveysPage>
                           children: [
                             Text(
                               '$totalVotes',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.w900,
                                 color: color,
@@ -1428,7 +1427,7 @@ class _State extends State<AdminSurveysPage>
                             ),
                             Text(
                               'total votes',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 12,
                                 color: subTextColor,
                                 fontWeight: FontWeight.bold,
@@ -1442,7 +1441,7 @@ class _State extends State<AdminSurveysPage>
                   const SizedBox(height: 16),
                   Text(
                     'Overall Participation',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                       color: textColor,
@@ -1492,7 +1491,7 @@ class _State extends State<AdminSurveysPage>
                               const SizedBox(height: 12),
                               Text(
                                 'No votes recorded yet',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   color: subTextColor,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
@@ -1568,7 +1567,7 @@ class _State extends State<AdminSurveysPage>
       children: [
         Text(
           'Voting Results',
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
             color: textColor,
@@ -1599,7 +1598,7 @@ class _State extends State<AdminSurveysPage>
                     Expanded(
                       child: Text(
                         e.key.toString(),
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                           color: isLeader ? color : textColor,
@@ -1608,7 +1607,7 @@ class _State extends State<AdminSurveysPage>
                     ),
                     Text(
                       '$votes votes',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 14,
                         color: subTextColor,
                         fontWeight: FontWeight.w500,
@@ -1627,7 +1626,7 @@ class _State extends State<AdminSurveysPage>
                       ),
                       child: Text(
                         '${(pct * 100).toStringAsFixed(1)}%',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
                           color: color,
@@ -1660,7 +1659,7 @@ class _State extends State<AdminSurveysPage>
         children: [
           Text(
             'Average Rating',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 18,
               color: textColor,
@@ -1669,7 +1668,7 @@ class _State extends State<AdminSurveysPage>
           const SizedBox(height: 16),
           Text(
             avg.toStringAsFixed(1),
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 58,
               fontWeight: FontWeight.w900,
               color: _kAmber,
@@ -1694,7 +1693,7 @@ class _State extends State<AdminSurveysPage>
           const SizedBox(height: 8),
           Text(
             'out of 5.0',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 16,
               color: subTextColor,
               fontWeight: FontWeight.w500,
@@ -1739,7 +1738,7 @@ class _State extends State<AdminSurveysPage>
           const SizedBox(height: 12),
           Text(
             value,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w900,
               color: color,
@@ -1748,7 +1747,7 @@ class _State extends State<AdminSurveysPage>
           const SizedBox(height: 4),
           Text(
             label.toUpperCase(),
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
               color: color.withValues(alpha: 0.8),
@@ -1793,7 +1792,7 @@ class _State extends State<AdminSurveysPage>
             children: [
               Text(
                 title,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color: color,
@@ -1811,7 +1810,7 @@ class _State extends State<AdminSurveysPage>
                 ),
                 child: Text(
                   '${members.length}',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
@@ -1827,7 +1826,7 @@ class _State extends State<AdminSurveysPage>
                   padding: const EdgeInsets.all(32),
                   child: Text(
                     'None',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: subTextColor,
                       fontSize: 16,
                     ),
@@ -1854,7 +1853,7 @@ class _State extends State<AdminSurveysPage>
                         backgroundColor: color.withValues(alpha: 0.15),
                         child: Text(
                           (m['name']?.toString() ?? '?').substring(0, 1),
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
                             color: color,
@@ -1863,7 +1862,7 @@ class _State extends State<AdminSurveysPage>
                       ),
                       title: Text(
                         m['name']?.toString() ?? '',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: textColor,
@@ -1873,7 +1872,7 @@ class _State extends State<AdminSurveysPage>
                         m['company']?.toString() ??
                             m['email']?.toString() ??
                             '',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 13,
                           color: subTextColor,
                         ),
@@ -1893,7 +1892,7 @@ class _State extends State<AdminSurveysPage>
                               ),
                               child: Text(
                                 vote,
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w800,
                                   color: color,
@@ -1944,7 +1943,7 @@ class _State extends State<AdminSurveysPage>
               const SizedBox(width: 8),
               Text(
                 title,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color: color,
@@ -1962,7 +1961,7 @@ class _State extends State<AdminSurveysPage>
                 ),
                 child: Text(
                   '${guests.length}',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
@@ -1978,7 +1977,7 @@ class _State extends State<AdminSurveysPage>
                   padding: const EdgeInsets.all(32),
                   child: Text(
                     'No guest responses yet',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: subTextColor,
                       fontSize: 16,
                     ),
@@ -2013,7 +2012,7 @@ class _State extends State<AdminSurveysPage>
                       ),
                       title: Text(
                         name,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: textColor,
@@ -2023,7 +2022,7 @@ class _State extends State<AdminSurveysPage>
                         g['email'] != null && g['email'] != 'Anonymous'
                             ? '${g['email']} • $submitted'
                             : submitted,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 13,
                           color: subTextColor,
                         ),
@@ -2045,7 +2044,7 @@ class _State extends State<AdminSurveysPage>
                               ),
                               child: Text(
                                 vote,
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w800,
                                   color: color,
@@ -2104,7 +2103,7 @@ class _State extends State<AdminSurveysPage>
             const SizedBox(width: 12),
             Text(
               'Create New Poll / Election',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
                 color: textColor,
@@ -2255,7 +2254,7 @@ class _State extends State<AdminSurveysPage>
                   const SizedBox(width: 10),
                   Text(
                     _deadline.isEmpty ? 'Pick a deadline date' : _deadline,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: _deadline.isEmpty ? subTextColor : textColor,
                       fontSize: 14,
                     ),
@@ -2273,7 +2272,7 @@ class _State extends State<AdminSurveysPage>
             children: [
               Text(
                 'Options / Candidates *',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                   color: textColor,
@@ -2284,7 +2283,7 @@ class _State extends State<AdminSurveysPage>
                 icon: const Icon(Icons.add_rounded, size: 18),
                 label: Text(
                   'Add Option',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
@@ -2323,7 +2322,7 @@ class _State extends State<AdminSurveysPage>
                 Expanded(
                   child: Text(
                     'Members will vote with a "Yes" or "No" button.',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 13,
                       color: _kBlue,
                       fontWeight: FontWeight.bold,
@@ -2350,7 +2349,7 @@ class _State extends State<AdminSurveysPage>
                 Expanded(
                   child: Text(
                     'Members will submit a rating from 1 to 5 stars.',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 13,
                       color: _kAmber,
                       fontWeight: FontWeight.bold,
@@ -2380,7 +2379,7 @@ class _State extends State<AdminSurveysPage>
                 : const Icon(Icons.publish_rounded, size: 20),
             label: Text(
               _submitting ? 'Publishing...' : 'Publish Poll',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -2444,7 +2443,7 @@ class _State extends State<AdminSurveysPage>
                         const SizedBox(height: 8),
                         Text(
                           'Tap to change',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -2507,7 +2506,7 @@ class _State extends State<AdminSurveysPage>
                   const SizedBox(height: 12),
                   Text(
                     'Upload Cover Image',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 17,
                       color: subTextColor,
@@ -2516,7 +2515,7 @@ class _State extends State<AdminSurveysPage>
                   const SizedBox(height: 4),
                   Text(
                     'PNG, JPG, WEBP — up to 10 MB',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 14,
                       color: subTextColor,
                     ),
@@ -2555,7 +2554,7 @@ class _State extends State<AdminSurveysPage>
             ),
             child: Text(
               '${idx + 1}',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w900,
                 color: AppColors.accentOrangeText,
@@ -2629,7 +2628,7 @@ class _State extends State<AdminSurveysPage>
           Expanded(
             child: TextFormField(
               initialValue: opt['name'],
-              style: GoogleFonts.inter(color: textColor, fontSize: 16),
+              style: TextStyle(color: textColor, fontSize: 16),
               decoration: _deco(
                 hint: idx == 0 && _type == 'Election'
                     ? 'Candidate name...'
@@ -2667,7 +2666,7 @@ class _State extends State<AdminSurveysPage>
         children: [
           Text(
             label,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 15,
               color: subTextColor,
@@ -2692,7 +2691,7 @@ class _State extends State<AdminSurveysPage>
     children: [
       Text(
         label,
-        style: GoogleFonts.inter(
+        style: TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 13,
           color: subTextColor,
@@ -2702,7 +2701,7 @@ class _State extends State<AdminSurveysPage>
       TextField(
         controller: ctrl,
         maxLines: maxLines,
-        style: GoogleFonts.inter(color: textColor, fontSize: 14),
+        style: TextStyle(color: textColor, fontSize: 14),
         decoration: _deco(
           hint: hint,
           subTextColor: subTextColor,
@@ -2720,7 +2719,7 @@ class _State extends State<AdminSurveysPage>
     required Color inputBg,
   }) => InputDecoration(
     hintText: hint,
-    hintStyle: GoogleFonts.inter(fontSize: 16, color: subTextColor),
+    hintStyle: TextStyle(fontSize: 16, color: subTextColor),
     filled: true,
     fillColor: inputBg,
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -2777,7 +2776,7 @@ class _State extends State<AdminSurveysPage>
               children: [
                 Text(
                   value,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                     color: textColor,
@@ -2785,7 +2784,7 @@ class _State extends State<AdminSurveysPage>
                 ),
                 Text(
                   title,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
                     color: textColor.withAlpha(200),
@@ -2793,7 +2792,7 @@ class _State extends State<AdminSurveysPage>
                 ),
                 Text(
                   subtitle,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 12,
                     color: subTextColor,
                   ),
@@ -2848,7 +2847,7 @@ class _State extends State<AdminSurveysPage>
               const SizedBox(width: 6),
               Text(
                 label,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: isActive ? Colors.white : textColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 14.5,

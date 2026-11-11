@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../services/api_service.dart';
@@ -156,7 +155,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
           backgroundColor: isDark ? _kCardBg : Colors.white,
           title: Text(
             'Filter by Admin / Sub-Admin',
-            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
           content: SizedBox(
             width: 360,
@@ -167,7 +166,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                   ListTile(
                     title: Text(
                       'All Admins & Sub-Admins',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: _filterActorId.isEmpty
                             ? FontWeight.bold
                             : FontWeight.w500,
@@ -195,14 +194,14 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                     return ListTile(
                       title: Text(
                         aName,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                           color: isSelected ? _kOrange : null,
                         ),
                       ),
                       subtitle: Text(
                         aRole.replaceAll('_', ' '),
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 12,
                           color: aRole.contains('SUPER')
                               ? _kOrange
@@ -248,7 +247,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
           backgroundColor: isDark ? _kCardBg : Colors.white,
           title: Text(
             'Select $title',
-            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
           content: SizedBox(
             width: 320,
@@ -258,7 +257,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                 children: options.map((opt) {
                   final label = opt.isEmpty ? 'All ${title}s' : opt;
                   return ListTile(
-                    title: Text(label, style: GoogleFonts.inter(fontSize: 14)),
+                    title: Text(label, style: TextStyle(fontSize: 14)),
                     onTap: () {
                       Navigator.pop(ctx);
                       onSelect(opt);
@@ -323,7 +322,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
               const SizedBox(width: 12),
               Text(
                 'Audit Entry Details',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
                   color: textCol,
@@ -391,7 +390,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
       children: [
         Text(
           label.toUpperCase(),
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.bold,
             color: subTextCol,
@@ -408,7 +407,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
           ),
           child: Text(
             value,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: textCol,
@@ -509,7 +508,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                 ),
                 label: Text(
                   _filtersVisible ? 'Hide Filters' : 'Filter Log',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -533,7 +532,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                 icon: const Icon(Icons.refresh_rounded, size: 16),
                 label: Text(
                   'Refresh',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -630,10 +629,10 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                   // Search text input
                   TextField(
                     onChanged: (val) => setState(() => _searchQuery = val),
-                    style: GoogleFonts.inter(fontSize: 14, color: textCol),
+                    style: TextStyle(fontSize: 14, color: textCol),
                     decoration: InputDecoration(
                       hintText: 'Search logs by admin name, action, target subject...',
-                      hintStyle: GoogleFonts.inter(fontSize: 13, color: subTextCol),
+                      hintStyle: TextStyle(fontSize: 13, color: subTextCol),
                       prefixIcon: const Icon(Icons.search_rounded, size: 18, color: _kOrange),
                       filled: true,
                       fillColor: headerBg,
@@ -665,7 +664,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                         avatar: const Icon(Icons.person_pin_rounded, size: 15, color: _kPurple),
                         label: Text(
                           _filterActorId.isEmpty ? 'All Admins & Sub-Admins' : 'Admin: $currentActorLabel',
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                         ),
                         onPressed: _showActorDialog,
                       ),
@@ -675,7 +674,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                         avatar: const Icon(Icons.category_outlined, size: 15, color: _kOrange),
                         label: Text(
                           _filterTargetType.isEmpty ? 'All Target Types' : 'Type: $_filterTargetType',
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                         ),
                         onPressed: () {
                           _showOptionDialog(
@@ -697,7 +696,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                         avatar: const Icon(Icons.touch_app_outlined, size: 15, color: _kBlue),
                         label: Text(
                           _filterActionType.isEmpty ? 'All Actions' : 'Action: $_filterActionType',
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                         ),
                         onPressed: () {
                           _showOptionDialog(
@@ -719,7 +718,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                         avatar: const Icon(Icons.calendar_today_rounded, size: 14, color: _kGreen),
                         label: Text(
                           _filterDateFrom.isEmpty ? 'From: Any' : 'From: $_filterDateFrom',
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                         ),
                         onPressed: () => _pickDate(true),
                       ),
@@ -729,7 +728,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                         avatar: const Icon(Icons.event_available_rounded, size: 14, color: _kGreen),
                         label: Text(
                           _filterDateTo.isEmpty ? 'To: Any' : 'To: $_filterDateTo',
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                         ),
                         onPressed: () => _pickDate(false),
                       ),
@@ -740,7 +739,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                           icon: const Icon(Icons.clear_all_rounded, size: 16, color: _kRed),
                           label: Text(
                             'Reset',
-                            style: GoogleFonts.inter(color: _kRed, fontWeight: FontWeight.bold, fontSize: 13),
+                            style: TextStyle(color: _kRed, fontWeight: FontWeight.bold, fontSize: 13),
                           ),
                         ),
                     ],
@@ -770,12 +769,12 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                   const SizedBox(height: 10),
                   Text(
                     'No audit logs found.',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 17, color: textCol),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: textCol),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Try resetting filters or checking sub-admin activities.',
-                    style: GoogleFonts.inter(fontSize: 13, color: subTextCol),
+                    style: TextStyle(fontSize: 13, color: subTextCol),
                   ),
                 ],
               ),
@@ -798,13 +797,13 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                         constraints: BoxConstraints(minWidth: constraints.maxWidth),
                         child: DataTable(
                           headingRowColor: WidgetStateProperty.all(headerBg),
-                          headingTextStyle: GoogleFonts.inter(
+                          headingTextStyle: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 12,
                             color: subTextCol,
                             letterSpacing: 0.5,
                           ),
-                          dataTextStyle: GoogleFonts.inter(fontSize: 13, color: textCol),
+                          dataTextStyle: TextStyle(fontSize: 13, color: textCol),
                           columnSpacing: 20,
                           horizontalMargin: 18,
                           dataRowMinHeight: 56,
@@ -839,7 +838,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                                     createdAt.isNotEmpty
                                         ? createdAt.replaceFirst('T', ' ').split('.').first
                                         : '—',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w500,
                                       color: subTextCol,
@@ -857,7 +856,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                                         backgroundColor: (isSuperAdmin ? _kOrange : (isSubAdmin ? _kPurple : _kBlue)).withAlpha(35),
                                         child: Text(
                                           actor.isNotEmpty ? actor[0].toUpperCase() : 'A',
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(
                                             color: isSuperAdmin ? _kOrange : (isSubAdmin ? _kPurple : _kBlue),
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12,
@@ -871,7 +870,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                                         children: [
                                           Text(
                                             actor,
-                                            style: GoogleFonts.inter(
+                                            style: TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 13,
                                               color: textCol,
@@ -885,7 +884,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                                             ),
                                             child: Text(
                                               role.replaceAll('_', ' '),
-                                              style: GoogleFonts.inter(
+                                              style: TextStyle(
                                                 fontSize: 9,
                                                 color: isSuperAdmin ? _kOrange : (isSubAdmin ? _kPurple : _kBlue),
                                                 fontWeight: FontWeight.w700,
@@ -909,7 +908,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                                     ),
                                     child: Text(
                                       action,
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         color: badgeColor,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12,
@@ -922,7 +921,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                                 DataCell(
                                   Text(
                                     targetType.toUpperCase(),
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 12,
                                       color: subTextCol,
@@ -937,7 +936,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                                     child: Text(
                                       targetName,
                                       overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
                                         color: textCol,
@@ -950,7 +949,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                                 DataCell(
                                   Text(
                                     ipAddress,
-                                    style: GoogleFonts.inter(fontSize: 11, color: subTextCol),
+                                    style: TextStyle(fontSize: 11, color: subTextCol),
                                   ),
                                 ),
 
@@ -981,7 +980,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
               children: [
                 Text(
                   'Showing ${_offset + 1} - ${(_offset + _limit).clamp(0, _total)} of $_total entries',
-                  style: GoogleFonts.inter(fontSize: 13, color: subTextCol),
+                  style: TextStyle(fontSize: 13, color: subTextCol),
                 ),
                 Row(
                   children: [

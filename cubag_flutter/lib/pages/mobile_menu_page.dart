@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_service.dart';
 import '../components/app_layout.dart';
 
@@ -390,7 +389,7 @@ class MobileMenuPage extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(4, 24, 4, 8),
           child: Text(
             title,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w900,
               color: isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748b),
@@ -487,7 +486,7 @@ class MobileMenuPage extends StatelessWidget {
               Expanded(
                 child: Text(
                   item.title,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                     color: textColor,

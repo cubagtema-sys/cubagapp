@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
 import '../components/app_layout.dart';
@@ -110,7 +109,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                 const SizedBox(width: 12),
                 Text(
                   isEdit ? 'Edit Gallery Photo' : 'Upload Gallery Photo',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 22,
                   ),
@@ -126,7 +125,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                   children: [
                     Text(
                       'Upload photo attachment with short writings & captions for the homepage CUBAG Gallery.',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 16.5,
                         color: Colors.grey.shade500,
                       ),
@@ -200,7 +199,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                     // Image Attachment Section
                     Text(
                       'Photo Attachment',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 17,
                       ),
@@ -240,7 +239,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                                 Expanded(
                                   child: Text(
                                     selectedImageName ?? 'Attached image',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -302,7 +301,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                               children: [
                                 Text(
                                   'Current Photo (Full View)',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -335,7 +334,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                             const SizedBox(height: 8),
                             Text(
                               'Select a JPEG, PNG, or WEBP image file',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 16,
                                 color: Colors.grey.shade500,
                               ),
@@ -393,7 +392,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                               selectedImageBytes != null || uploadedUrl.isNotEmpty
                                   ? 'Replace Photo Attachment'
                                   : 'Choose Photo Attachment',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 17,
                               ),
@@ -628,7 +627,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                 icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
                 label: Text(
                   'Upload Photo',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
@@ -715,7 +714,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                   const SizedBox(height: 12),
                   Text(
                     'No gallery items match your filter.',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 20,
                     ),
@@ -811,7 +810,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                                   ),
                                   child: Text(
                                     it['category']?.toString() ?? 'Conferences',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,
@@ -852,7 +851,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                               children: [
                                 Text(
                                   it['title']?.toString() ?? '',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -873,7 +872,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                                   children: [
                                     Text(
                                       isActive ? '● Active' : '○ Hidden',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         color: isActive
                                             ? _kGreen
                                             : Colors.white60,

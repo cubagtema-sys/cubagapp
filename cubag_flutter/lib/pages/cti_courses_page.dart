@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../services/api_service.dart';
 import '../services/calendar_service.dart';
@@ -234,7 +233,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                       children: [
                         Text(
                           'Enroll in Course',
-                          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w900, color: textCol),
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: textCol),
                         ),
                         IconButton(
                           tooltip: 'Close',
@@ -244,9 +243,9 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                       ],
                     ),
                     const SizedBox(height: 10),
-                    Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.accentOrangeText)),
+                    Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.accentOrangeText)),
                     const SizedBox(height: 4),
-                    Text('$startDate • $duration • $mode', style: GoogleFonts.inter(fontSize: 13, color: subTextCol)),
+                    Text('$startDate • $duration • $mode', style: TextStyle(fontSize: 13, color: subTextCol)),
                     const SizedBox(height: 14),
                     Divider(height: 1, color: borderCol),
                     const SizedBox(height: 14),
@@ -254,14 +253,14 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Tuition Fee:', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: subTextCol)),
-                        Text(isFreeCourse ? 'FREE' : feeStr, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w900, color: textCol)),
+                        Text('Tuition Fee:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: subTextCol)),
+                        Text(isFreeCourse ? 'FREE' : feeStr, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: textCol)),
                       ],
                     ),
                     const SizedBox(height: 16),
 
                     if (!isFreeCourse) ...[
-                      Text('SELECT MOBILE CARRIER', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w900, color: subTextCol, letterSpacing: 0.5)),
+                      Text('SELECT MOBILE CARRIER', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: subTextCol, letterSpacing: 0.5)),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
@@ -272,7 +271,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                             label: Text(net),
                             selected: isSelected,
                             selectedColor: _kOrange,
-                            labelStyle: GoogleFonts.inter(
+                            labelStyle: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               color: isSelected ? Colors.white : textCol,
@@ -284,13 +283,13 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                         }).toList(),
                       ),
                       const SizedBox(height: 12),
-                      Text('MOMO PHONE NUMBER', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w900, color: subTextCol, letterSpacing: 0.5)),
+                      Text('MOMO PHONE NUMBER', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: subTextCol, letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       TextFormField(
                         keyboardType: TextInputType.phone,
                         maxLength: 10,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: textCol),
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textCol),
                         onChanged: (v) {
                           phone = v;
                         },
@@ -306,13 +305,13 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                       ),
                       if (detectedNetwork.isNotEmpty) ...[
                         const SizedBox(height: 4),
-                        Text('✓ Network: $networkLabel', style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: networkBadgeCol)),
+                        Text('✓ Network: $networkLabel', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: networkBadgeCol)),
                       ],
                     ],
 
                     if (errorMsg != null) ...[
                       const SizedBox(height: 8),
-                      Text(errorMsg!, style: GoogleFonts.inter(fontSize: 13, color: _kRed, fontWeight: FontWeight.bold)),
+                      Text(errorMsg!, style: TextStyle(fontSize: 13, color: _kRed, fontWeight: FontWeight.bold)),
                     ],
 
                     const SizedBox(height: 18),
@@ -402,7 +401,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                               },
                         child: Text(
                           isSubmitting ? 'Processing...' : (isFreeCourse ? 'Confirm Free Enrollment' : 'Pay & Enroll ($feeStr)'),
-                          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                         ),
                       ),
                     ),
@@ -552,7 +551,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                 ],
                 Text(
                   isTimedOut ? 'Awaiting Authorization' : 'Authorize MoMo Payment',
-                  style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w900, color: textCol),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: textCol),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
@@ -564,14 +563,14 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                   ),
                   child: Text(
                     'GH₵ ${amount.toStringAsFixed(2)}  •  $network  •  $phone',
-                    style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.accentOrangeText),
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.accentOrangeText),
                   ),
                 ),
                 const SizedBox(height: 14),
                 Text(
                   'Check your phone and enter your Mobile Money PIN to approve the enrollment fee.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(fontSize: 13, color: mutedCol, height: 1.45),
+                  style: TextStyle(fontSize: 13, color: mutedCol, height: 1.45),
                 ),
                 const SizedBox(height: 14),
                 Container(
@@ -591,7 +590,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                       Expanded(
                         child: Text(
                           ussdTip,
-                          style: GoogleFonts.inter(fontSize: 11.5, color: mutedCol, height: 1.35),
+                          style: TextStyle(fontSize: 11.5, color: mutedCol, height: 1.35),
                         ),
                       ),
                     ],
@@ -602,7 +601,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                   Text(
                     statusMessage,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.w500),
+                    style: TextStyle(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.w500),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -625,7 +624,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                           )
                         : Text(
                             'Check Status Now',
-                            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold),
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                           ),
                   ),
                 ),
@@ -641,7 +640,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                   },
                   child: Text(
                     'Cancel Payment',
-                    style: GoogleFonts.inter(fontSize: 13, color: mutedCol, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 13, color: mutedCol, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -660,8 +659,8 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Enrollment Incomplete', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 17)),
-        content: Text(reason, style: GoogleFonts.inter(fontSize: 14)),
+        title: Text('Enrollment Incomplete', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+        content: Text(reason, style: TextStyle(fontSize: 14)),
         actions: [
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: _kOrange, foregroundColor: Colors.white),
@@ -683,16 +682,16 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text('Enrollment Confirmed!', style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 18)),
+        title: Text('Enrollment Confirmed!', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('You are successfully enrolled in:', style: GoogleFonts.inter(fontSize: 14)),
+            Text('You are successfully enrolled in:', style: TextStyle(fontSize: 14)),
             const SizedBox(height: 4),
-            Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.accentOrangeText)),
+            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.accentOrangeText)),
             const SizedBox(height: 8),
-            Text('🗓️ Starts: $startDate', style: GoogleFonts.inter(fontSize: 13.5, color: _kGreen, fontWeight: FontWeight.bold)),
+            Text('🗓️ Starts: $startDate', style: TextStyle(fontSize: 13.5, color: _kGreen, fontWeight: FontWeight.bold)),
           ],
         ),
         actions: [
@@ -867,7 +866,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                 labelColor: _kOrange,
                 unselectedLabelColor: textMuted,
                 indicatorWeight: 2.5,
-                labelStyle: GoogleFonts.inter(
+                labelStyle: TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.bold,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -923,10 +922,10 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                     _onSearchChanged(v);
                     setState(() {});
                   },
-                  style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
+                  style: TextStyle(fontSize: 14, color: textPrimary),
                   decoration: InputDecoration(
                     hintText: 'Search training courses, topics...',
-                    hintStyle: GoogleFonts.inter(fontSize: 13, color: textMuted),
+                    hintStyle: TextStyle(fontSize: 13, color: textMuted),
                     isDense: true,
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -978,7 +977,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                     ),
                     child: Text(
                       mode == 'All' ? 'All Formats' : mode,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                         color: isSelected ? Colors.white : textPrimary,
@@ -1006,7 +1005,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
             padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(10), border: Border.all(color: border, width: 1.0)),
             child: Center(
-              child: Text('No courses found.', style: GoogleFonts.inter(fontSize: 14, color: textMuted)),
+              child: Text('No courses found.', style: TextStyle(fontSize: 14, color: textMuted)),
             ),
           )
         else
@@ -1205,7 +1204,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
         padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(10), border: Border.all(color: border, width: 1.0)),
         child: Center(
-          child: Text('No active course enrollments yet.', style: GoogleFonts.inter(fontSize: 14, color: textMuted)),
+          child: Text('No active course enrollments yet.', style: TextStyle(fontSize: 14, color: textMuted)),
         ),
       );
     }
@@ -1239,11 +1238,11 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary)),
+                        Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary)),
                         const SizedBox(height: 2),
                         Text(
                           '$fee • Paid & Confirmed',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 13,
                             color: _kGreen,
                             fontWeight: FontWeight.w600,

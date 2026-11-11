@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../services/api_service.dart';
@@ -147,14 +146,14 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
           backgroundColor: isDark ? const Color(0xFF281710) : Colors.white,
           title: Text(
             'Delete Document Rule',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               color: isDark ? Colors.white : const Color(0xFF0F172A),
             ),
           ),
           content: Text(
             'Are you sure you want to delete "${req['label']}"? Existing submitted applications will not lose their files.',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 13.5,
               color: isDark ? Colors.white70 : const Color(0xFF475569),
             ),
@@ -164,7 +163,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
               onPressed: () => Navigator.pop(ctx, false),
               child: Text(
                 'Cancel',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: isDark ? Colors.white60 : Colors.grey,
                 ),
               ),
@@ -177,7 +176,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
               onPressed: () => Navigator.pop(ctx, true),
               child: Text(
                 'Delete',
-                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -228,13 +227,13 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
             enableAll
                 ? 'Enable All Documents for $catName'
                 : 'Turn Off All Documents for $catName',
-            style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
           content: Text(
             enableAll
                 ? 'Are you sure you want to enable all document requirements for $catName ($scopeName)? Applicants will be required to upload them.'
                 : 'Are you sure you want to disable all document requirements for $catName ($scopeName)? Applicants will not be asked to upload any documents and can proceed directly to payment.',
-            style: GoogleFonts.inter(fontSize: 13.5),
+            style: TextStyle(fontSize: 13.5),
           ),
           actions: [
             TextButton(
@@ -248,7 +247,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               onPressed: () => Navigator.pop(ctx, true),
-              child: Text(enableAll ? 'Enable All' : 'Turn Off All', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+              child: Text(enableAll ? 'Enable All' : 'Turn Off All', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -347,7 +346,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                     icon: const Icon(Icons.add_rounded, size: 18),
                     label: Text(
                       'Add Rule',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
                       ),
@@ -371,7 +370,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                     icon: const Icon(Icons.refresh_rounded, size: 18, color: _kOrange),
                     label: Text(
                       'Refresh',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
                       ),
@@ -440,14 +439,14 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                             ),
                             child: TextField(
                               onChanged: (v) => setState(() => _searchQuery = v),
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 13,
                                 color: textPrimary,
                               ),
                               decoration: InputDecoration(
                                 hintText:
                                     'Search document title, key, or instructions...',
-                                hintStyle: GoogleFonts.inter(
+                                hintStyle: TextStyle(
                                   fontSize: 12,
                                   color: textMuted,
                                 ),
@@ -513,7 +512,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                               ),
                               onPressed: () => _bulkToggleCategory(false),
                               icon: const Icon(Icons.power_settings_new_rounded, size: 15, color: _kRed),
-                              label: Text('Turn Off All ($catTitle)', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                              label: Text('Turn Off All ($catTitle)', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
                             )
                           else
                             ElevatedButton.icon(
@@ -526,7 +525,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                               ),
                               onPressed: () => _bulkToggleCategory(true),
                               icon: const Icon(Icons.check_circle_outline_rounded, size: 15),
-                              label: Text('Enable All ($catTitle)', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                              label: Text('Enable All ($catTitle)', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
                             ),
                         ],
                       ],
@@ -634,7 +633,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                                   const SizedBox(height: 12),
                                   Text(
                                     'No rules configured for $catTitle (${_selectedScope == "new" ? "New Application" : "Annual Renewal"})',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,
                                       color: textPrimary,
@@ -643,7 +642,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                                   const SizedBox(height: 4),
                                   Text(
                                     'Click "Add Rule" to configure required compliance certificates.',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 12,
                                       color: textMuted,
                                     ),
@@ -658,7 +657,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                                     icon: const Icon(Icons.add_rounded, size: 16),
                                     label: Text(
                                       'Add First Rule',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -728,7 +727,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
             const SizedBox(width: 6),
             Text(
               label,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
                 color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569)),
@@ -743,7 +742,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
               ),
               child: Text(
                 '$count',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: FontWeight.bold,
                   color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569)),
@@ -777,14 +776,14 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
           const SizedBox(width: 5),
           Text(
             '$label: ',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 11,
               color: isDark ? Colors.white70 : const Color(0xFF475569),
             ),
           ),
           Text(
             value,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
               color: color,
@@ -829,7 +828,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
               child: Center(
                 child: Text(
                   '$order',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                     color: textPrimary,
@@ -844,7 +843,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
             flex: 4,
             child: SelectableText(
               label,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w700,
                 color: textPrimary,
@@ -861,7 +860,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                 desc.isNotEmpty
                     ? desc
                     : 'Statutory credential verification required for compliance.',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 11.5,
                   color: textMuted,
                   height: 1.35,
@@ -901,7 +900,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                     const SizedBox(width: 4),
                     Text(
                       isRequired ? 'MANDATORY' : 'OPTIONAL',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 9.5,
                         fontWeight: FontWeight.w800,
                         color: isRequired ? _kRed : _kAmber,
@@ -951,7 +950,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                       const SizedBox(width: 4),
                       Text(
                         isActive ? 'ACTIVE' : 'OFF',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 9.5,
                           fontWeight: FontWeight.w800,
                           color: isActive ? _kGreen : Colors.grey,
@@ -996,7 +995,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
   }
 
   TextStyle _headerColStyle(Color color) {
-    return GoogleFonts.inter(
+    return TextStyle(
       fontSize: 10.5,
       fontWeight: FontWeight.w800,
       color: color,
@@ -1160,7 +1159,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                       const SizedBox(width: 12),
                       Text(
                         isEdit ? 'Edit Document Rule' : 'Add Compliance Document Rule',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                           color: textColor,
@@ -1188,7 +1187,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                       children: [
                         Text(
                           'MEMBERSHIP CATEGORY',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w800,
                             color: AppColors.accentOrangeText,
@@ -1229,7 +1228,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                       children: [
                         Text(
                           'APPLICATION SCOPE',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w800,
                             color: AppColors.accentOrangeText,
@@ -1283,7 +1282,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                       children: [
                         Text(
                           'DOCUMENT TITLE / NAME *',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w800,
                             color: textColor,
@@ -1292,7 +1291,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                         const SizedBox(height: 6),
                         TextFormField(
                           controller: _labelCtrl,
-                          style: GoogleFonts.inter(fontSize: 13.5, color: textColor),
+                          style: TextStyle(fontSize: 13.5, color: textColor),
                           validator: (v) => v?.trim().isEmpty == true ? 'Document title required' : null,
                           decoration: InputDecoration(
                             hintText: 'e.g. Tax Clearance Certificate',
@@ -1320,7 +1319,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                       children: [
                         Text(
                           'ORDER',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w800,
                             color: textColor,
@@ -1330,7 +1329,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                         TextFormField(
                           controller: _orderCtrl,
                           keyboardType: TextInputType.number,
-                          style: GoogleFonts.inter(fontSize: 13.5, color: textColor),
+                          style: TextStyle(fontSize: 13.5, color: textColor),
                           decoration: InputDecoration(
                             hintText: '1',
                             filled: true,
@@ -1357,7 +1356,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
               // Description
               Text(
                 'INSTRUCTIONS / GUIDELINES FOR APPLICANT',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w800,
                   color: textColor,
@@ -1367,7 +1366,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
               TextFormField(
                 controller: _descCtrl,
                 maxLines: 2,
-                style: GoogleFonts.inter(fontSize: 12.5, color: textColor),
+                style: TextStyle(fontSize: 12.5, color: textColor),
                 decoration: InputDecoration(
                   hintText: 'e.g. Upload a valid GRA clearance certificate valid for the current fiscal year.',
                   filled: true,
@@ -1394,7 +1393,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         'Mandatory Requirement',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: textColor,
@@ -1402,7 +1401,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                       ),
                       subtitle: Text(
                         'Must be uploaded before submission',
-                        style: GoogleFonts.inter(fontSize: 11, color: Colors.grey),
+                        style: TextStyle(fontSize: 11, color: Colors.grey),
                       ),
                       value: _isRequired,
                       activeThumbColor: _kOrange,
@@ -1414,7 +1413,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         'Active in Production',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: textColor,
@@ -1422,7 +1421,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                       ),
                       subtitle: Text(
                         'Visible to applicants on portal',
-                        style: GoogleFonts.inter(fontSize: 11, color: Colors.grey),
+                        style: TextStyle(fontSize: 11, color: Colors.grey),
                       ),
                       value: _isActive,
                       activeThumbColor: _kGreen,
@@ -1442,7 +1441,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                     onPressed: _saving ? null : () => Navigator.pop(context),
                     child: Text(
                       'Cancel',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: isDark ? Colors.white70 : Colors.grey,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1471,7 +1470,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                         : const Icon(Icons.check_circle_outline_rounded, size: 18),
                     label: Text(
                       isEdit ? 'Save Changes' : 'Create Rule',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],

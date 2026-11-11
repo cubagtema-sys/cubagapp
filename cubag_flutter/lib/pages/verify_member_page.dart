@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/api_service.dart';
 import 'admin_qr_scanner_page.dart';
@@ -133,7 +132,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           'Credential Verification',
-          style: GoogleFonts.inter(
+          style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w700,
             fontSize: 17,
@@ -164,7 +163,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                     Center(
                       child: Text(
                         'VERIFYING CUBAG CREDENTIALS...',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1,
                           fontSize: 13,
@@ -221,7 +220,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
           const SizedBox(height: 16),
           Text(
             _error != null ? 'Verification Result' : 'Verify Member Credentials',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w800,
               color: _kDark,
@@ -232,7 +231,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
             _error ??
                 'Scan a physical CUBAG digital badge QR code or enter a member number below to confirm active accreditation and good standing.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 14,
               color: _error != null ? const Color(0xFFDC2626) : Colors.grey.shade600,
               height: 1.5,
@@ -256,7 +255,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
               icon: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 20),
               label: Text(
                 'Scan Badge QR Code',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
@@ -273,7 +272,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
                   'OR SEARCH MANUALLY',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.8,
@@ -292,7 +291,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
             onSubmitted: (val) => _fetch(val),
             decoration: InputDecoration(
               hintText: 'Member ID or License # (e.g. CUBAG-0042)',
-              hintStyle: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade400),
+              hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade400),
               prefixIcon: const Icon(Icons.search_rounded, color: _kBrown, size: 20),
               suffixIcon: _searchCtrl.text.isNotEmpty
                   ? IconButton(
@@ -338,7 +337,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
               ),
               child: Text(
                 'Verify Member ID',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: _kBrown,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -352,7 +351,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
             onPressed: () => context.canPop() ? context.pop() : context.go('/login'),
             child: Text(
               'Back to Portal',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 color: Colors.grey.shade600,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
@@ -390,7 +389,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
               const SizedBox(width: 8),
               Text(
                 (isVerified ? 'AUTHENTIC CUBAG MEMBER' : 'MEMBER STATUS: ${status.toUpperCase()}'),
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
                   fontSize: 13,
@@ -439,7 +438,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                           child: Center(
                             child: Text(
                               _initials(m['name']?.toString() ?? ''),
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 30,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFF5F6B7E),
@@ -453,7 +452,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
               Text(
                 m['name']?.toString() ?? '',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: _kDark,
@@ -463,7 +462,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
               Text(
                 m['company']?.toString() ?? 'Independent Broker',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: Colors.grey.shade600,
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
@@ -517,7 +516,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                               children: [
                                 Text(
                                   r['label'].toString().toUpperCase(),
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 11,
                                     color: Colors.grey.shade600,
                                     fontWeight: FontWeight.bold,
@@ -527,7 +526,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                                 const SizedBox(height: 2),
                                 Text(
                                   r['val'].toString(),
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 14.5,
                                     fontWeight: FontWeight.w700,
                                     color: const Color(0xFF281710),
@@ -559,7 +558,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                   icon: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 18),
                   label: Text(
                     'Scan Another Member Badge',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -582,7 +581,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                   },
                   child: Text(
                     'Search Another Credential',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: _kBrown,
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
@@ -595,7 +594,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
               Text(
                 'Official digital verification by Customs Brokers Association Ghana.\n© ${DateTime.now().year} CUBAG Secretariat.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey.shade500,
                   height: 1.5,

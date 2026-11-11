@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 // ── Shared Admin Design System Palette (Editorial Stone & Ink) ───────────────
 const Color kAdminOrange = Color(0xFFFF5000); // Primary Accent Orange
@@ -62,7 +61,7 @@ class AdminHeader extends StatelessWidget {
                   Flexible(
                     child: Text(
                       title,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: isSmall ? 22 : 26,
                         fontWeight: FontWeight.w800,
                         color: titleColor,
@@ -76,7 +75,7 @@ class AdminHeader extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   subtitle!,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
                     color: subtitleColor,
@@ -186,7 +185,7 @@ class AdminStatCard extends StatelessWidget {
                   children: [
                     Text(
                       value,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: textColor,
@@ -200,7 +199,7 @@ class AdminStatCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       label,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: subTextColor,
@@ -267,10 +266,10 @@ class AdminToolbar extends StatelessWidget {
               child: TextField(
                 controller: searchController,
                 onChanged: onSearchChanged,
-                style: GoogleFonts.inter(fontSize: 14, color: textColor),
+                style: TextStyle(fontSize: 14, color: textColor),
                 decoration: InputDecoration(
                   hintText: searchHint,
-                  hintStyle: GoogleFonts.inter(
+                  hintStyle: TextStyle(
                     fontSize: 14,
                     color: subTextColor,
                   ),
@@ -407,7 +406,7 @@ class AdminFilterChip extends StatelessWidget {
             ],
             Text(
               label,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: textColor,
@@ -425,7 +424,7 @@ class AdminFilterChip extends StatelessWidget {
                 ),
                 child: Text(
                   '$count',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: textColor,
@@ -478,7 +477,7 @@ class AdminBadge extends StatelessWidget {
           ],
           Text(
             label,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 11.5,
               fontWeight: FontWeight.w700,
               color: color,
@@ -541,7 +540,7 @@ class AdminSectionCard extends StatelessWidget {
                       children: [
                         Text(
                           title!,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
                             color: titleColor,
@@ -552,7 +551,7 @@ class AdminSectionCard extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             subtitle!,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 12,
                               color: subtitleColor,
                             ),
@@ -624,7 +623,7 @@ class AdminEmptyState extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontWeight: FontWeight.w800,
               fontSize: 17,
               color: textColor,
@@ -638,7 +637,7 @@ class AdminEmptyState extends StatelessWidget {
               child: Text(
                 subtitle!,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 13,
                   color: subTextColor,
                   height: 1.4,

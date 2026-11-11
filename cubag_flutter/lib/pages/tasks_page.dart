@@ -2,7 +2,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../components/app_layout.dart';
@@ -140,7 +139,7 @@ class _TasksPageState extends State<TasksPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Uploaded "$label" successfully', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+              content: Text('Uploaded "$label" successfully', style: TextStyle(fontWeight: FontWeight.bold)),
               backgroundColor: _kGreen,
             ),
           );
@@ -150,7 +149,7 @@ class _TasksPageState extends State<TasksPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(res.data?['message'] ?? 'Upload failed', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+              content: Text(res.data?['message'] ?? 'Upload failed', style: TextStyle(fontWeight: FontWeight.bold)),
               backgroundColor: _kRed,
             ),
           );
@@ -160,7 +159,7 @@ class _TasksPageState extends State<TasksPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Upload error: $e', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            content: Text('Upload error: $e', style: TextStyle(fontWeight: FontWeight.bold)),
             backgroundColor: _kRed,
           ),
         );
@@ -267,7 +266,7 @@ class _TasksPageState extends State<TasksPage> {
                                 children: [
                                   Text(
                                     'COMPLIANCE & OBLIGATIONS',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w800,
                                       color: _kBrown,
@@ -277,7 +276,7 @@ class _TasksPageState extends State<TasksPage> {
                                   const SizedBox(height: 2),
                                   Text(
                                     'Filings & Statutory Tasks',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.w800,
                                       color: _kText,
@@ -313,7 +312,7 @@ class _TasksPageState extends State<TasksPage> {
                               Flexible(
                                 child: Text(
                                   statusBadgeText,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w800,
                                     color: statusBadgeColor,
@@ -376,7 +375,7 @@ class _TasksPageState extends State<TasksPage> {
                                       _docsTotal > 0
                                           ? 'Documents ($_docsUploaded/$_docsTotal)'
                                           : 'Documents',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700,
                                         color: _activeTab == 'documents' ? Colors.white : _kMuted,
@@ -411,7 +410,7 @@ class _TasksPageState extends State<TasksPage> {
                                     const SizedBox(width: 6),
                                     Text(
                                       'Tasks (${pendingTasks.length})',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700,
                                         color: _activeTab == 'tasks' ? Colors.white : _kMuted,
@@ -469,12 +468,12 @@ class _TasksPageState extends State<TasksPage> {
               const SizedBox(height: 12),
               Text(
                 'No compliance documents required at this time.',
-                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: _kText),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: _kText),
               ),
               const SizedBox(height: 4),
               Text(
                 'Your account status and documents are currently in good order.',
-                style: GoogleFonts.inter(fontSize: 13, color: _kMuted),
+                style: TextStyle(fontSize: 13, color: _kMuted),
               ),
             ],
           ),
@@ -586,7 +585,7 @@ class _TasksPageState extends State<TasksPage> {
                       children: [
                         Text(
                           label,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: _kText,
@@ -604,7 +603,7 @@ class _TasksPageState extends State<TasksPage> {
                               ),
                               child: Text(
                                 statusPillText,
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                   color: statusPillTextColor,
@@ -621,7 +620,7 @@ class _TasksPageState extends State<TasksPage> {
               const SizedBox(height: 10),
               Text(
                 statusSubtext,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 12.5,
                   color: _kMuted,
                   height: 1.35,
@@ -647,7 +646,7 @@ class _TasksPageState extends State<TasksPage> {
                       Expanded(
                         child: Text(
                           'Secretariat Note: $adminNote',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: _kRed,
@@ -682,7 +681,7 @@ class _TasksPageState extends State<TasksPage> {
                       icon: const Icon(Icons.visibility_outlined, size: 16),
                       label: Text(
                         'Preview',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -708,7 +707,7 @@ class _TasksPageState extends State<TasksPage> {
                                 const SizedBox(width: 8),
                                 Text(
                                   'Uploading file...',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12.5,
                                     color: _kMuted,
@@ -733,7 +732,7 @@ class _TasksPageState extends State<TasksPage> {
                                     const SizedBox(width: 6),
                                     Text(
                                       'Filing Completed',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 13,
                                         color: _kGreen,
@@ -758,7 +757,7 @@ class _TasksPageState extends State<TasksPage> {
                                         const SizedBox(width: 6),
                                         Text(
                                           'Awaiting Secretariat Review',
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(
                                             fontWeight: FontWeight.w600,
                                             fontSize: 12.5,
                                             color: _kMuted,
@@ -784,7 +783,7 @@ class _TasksPageState extends State<TasksPage> {
                                     ),
                                     label: Text(
                                       isRejected ? 'Replace Rejected Document' : 'Upload Document',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 13,
                                       ),
@@ -826,12 +825,12 @@ class _TasksPageState extends State<TasksPage> {
               const SizedBox(height: 12),
               Text(
                 'No pending action items.',
-                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold, color: _kText),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: _kText),
               ),
               const SizedBox(height: 4),
               Text(
                 'You are fully up to date with your compliance deadlines.',
-                style: GoogleFonts.inter(fontSize: 13, color: _kMuted),
+                style: TextStyle(fontSize: 13, color: _kMuted),
               ),
             ],
           ),
@@ -900,7 +899,7 @@ class _TasksPageState extends State<TasksPage> {
                       children: [
                         Text(
                           title,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: _kText,
@@ -911,7 +910,7 @@ class _TasksPageState extends State<TasksPage> {
                           const SizedBox(height: 3),
                           Text(
                             desc,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 13,
                               color: _kMuted,
                               height: 1.35,
@@ -931,7 +930,7 @@ class _TasksPageState extends State<TasksPage> {
                     if (dueDate != null)
                       Text(
                         isOverdue ? 'Overdue: $dueDate' : 'Due: $dueDate',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: isOverdue ? _kRed : _kMuted,
@@ -951,7 +950,7 @@ class _TasksPageState extends State<TasksPage> {
                         onPressed: () => context.go(actionUrl),
                         child: Text(
                           'Complete Task',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 12.5),
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
                         ),
                       ),
                   ],

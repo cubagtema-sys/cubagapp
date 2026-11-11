@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../services/api_service.dart';
@@ -207,7 +206,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
       SnackBar(
         content: Text(
           msg,
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: error ? _kRed : _kGreen,
         behavior: SnackBarBehavior.floating,
@@ -233,21 +232,21 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
         ),
         title: Text(
           'Remove Sub-Admin',
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             color: textColor,
           ),
         ),
         content: Text(
           'Demote ${sa['name']} back to a regular member?\nAll their administrative permissions will be revoked.',
-          style: GoogleFonts.inter(color: subTextColor),
+          style: TextStyle(color: subTextColor),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
               'Cancel',
-              style: GoogleFonts.inter(color: subTextColor),
+              style: TextStyle(color: subTextColor),
             ),
           ),
           ElevatedButton(
@@ -260,7 +259,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
               'Remove',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
@@ -428,7 +427,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
               const SizedBox(height: 12),
               Text(
                 'Full admin access required',
-                style: GoogleFonts.inter(color: subTextCol, fontSize: 18),
+                style: TextStyle(color: subTextCol, fontSize: 18),
               ),
             ],
           ),
@@ -479,7 +478,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                 icon: const Icon(Icons.person_add_rounded, size: 18),
                 label: Text(
                   'Add Sub-Admin',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
@@ -542,7 +541,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                     color: kAdminOrange,
                   ),
                   dropdownColor: cardBg,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                     color: textCol,
@@ -604,7 +603,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                   const SizedBox(height: 12),
                   Text(
                     'No sub-admin accounts match your filter.',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                       color: textCol,
@@ -613,7 +612,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                   const SizedBox(height: 4),
                   Text(
                     'Click "Add Sub-Admin" to delegate platform module responsibilities.',
-                    style: GoogleFonts.inter(fontSize: 15, color: subTextCol),
+                    style: TextStyle(fontSize: 15, color: subTextCol),
                   ),
                 ],
               ),
@@ -638,13 +637,13 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                         ),
                         child: DataTable(
                           headingRowColor: WidgetStateProperty.all(headerBg),
-                          headingTextStyle: GoogleFonts.inter(
+                          headingTextStyle: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 14,
                             color: subTextCol,
                             letterSpacing: 0.5,
                           ),
-                          dataTextStyle: GoogleFonts.inter(
+                          dataTextStyle: TextStyle(
                             fontSize: 15,
                             color: textCol,
                           ),
@@ -699,7 +698,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                                           name.isNotEmpty
                                               ? name[0].toUpperCase()
                                               : 'A',
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             color: roleColor,
                                             fontSize: 15,
@@ -715,7 +714,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                                         children: [
                                           Text(
                                             name,
-                                            style: GoogleFonts.inter(
+                                            style: TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 16,
                                               color: textCol,
@@ -723,7 +722,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                                           ),
                                           Text(
                                             email,
-                                            style: GoogleFonts.inter(
+                                            style: TextStyle(
                                               fontSize: 13,
                                               color: subTextCol,
                                             ),
@@ -750,7 +749,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                                     ),
                                     child: Text(
                                       roleLabel,
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w800,
                                         color: roleColor,
@@ -772,7 +771,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                                     child: perms.isEmpty
                                         ? Text(
                                             'No modules granted',
-                                            style: GoogleFonts.inter(
+                                            style: TextStyle(
                                               fontSize: 14,
                                               color: _kRed,
                                               fontStyle: FontStyle.italic,
@@ -786,7 +785,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                                                       p,
                                                 )
                                                 .join(', '),
-                                            style: GoogleFonts.inter(
+                                            style: TextStyle(
                                               fontSize: 14,
                                               color: subTextCol,
                                               fontWeight: FontWeight.w500,
@@ -822,7 +821,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                                         const SizedBox(width: 6),
                                         Text(
                                           'Active',
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,
                                             color: _kGreen,
@@ -992,7 +991,7 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
           SnackBar(
             content: Text(
               res.data['message'] ?? 'Failed to create sub-admin',
-              style: GoogleFonts.inter(),
+              style: const TextStyle(),
             ),
             backgroundColor: _kRed,
           ),
@@ -1001,7 +1000,7 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Network error', style: GoogleFonts.inter())),
+          SnackBar(content: Text('Network error', style: const TextStyle())),
         );
       }
     }
@@ -1041,7 +1040,7 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
               const SizedBox(height: 20),
               Text(
                 'New Sub-Admin Account',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 24,
                   color: widget.textColor,
@@ -1050,7 +1049,7 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
               const SizedBox(height: 6),
               Text(
                 'Provision a new officer with scoped operational modules.',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 15,
                   color: widget.subTextColor,
                 ),
@@ -1059,7 +1058,7 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
 
               TextFormField(
                 controller: _nameCtrl,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: widget.textColor,
                   fontSize: 16,
                 ),
@@ -1074,7 +1073,7 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
               TextFormField(
                 controller: _emailCtrl,
                 keyboardType: TextInputType.emailAddress,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: widget.textColor,
                   fontSize: 16,
                 ),
@@ -1090,7 +1089,7 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
               TextFormField(
                 controller: _passCtrl,
                 obscureText: _obscure,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: widget.textColor,
                   fontSize: 16,
                 ),
@@ -1116,7 +1115,7 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
               const SizedBox(height: 24),
               Text(
                 'Role Preset Template',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 17,
                   color: widget.textColor,
@@ -1125,7 +1124,7 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
               const SizedBox(height: 6),
               Text(
                 'Select a role to auto-configure module permissions.',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 14,
                   color: widget.subTextColor,
                 ),
@@ -1145,7 +1144,7 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
                     ),
                     label: Text(
                       tpl.label,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -1166,7 +1165,7 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
                 children: [
                     Text(
                       'Granted Modules (${_selectedPerms.length} of ${_kAllPermissions.length})',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                         color: widget.textColor,
@@ -1199,7 +1198,7 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
                   dense: true,
                   title: Text(
                     _kPermissionLabels[perm] ?? perm,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: widget.textColor,
@@ -1207,7 +1206,7 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
                   ),
                   subtitle: Text(
                     _kPermissionDescriptions[perm] ?? '',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 13,
                       color: widget.subTextColor,
                     ),
@@ -1254,7 +1253,7 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
                         )
                       : Text(
                           'Create Sub-Admin',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1279,7 +1278,7 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
       suffixIcon: suffix,
       filled: true,
       fillColor: widget.inputBg,
-      labelStyle: GoogleFonts.inter(fontSize: 16, color: widget.subTextColor),
+      labelStyle: TextStyle(fontSize: 16, color: widget.subTextColor),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -1350,7 +1349,7 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
           SnackBar(
             content: Text(
               res.data['message'] ?? 'Failed to update permissions',
-              style: GoogleFonts.inter(),
+              style: const TextStyle(),
             ),
             backgroundColor: _kRed,
           ),
@@ -1359,7 +1358,7 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Network error', style: GoogleFonts.inter())),
+          SnackBar(content: Text('Network error', style: const TextStyle())),
         );
       }
     }
@@ -1417,7 +1416,7 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
                       children: [
                         Text(
                           'Edit Module Privileges: $name',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 20,
                             color: textCol,
@@ -1426,7 +1425,7 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
                         const SizedBox(height: 2),
                         Text(
                           '$email • ${_selected.length} of ${_kAllPermissions.length} modules granted',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 14,
                             color: subTextCol,
                           ),
@@ -1453,7 +1452,7 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
                     // Role Presets Bar
                     Text(
                       'Role Preset Templates',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                         color: textCol,
@@ -1462,7 +1461,7 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
                     const SizedBox(height: 4),
                     Text(
                       'Quickly apply standard operational privilege templates:',
-                      style: GoogleFonts.inter(fontSize: 14, color: subTextCol),
+                      style: TextStyle(fontSize: 14, color: subTextCol),
                     ),
                     const SizedBox(height: 10),
                     Wrap(
@@ -1479,7 +1478,7 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
                             ),
                             label: Text(
                               tpl.label,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -1546,7 +1545,7 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
                     // Grid of Permission Modules
                     Text(
                       'Granular Module Access Controls',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                         color: textCol,
@@ -1630,7 +1629,7 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
                                     children: [
                                       Text(
                                         label,
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 15,
                                           color: isGranted
@@ -1644,7 +1643,7 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
                                       ),
                                       Text(
                                         desc,
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontSize: 12,
                                           color: subTextCol,
                                         ),
@@ -1691,7 +1690,7 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
                 children: [
                   Text(
                     '${_selected.length} modules selected',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: subTextCol,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -1729,7 +1728,7 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
                             : const Icon(Icons.check_rounded, size: 18),
                         label: Text(
                           'Save Permissions',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),

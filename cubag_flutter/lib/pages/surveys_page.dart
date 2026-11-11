@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/cors_image_widget.dart';
 import '../components/shimmer_loader.dart';
@@ -123,9 +122,9 @@ class _SurveysPageState extends State<SurveysPage> {
           children: [
             const Icon(Icons.check_circle_rounded, color: _kGreen, size: 48),
             const SizedBox(height: 14),
-            Text('Vote Cast Successfully!', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text('Vote Cast Successfully!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             const SizedBox(height: 6),
-            Text(title, style: GoogleFonts.inter(fontSize: 14, color: AppColors.accentOrangeText), textAlign: TextAlign.center),
+            Text(title, style: TextStyle(fontSize: 14, color: AppColors.accentOrangeText), textAlign: TextAlign.center),
             const SizedBox(height: 18),
             SizedBox(
               width: double.infinity,
@@ -197,9 +196,9 @@ class _SurveysPageState extends State<SurveysPage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Surveys & Elections', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w800, color: textPrimary)),
+                      Text('Surveys & Elections', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: textPrimary)),
                       const SizedBox(height: 2),
-                      Text('Official trade ballots and industry consultations', style: GoogleFonts.inter(fontSize: 13, color: textMuted)),
+                      Text('Official trade ballots and industry consultations', style: TextStyle(fontSize: 13, color: textMuted)),
                     ],
                   ),
                 ],
@@ -227,7 +226,7 @@ class _SurveysPageState extends State<SurveysPage> {
                           child: Center(
                             child: Text(
                               'Active (${_active.length})',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.bold,
                                 color: _tab == 'active' ? _kOrange : textMuted,
@@ -250,7 +249,7 @@ class _SurveysPageState extends State<SurveysPage> {
                           child: Center(
                             child: Text(
                               'Past (${_past.length})',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.bold,
                                 color: _tab == 'past' ? _kOrange : textMuted,
@@ -277,10 +276,10 @@ class _SurveysPageState extends State<SurveysPage> {
                 child: TextField(
                   controller: _searchCtrl,
                   onChanged: _onSearchChanged,
-                  style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
+                  style: TextStyle(fontSize: 14, color: textPrimary),
                   decoration: InputDecoration(
                     hintText: 'Search consultations & ballots...',
-                    hintStyle: GoogleFonts.inter(fontSize: 13, color: textMuted),
+                    hintStyle: TextStyle(fontSize: 13, color: textMuted),
                     prefixIcon: Icon(Icons.search_rounded, size: 16, color: textMuted),
                     isDense: true,
                     border: InputBorder.none,
@@ -304,7 +303,7 @@ class _SurveysPageState extends State<SurveysPage> {
                   padding: const EdgeInsets.all(28),
                   decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(10), border: Border.all(color: border, width: 1.0)),
                   child: Center(
-                    child: Text('No surveys found.', style: GoogleFonts.inter(fontSize: 14, color: textMuted)),
+                    child: Text('No surveys found.', style: TextStyle(fontSize: 14, color: textMuted)),
                   ),
                 )
               else
@@ -367,7 +366,7 @@ class _SurveysPageState extends State<SurveysPage> {
                     const SizedBox(width: 6),
                     Text(
                       isElection ? 'OFFICIAL CUBAG BALLOT' : 'MEMBER TRADE SURVEY',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.6,
@@ -438,7 +437,7 @@ class _SurveysPageState extends State<SurveysPage> {
                       ),
                       child: Text(
                         type.toUpperCase(),
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w900,
                           color: type == 'election' ? _kPurple : _kOrange,
@@ -450,15 +449,15 @@ class _SurveysPageState extends State<SurveysPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(color: _kGreen.withAlpha(20), borderRadius: BorderRadius.circular(4)),
-                        child: Text('VOTED', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: _kGreen)),
+                        child: Text('VOTED', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _kGreen)),
                       ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary)),
+                Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary)),
                 if (desc.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text(desc, style: GoogleFonts.inter(fontSize: 13, color: textMuted), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  Text(desc, style: TextStyle(fontSize: 13, color: textMuted), maxLines: 2, overflow: TextOverflow.ellipsis),
                 ],
                 const SizedBox(height: 12),
                 Align(
@@ -475,7 +474,7 @@ class _SurveysPageState extends State<SurveysPage> {
                       _answering = s;
                       _selected = '';
                     }),
-                    child: Text(hasResponded ? 'Voted' : 'Vote Now', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+                    child: Text(hasResponded ? 'Voted' : 'Vote Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   ),
                 ),
               ],
@@ -519,7 +518,7 @@ class _SurveysPageState extends State<SurveysPage> {
                 onPressed: () => setState(() => _answering = null),
               ),
               Expanded(
-                child: Text('Cast Your Vote', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary)),
+                child: Text('Cast Your Vote', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary)),
               ),
             ],
           ),
@@ -539,10 +538,10 @@ class _SurveysPageState extends State<SurveysPage> {
             ),
             const SizedBox(height: 12),
           ],
-          Text(title, style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w900, color: AppColors.accentOrangeText)),
+          Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: AppColors.accentOrangeText)),
           if (desc.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Text(desc, style: GoogleFonts.inter(fontSize: 13.5, color: textMuted)),
+            Text(desc, style: TextStyle(fontSize: 13.5, color: textMuted)),
           ],
           const SizedBox(height: 16),
           Divider(height: 1, color: border),
@@ -569,7 +568,7 @@ class _SurveysPageState extends State<SurveysPage> {
                       Icon(isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded, color: isSelected ? _kOrange : textMuted, size: 20),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(name, style: GoogleFonts.inter(fontSize: 14.5, fontWeight: FontWeight.bold, color: textPrimary)),
+                        child: Text(name, style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: textPrimary)),
                       ),
                     ],
                   ),
@@ -590,7 +589,7 @@ class _SurveysPageState extends State<SurveysPage> {
                 elevation: 0,
               ),
               onPressed: _submitting ? null : _submit,
-              child: Text(_submitting ? 'Submitting...' : 'Submit Vote', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15)),
+              child: Text(_submitting ? 'Submitting...' : 'Submit Vote', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
             ),
           ),
         ],

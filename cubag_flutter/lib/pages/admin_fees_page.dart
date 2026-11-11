@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../services/api_service.dart';
@@ -149,7 +148,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                               const SizedBox(width: 10),
                               Text(
                                 isEdit ? 'Edit Fee Tariff' : 'Add Fee Tariff',
-                                style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: textCol),
+                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textCol),
                               ),
                             ],
                           ),
@@ -164,14 +163,14 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       const Divider(height: 1),
                       const SizedBox(height: 14),
 
-                      Text('TARIFF SECTION *', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
+                      Text('TARIFF SECTION *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
                           ChoiceChip(
-                            label: Text('New Registration', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold)),
+                            label: Text('New Registration', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                             selected: section == 'new_membership',
                             selectedColor: _kOrange,
                             labelStyle: TextStyle(color: section == 'new_membership' ? Colors.white : textCol),
@@ -185,7 +184,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             },
                           ),
                           ChoiceChip(
-                            label: Text('National Renewal', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold)),
+                            label: Text('National Renewal', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                             selected: section == 'national',
                             selectedColor: _kBlue,
                             labelStyle: TextStyle(color: section == 'national' ? Colors.white : textCol),
@@ -199,7 +198,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             },
                           ),
                           ChoiceChip(
-                            label: Text('District Renewal', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold)),
+                            label: Text('District Renewal', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                             selected: section == 'district',
                             selectedColor: _kGreen,
                             labelStyle: TextStyle(color: section == 'district' ? Colors.white : textCol),
@@ -213,7 +212,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             },
                           ),
                           ChoiceChip(
-                            label: Text('Variable / Add-On', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold)),
+                            label: Text('Variable / Add-On', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                             selected: section == 'variable',
                             selectedColor: _kPurple,
                             labelStyle: TextStyle(color: section == 'variable' ? Colors.white : textCol),
@@ -225,14 +224,14 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       ),
                       const SizedBox(height: 14),
 
-                      Text('TARIFF PURPOSE / LABEL *', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
+                      Text('TARIFF PURPOSE / LABEL *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       TextField(
                         controller: nameCtrl,
-                        style: GoogleFonts.inter(fontSize: 15, color: textCol),
+                        style: TextStyle(fontSize: 15, color: textCol),
                         decoration: InputDecoration(
                           hintText: 'e.g. Subscription fee (small companies)',
-                          hintStyle: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF5F6B7E)),
+                          hintStyle: TextStyle(fontSize: 14, color: const Color(0xFF5F6B7E)),
                           filled: true,
                           fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
@@ -243,7 +242,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       const SizedBox(height: 14),
 
                       // SETTLEMENT BANK & PRESET BUTTONS
-                      Text('WHITSUN PAY SETTLEMENT DESTINATION *', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
+                      Text('WHITSUN PAY SETTLEMENT DESTINATION *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       Wrap(
                         spacing: 6,
@@ -251,22 +250,22 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                         children: [
                           ActionChip(
                             avatar: const Icon(Icons.account_balance_rounded, size: 14, color: Color(0xFF003366)),
-                            label: Text('Zenith Bank (6010309212)', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700)),
+                            label: Text('Zenith Bank (6010309212)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                             onPressed: () => applyPresetBank('Zenith Bank', '6010309212'),
                           ),
                           ActionChip(
                             avatar: const Icon(Icons.account_balance_rounded, size: 14, color: _kOrange),
-                            label: Text('GCB (107113005326)', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700)),
+                            label: Text('GCB (107113005326)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                             onPressed: () => applyPresetBank('GCB', '107113005326'),
                           ),
                           ActionChip(
                             avatar: const Icon(Icons.account_balance_rounded, size: 14, color: _kTeal),
-                            label: Text('Ecobank (1441002452360)', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700)),
+                            label: Text('Ecobank (1441002452360)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                             onPressed: () => applyPresetBank('Ecobank', '1441002452360'),
                           ),
                           ActionChip(
                             avatar: const Icon(Icons.account_balance_rounded, size: 14, color: _kGreen),
-                            label: Text('NIB (1110045585101)', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700)),
+                            label: Text('NIB (1110045585101)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                             onPressed: () => applyPresetBank('NIB', '1110045585101'),
                           ),
                         ],
@@ -277,7 +276,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                           Expanded(
                             child: TextField(
                               controller: bankCtrl,
-                              style: GoogleFonts.inter(fontSize: 14, color: textCol),
+                              style: TextStyle(fontSize: 14, color: textCol),
                               decoration: InputDecoration(
                                 labelText: 'Bank Name',
                                 filled: true,
@@ -292,7 +291,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                           Expanded(
                             child: TextField(
                               controller: accCtrl,
-                              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: textCol),
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textCol),
                               decoration: InputDecoration(
                                 labelText: 'Account Number',
                                 filled: true,
@@ -314,15 +313,15 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('AMOUNT (GHS) *', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
+                                Text('AMOUNT (GHS) *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                                 const SizedBox(height: 6),
                                 TextField(
                                   controller: amountCtrl,
                                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: textCol),
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textCol),
                                   decoration: InputDecoration(
                                     prefixText: 'GHS ',
-                                    prefixStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.accentOrangeText),
+                                    prefixStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.accentOrangeText),
                                     filled: true,
                                     fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
@@ -338,7 +337,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('TARGET SCALE *', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
+                                Text('TARGET SCALE *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                                 const SizedBox(height: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -352,7 +351,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                                       value: targetScale,
                                       isExpanded: true,
                                       dropdownColor: cardBg,
-                                      style: GoogleFonts.inter(fontSize: 14, color: textCol),
+                                      style: TextStyle(fontSize: 14, color: textCol),
                                       items: const [
                                         DropdownMenuItem(value: 'all', child: Text('All Companies')),
                                         DropdownMenuItem(value: 'small', child: Text('Small / SME')),
@@ -379,7 +378,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('BILLING UNIT', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
+                                Text('BILLING UNIT', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                                 const SizedBox(height: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -393,7 +392,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                                       value: unit,
                                       isExpanded: true,
                                       dropdownColor: cardBg,
-                                      style: GoogleFonts.inter(fontSize: 14, color: textCol),
+                                      style: TextStyle(fontSize: 14, color: textCol),
                                       items: const [
                                         DropdownMenuItem(value: 'flat', child: Text('Flat Tariff')),
                                         DropdownMenuItem(value: 'per_director', child: Text('Per Director')),
@@ -414,7 +413,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('FREQUENCY', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
+                                Text('FREQUENCY', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                                 const SizedBox(height: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -428,7 +427,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                                       value: frequency,
                                       isExpanded: true,
                                       dropdownColor: cardBg,
-                                      style: GoogleFonts.inter(fontSize: 14, color: textCol),
+                                      style: TextStyle(fontSize: 14, color: textCol),
                                       items: const [
                                         DropdownMenuItem(value: 'One-Time', child: Text('One-Time')),
                                         DropdownMenuItem(value: 'Annual', child: Text('Annual')),
@@ -446,15 +445,15 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       ),
                       const SizedBox(height: 14),
 
-                      Text('DESCRIPTION / NOTES', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
+                      Text('DESCRIPTION / NOTES', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       TextField(
                         controller: descCtrl,
                         maxLines: 2,
-                        style: GoogleFonts.inter(fontSize: 14, color: textCol),
+                        style: TextStyle(fontSize: 14, color: textCol),
                         decoration: InputDecoration(
                           hintText: 'e.g. Mandatory statutory fee settled to Zenith Bank account',
-                          hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF5F6B7E)),
+                          hintStyle: TextStyle(fontSize: 13, color: const Color(0xFF5F6B7E)),
                           filled: true,
                           fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
@@ -469,7 +468,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                         children: [
                           TextButton(
                             onPressed: () => Navigator.of(dlgCtx).pop(),
-                            child: Text('Cancel', style: GoogleFonts.inter(color: const Color(0xFF5F6B7E), fontWeight: FontWeight.bold)),
+                            child: Text('Cancel', style: TextStyle(color: const Color(0xFF5F6B7E), fontWeight: FontWeight.bold)),
                           ),
                           const SizedBox(width: 10),
                           ElevatedButton.icon(
@@ -510,7 +509,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                               _saveAllFees();
                             },
                             icon: const Icon(Icons.check_rounded, size: 16),
-                            label: Text(isEdit ? 'Update Tariff' : 'Add Tariff', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                            label: Text(isEdit ? 'Update Tariff' : 'Add Tariff', style: TextStyle(fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
@@ -533,8 +532,8 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Remove Fee Item', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-        content: Text('Are you sure you want to delete "$itemName" from the official tariff schedule?', style: GoogleFonts.inter(fontSize: 15)),
+        title: Text('Remove Fee Item', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Text('Are you sure you want to delete "$itemName" from the official tariff schedule?', style: TextStyle(fontSize: 15)),
         actions: [
           TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
           ElevatedButton(
@@ -708,7 +707,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       : const Icon(Icons.cloud_upload_rounded, size: 18),
                   label: Text(
                     _saving ? 'Publishing...' : 'Save & Publish Schedule',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ),
               ],
@@ -731,7 +730,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                   Expanded(
                     child: RichText(
                       text: TextSpan(
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 13,
                           color: isDark ? Colors.white70 : const Color(0xFF6B5E55),
                         ),
@@ -791,7 +790,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                     Icon(_isSuccess ? Icons.check_circle_rounded : Icons.error_outline_rounded, color: _isSuccess ? _kGreen : _kRed, size: 18),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(_message, style: GoogleFonts.inter(color: _isSuccess ? _kGreen : _kRed, fontWeight: FontWeight.bold, fontSize: 14)),
+                      child: Text(_message, style: TextStyle(color: _isSuccess ? _kGreen : _kRed, fontWeight: FontWeight.bold, fontSize: 14)),
                     ),
                   ],
                 ),
@@ -803,7 +802,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
             // ── CATEGORY KPI CARDS ───────────────────────────────────────────
             Text(
               'FEE SCHEDULE SECTIONS',
-              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.8),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.8),
             ),
             const SizedBox(height: 10),
 
@@ -930,7 +929,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                               const SizedBox(width: 8),
                               Text(
                                 activeTitle,
-                                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: activeThemeColor),
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: activeThemeColor),
                               ),
                             ],
                           ),
@@ -968,7 +967,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
                           icon: const Icon(Icons.add_rounded, size: 16),
-                          label: Text('Add Fee Item', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold)),
+                          label: Text('Add Fee Item', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
@@ -989,10 +988,10 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             ),
                             child: TextField(
                               onChanged: _onSearchChanged,
-                              style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
+                              style: TextStyle(fontSize: 14, color: textPrimary),
                               decoration: InputDecoration(
                                 hintText: 'Search tariff by fee name, bank, or account number...',
-                                hintStyle: GoogleFonts.inter(fontSize: 13, color: textMuted),
+                                hintStyle: TextStyle(fontSize: 13, color: textMuted),
                                 prefixIcon: Icon(Icons.search_rounded, size: 16, color: textMuted),
                                 border: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(vertical: 8),
@@ -1003,7 +1002,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                         const SizedBox(width: 12),
                         Text(
                           'Showing ${filteredDisplayList.length} tariffs',
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: textMuted),
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textMuted),
                         ),
                       ],
                     ),
@@ -1091,14 +1090,14 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10)),
-                    child: Text('ACTIVE', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white)),
+                    child: Text('ACTIVE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white)),
                   ),
               ],
             ),
             const SizedBox(height: 12),
             Text(
               title,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w900,
                 color: isSelected ? (isDark ? Colors.white : color) : textPrimary,
@@ -1107,7 +1106,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
             const SizedBox(height: 2),
             Text(
               subtitle,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 12,
                 color: isSelected ? (isDark ? Colors.white70 : const Color(0xFF475569)) : textMuted,
               ),
@@ -1123,7 +1122,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
   Widget _pill(String value, String label) {
     final isSelected = _subFilter == value;
     return ChoiceChip(
-      label: Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600)),
+      label: Text(label, style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600)),
       selected: isSelected,
       selectedColor: _kBlue,
       labelStyle: TextStyle(color: isSelected ? Colors.white : const Color(0xFF6B5E55)),
@@ -1233,23 +1232,23 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                   children: [
                     Row(
                       children: [
-                        Text(bank, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary)),
+                        Text(bank, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary)),
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(color: color.withAlpha(25), borderRadius: BorderRadius.circular(6)),
-                          child: Text('Acc: $account', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
+                          child: Text('Acc: $account', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
                         ),
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(badge, style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
+                    Text(badge, style: TextStyle(fontSize: 12, color: textMuted)),
                   ],
                 ),
               ),
               Text(
                 '${items.length} Tariffs Mapped',
-                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: color),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color),
               ),
             ],
           ),
@@ -1272,9 +1271,9 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(label, style: GoogleFonts.inter(fontSize: 12, color: textPrimary)),
+                    Text(label, style: TextStyle(fontSize: 12, color: textPrimary)),
                     const SizedBox(width: 6),
-                    Text('GHS $amt', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
+                    Text('GHS $amt', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
                   ],
                 ),
               );
@@ -1319,12 +1318,12 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
             const SizedBox(height: 10),
             Text(
               'No fee tariffs found in this section.',
-              style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
             ),
             const SizedBox(height: 4),
             Text(
               'Click "Add Fee Item" above to create an entry with custom settlement accounts.',
-              style: GoogleFonts.inter(fontSize: 13, color: textMuted),
+              style: TextStyle(fontSize: 13, color: textMuted),
             ),
           ],
         ),
@@ -1349,7 +1348,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                 horizontalMargin: 16,
                 columnSpacing: 16,
                 headingRowColor: WidgetStateProperty.all(isDark ? const Color(0xFF22140E) : const Color(0xFFFAF6F0)),
-                headingTextStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.5),
+                headingTextStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.5),
                 columns: const [
                   DataColumn(label: Text('SCALE / SECTION')),
                   DataColumn(label: Text('TARIFF PURPOSE / LABEL')),
@@ -1410,7 +1409,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                           ),
                           child: Text(
                             scaleLabel,
-                            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: scaleColor),
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: scaleColor),
                           ),
                         ),
                       ),
@@ -1425,7 +1424,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             children: [
                               Text(
                                 label,
-                                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: textPrimary),
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textPrimary),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -1433,7 +1432,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                                 const SizedBox(height: 2),
                                 Text(
                                   item['description'].toString(),
-                                  style: GoogleFonts.inter(fontSize: 11, color: textMuted),
+                                  style: TextStyle(fontSize: 11, color: textMuted),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -1459,7 +1458,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                               const SizedBox(width: 6),
                               Text(
                                 '$bankName • $accNum',
-                                style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w700, color: bankBadgeColor),
+                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: bankBadgeColor),
                               ),
                             ],
                           ),
@@ -1470,7 +1469,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       DataCell(
                         Text(
                           'GHS ${double.tryParse(amt)?.toStringAsFixed(2) ?? amt}',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w900,
                             color: activeThemeColor,
@@ -1484,9 +1483,9 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(freq, style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold, color: textPrimary)),
+                            Text(freq, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: textPrimary)),
                             if (unit != 'flat')
-                              Text(unit.replaceAll('_', ' '), style: GoogleFonts.inter(fontSize: 10, color: AppColors.accentOrangeText)),
+                              Text(unit.replaceAll('_', ' '), style: TextStyle(fontSize: 10, color: AppColors.accentOrangeText)),
                           ],
                         ),
                       ),
@@ -1507,7 +1506,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                                 minimumSize: Size.zero,
                               ),
                               icon: const Icon(Icons.edit_outlined, size: 12),
-                              label: Text('Edit', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold)),
+                              label: Text('Edit', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                             ),
                             const SizedBox(width: 6),
                             IconButton(

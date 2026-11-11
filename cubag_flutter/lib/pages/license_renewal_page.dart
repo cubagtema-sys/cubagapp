@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/app_logo.dart';
 import '../components/in_app_document_viewer.dart';
@@ -123,7 +122,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                               ),
                               child: Text(
                                 'Membership History',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color:
@@ -151,7 +150,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                               onPressed: () => context.go('/engagement'),
                               child: Text(
                                 'Need help? Contact Support',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   color: primary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
@@ -248,7 +247,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                   children: [
                     Text(
                       'Renewal Progress',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -256,7 +255,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                     ),
                     Text(
                       'Track your membership renewal status',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: Theme.of(context).brightness == Brightness.dark
                             ? const Color(0xFF5F6B7E)
                             : Colors.white.withValues(alpha: 0.75),
@@ -288,7 +287,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                 ),
                 child: Text(
                   status.toUpperCase(),
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: status == 'active'
@@ -359,7 +358,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                           const SizedBox(height: 10),
                           Text(
                             step.title,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -371,7 +370,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                           const SizedBox(height: 2),
                           Text(
                             step.subtitle,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               color:
                                   Theme.of(context).brightness ==
                                       Brightness.dark
@@ -460,7 +459,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
               children: [
                 Text(
                   'License Active — No Payment Required',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                     color: const Color(0xFF10b981),
@@ -470,7 +469,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                 Text(
                   'Your license is valid until $expiryStr. '
                   'To prevent duplicate payments, renewal will open on $renewalStr (30 days before expiry).',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 13,
                     height: 1.55,
                     color: isDark
@@ -544,7 +543,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
           const SizedBox(height: 24),
           Text(
             'Records Restricted',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 22,
               color: Theme.of(context).brightness == Brightness.dark
@@ -556,7 +555,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
           Text(
             'Your official receipts and membership licenses will appear here once your annual dues are settled and approved by the secretariat.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               color: const Color(0xFF6b6375),
               fontSize: 14,
               height: 1.6,
@@ -579,7 +578,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                   ),
                   child: Text(
                     'Submit Renewal Documents (Step 1)',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
@@ -602,7 +601,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                   ),
                   child: Text(
                     'Dashboard',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
@@ -647,7 +646,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
           const SizedBox(height: 20),
           Text(
             'No Records Found',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 20,
               color: Theme.of(context).brightness == Brightness.dark
@@ -658,7 +657,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
           const SizedBox(height: 8),
           Text(
             "You don't have any receipts or license history yet.",
-            style: GoogleFonts.inter(
+            style: TextStyle(
               color: const Color(0xFF6b6375),
               fontSize: 14,
             ),
@@ -679,7 +678,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
               ),
               child: Text(
                 'Submit Documents (Step 1)',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
@@ -749,7 +748,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
               Expanded(
                 child: Text(
                   'Membership License',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                     color: Theme.of(context).brightness == Brightness.dark
@@ -770,7 +769,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                 ),
                 child: Text(
                   statusLabel.toUpperCase(),
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: statusColor,
@@ -831,7 +830,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                       children: [
                         Text(
                           r['label'].toString().toUpperCase(),
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 10,
                             color: const Color(0xFF6b6375),
                             fontWeight: FontWeight.bold,
@@ -841,7 +840,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                         const SizedBox(height: 2),
                         Text(
                           r['val'].toString(),
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color:
@@ -867,7 +866,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                     icon: const Icon(Icons.visibility_rounded, size: 16),
                     label: Text(
                       'View License',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                       ),
@@ -912,7 +911,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                     ),
                     label: Text(
                       'View Certificate',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
@@ -954,7 +953,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                   Text(
                     'Awaiting admin approval...',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: const Color(0xFFf59e0b),
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
@@ -992,7 +991,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
             children: [
               Text(
                 name,
-                style: GoogleFonts.dancingScript(
+                style: TextStyle(fontFamily: 'Source Serif Display', 
                   fontSize: 28,
                   color: const Color(0xFF1e3a8a),
                   fontWeight: FontWeight.w700,
@@ -1002,7 +1001,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
               const SizedBox(height: 6),
               Text(
                 role,
-                style: GoogleFonts.montserrat(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
@@ -1042,7 +1041,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                 children: [
                   Text(
                     'OFFICIAL',
-                    style: GoogleFonts.cinzel(
+                    style: TextStyle(fontFamily: 'Source Serif Display', 
                       color: Colors.white,
                       fontSize: 8,
                       fontWeight: FontWeight.bold,
@@ -1050,7 +1049,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                   ),
                   Text(
                     'SEAL',
-                    style: GoogleFonts.cinzel(
+                    style: TextStyle(fontFamily: 'Source Serif Display', 
                       color: Colors.white,
                       fontSize: 8,
                       fontWeight: FontWeight.bold,
@@ -1137,7 +1136,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                   const SizedBox(height: 8),
                                   Text(
                                     'CUBAG',
-                                    style: GoogleFonts.cinzel(
+                                    style: TextStyle(fontFamily: 'Source Serif Display', 
                                       fontWeight: FontWeight.w900,
                                       fontSize: isMobile ? 28 : 42,
                                       color: AppColors.accentOrangeText,
@@ -1148,7 +1147,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                   Text(
                                     'CUSTOMS BROKERS ASSOCIATION OF GHANA',
                                     textAlign: TextAlign.center,
-                                    style: GoogleFonts.montserrat(
+                                    style: TextStyle(
                                       fontSize: isMobile ? 8 : 10,
                                       color: const Color(0xFF64748b),
                                       letterSpacing: isMobile ? 1.0 : 1.5,
@@ -1174,7 +1173,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                         Text(
                           'CERTIFICATE OF LICENSURE',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.cinzel(
+                          style: TextStyle(fontFamily: 'Source Serif Display', 
                             fontSize: isMobile ? 16 : 22,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF1A0F0A),
@@ -1184,7 +1183,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                         SizedBox(height: isMobile ? 20 : 32),
                         Text(
                           'This is to officially certify that',
-                          style: GoogleFonts.lora(
+                          style: TextStyle(fontFamily: 'Source Serif Display', 
                             fontSize: isMobile ? 14 : 16,
                             fontStyle: FontStyle.italic,
                             color: const Color(0xFF475569),
@@ -1196,7 +1195,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                               rec['company']?.toString() ??
                               'Company Name',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.montserrat(
+                          style: TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: isMobile ? 18 : 24,
                             color: const Color(0xFF281710),
@@ -1206,7 +1205,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                         Text(
                           'represented by ${user['name']?.toString() ?? rec['name']?.toString() ?? 'Member Name'}',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.lora(
+                          style: TextStyle(fontFamily: 'Source Serif Display', 
                             color: const Color(0xFF64748b),
                             fontStyle: FontStyle.italic,
                             fontSize: isMobile ? 14 : 16,
@@ -1216,7 +1215,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                         Text(
                           'is a registered and active ${user['member_type']?.toString() ?? rec['member_type']?.toString() ?? 'Member'} of CUBAG',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.lora(
+                          style: TextStyle(fontFamily: 'Source Serif Display', 
                             fontSize: isMobile ? 14 : 16,
                             color: const Color(0xFF1A0F0A),
                           ),
@@ -1225,7 +1224,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                         Text(
                           'Authorized Port of Operation: ${user['port_of_operation']?.toString() ?? rec['port_of_operation']?.toString() ?? 'All Ports'}',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.lora(
+                          style: TextStyle(fontFamily: 'Source Serif Display', 
                             fontSize: isMobile ? 12 : 14,
                             color: const Color(0xFF475569),
                           ),
@@ -1249,7 +1248,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                 children: [
                                   Text(
                                     'License Number:',
-                                    style: GoogleFonts.montserrat(
+                                    style: TextStyle(
                                       fontSize: isMobile ? 9 : 10,
                                       color: const Color(0xFF64748b),
                                       fontWeight: FontWeight.bold,
@@ -1258,7 +1257,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                   const SizedBox(height: 4),
                                   Text(
                                     'Valid Until:',
-                                    style: GoogleFonts.montserrat(
+                                    style: TextStyle(
                                       fontSize: isMobile ? 9 : 10,
                                       color: const Color(0xFF64748b),
                                       fontWeight: FontWeight.bold,
@@ -1272,7 +1271,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                 children: [
                                   Text(
                                     licenseNum,
-                                    style: GoogleFonts.montserrat(
+                                    style: TextStyle(
                                       fontSize: isMobile ? 11 : 12,
                                       fontWeight: FontWeight.bold,
                                       color: const Color(0xFF1A0F0A),
@@ -1282,7 +1281,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                   const SizedBox(height: 4),
                                   Text(
                                     '31 Dec $yr',
-                                    style: GoogleFonts.montserrat(
+                                    style: TextStyle(
                                       fontSize: isMobile ? 11 : 12,
                                       fontWeight: FontWeight.bold,
                                       color: const Color(0xFF1A0F0A),

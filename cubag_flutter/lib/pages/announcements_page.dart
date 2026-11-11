@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
@@ -386,7 +385,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                           searchQuery.isNotEmpty
                               ? 'SEARCH RESULTS (${filtered.length})'
                               : 'LATEST CIRCULARS (${filtered.length})',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 17,
                             color: const Color(0xFF64748b),
@@ -451,7 +450,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                               const SizedBox(height: 16),
                               Text(
                                 'No Circulars Found',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w800,
                                   color: const Color(0xFF475569),
@@ -596,7 +595,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                                       const Spacer(),
                                       Text(
                                         'Ref: CIRC-${a['id'] ?? '001'}',
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontSize: 15,
                                           color: const Color(0xFF5F6B7E),
                                           fontWeight: FontWeight.w600,
@@ -608,7 +607,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                                     const SizedBox(height: 4),
                                     Text(
                                       dateStr,
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 15,
                                         color: const Color(0xFF5F6B7E),
                                       ),
@@ -622,7 +621,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                         const SizedBox(height: 18),
                         Text(
                           a['title'] ?? '',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF1A0F0A),
@@ -631,7 +630,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                         const SizedBox(height: 14),
                         SelectableText(
                           a['body'] ?? a['content'] ?? '',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 18,
                             color: const Color(0xFF281710),
                             height: 1.6,
@@ -659,14 +658,14 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                             const SizedBox(width: 8),
                             Text(
                               'Issued by: ',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 15,
                                 color: const Color(0xFF64748b),
                               ),
                             ),
                             Text(
                               '${a['posted_by'] ?? 'CUBAG National Secretariat'}',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 15,
                                 color: const Color(0xFF1A0F0A),
                                 fontWeight: FontWeight.bold,
@@ -685,7 +684,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                               onPressed: () => Navigator.pop(ctx),
                               child: Text(
                                 'Close',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -761,7 +760,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                               a['title'] ?? '',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: isRead
                                     ? FontWeight.w600
@@ -775,7 +774,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                             const SizedBox(width: 10),
                             Text(
                               dateStr,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 13,
                                 color: const Color(0xFF5F6B7E),
                                 fontWeight: FontWeight.w500,
@@ -794,7 +793,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                               a['body'] ?? a['content'] ?? '',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 14.5,
                                 color: const Color(0xFF64748b),
                               ),

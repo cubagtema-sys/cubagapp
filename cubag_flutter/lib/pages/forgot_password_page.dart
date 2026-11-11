@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/theme_service.dart';
@@ -166,7 +165,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               const SizedBox(height: 28),
               Text(
                 'CUBAG',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: Colors.white,
                   fontSize: 44,
                   fontWeight: FontWeight.w900,
@@ -186,7 +185,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               const SizedBox(height: 18),
               Text(
                 'Customs Brokers Association of Ghana',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: const Color(0xFFF8F4F0),
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -196,7 +195,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               const SizedBox(height: 12),
               Text(
                 'Connecting customs clearance, freight forwarding, and international trade professionals across Ghana.',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: const Color(0xFFC8ADA0),
                   fontSize: 15,
                   height: 1.6,
@@ -221,7 +220,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       children: [
         Text(
           'Security Center',
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w800,
             color: _kText,
@@ -231,7 +230,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         const SizedBox(height: 6),
         Text(
           'Ensure your member account remains secure and authorized.',
-          style: GoogleFonts.inter(color: _kMuted, fontSize: 14.5),
+          style: TextStyle(color: _kMuted, fontSize: 14.5),
         ),
         const SizedBox(height: 32),
         _infoCard(
@@ -287,7 +286,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             children: [
               Text(
                 title,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: _kText,
@@ -296,7 +295,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               const SizedBox(height: 4),
               Text(
                 desc,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: _kMuted,
                   fontSize: 13.5,
                   height: 1.45,
@@ -339,7 +338,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               Text(
                 'Reset Password',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
                   color: _kText,
@@ -377,7 +376,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 const SizedBox(height: 24),
                 Text(
                   'Check your Inbox',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     color: _kText,
                     fontWeight: FontWeight.w900,
                     fontSize: 22,

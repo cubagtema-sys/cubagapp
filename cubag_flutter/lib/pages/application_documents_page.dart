@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
@@ -296,7 +295,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                     else if (_totalDocs > 0 && _requirements.isNotEmpty) ...[
                       Text(
                         'Required Documents (${_requirements.length})',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: isDark
@@ -307,7 +306,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                       const SizedBox(height: 4),
                       Text(
                         'Upload each document as a PDF or image (max 15MB each).',
-                        style: GoogleFonts.inter(fontSize: 15, color: _kGrey),
+                        style: TextStyle(fontSize: 15, color: _kGrey),
                       ),
                       const SizedBox(height: 16),
                       ..._requirements
@@ -359,7 +358,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
               Expanded(
                 child: Text(
                   'CUBAG Membership Application',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -373,7 +372,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
             hasDocs
                 ? 'Your account has been created. To complete your CUBAG membership, please upload all required documents below. The secretariat will review and activate your account.'
                 : 'Your account has been created. To complete your CUBAG membership, please pay your Registration Fee below to activate your account.',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 15,
               color: Colors.white,
               fontWeight: FontWeight.w400,
@@ -387,7 +386,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
               children: [
                 Text(
                   '$_uploadedCount of $_totalDocs documents uploaded',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: Colors.white,
@@ -395,7 +394,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                 ),
                 Text(
                   '${(progress * 100).toInt()}%',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                     color: AppColors.accentOrangeText,
@@ -484,7 +483,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                       ? Icon(statusIcon, color: statusColor, size: 18)
                       : Text(
                           '$index',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: _kGrey,
@@ -502,7 +501,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
               children: [
                 Text(
                   req['label']?.toString() ?? '',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: isDark ? Colors.white : const Color(0xFF1A0F0A),
@@ -521,7 +520,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                       Expanded(
                         child: Text(
                           fileName,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 14,
                             color: statusColor,
                           ),
@@ -535,7 +534,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                   const SizedBox(height: 4),
                   Text(
                     'Admin note: $adminNote',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 14,
                       color: _kRed,
                       fontStyle: FontStyle.italic,
@@ -567,7 +566,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                       ),
                       label: Text(
                         'Uploading...',
-                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                       ),
                     ),
                   )
@@ -586,7 +585,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                         const SizedBox(width: 5),
                         Text(
                           'Verified',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                             color: _kGreen,
@@ -612,7 +611,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                           const SizedBox(width: 5),
                           Text(
                             'Under Review',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
                               color: const Color(0xFF6B7280),
@@ -645,7 +644,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                       ),
                       label: Text(
                         status == 'rejected' ? 'Re-upload' : 'Upload',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),
@@ -664,7 +663,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
             ),
             child: Text(
               statusLabel,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: statusColor,
@@ -820,7 +819,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
               Expanded(
                 child: Text(
                   titleText,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: isDark ? Colors.white : const Color(0xFF1A0F0A),
@@ -832,7 +831,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
           const SizedBox(height: 8),
           Text(
             descText,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 15,
               color: isDark ? Colors.white70 : const Color(0xFF475569),
               height: 1.5,
@@ -860,7 +859,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                       children: [
                         Text(
                           'REGISTRATION FEE',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
                             color: AppColors.accentOrangeText,
@@ -870,7 +869,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                         const SizedBox(height: 4),
                         Text(
                           'Paid separately upon registration before the statutory documents are vetted.',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             color: isDark
@@ -884,7 +883,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                   const SizedBox(width: 12),
                   Text(
                     displayRegFee,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
                       color: isDark ? Colors.white : const Color(0xFF0f172a),
@@ -927,7 +926,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                   : Icon(btnIcon, size: 20),
               label: Text(
                 btnText,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
                 ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'iframe_stub.dart'
@@ -119,7 +118,7 @@ class _IframeWidgetState extends State<IframeWidget> {
                       const SizedBox(width: 6),
                       Text(
                         'LIVE AIS MAP',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           color: accentGreen,
@@ -130,7 +129,7 @@ class _IframeWidgetState extends State<IframeWidget> {
                         const SizedBox(width: 6),
                         Text(
                           '· MMSI ${widget.mmsi}',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: Colors.white70,
@@ -169,7 +168,7 @@ class _IframeWidgetState extends State<IframeWidget> {
                       children: [
                         Text(
                           'MarineTraffic',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
@@ -211,7 +210,7 @@ class _IframeWidgetState extends State<IframeWidget> {
                   const SizedBox(width: 4),
                   Text(
                     'OpenSeaMap Nautical Data · Gulf of Guinea / Tema Sector',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
                       color: const Color(0xFF5F6B7E),

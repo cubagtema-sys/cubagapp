@@ -3,7 +3,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:pdf/pdf.dart';
@@ -539,7 +538,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                           children: [
                             Text(
                               'CUBAG',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
                                 color: titleCol,
@@ -548,7 +547,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                             ),
                             Text(
                               'Customs Brokers Association of Ghana',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 12,
                                 color: mutedCol,
                                 fontWeight: FontWeight.w500,
@@ -578,7 +577,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                 // Receipt Title & Badge
                 Text(
                   'OFFICIAL PAYMENT RECEIPT',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.5,
@@ -607,7 +606,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                       const SizedBox(width: 6),
                       Text(
                         config['label'] as String,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
                           color: config['color'] as Color,
@@ -634,7 +633,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                     children: [
                       Text(
                         'TOTAL AMOUNT PAID',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: mutedCol,
@@ -646,7 +645,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                         fit: BoxFit.scaleDown,
                         child: Text(
                           'GH₵ ${_fmt(amount)}',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 30,
                             fontWeight: FontWeight.w900,
                             color: isDark ? _kOrange : _kBrown,
@@ -778,7 +777,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                         children: [
                           Text(
                             'Digital Verification Token',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: isDark ? Colors.white : _kText,
@@ -787,7 +786,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                           const SizedBox(height: 2),
                           Text(
                             'Scan QR code to verify validity with CUBAG Treasury Services.',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 12.5,
                               color: isDark ? Colors.white60 : _kMuted,
                               height: 1.3,
@@ -839,7 +838,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              textStyle: GoogleFonts.inter(
+                              textStyle: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
@@ -947,7 +946,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
             width: 120,
             child: Text(
               label,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 13,
                 color: isDark ? Colors.white70 : _kMuted,
                 fontWeight: FontWeight.w500,
@@ -962,7 +961,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                 Expanded(
                   child: SelectableText(
                     value,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: isDark ? Colors.white : _kText,
@@ -1870,7 +1869,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                           ),
                           child: Text(
                             '$n',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               color: isCurrent ? Colors.white : textCol,
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
@@ -2012,7 +2011,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
           ),
           dropdownColor: isDark ? const Color(0xFF281710) : _kWhite,
           borderRadius: BorderRadius.circular(14),
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
             color: isDark ? Colors.white : _kText,

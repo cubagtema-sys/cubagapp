@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 import '../components/app_layout.dart';
@@ -389,7 +388,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 const SizedBox(width: 6),
                 Text(
                   'QUICK ACTIONS',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.6,
@@ -426,7 +425,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             const SizedBox(width: 6),
                             Text(
                               s['title'] as String,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                                 color: isDark ? Colors.white : textInk,
@@ -566,7 +565,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               children: [
                 Text(
                   it['label'] as String,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: subInk,
@@ -581,7 +580,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ),
                   child: Text(
                     it['badge'] as String,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 9.5,
                       fontWeight: FontWeight.w800,
                       color: badgeColor,
@@ -593,7 +592,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             const SizedBox(height: 6),
             SelectableText(
               it['value'] as String,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
                 color: textInk,
@@ -707,7 +706,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             Flexible(
               child: Text(
                 t['label'] as String,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   color: isSelected ? textInk : subInk,
@@ -727,7 +726,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               ),
               child: Text(
                 t['badge'] as String,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                   color: isSelected ? badgeColor : subInk,
@@ -830,7 +829,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   children: [
                     Text(
                       'Secretariat Counter Desk',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: isDark ? Colors.white : const Color(0xFF1F1612),
@@ -839,7 +838,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     ),
                     Text(
                       'Walk-in payments: Cash, Cheque, POS card, Direct wire',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 12,
                         color: isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748b),
                       ),
@@ -864,7 +863,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               icon: const Icon(Icons.add_rounded, size: 17),
               label: Text(
                 '➕ Record Counter / Cash Payment',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 13.5,
                 ),
@@ -901,7 +900,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     const SizedBox(width: 8),
                     Text(
                       'PORT OPERATIONS DESK',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                         color: textInk,
@@ -918,7 +917,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ),
                   child: Text(
                     'LIVE STATUS',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 9.5,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF10b981),
@@ -952,7 +951,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     ),
                     child: Text(
                       'Manage Port Bulletins →',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
                       ),
@@ -996,7 +995,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               children: [
                 Text(
                   name,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: textInk,
@@ -1006,7 +1005,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 ),
                 Text(
                   note,
-                  style: GoogleFonts.inter(fontSize: 10.5, color: subInk),
+                  style: TextStyle(fontSize: 10.5, color: subInk),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1021,7 +1020,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ),
             child: Text(
               status,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 color: color,
@@ -1058,7 +1057,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     const SizedBox(width: 8),
                     Text(
                       'OFFICIAL CUSTOMS FX RATES',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                         color: textInk,
@@ -1075,7 +1074,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ),
                   child: Text(
                     'INDICATIVE',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 9.5,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF10b981),
@@ -1111,7 +1110,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     ),
                     child: Text(
                       'Update FX Tariffs & News →',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
                       ),
@@ -1152,7 +1151,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 ),
                 child: Text(
                   symbol,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF6B3E26),
@@ -1162,7 +1161,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               const SizedBox(width: 8),
               Text(
                 pair,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: textInk,
@@ -1172,7 +1171,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ),
           Text(
             rate,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w800,
               color: textInk,
@@ -1203,7 +1202,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           Expanded(
             child: Text(
               _error!,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 color: const Color(0xFFef4444),
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -1269,7 +1268,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       children: [
                         Text(
                           'Pending Registration Approvals',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 18,
                             color: textColor,
@@ -1278,7 +1277,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         ),
                         Text(
                           'Review and verify newly submitted member applications',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             color: subTextColor,
                             fontSize: 13,
                           ),
@@ -1303,7 +1302,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         pendingMembers.length > 5
                             ? 'Showing latest 5 of ${pendingMembers.length}'
                             : '${pendingMembers.length} awaiting review',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           color: AppColors.accentOrangeText,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -1319,7 +1318,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       icon: const Icon(Icons.arrow_forward_rounded, size: 14),
                       label: Text(
                         'View All',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
@@ -1349,7 +1348,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     const SizedBox(height: 10),
                     Text(
                       'All caught up!',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 19,
                         color: textColor,
@@ -1358,7 +1357,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     const SizedBox(height: 4),
                     Text(
                       'No members are currently waiting for registration approvals.',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: subTextColor,
                         fontSize: 16,
                       ),
@@ -1382,13 +1381,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ),
                       child: DataTable(
                         headingRowColor: WidgetStateProperty.all(headerBg),
-                        headingTextStyle: GoogleFonts.inter(
+                        headingTextStyle: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 12.5,
                           color: subTextColor,
                           letterSpacing: 0.6,
                         ),
-                        dataTextStyle: GoogleFonts.inter(
+                        dataTextStyle: TextStyle(
                           fontSize: 14,
                           color: textColor,
                         ),
@@ -1445,7 +1444,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                         backgroundColor: primary.withAlpha(35),
                                         child: Text(
                                           _getInitials(name),
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 13,
                                             color: primary,
@@ -1461,7 +1460,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                         children: [
                                           SelectableText(
                                             name,
-                                            style: GoogleFonts.inter(
+                                            style: TextStyle(
                                               fontWeight: FontWeight.w700,
                                               fontSize: 14.5,
                                               color: textColor,
@@ -1472,7 +1471,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                             company.isNotEmpty && company != name
                                                 ? '$company • $email'
                                                 : email,
-                                            style: GoogleFonts.inter(
+                                            style: TextStyle(
                                               fontSize: 12,
                                               color: subTextColor,
                                             ),
@@ -1500,7 +1499,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                   ),
                                   child: Text(
                                     type.toUpperCase(),
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 11.5,
                                       fontWeight: FontWeight.w800,
                                       color: badgeColor,
@@ -1545,7 +1544,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                         hasPayment
                                             ? 'Paid (${paymentRef.length > 8 ? paymentRef.substring(0, 8) : paymentRef})'
                                             : 'Unpaid / Pending',
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w700,
                                           color: hasPayment
@@ -1562,7 +1561,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               DataCell(
                                 SelectableText(
                                   date.split('T').first,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     color: subTextColor,
                                     fontWeight: FontWeight.w500,
@@ -1580,7 +1579,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                   ),
                                   label: Text(
                                     'Review',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 13,
                                     ),
@@ -1821,7 +1820,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                 const SizedBox(width: 8),
                 Text(
                   'Reject Member',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -1834,7 +1833,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
               children: [
                 Text(
                   'Enter reason for rejecting $name (e.g. invalid SSNIT certificate):',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 13,
                     color: Colors.grey.shade700,
                   ),
@@ -1986,14 +1985,14 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                       children: [
                         Text(
                           'Member Validation & Approval',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 22,
                           ),
                         ),
                         Text(
                           'Validate documents and payment before activating license',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 16,
                             color: Colors.grey.shade600,
                           ),
@@ -2036,7 +2035,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                                 ).primaryColor.withValues(alpha: 0.15),
                                 child: Text(
                                   name.isNotEmpty ? name[0].toUpperCase() : 'M',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 20,
                                     color: Theme.of(context).primaryColor,
@@ -2050,7 +2049,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                                   children: [
                                     Text(
                                       name,
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 20,
                                       ),
@@ -2058,7 +2057,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                                     const SizedBox(height: 2),
                                     Text(
                                       '$company • $type',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 16,
                                         color: Colors.grey.shade700,
                                       ),
@@ -2145,7 +2144,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                                   hasPayment
                                       ? 'Registration Payment Confirmed'
                                       : 'Payment Reference Pending',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18,
                                     color: hasPayment
@@ -2158,7 +2157,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                                   hasPayment
                                       ? 'Payment Reference: $paymentRef'
                                       : 'No dues or registration payment reference recorded yet.',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 15,
                                     color: hasPayment
                                         ? Colors.green.shade800
@@ -2179,7 +2178,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                       children: [
                         Text(
                           'Registration Documents ($uploadedCount uploaded • $approvedCount approved)',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 19,
                           ),
@@ -2278,7 +2277,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                                     children: [
                                       Text(
                                         label,
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 17,
                                         ),
@@ -2286,7 +2285,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                                       if (fileName != null)
                                         Text(
                                           fileName,
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(
                                             fontSize: 15,
                                             color: Colors.grey.shade600,
                                           ),
@@ -2305,7 +2304,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                                   ),
                                   child: Text(
                                     statusText,
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                       color: statusColor,
@@ -2369,7 +2368,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                   ),
                   label: Text(
                     'Reject Application',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: Colors.red,
                       fontWeight: FontWeight.bold,
                     ),
@@ -2406,7 +2405,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                           : const Icon(Icons.verified_rounded, size: 18),
                       label: Text(
                         'Approve Member',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                         ),
@@ -2444,14 +2443,14 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
           children: [
             Text(
               label,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade600,
               ),
             ),
             Text(
               val,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),

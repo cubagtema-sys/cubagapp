@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -248,7 +247,7 @@ class _InAppDocumentViewerState extends State<InAppDocumentViewer> {
           children: [
             Text(
               widget.title,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: textPrimary,
@@ -260,7 +259,7 @@ class _InAppDocumentViewerState extends State<InAppDocumentViewer> {
               const SizedBox(height: 2),
               Text(
                 widget.subtitle!,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 11.5,
                   color: textMuted,
                 ),
@@ -333,7 +332,7 @@ class _InAppDocumentViewerState extends State<InAppDocumentViewer> {
                   const SizedBox(height: 12),
                   Text(
                     'Failed to load image preview.',
-                    style: GoogleFonts.inter(color: textMuted),
+                    style: TextStyle(color: textMuted),
                   ),
                   const SizedBox(height: 12),
                   ElevatedButton.icon(
@@ -364,7 +363,7 @@ class _InAppDocumentViewerState extends State<InAppDocumentViewer> {
               const SizedBox(height: 12),
               Text(
                 'Could not display document',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
@@ -374,7 +373,7 @@ class _InAppDocumentViewerState extends State<InAppDocumentViewer> {
               Text(
                 _errorMessage!,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(fontSize: 13, color: textMuted),
+                style: TextStyle(fontSize: 13, color: textMuted),
               ),
               const SizedBox(height: 18),
               Row(
@@ -447,7 +446,7 @@ class _InAppDocumentViewerState extends State<InAppDocumentViewer> {
           const SizedBox(height: 14),
           Text(
             widget.title,
-            style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(

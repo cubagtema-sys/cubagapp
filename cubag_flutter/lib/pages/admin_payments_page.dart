@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
@@ -134,7 +133,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
       SnackBar(
         content: Text(
           msg,
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
         backgroundColor: isError ? _kRed : _kGreen,
         behavior: SnackBarBehavior.floating,
@@ -253,7 +252,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                 children: [
                   Text(
                     'Bank Deposit Receipt Slip',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                       color: textColor,
@@ -261,7 +260,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                   ),
                   Text(
                     '$memberName · GH₵ ${amount.toStringAsFixed(2)}',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 13,
                       color: const Color(0xFF64748b),
                       fontWeight: FontWeight.w500,
@@ -318,7 +317,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                               Text(
                                 'Unable to load receipt image directly.\nClick "Open in new tab" above.',
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF64748b)),
+                                style: TextStyle(fontSize: 13, color: const Color(0xFF64748b)),
                               ),
                             ],
                           ),
@@ -331,7 +330,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
               const SizedBox(height: 8),
               Text(
                 'Pinch / scroll to zoom into receipt details',
-                style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF5F6B7E)),
+                style: TextStyle(fontSize: 12, color: const Color(0xFF5F6B7E)),
               ),
             ],
           ),
@@ -420,7 +419,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
               const SizedBox(height: 16),
               Text(
                 'Confirm & Mark Paid',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
                   color: textColor,
@@ -430,7 +429,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
               Text(
                 'Mark GHS ${amount.toStringAsFixed(2)} from $memberName as PAID / RECEIVED?\nThis automatically activates member standing and generates their official receipt.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(color: subTextColor, fontSize: 14.5, height: 1.4),
+                style: TextStyle(color: subTextColor, fontSize: 14.5, height: 1.4),
               ),
               if (hasReceipt) ...[
                 const SizedBox(height: 16),
@@ -454,7 +453,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                             children: [
                               Text(
                                 'Bank Deposit Slip Attached',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                   color: const Color(0xFF1A0F0A),
@@ -462,7 +461,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                               ),
                               Text(
                                 'Click to inspect full deposit receipt image',
-                                style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748b)),
+                                style: TextStyle(fontSize: 12, color: const Color(0xFF64748b)),
                               ),
                             ],
                           ),
@@ -487,7 +486,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                       ),
                       child: Text(
                         'Cancel',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: textColor,
                         ),
@@ -513,7 +512,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                       ),
                       child: Text(
                         'Approve & Mark Paid',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -574,7 +573,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
             const SizedBox(width: 12),
             Text(
               'Payment Invoice Details',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
                 color: textColor,
@@ -607,7 +606,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                         children: [
                           Text(
                             'AMOUNT CHARGED',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                               color: subTextColor,
@@ -616,7 +615,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                           const SizedBox(height: 2),
                           Text(
                             'GHS ${amount.toStringAsFixed(2)}',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 26,
                               fontWeight: FontWeight.w900,
                               color: textColor,
@@ -635,7 +634,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                         ),
                         child: Text(
                           status.toUpperCase(),
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
@@ -742,7 +741,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                               children: [
                                 Text(
                                   'Attached Deposit Slip / Transfer Receipt',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                     color: const Color(0xFF1A0F0A),
@@ -750,7 +749,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                 ),
                                 Text(
                                   'Click to preview high-resolution receipt',
-                                  style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748b)),
+                                  style: TextStyle(fontSize: 12, color: const Color(0xFF64748b)),
                                 ),
                               ],
                             ),
@@ -811,7 +810,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
       children: [
         Text(
           label.toUpperCase(),
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,
             color: subTextCol,
@@ -828,7 +827,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
           ),
           child: Text(
             value,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: textCol,
@@ -959,7 +958,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
             children: [
               Text(
                 it['label'] as String,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: subInk,
@@ -975,7 +974,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                 ),
                 child: Text(
                   it['badge'] as String,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 9.5,
                     fontWeight: FontWeight.w800,
                     color: badgeColor,
@@ -988,7 +987,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
           const SizedBox(height: 5),
           Text(
             it['value'] as String,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: textInk,
@@ -1045,7 +1044,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                 icon: const Icon(Icons.point_of_sale_rounded, size: 18),
                 label: Text(
                   '➕ Record Counter / Cash Payment',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
@@ -1069,7 +1068,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                 icon: const Icon(Icons.refresh_rounded, size: 18),
                 label: Text(
                   'Refresh',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
@@ -1131,7 +1130,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                   const SizedBox(height: 12),
                   Text(
                     'No payment records found.',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                       color: textColor,
@@ -1140,7 +1139,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                   const SizedBox(height: 4),
                   Text(
                     'Try clearing your search query or selecting a different status filter.',
-                    style: GoogleFonts.inter(fontSize: 15, color: subTextColor),
+                    style: TextStyle(fontSize: 15, color: subTextColor),
                   ),
                 ],
               ),
@@ -1165,13 +1164,13 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                         ),
                         child: DataTable(
                           headingRowColor: WidgetStateProperty.all(headerBg),
-                          headingTextStyle: GoogleFonts.inter(
+                          headingTextStyle: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 14,
                             color: subTextColor,
                             letterSpacing: 0.5,
                           ),
-                          dataTextStyle: GoogleFonts.inter(
+                          dataTextStyle: TextStyle(
                             fontSize: 15,
                             color: textColor,
                           ),
@@ -1242,7 +1241,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                     ),
                                     child: Text(
                                       txId,
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
                                         color: AppColors.accentOrangeText,
@@ -1264,7 +1263,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                           memberName.isNotEmpty
                                               ? memberName[0].toUpperCase()
                                               : 'M',
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(
                                             color: AppColors.accentOrangeText,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 14,
@@ -1278,7 +1277,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                         ),
                                         child: Text(
                                           memberName,
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 15,
                                             color: textColor,
@@ -1327,7 +1326,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                             const SizedBox(width: 4),
                                             Text(
                                               isBank ? 'BANK' : 'MOMO',
-                                              style: GoogleFonts.inter(
+                                              style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w800,
                                                 color: isBank
@@ -1373,7 +1372,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                                 const SizedBox(width: 4),
                                                 Text(
                                                   'View Slip',
-                                                  style: GoogleFonts.inter(
+                                                  style: TextStyle(
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.bold,
                                                     color: _kGreen,
@@ -1392,7 +1391,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                 DataCell(
                                   Text(
                                     'GHS ${amount.toStringAsFixed(2)}',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w900,
                                       fontSize: 16,
                                       color: textColor,
@@ -1411,7 +1410,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                     ),
                                     child: Text(
                                       desc,
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 14,
                                         color: subTextColor,
                                       ),
@@ -1425,7 +1424,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                 DataCell(
                                   Text(
                                     date.split('T').first,
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 14,
                                       color: subTextColor,
                                       fontWeight: FontWeight.w500,
@@ -1449,7 +1448,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                     ),
                                     child: Text(
                                       status.toUpperCase(),
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w800,
                                         color: color,
@@ -1556,7 +1555,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
               children: [
                 Text(
                   'Showing ${((_page - 1) * 25) + 1}–${(_page * 25).clamp(0, _total)} of $_total transactions',
-                  style: GoogleFonts.inter(color: subTextColor, fontSize: 15),
+                  style: TextStyle(color: subTextColor, fontSize: 15),
                 ),
                 Row(
                   children: [
@@ -1604,7 +1603,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     return FilterChip(
       label: Text(
         label,
-        style: GoogleFonts.inter(
+        style: TextStyle(
           fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
           fontSize: 14,
           color: isSelected ? _kOrange : null,
@@ -2086,7 +2085,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                       children: [
                         Text(
                           'Record Counter / Office Payment',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                             color: textColor,
@@ -2094,7 +2093,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                         ),
                         Text(
                           'Over-the-counter settlement for dues, renewals, or fees',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 12,
                             color: subTextColor,
                           ),
@@ -2136,7 +2135,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                               Expanded(
                                 child: Text(
                                   _errorMessage!,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     color: _kRed,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
@@ -2152,7 +2151,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                       // ── Member Selection Section ─────────────────────────────
                       Text(
                         '1. SELECT MEMBER / CUSTOMER',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
@@ -2166,10 +2165,10 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                         TextField(
                           controller: _searchController,
                           onChanged: _onSearchChanged,
-                          style: GoogleFonts.inter(fontSize: 14, color: textColor),
+                          style: TextStyle(fontSize: 14, color: textColor),
                           decoration: InputDecoration(
                             hintText: 'Search by member name, company, phone, license...',
-                            hintStyle: GoogleFonts.inter(fontSize: 13, color: subTextColor),
+                            hintStyle: TextStyle(fontSize: 13, color: subTextColor),
                             prefixIcon: const Icon(Icons.search_rounded, size: 20),
                             filled: true,
                             fillColor: inputBg,
@@ -2200,7 +2199,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                   ? Center(
                                       child: Text(
                                         'No matching members found.',
-                                        style: GoogleFonts.inter(fontSize: 13, color: subTextColor),
+                                        style: TextStyle(fontSize: 13, color: subTextColor),
                                       ),
                                     )
                                   : ListView.separated(
@@ -2226,7 +2225,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                             backgroundColor: _kOrange.withAlpha(30),
                                             child: Text(
                                               name.isNotEmpty ? name[0].toUpperCase() : 'M',
-                                              style: GoogleFonts.inter(
+                                              style: TextStyle(
                                                 color: AppColors.accentOrangeText,
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 13,
@@ -2238,7 +2237,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                               Expanded(
                                                 child: Text(
                                                   name,
-                                                  style: GoogleFonts.inter(
+                                                  style: TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 14,
                                                     color: textColor,
@@ -2255,7 +2254,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                                 ),
                                                 child: Text(
                                                   mTypeStr.toUpperCase(),
-                                                  style: GoogleFonts.inter(
+                                                  style: TextStyle(
                                                     fontSize: 9.5,
                                                     fontWeight: FontWeight.bold,
                                                     color: AppColors.accentOrangeText,
@@ -2270,7 +2269,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                               if (phone.isNotEmpty) phone,
                                               if (lic != null && lic.isNotEmpty) lic,
                                             ].join(' · '),
-                                            style: GoogleFonts.inter(fontSize: 11, color: subTextColor),
+                                            style: TextStyle(fontSize: 11, color: subTextColor),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -2284,7 +2283,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                                   ),
                                                   child: Text(
                                                     'Billed: GH₵ ${bill.toStringAsFixed(0)}',
-                                                    style: GoogleFonts.inter(
+                                                    style: TextStyle(
                                                       color: _kAmber,
                                                       fontWeight: FontWeight.bold,
                                                       fontSize: 11,
@@ -2300,7 +2299,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                                       ),
                                                       child: Text(
                                                         'New Member Dues',
-                                                        style: GoogleFonts.inter(
+                                                        style: TextStyle(
                                                           color: _kBlue,
                                                           fontWeight: FontWeight.bold,
                                                           fontSize: 11,
@@ -2329,7 +2328,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                 backgroundColor: _kGreen,
                                 child: Text(
                                   (_selectedMember!['name']?.toString() ?? 'M')[0].toUpperCase(),
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
@@ -2343,7 +2342,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                   children: [
                                     Text(
                                       _selectedMember!['name']?.toString() ?? 'Member',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 15,
                                         color: textColor,
@@ -2361,7 +2360,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                           ),
                                           child: Text(
                                             'CORPORATE',
-                                            style: GoogleFonts.inter(
+                                            style: TextStyle(
                                               fontSize: 10,
                                               fontWeight: FontWeight.bold,
                                               color: AppColors.accentOrangeText,
@@ -2377,7 +2376,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                               if (_selectedMember!['license_number'] != null)
                                                 'Lic: ${_selectedMember!['license_number']}',
                                             ].join(' · '),
-                                            style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor),
+                                            style: TextStyle(fontSize: 11.5, color: subTextColor),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -2438,7 +2437,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                       isFullyPaid
                                           ? 'Official Renewal Bill: GH₵ ${appBill.toStringAsFixed(2)} (Fully Settled ✓)'
                                           : 'Renewal Bill: GH₵ ${appBill.toStringAsFixed(2)} (Remaining: GH₵ ${remaining.toStringAsFixed(2)})',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 13,
                                         color: textColor,
@@ -2462,7 +2461,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                       ),
                                       child: Text(
                                         'Fill Remaining',
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
                                           color: _kAmber,
@@ -2481,7 +2480,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                       // ── Payment Details Section ──────────────────────────────
                       Text(
                         '2. PAYMENT SPECIFICATIONS',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
@@ -2497,7 +2496,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                             : (_categories.isNotEmpty ? _categories.first : 'Annual Renewal Dues'),
                         decoration: InputDecoration(
                           labelText: 'Payment Category / Dues Type',
-                          labelStyle: GoogleFonts.inter(color: subTextColor, fontSize: 13),
+                          labelStyle: TextStyle(color: subTextColor, fontSize: 13),
                           filled: true,
                           fillColor: inputBg,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -2520,7 +2519,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                 Expanded(
                                   child: Text(
                                     c,
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 14,
                                       color: isPaid ? (isDark ? Colors.white38 : Colors.grey.shade500) : textColor,
                                       fontWeight: isPaid ? FontWeight.normal : FontWeight.w500,
@@ -2540,7 +2539,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                     ),
                                     child: Text(
                                       'PAID ✓',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 9.5,
                                         fontWeight: FontWeight.bold,
                                         color: _kGreen,
@@ -2575,7 +2574,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                               Expanded(
                                 child: Text(
                                   'This member has already paid for "$_category". Duplicate payment is blocked.',
-                                  style: GoogleFonts.inter(color: _kRed, fontSize: 12, fontWeight: FontWeight.bold),
+                                  style: TextStyle(color: _kRed, fontSize: 12, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
@@ -2596,16 +2595,16 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                 TextFormField(
                                   controller: _amountController,
                                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: textColor,
                                   ),
                                   decoration: InputDecoration(
                                     labelText: 'Amount Paid (GH₵)',
-                                    labelStyle: GoogleFonts.inter(color: subTextColor, fontSize: 13),
+                                    labelStyle: TextStyle(color: subTextColor, fontSize: 13),
                                     prefixText: 'GH₵ ',
-                                    prefixStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, color: _kGreen),
+                                    prefixStyle: TextStyle(fontWeight: FontWeight.bold, color: _kGreen),
                                     filled: true,
                                     fillColor: inputBg,
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -2635,7 +2634,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                         Expanded(
                                           child: Text(
                                             _feeSourceNotice,
-                                            style: GoogleFonts.inter(
+                                            style: TextStyle(
                                               fontSize: 11,
                                               fontWeight: FontWeight.bold,
                                               color: _kGreen,
@@ -2658,7 +2657,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                               initialValue: _paymentMethod,
                               decoration: InputDecoration(
                                 labelText: 'Payment Method',
-                                labelStyle: GoogleFonts.inter(color: subTextColor, fontSize: 13),
+                                labelStyle: TextStyle(color: subTextColor, fontSize: 13),
                                 filled: true,
                                 fillColor: inputBg,
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -2677,7 +2676,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                   value: m['key']!,
                                   child: Text(
                                     m['label']!,
-                                    style: GoogleFonts.inter(fontSize: 13, color: textColor),
+                                    style: TextStyle(fontSize: 13, color: textColor),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -2723,7 +2722,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                 children: [
                                   Text(
                                     'Record as Installment / Part Payment',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
                                       color: textColor,
@@ -2731,7 +2730,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                   ),
                                   Text(
                                     'Allows recording partial amounts towards dues or license fees',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 11,
                                       color: subTextColor,
                                     ),
@@ -2746,12 +2745,12 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                 child: TextFormField(
                                   controller: _installmentNumberCtrl,
                                   keyboardType: TextInputType.number,
-                                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: textColor),
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textColor),
                                   decoration: InputDecoration(
                                     labelText: 'Part #',
-                                    labelStyle: GoogleFonts.inter(fontSize: 11, color: subTextColor),
+                                    labelStyle: TextStyle(fontSize: 11, color: subTextColor),
                                     prefixText: '#',
-                                    prefixStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, color: AppColors.accentOrangeText),
+                                    prefixStyle: TextStyle(fontWeight: FontWeight.bold, color: AppColors.accentOrangeText),
                                     isDense: true,
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                                     filled: true,
@@ -2769,12 +2768,12 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                       // Receipt / Cheque # field
                       TextFormField(
                         controller: _receiptNoController,
-                        style: GoogleFonts.inter(fontSize: 14, color: textColor),
+                        style: TextStyle(fontSize: 14, color: textColor),
                         decoration: InputDecoration(
                           labelText: 'Physical Receipt Book # / Cheque # (Optional)',
-                          labelStyle: GoogleFonts.inter(color: subTextColor, fontSize: 13),
+                          labelStyle: TextStyle(color: subTextColor, fontSize: 13),
                           hintText: 'e.g. RCP-2026-0048 or Cheque #4092 Zenith Bank',
-                          hintStyle: GoogleFonts.inter(fontSize: 12, color: subTextColor.withAlpha(150)),
+                          hintStyle: TextStyle(fontSize: 12, color: subTextColor.withAlpha(150)),
                           prefixIcon: const Icon(Icons.tag_rounded, size: 20),
                           filled: true,
                           fillColor: inputBg,
@@ -2794,13 +2793,13 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                       // Internal Notes field
                       TextFormField(
                         controller: _notesController,
-                        style: GoogleFonts.inter(fontSize: 14, color: textColor),
+                        style: TextStyle(fontSize: 14, color: textColor),
                         maxLines: 2,
                         decoration: InputDecoration(
                           labelText: 'Administrative / Office Notes (Optional)',
-                          labelStyle: GoogleFonts.inter(color: subTextColor, fontSize: 13),
+                          labelStyle: TextStyle(color: subTextColor, fontSize: 13),
                           hintText: 'e.g. Paid in cash at front desk by company director.',
-                          hintStyle: GoogleFonts.inter(fontSize: 12, color: subTextColor.withAlpha(150)),
+                          hintStyle: TextStyle(fontSize: 12, color: subTextColor.withAlpha(150)),
                           filled: true,
                           fillColor: inputBg,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -2832,7 +2831,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                             Expanded(
                               child: Text(
                                 'Automated Settlement: Upon recording, status will immediately become PAID. Any applicable license will be renewed for 1 year, and an official receipt email + push notification will be sent to the member automatically.',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 11.5,
                                   color: textColor.withAlpha(200),
                                   height: 1.35,
@@ -2863,7 +2862,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                     ),
                     child: Text(
                       'Cancel',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -2887,7 +2886,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                       _submitting
                           ? 'Recording Payment...'
                           : (_isCategoryAlreadyPaid(_category) ? 'Category Already Paid' : 'Confirm & Record Payment'),
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -2928,7 +2927,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
               const SizedBox(width: 6),
               Text(
                 'MEMBER SETTLEMENT STATUS',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
@@ -2967,7 +2966,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
           const SizedBox(width: 4),
           Text(
             '$label: ${isPaid ? "Paid ✓" : "Outstanding"}',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
               color: color,

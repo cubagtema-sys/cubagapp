@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../services/api_service.dart';
 import '../services/calendar_service.dart';
@@ -161,7 +160,7 @@ class _EventsPageState extends State<EventsPage> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.inter(
+          style: TextStyle(
             color: isSelected ? Colors.white : (isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B)),
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
             fontSize: 13,
@@ -193,14 +192,14 @@ class _EventsPageState extends State<EventsPage> {
           ),
           child: TextField(
             controller: _searchCtrl,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 14.5,
               color: textColor,
               fontWeight: FontWeight.w600,
             ),
             decoration: InputDecoration(
               hintText: 'Search events by title, description, location...',
-              hintStyle: GoogleFonts.inter(
+              hintStyle: TextStyle(
                 color: mutedColor,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -291,7 +290,7 @@ class _EventsPageState extends State<EventsPage> {
             child: Text(
               monthStr,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 color: Colors.white,
                 fontSize: 10.5,
                 fontWeight: FontWeight.w900,
@@ -304,7 +303,7 @@ class _EventsPageState extends State<EventsPage> {
             child: Center(
               child: Text(
                 dayStr,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: dayTextColor,
                   fontSize: 19,
                   fontWeight: FontWeight.w900,
@@ -340,7 +339,7 @@ class _EventsPageState extends State<EventsPage> {
           ],
           Text(
             label.toUpperCase(),
-            style: GoogleFonts.inter(
+            style: TextStyle(
               color: color,
               fontSize: 11,
               fontWeight: FontWeight.w900,
@@ -376,7 +375,7 @@ class _EventsPageState extends State<EventsPage> {
             children: [
               Text(
                 label,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 13,
                   color: const Color(0xFF5F6B7E),
                   fontWeight: FontWeight.w700,
@@ -386,7 +385,7 @@ class _EventsPageState extends State<EventsPage> {
               const SizedBox(height: 2),
               Text(
                 value,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 15,
                   color: const Color(0xFF4D2D20),
                   fontWeight: FontWeight.w600,
@@ -441,7 +440,7 @@ class _EventsPageState extends State<EventsPage> {
                       ),
                       child: Text(
                         'EVENT DETAILS',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           color: primary,
                           fontSize: 13,
                           fontWeight: FontWeight.w900,
@@ -470,7 +469,7 @@ class _EventsPageState extends State<EventsPage> {
                     children: [
                     Text(
                       e['title']?.toString() ?? '',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 22,
                         color: const Color(0xFF281710),
@@ -507,7 +506,7 @@ class _EventsPageState extends State<EventsPage> {
                     const SizedBox(height: 20),
                     Text(
                       'About Event',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 15.5,
                         color: const Color(0xFF281710),
@@ -527,7 +526,7 @@ class _EventsPageState extends State<EventsPage> {
                       child: Text(
                         e['description']?.toString() ??
                             'No description provided.',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 15,
                           color: const Color(0xFF475569),
                           height: 1.5,
@@ -588,7 +587,7 @@ class _EventsPageState extends State<EventsPage> {
                                     Expanded(
                                       child: Text(
                                         'Event "$title" added to your calendar!',
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
@@ -610,7 +609,7 @@ class _EventsPageState extends State<EventsPage> {
                         ),
                         label: Text(
                           'Add to Phone Calendar',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
@@ -694,7 +693,7 @@ class _EventsPageState extends State<EventsPage> {
                   : (_selectedFilter == 'upcoming'
                         ? 'No Upcoming Events'
                         : 'No Past Events'),
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 18,
                 color: const Color(0xFF281710),
@@ -706,7 +705,7 @@ class _EventsPageState extends State<EventsPage> {
                   ? 'Try refining your search keyword.'
                   : 'Check back later for meetings and seminars.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 color: const Color(0xFF64748b),
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
@@ -787,7 +786,7 @@ class _EventsPageState extends State<EventsPage> {
                               Expanded(
                                 child: Text(
                                   e['title']?.toString() ?? '',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 16.5,
                                     color: textColor,
@@ -805,7 +804,7 @@ class _EventsPageState extends State<EventsPage> {
                           const SizedBox(height: 6),
                           Text(
                             e['description']?.toString() ?? '',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               color: mutedColor,
                               fontSize: 13.5,
                               fontWeight: FontWeight.w500,
@@ -832,7 +831,7 @@ class _EventsPageState extends State<EventsPage> {
                                     const SizedBox(width: 4),
                                     Text(
                                       e['time'].toString(),
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 13.5,
                                         color: const Color(0xFF64748b),
                                         fontWeight: FontWeight.w600,
@@ -854,7 +853,7 @@ class _EventsPageState extends State<EventsPage> {
                                     Flexible(
                                       child: Text(
                                         e['location'].toString(),
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontSize: 13.5,
                                           color: const Color(0xFF64748b),
                                           fontWeight: FontWeight.w600,
@@ -878,7 +877,7 @@ class _EventsPageState extends State<EventsPage> {
                                     const SizedBox(width: 4),
                                     Text(
                                       'Limit: ${e['capacity']}',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 13.5,
                                         color: const Color(0xFF64748b),
                                         fontWeight: FontWeight.w600,

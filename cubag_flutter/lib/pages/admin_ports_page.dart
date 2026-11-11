@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../services/api_service.dart';
@@ -89,7 +88,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
               const SizedBox(width: 12),
               Text(
                 isEdit ? 'Edit Port of Operation' : 'Add Port of Operation',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 22,
                 ),
@@ -102,7 +101,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
             children: [
               Text(
                 'Enter the official terminal or border post name for member assignments and public guest requests.',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 17,
                   color: Colors.grey.shade600,
                 ),
@@ -289,7 +288,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
                 icon: const Icon(Icons.add_location_alt_rounded, size: 18),
                 label: Text(
                   'Add New Port',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 17,
                   ),
@@ -390,7 +389,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
                   const SizedBox(height: 12),
                   Text(
                     'No ports match your filter.',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 20,
                       color: textCol,
@@ -399,7 +398,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
                   const SizedBox(height: 4),
                   Text(
                     'Try clearing the search filter or adding a new port location.',
-                    style: GoogleFonts.inter(fontSize: 17, color: subTextCol),
+                    style: TextStyle(fontSize: 17, color: subTextCol),
                   ),
                 ],
               ),
@@ -424,13 +423,13 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
                         ),
                         child: DataTable(
                           headingRowColor: WidgetStateProperty.all(headerBg),
-                          headingTextStyle: GoogleFonts.inter(
+                          headingTextStyle: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 16,
                             color: subTextCol,
                             letterSpacing: 0.5,
                           ),
-                          dataTextStyle: GoogleFonts.inter(
+                          dataTextStyle: TextStyle(
                             fontSize: 17,
                             color: textCol,
                           ),
@@ -478,7 +477,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
                                       const SizedBox(width: 12),
                                       Text(
                                         name,
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 18,
                                           color: textCol,
@@ -506,7 +505,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
                                     ),
                                     child: Text(
                                       code.isNotEmpty ? code : '—',
-                                      style: GoogleFonts.robotoMono(
+                                      style: TextStyle(fontFeatures: const [FontFeature.tabularFigures()], 
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                         color: AppColors.accentOrangeText,
@@ -537,7 +536,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
                                           isActive
                                               ? 'Operational / Active'
                                               : 'Inactive',
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.bold,
                                             color: isActive

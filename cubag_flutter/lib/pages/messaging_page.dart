@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
@@ -324,7 +323,7 @@ class _MessagingPageState extends State<MessagingPage> {
               const SizedBox(height: 18),
               Text(
                 'Member Messages',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: isDark ? Colors.white : const Color(0xFF1A0F0A),
@@ -334,7 +333,7 @@ class _MessagingPageState extends State<MessagingPage> {
               Text(
                 'Select a conversation to exchange direct messages with fellow CUBAG members & the secretariat.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: isDark ? Colors.white70 : const Color(0xFF64748B),
                   fontSize: 14,
                   height: 1.4,
@@ -384,7 +383,7 @@ class _MessagingPageState extends State<MessagingPage> {
                     onChanged: (v) => setState(() => _applySearch(v)),
                     decoration: InputDecoration(
                       hintText: 'Search members or messages...',
-                      hintStyle: GoogleFonts.inter(
+                      hintStyle: TextStyle(
                         color: hintCol,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -393,7 +392,7 @@ class _MessagingPageState extends State<MessagingPage> {
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
                     ),
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: textCol,
                       fontSize: 14.5,
                       fontWeight: FontWeight.w500,
@@ -442,7 +441,7 @@ class _MessagingPageState extends State<MessagingPage> {
                       const SizedBox(height: 14),
                       Text(
                         _search.isEmpty ? 'No messages yet' : 'No results found',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 16,
                           color: textCol,
@@ -454,7 +453,7 @@ class _MessagingPageState extends State<MessagingPage> {
                             ? 'Connect with members via the networking directory.'
                             : 'Try searching by a different name or keyword.',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           color: subTextCol,
                           fontSize: 13,
                         ),
@@ -520,7 +519,7 @@ class _MessagingPageState extends State<MessagingPage> {
                               child: Center(
                                 child: Text(
                                   initials,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 15,
@@ -540,7 +539,7 @@ class _MessagingPageState extends State<MessagingPage> {
                                       Flexible(
                                         child: Text(
                                           conv['name']?.toString() ?? '',
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(
                                             fontWeight: unread > 0
                                                 ? FontWeight.w800
                                                 : FontWeight.w700,
@@ -554,7 +553,7 @@ class _MessagingPageState extends State<MessagingPage> {
                                       if (conv['time'] != null)
                                         Text(
                                           conv['time'].toString(),
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(
                                             fontSize: 11.5,
                                             color: hintCol,
                                             fontWeight: FontWeight.w600,
@@ -571,7 +570,7 @@ class _MessagingPageState extends State<MessagingPage> {
                                               'Tap to start conversation',
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(
                                             fontSize: 13,
                                             color: unread > 0 ? textCol : subTextCol,
                                             fontWeight: unread > 0
@@ -593,7 +592,7 @@ class _MessagingPageState extends State<MessagingPage> {
                                           ),
                                           child: Text(
                                             '$unread',
-                                            style: GoogleFonts.inter(
+                                            style: TextStyle(
                                               color: Colors.white,
                                               fontSize: 11,
                                               fontWeight: FontWeight.w800,
@@ -793,7 +792,7 @@ class _MessagingPageState extends State<MessagingPage> {
                   child: Center(
                     child: Text(
                       initials,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
@@ -808,7 +807,7 @@ class _MessagingPageState extends State<MessagingPage> {
                     children: [
                       Text(
                         _activeChat!['name']?.toString() ?? '',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 16,
                           color: textCol,
@@ -818,7 +817,7 @@ class _MessagingPageState extends State<MessagingPage> {
                       const SizedBox(height: 1),
                       Text(
                         _activeChat!['company']?.toString() ?? 'CUBAG Member',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 12.5,
                           color: subTextCol,
                           fontWeight: FontWeight.w500,
@@ -862,7 +861,7 @@ class _MessagingPageState extends State<MessagingPage> {
                       padding: const EdgeInsets.all(24),
                       child: Text(
                         'Say hello to ${(_activeChat!['name']?.toString() ?? 'Member').split(' ').first}!',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           color: subTextCol,
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
@@ -943,7 +942,7 @@ class _MessagingPageState extends State<MessagingPage> {
                                         (msg['text']?.toString() ?? '').isEmpty
                                             ? '(empty message)'
                                             : msg['text'].toString(),
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           color: isMe ? Colors.white : textCol,
                                           fontSize: 14.5,
                                           height: 1.35,
@@ -961,7 +960,7 @@ class _MessagingPageState extends State<MessagingPage> {
                                           children: [
                                             Text(
                                               msg['time'].toString(),
-                                              style: GoogleFonts.inter(
+                                              style: TextStyle(
                                                 fontSize: 11,
                                                 color: isMe
                                                     ? Colors.white70
@@ -1015,7 +1014,7 @@ class _MessagingPageState extends State<MessagingPage> {
                         onSubmitted: (_) => _send(),
                         decoration: InputDecoration(
                           hintText: 'Type a message...',
-                          hintStyle: GoogleFonts.inter(
+                          hintStyle: TextStyle(
                             color: hintCol,
                             fontSize: 14.5,
                             fontWeight: FontWeight.w500,
@@ -1024,7 +1023,7 @@ class _MessagingPageState extends State<MessagingPage> {
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
                         ),
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           color: textCol,
                           fontSize: 14.5,
                           fontWeight: FontWeight.w500,

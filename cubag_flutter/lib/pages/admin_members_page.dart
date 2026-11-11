@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import '../components/app_layout.dart';
@@ -497,7 +496,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                             icon: const Icon(Icons.refresh_rounded, size: 18),
                             label: Text(
                               'Refresh',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
@@ -678,7 +677,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                                 children: [
                                   Text(
                                     'Member Profile',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w800,
                                       color: textColor,
@@ -788,7 +787,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     )
                   : Text(
                       _initials(m['name']?.toString() ?? ''),
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 20,
@@ -802,7 +801,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                 children: [
                   Text(
                     m['name']?.toString() ?? '',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 22,
                       color: textColor,
@@ -811,7 +810,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   const SizedBox(height: 2),
                   Text(
                     m['email']?.toString() ?? '',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: subTextColor,
                       fontSize: 16,
                     ),
@@ -839,7 +838,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
             children: [
               Text(
                 'STANDING & COMPLIANCE',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 14,
                   color: subTextColor,
                   fontWeight: FontWeight.w800,
@@ -860,7 +859,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                       const SizedBox(width: 6),
                       Text(
                         '${starRating.toStringAsFixed(1)} / 5.0',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 22,
                           color: textColor,
@@ -883,7 +882,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     ),
                     child: Text(
                       tier.label,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: tier.color,
                         fontWeight: FontWeight.w800,
                         fontSize: 15,
@@ -907,7 +906,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
               const SizedBox(height: 6),
               Text(
                 'Compliance Score: $complianceScore%',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 16,
                   color: subTextColor,
                   fontWeight: FontWeight.w600,
@@ -919,7 +918,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                 children: [
                   Text(
                     'Manual Review Score: ${_editReviewScore.round()} / 10',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 17,
                       color: textColor,
@@ -945,7 +944,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     ),
                     child: Text(
                       'Save Score',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                       ),
@@ -986,7 +985,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
             children: [
               Text(
                 'HISTORICAL COMPLIANCE TREND',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 14,
                   color: subTextColor,
                   fontWeight: FontWeight.w800,
@@ -1084,7 +1083,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
               children: [
                 Text(
                   r[0].toString().toUpperCase(),
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 14,
                     color: subTextColor,
                     fontWeight: FontWeight.w800,
@@ -1099,7 +1098,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                       Flexible(
                         child: SelectableText(
                           r[1].toString(),
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: textColor,
@@ -1165,7 +1164,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     ),
                     child: Text(
                       (ss['label'] as String).toUpperCase(),
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 12,
                         color: ss['color'] as Color,
                         fontWeight: FontWeight.w800,
@@ -1176,7 +1175,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   const SizedBox(width: 8),
                   Text(
                     'Status Controls',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 16,
                       color: subTextColor,
                       fontWeight: FontWeight.bold,
@@ -1204,7 +1203,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                         ),
                         child: Text(
                           'Activate',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 17,
                           ),
@@ -1229,7 +1228,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                         ),
                         child: Text(
                           'Suspend',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 17,
                           ),
@@ -1253,7 +1252,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                         ),
                         child: Text(
                           'Disable',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 17,
                             color: textColor,
@@ -1274,7 +1273,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
             onPressed: () => setState(() => _selected = null),
             child: Text(
               'Close Profile',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 color: subTextColor,
                 fontWeight: FontWeight.w600,
               ),
@@ -1387,7 +1386,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
             children: [
               Text(
                 it['label'] as String,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: subInk,
@@ -1403,7 +1402,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                 ),
                 child: Text(
                   it['badge'] as String,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 9.5,
                     fontWeight: FontWeight.w800,
                     color: badgeColor,
@@ -1416,7 +1415,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           const SizedBox(height: 5),
           SelectableText(
             it['value'] as String,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: textInk,
@@ -1538,7 +1537,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
       child: Text(
         label,
         textAlign: align,
-        style: GoogleFonts.inter(
+        style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w800,
           color: textColor.withValues(alpha: 0.7),
@@ -1620,7 +1619,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                               )
                             : Text(
                                 _initials(m['name']?.toString() ?? ''),
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   color: c,
                                   fontWeight: FontWeight.w800,
                                   fontSize: 14,
@@ -1635,7 +1634,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                           children: [
                             SelectableText(
                               m['name']?.toString() ?? '',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 14.5,
                                 color: textColor,
@@ -1645,7 +1644,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                             const SizedBox(height: 2),
                             SelectableText(
                               m['email']?.toString() ?? '',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 12.5,
                                 color: subTextColor,
                               ),
@@ -1674,7 +1673,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                       Expanded(
                         child: Text(
                           m['member_type']?.toString() ?? 'General Member',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: textColor.withValues(alpha: 0.9),
@@ -1703,7 +1702,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                           const SizedBox(width: 4),
                           Text(
                             '${starRating.toStringAsFixed(1)} / 5.0',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
                               color: textColor,
@@ -1714,7 +1713,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                           const SizedBox(width: 6),
                           Text(
                             '($score%)',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 12,
                               color: subTextColor,
                               fontWeight: FontWeight.w600,
@@ -1738,7 +1737,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                         ),
                         child: Text(
                           tier.label,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 11,
                             color: tier.color,
                             fontWeight: FontWeight.w700,
@@ -1771,7 +1770,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                       ),
                       child: Text(
                         (ss['label'] as String).toUpperCase(),
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 11,
                           color: ss['color'] as Color,
                           fontWeight: FontWeight.w800,
@@ -1800,7 +1799,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                           icon: const Icon(Icons.verified_outlined, size: 14),
                           label: Text(
                             'Review Compliance',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               color: Colors.white,
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
@@ -1828,7 +1827,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                         icon: const Icon(Icons.visibility_outlined, size: 15),
                         label: Text(
                           'View',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1894,7 +1893,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
       children: [
         Text(
           'COMPLIANCE BREAKDOWN MATH',
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontSize: 14,
             color: subTextColor,
             fontWeight: FontWeight.w800,
@@ -1994,7 +1993,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
               Expanded(
                 child: Text(
                   title,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                     color: textColor,
@@ -2003,7 +2002,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
               ),
               Text(
                 scoreText,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.w900,
                   color: color,
                   fontSize: 16,
@@ -2017,7 +2016,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
               padding: const EdgeInsets.only(top: 2, left: 24),
               child: Text(
                 detail,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 15,
                   color: subTextColor,
                   fontWeight: FontWeight.w500,
@@ -2093,7 +2092,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   children: [
                     Text(
                       'ATTACHED BANK DEPOSIT SLIP',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 13.5,
                         color: subTextColor,
                         fontWeight: FontWeight.w800,
@@ -2102,7 +2101,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     ),
                     Text(
                       'Proof of payment submitted by member',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey,
                       ),
@@ -2121,7 +2120,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                 ),
                 child: Text(
                   isPaid ? 'PAID' : 'PENDING REVIEW',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     color: isPaid ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
@@ -2185,7 +2184,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     if (amount > 0) ...[
                       Text(
                         'GH₵ ${amount.toStringAsFixed(2)}',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                           color: isPaid ? const Color(0xFF10B981) : primary,
@@ -2195,7 +2194,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     ],
                     Text(
                       'Ref: $payRef',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: textColor,
@@ -2203,7 +2202,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     ),
                     Text(
                       bankName,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey,
                       ),
@@ -2212,7 +2211,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                       const SizedBox(height: 4),
                       Text(
                         'Note: ${m['notes']}',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 11.5,
                           fontStyle: FontStyle.italic,
                           color: Colors.grey,
@@ -2239,7 +2238,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    textStyle: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold),
+                    textStyle: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -2252,7 +2251,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      textStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                      textStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                   ),
               ],
@@ -2263,7 +2262,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
               onTap: () => _showDepositSlipModal(context, receiptUrl, payRef, m['name']?.toString() ?? 'Member', amount),
               child: Text(
                 'View Attached Deposit Slip Image →',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                   color: primary,
@@ -2335,7 +2334,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   Expanded(
                     child: Text(
                       'Deposit Slip · $memberName · Ref: $payRef',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

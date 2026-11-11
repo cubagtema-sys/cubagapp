@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../components/shimmer_loader.dart';
@@ -111,7 +110,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
               const SizedBox(width: 10),
               Text(
                 'Bank settlement accounts saved successfully!',
-                style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 17),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
               ),
             ],
           ),
@@ -153,7 +152,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                   icon: const Icon(Icons.account_balance_rounded, size: 16),
                   label: Text(
                     'Add Bank Account',
-                    style: GoogleFonts.inter(fontSize: 16.5, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _kOrange,
@@ -242,7 +241,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                         children: [
                           Text(
                             'Enforce Security & Live Publication',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                               color: textPrimary,
@@ -250,7 +249,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                           ),
                           Text(
                             'Changes reflect immediately across member payment checkout screens and invoice PDFs.',
-                            style: GoogleFonts.inter(fontSize: 16, color: textMuted),
+                            style: TextStyle(fontSize: 16, color: textMuted),
                           ),
                         ],
                       ),
@@ -267,7 +266,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                           : const Icon(Icons.save_rounded, size: 18),
                       label: Text(
                         _loading ? 'Saving Settings...' : 'Save & Publish Settings',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 17.5),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17.5),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _kOrange,
@@ -318,7 +317,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 19,
                       fontWeight: FontWeight.w900,
                       color: textPrimary,
@@ -333,7 +332,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                     ),
                     child: Text(
                       badgeText,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w800,
                         color: badgeColor,
@@ -345,7 +344,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: GoogleFonts.inter(fontSize: 15.5, color: textMuted),
+                style: TextStyle(fontSize: 15.5, color: textMuted),
               ),
             ],
           ),
@@ -377,12 +376,12 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
           const SizedBox(height: 8),
           Text(
             title,
-            style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
           ),
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: GoogleFonts.inter(fontSize: 16, color: textMuted),
+            style: TextStyle(fontSize: 16, color: textMuted),
             textAlign: TextAlign.center,
           ),
         ],
@@ -446,7 +445,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                 const SizedBox(width: 10),
                 Text(
                   bankName.isNotEmpty ? bankName : 'Bank Account #${index + 1}',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 17.5,
                     fontWeight: FontWeight.w800,
                     color: textPrimary,
@@ -462,7 +461,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                     ),
                     child: Text(
                       'PRIMARY',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
@@ -574,7 +573,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF5F6B7E),
@@ -585,14 +584,14 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
         TextFormField(
           initialValue: value,
           keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w600,
             color: textPrimary,
           ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.inter(fontSize: 16, color: textMuted.withAlpha(150)),
+            hintStyle: TextStyle(fontSize: 16, color: textMuted.withAlpha(150)),
             filled: true,
             fillColor: inputBg,
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

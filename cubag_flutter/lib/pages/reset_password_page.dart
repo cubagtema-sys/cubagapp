@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../components/app_logo.dart';
 import '../utils/app_colors.dart';
@@ -156,7 +155,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               const SizedBox(height: 24),
               Text(
                 'CUBAG',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: Colors.white,
                   fontSize: 38,
                   fontWeight: FontWeight.w900,
@@ -175,7 +174,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               const SizedBox(height: 20),
               Text(
                 'Enterprise Mobility Platform',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: Colors.white.withAlpha(220),
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -260,7 +259,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           const SizedBox(height: 16),
           Text(
             'Invalid Link',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: _kText,
@@ -334,7 +333,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           const SizedBox(height: 20),
           Text(
             'Password Reset',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: _kText,
@@ -417,7 +416,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             ],
             Text(
               'Set New Password',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w900,
                 color: _kText,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../services/api_service.dart';
@@ -191,8 +190,8 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Update Grievance Case', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)),
-                      Text(item['complaint_id']?.toString() ?? '', style: GoogleFonts.inter(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.bold)),
+                      Text('Update Grievance Case', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)),
+                      Text(item['complaint_id']?.toString() ?? '', style: TextStyle(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -206,7 +205,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Status selector
-                    Text('Status', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12, color: textColor)),
+                    Text('Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textColor)),
                     const SizedBox(height: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -216,7 +215,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                           value: ['Received', 'Under Review', 'Investigating', 'Resolved', 'Closed'].contains(status) ? status : 'Received',
                           isExpanded: true,
                           dropdownColor: dialogBg,
-                          style: GoogleFonts.inter(color: textColor, fontSize: 13),
+                          style: TextStyle(color: textColor, fontSize: 13),
                           items: const [
                             DropdownMenuItem(value: 'Received', child: Text('Received (Logged into Registry)')),
                             DropdownMenuItem(value: 'Under Review', child: Text('Under Review (Assessment)')),
@@ -233,7 +232,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                     const SizedBox(height: 12),
 
                     // Priority
-                    Text('Priority Level', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12, color: textColor)),
+                    Text('Priority Level', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textColor)),
                     const SizedBox(height: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -243,7 +242,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                           value: ['Normal', 'High', 'Urgent'].contains(priority) ? priority : 'Normal',
                           isExpanded: true,
                           dropdownColor: dialogBg,
-                          style: GoogleFonts.inter(color: textColor, fontSize: 13),
+                          style: TextStyle(color: textColor, fontSize: 13),
                           items: const [
                             DropdownMenuItem(value: 'Normal', child: Text('Normal Priority')),
                             DropdownMenuItem(value: 'High', child: Text('High Priority')),
@@ -258,11 +257,11 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                     const SizedBox(height: 12),
 
                     // Assigned Handler
-                    Text('Assigned Committee / Officer', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12, color: textColor)),
+                    Text('Assigned Committee / Officer', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textColor)),
                     const SizedBox(height: 4),
                     TextField(
                       controller: assignedCtrl,
-                      style: GoogleFonts.inter(fontSize: 13, color: textColor),
+                      style: TextStyle(fontSize: 13, color: textColor),
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: fieldBg,
@@ -275,15 +274,15 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                     const SizedBox(height: 12),
 
                     // Resolution Directives
-                    Text('Official Resolution Notes & Directives', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12, color: textColor)),
+                    Text('Official Resolution Notes & Directives', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textColor)),
                     const SizedBox(height: 4),
                     TextField(
                       controller: notesCtrl,
                       maxLines: 3,
-                      style: GoogleFonts.inter(fontSize: 13, color: textColor),
+                      style: TextStyle(fontSize: 13, color: textColor),
                       decoration: InputDecoration(
                         hintText: 'Enter formal Secretariat findings, hearing dates, or corrective directives...',
-                        hintStyle: GoogleFonts.inter(fontSize: 12, color: subTextColor),
+                        hintStyle: TextStyle(fontSize: 12, color: subTextColor),
                         filled: true,
                         fillColor: fieldBg,
                         contentPadding: const EdgeInsets.all(12),
@@ -299,7 +298,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogCtx),
-                child: Text('Cancel', style: GoogleFonts.inter(color: subTextColor, fontWeight: FontWeight.w600)),
+                child: Text('Cancel', style: TextStyle(color: subTextColor, fontWeight: FontWeight.w600)),
               ),
               ElevatedButton(
                 onPressed: saving
@@ -345,7 +344,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                 ),
                 child: saving
                     ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text('Save Updates', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+                    : Text('Save Updates', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
               ),
             ],
           );
@@ -399,7 +398,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                 children: [
                   Row(
                     children: [
-                      Text('Grievance Record', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)),
+                      Text('Grievance Record', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)),
                       const SizedBox(width: 8),
                       InkWell(
                         onTap: () {
@@ -421,7 +420,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(complaintId, style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.accentOrangeText)),
+                              Text(complaintId, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.accentOrangeText)),
                               const SizedBox(width: 3),
                               const Icon(Icons.copy_rounded, size: 10, color: _kOrange),
                             ],
@@ -430,7 +429,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                       ),
                     ],
                   ),
-                  Text('Filed $createdAt', style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor)),
+                  Text('Filed $createdAt', style: TextStyle(fontSize: 11.5, color: subTextColor)),
                 ],
               ),
             ),
@@ -459,7 +458,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(color: statusCol.withValues(alpha: 0.3)),
                       ),
-                      child: Text(status.toUpperCase(), style: GoogleFonts.inter(color: statusCol, fontSize: 11, fontWeight: FontWeight.bold)),
+                      child: Text(status.toUpperCase(), style: TextStyle(color: statusCol, fontSize: 11, fontWeight: FontWeight.bold)),
                     ),
                     const SizedBox(width: 6),
                     Container(
@@ -469,10 +468,10 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(color: priorityCol.withValues(alpha: 0.3)),
                       ),
-                      child: Text('PRIORITY: ${priority.toUpperCase()}', style: GoogleFonts.inter(color: priorityCol, fontSize: 11, fontWeight: FontWeight.bold)),
+                      child: Text('PRIORITY: ${priority.toUpperCase()}', style: TextStyle(color: priorityCol, fontSize: 11, fontWeight: FontWeight.bold)),
                     ),
                     const Spacer(),
-                    Text('$port • $category', style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor, fontWeight: FontWeight.w600)),
+                    Text('$port • $category', style: TextStyle(fontSize: 11.5, color: subTextColor, fontWeight: FontWeight.w600)),
                   ],
                 ),
                 const SizedBox(height: 14),
@@ -484,16 +483,16 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SelectableText('Complainant: $name', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, color: textColor)),
+                      SelectableText('Complainant: $name', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textColor)),
                       const SizedBox(height: 4),
-                      SelectableText('Contact: $phone | $email', style: GoogleFonts.inter(fontSize: 12, color: subTextColor)),
+                      SelectableText('Contact: $phone | $email', style: TextStyle(fontSize: 12, color: subTextColor)),
                       if (company != 'N/A') ...[
                         const SizedBox(height: 2),
-                        SelectableText('Company: $company', style: GoogleFonts.inter(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.w500)),
+                        SelectableText('Company: $company', style: TextStyle(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.w500)),
                       ],
                       if (targetEntity.isNotEmpty) ...[
                         const SizedBox(height: 4),
-                        SelectableText('Target Entity: $targetEntity', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12, color: _kPurple)),
+                        SelectableText('Target Entity: $targetEntity', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: _kPurple)),
                       ],
                     ],
                   ),
@@ -501,34 +500,34 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                 const SizedBox(height: 14),
 
                 // Subject & Description
-                Text('SUBJECT', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: subTextColor, letterSpacing: 0.5)),
+                Text('SUBJECT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: subTextColor, letterSpacing: 0.5)),
                 const SizedBox(height: 4),
-                SelectableText(item['subject']?.toString() ?? 'No Subject', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: textColor)),
+                SelectableText(item['subject']?.toString() ?? 'No Subject', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textColor)),
                 const SizedBox(height: 8),
 
-                Text('DETAILS / GRIEVANCE DESCRIPTION', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: subTextColor, letterSpacing: 0.5)),
+                Text('DETAILS / GRIEVANCE DESCRIPTION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: subTextColor, letterSpacing: 0.5)),
                 const SizedBox(height: 4),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(color: fieldBg, borderRadius: BorderRadius.circular(8), border: Border.all(color: borderCol)),
-                  child: SelectableText(description, style: GoogleFonts.inter(fontSize: 12.5, color: textColor, height: 1.4)),
+                  child: SelectableText(description, style: TextStyle(fontSize: 12.5, color: textColor, height: 1.4)),
                 ),
                 const SizedBox(height: 12),
 
                 // Assigned & Resolution
                 if (assignedTo.isNotEmpty) ...[
-                  SelectableText('Assigned to: $assignedTo', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: subTextColor)),
+                  SelectableText('Assigned to: $assignedTo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: subTextColor)),
                   const SizedBox(height: 6),
                 ],
                 if (resolutionNotes.isNotEmpty) ...[
-                  Text('OFFICIAL RESOLUTION DIRECTIVES', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: _kGreen, letterSpacing: 0.5)),
+                  Text('OFFICIAL RESOLUTION DIRECTIVES', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: _kGreen, letterSpacing: 0.5)),
                   const SizedBox(height: 4),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(color: _kGreen.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8), border: Border.all(color: _kGreen.withValues(alpha: 0.25))),
-                    child: SelectableText(resolutionNotes, style: GoogleFonts.inter(fontSize: 12.5, color: textColor, height: 1.35)),
+                    child: SelectableText(resolutionNotes, style: TextStyle(fontSize: 12.5, color: textColor, height: 1.35)),
                   ),
                 ],
               ],
@@ -538,7 +537,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child: Text('Close', style: GoogleFonts.inter(color: subTextColor)),
+            child: Text('Close', style: TextStyle(color: subTextColor)),
           ),
           ElevatedButton.icon(
             onPressed: () {
@@ -546,7 +545,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
               _openUpdateDialog(item);
             },
             icon: const Icon(Icons.edit_note_rounded, size: 16),
-            label: Text('Update Case', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12.5)),
+            label: Text('Update Case', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
             style: ElevatedButton.styleFrom(
               backgroundColor: _kOrange,
               foregroundColor: Colors.white,
@@ -593,7 +592,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                     ),
                     onPressed: _fetchComplaints,
                     icon: const Icon(Icons.refresh_rounded, size: 16),
-                    label: Text('Refresh', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                    label: Text('Refresh', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                   ),
                 ],
               ),
@@ -627,10 +626,10 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                               child: TextField(
                                 controller: _searchCtrl,
                                 onChanged: (_) => setState(() {}),
-                                style: GoogleFonts.inter(fontSize: 13.5, color: textColor),
+                                style: TextStyle(fontSize: 13.5, color: textColor),
                                 decoration: InputDecoration(
                                   hintText: 'Search by ID, name, phone, subject, port, entity...',
-                                  hintStyle: GoogleFonts.inter(fontSize: 12.5, color: subTextColor),
+                                  hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
                                   prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
                                   filled: true,
                                   fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
@@ -690,7 +689,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                             children: [
                               const Icon(Icons.error_outline_rounded, color: _kRed, size: 28),
                               const SizedBox(height: 8),
-                              Text('Failed to load complaints', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: textColor)),
+                              Text('Failed to load complaints', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textColor)),
                               const SizedBox(height: 12),
                               ElevatedButton(
                                 onPressed: _fetchComplaints,
@@ -713,9 +712,9 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                                 child: const Icon(Icons.gavel_rounded, size: 28, color: _kOrange),
                               ),
                               const SizedBox(height: 12),
-                              Text('No complaints found matching criteria', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
+                              Text('No complaints found matching criteria', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
                               const SizedBox(height: 4),
-                              Text('Logged grievances and disputes will appear here.', style: GoogleFonts.inter(fontSize: 12.5, color: subTextColor)),
+                              Text('Logged grievances and disputes will appear here.', style: TextStyle(fontSize: 12.5, color: subTextColor)),
                             ],
                           ),
                         ),
@@ -738,8 +737,8 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                                 headingRowColor: WidgetStateProperty.all(
                                   isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0),
                                 ),
-                                headingTextStyle: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w700, color: subTextColor),
-                                dataTextStyle: GoogleFonts.inter(fontSize: 13, color: textColor),
+                                headingTextStyle: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: subTextColor),
+                                dataTextStyle: TextStyle(fontSize: 13, color: textColor),
                                 columns: const [
                                   DataColumn(label: Text('TRACKING ID')),
                                   DataColumn(label: Text('COMPLAINANT')),
@@ -772,7 +771,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                                               child: Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                                                 decoration: BoxDecoration(color: _kBrown.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                                                child: SelectableText(id, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.accentOrangeText)),
+                                                child: SelectableText(id, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.accentOrangeText)),
                                               ),
                                             ),
                                             const SizedBox(width: 4),
@@ -805,8 +804,8 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
-                                              SelectableText(name, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: textColor), maxLines: 1),
-                                              if (phone.isNotEmpty) SelectableText(phone, style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor), maxLines: 1),
+                                              SelectableText(name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textColor), maxLines: 1),
+                                              if (phone.isNotEmpty) SelectableText(phone, style: TextStyle(fontSize: 11.5, color: subTextColor), maxLines: 1),
                                             ],
                                           ),
                                         ),
@@ -819,8 +818,8 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
-                                              SelectableText(subject, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textColor), maxLines: 1),
-                                              SelectableText('$port • $category', style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor), maxLines: 1),
+                                              SelectableText(subject, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textColor), maxLines: 1),
+                                              SelectableText('$port • $category', style: TextStyle(fontSize: 11.5, color: subTextColor), maxLines: 1),
                                             ],
                                           ),
                                         ),
@@ -834,7 +833,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                                             borderRadius: BorderRadius.circular(6),
                                             border: Border.all(color: statusCol.withValues(alpha: 0.3)),
                                           ),
-                                          child: Text(status.toUpperCase(), style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w800, color: statusCol)),
+                                          child: Text(status.toUpperCase(), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: statusCol)),
                                         ),
                                       ),
                                       // Priority
@@ -845,7 +844,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                                             color: priorityCol.withValues(alpha: 0.12),
                                             borderRadius: BorderRadius.circular(6),
                                           ),
-                                          child: Text(priority.toUpperCase(), style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.bold, color: priorityCol)),
+                                          child: Text(priority.toUpperCase(), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: priorityCol)),
                                         ),
                                       ),
                                       // Actions
@@ -863,7 +862,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                                                 elevation: 0,
                                               ),
-                                              child: Text('Case Details', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                              child: Text('Case Details', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
                                             ),
                                             const SizedBox(width: 6),
                                             ElevatedButton(
@@ -876,7 +875,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                                                 elevation: 0,
                                               ),
-                                              child: Text('Update', style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                              child: Text('Update', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
                                             ),
                                           ],
                                         ),
@@ -896,7 +895,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       child: Text(
                         'Showing ${complaints.length} of ${_complaints.length} registered grievances',
-                        style: GoogleFonts.inter(fontSize: 12, color: subTextColor),
+                        style: TextStyle(fontSize: 12, color: subTextColor),
                       ),
                     ),
                   ],
@@ -994,7 +993,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                 children: [
                   Text(
                     count,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 16,
                       color: textColor,
@@ -1004,7 +1003,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                   ),
                   Text(
                     label,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 11.5,
                       color: isSelected ? color : Colors.grey,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
@@ -1040,7 +1039,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
             color: isSelected ? Colors.white : textColor,

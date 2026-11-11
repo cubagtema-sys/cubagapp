@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../components/skeleton_loader.dart';
@@ -170,7 +169,7 @@ class _State extends State<AdminIntelligencePage> {
                 const SizedBox(width: 8),
                 Text(
                   'Customs FX rates saved & published successfully!',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                     fontSize: 13.5,
@@ -192,7 +191,7 @@ class _State extends State<AdminIntelligencePage> {
           SnackBar(
             content: Text(
               'Failed to update currency rates: $e',
-              style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+              style: TextStyle(color: Colors.white, fontSize: 13),
             ),
             backgroundColor: const Color(0xFFef4444),
             behavior: SnackBarBehavior.floating,
@@ -336,7 +335,7 @@ class _State extends State<AdminIntelligencePage> {
                           _loadIntelligence();
                         },
                         icon: const Icon(Icons.refresh_rounded, size: 16),
-                        label: Text('Refresh All', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13.5)),
+                        label: Text('Refresh All', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
                       ),
                     ],
                   ),
@@ -419,7 +418,7 @@ class _State extends State<AdminIntelligencePage> {
               const SizedBox(width: 8),
               Text(
                 'Connected Sources:',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: isDark ? Colors.white70 : const Color(0xFF475569),
@@ -456,10 +455,10 @@ class _State extends State<AdminIntelligencePage> {
                 child: TextField(
                   controller: _newsSearchCtrl,
                   onChanged: (_) => setState(() {}),
-                  style: GoogleFonts.inter(fontSize: 13.5, color: textColor),
+                  style: TextStyle(fontSize: 13.5, color: textColor),
                   decoration: InputDecoration(
                     hintText: 'Search maritime bulletins, shipping lines, port news...',
-                    hintStyle: GoogleFonts.inter(fontSize: 12.5, color: subTextColor),
+                    hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
                     prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
                     filled: true,
                     fillColor: cardBg,
@@ -493,13 +492,13 @@ class _State extends State<AdminIntelligencePage> {
                 children: [
                   Text(
                     '${filtered.length} Feed Items',
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.accentOrangeText),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.accentOrangeText),
                   ),
                   if (_lastUpdated.isNotEmpty) ...[
                     const SizedBox(width: 6),
                     Text(
                       '• $_lastUpdated',
-                      style: GoogleFonts.inter(fontSize: 11, color: _kOrange.withValues(alpha: 0.8)),
+                      style: TextStyle(fontSize: 11, color: _kOrange.withValues(alpha: 0.8)),
                     ),
                   ],
                 ],
@@ -564,9 +563,9 @@ class _State extends State<AdminIntelligencePage> {
                 children: [
                   Icon(Icons.feed_outlined, color: subTextColor, size: 36),
                   const SizedBox(height: 12),
-                  Text('No articles match criteria', style: GoogleFonts.inter(color: textColor, fontWeight: FontWeight.bold, fontSize: 15)),
+                  Text('No articles match criteria', style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 15)),
                   const SizedBox(height: 4),
-                  Text('Try adjusting your search terms or filter selection.', style: GoogleFonts.inter(color: subTextColor, fontSize: 12.5)),
+                  Text('Try adjusting your search terms or filter selection.', style: TextStyle(color: subTextColor, fontSize: 12.5)),
                 ],
               ),
             ),
@@ -602,7 +601,7 @@ class _State extends State<AdminIntelligencePage> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
             color: isSel ? (isDark ? Colors.white : activeCol) : (isDark ? Colors.white70 : const Color(0xFF475569)),
@@ -694,7 +693,7 @@ class _State extends State<AdminIntelligencePage> {
                         ),
                         child: Text(
                           a.source,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: a.sourceColor,
@@ -705,7 +704,7 @@ class _State extends State<AdminIntelligencePage> {
                         const SizedBox(width: 8),
                         Text(
                           _formatDate(a.pubDate),
-                          style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor, fontWeight: FontWeight.w500),
+                          style: TextStyle(fontSize: 11.5, color: subTextColor, fontWeight: FontWeight.w500),
                         ),
                       ],
                       const Spacer(),
@@ -744,7 +743,7 @@ class _State extends State<AdminIntelligencePage> {
                   const SizedBox(height: 6),
                   SelectableText(
                     a.title,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                       color: textColor,
@@ -805,8 +804,8 @@ class _State extends State<AdminIntelligencePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Customs Duty FX Estimator', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14.5, color: textColor)),
-                    Text('Instant tariff conversion to Ghana Cedis (GHS)', style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor)),
+                    Text('Customs Duty FX Estimator', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: textColor)),
+                    Text('Instant tariff conversion to Ghana Cedis (GHS)', style: TextStyle(fontSize: 11.5, color: subTextColor)),
                   ],
                 ),
               ),
@@ -821,10 +820,10 @@ class _State extends State<AdminIntelligencePage> {
                   controller: _calcAmountCtrl,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   onChanged: (_) => setState(() {}),
-                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: textColor),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textColor),
                   decoration: InputDecoration(
                     labelText: 'Invoice / CIF Value',
-                    labelStyle: GoogleFonts.inter(fontSize: 12, color: subTextColor),
+                    labelStyle: TextStyle(fontSize: 12, color: subTextColor),
                     filled: true,
                     fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
@@ -840,7 +839,7 @@ class _State extends State<AdminIntelligencePage> {
                   initialValue: _calcCurrency,
                   decoration: InputDecoration(
                     labelText: 'Currency',
-                    labelStyle: GoogleFonts.inter(fontSize: 12, color: subTextColor),
+                    labelStyle: TextStyle(fontSize: 12, color: subTextColor),
                     filled: true,
                     fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
@@ -875,13 +874,13 @@ class _State extends State<AdminIntelligencePage> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('ESTIMATED CUSTOMS VALUE', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF10B981), letterSpacing: 0.5)),
+                    Text('ESTIMATED CUSTOMS VALUE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF10B981), letterSpacing: 0.5)),
                     const SizedBox(height: 2),
                     SelectableText(
                       'GH₵ ${converted.toStringAsFixed(2)}',
-                      style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? Colors.white : const Color(0xFF0F172A)),
                     ),
-                    Text('@ GHS $rateStr / $_calcCurrency', style: GoogleFonts.inter(fontSize: 11, color: subTextColor)),
+                    Text('@ GHS $rateStr / $_calcCurrency', style: TextStyle(fontSize: 11, color: subTextColor)),
                   ],
                 ),
                 IconButton(
@@ -931,11 +930,11 @@ class _State extends State<AdminIntelligencePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Bank of Ghana & ICUMS Parity', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12.5, color: textColor)),
+                Text('Bank of Ghana & ICUMS Parity', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: textColor)),
                 const SizedBox(height: 3),
                 Text(
                   'Customs exchange rates must be synchronized daily at 09:00 GMT in compliance with GRA Customs Division tariff schedules.',
-                  style: GoogleFonts.inter(fontSize: 11.5, color: subTextColor, height: 1.35),
+                  style: TextStyle(fontSize: 11.5, color: subTextColor, height: 1.35),
                 ),
               ],
             ),
@@ -992,7 +991,7 @@ class _State extends State<AdminIntelligencePage> {
                   children: [
                     Text(
                       'Official Customs FX Rates (GHS)',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                         color: textColor,
@@ -1000,7 +999,7 @@ class _State extends State<AdminIntelligencePage> {
                     ),
                     Text(
                       'Exchange rates published live to member portal & dashboard calculations.',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 12,
                         color: subTextColor,
                       ),
@@ -1112,7 +1111,7 @@ class _State extends State<AdminIntelligencePage> {
                       : const Icon(Icons.check_rounded, size: 16),
                   label: Text(
                     _forexSaving ? 'Saving...' : 'Save Rates',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13.5,
                     ),
@@ -1173,7 +1172,7 @@ class _State extends State<AdminIntelligencePage> {
                 alignment: Alignment.center,
                 child: Text(
                   symbol,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     color: color,
                     fontWeight: FontWeight.bold,
                     fontSize: 11,
@@ -1183,7 +1182,7 @@ class _State extends State<AdminIntelligencePage> {
               const SizedBox(width: 6),
               Text(
                 code,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                   color: color,
@@ -1192,7 +1191,7 @@ class _State extends State<AdminIntelligencePage> {
               const Spacer(),
               Text(
                 'GHS',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 11,
                   color: isDark ? Colors.white54 : const Color(0xFF64748b),
                   fontWeight: FontWeight.w600,
@@ -1206,7 +1205,7 @@ class _State extends State<AdminIntelligencePage> {
             child: TextField(
               controller: ctrl,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14.5,
                 color: isDark ? Colors.white : const Color(0xFF1A0F0A),

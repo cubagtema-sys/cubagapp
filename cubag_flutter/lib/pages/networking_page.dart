@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
@@ -124,7 +123,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.inter(
+          style: TextStyle(
             color: isSelected ? Colors.white : (isDark ? const Color(0xFFFFF8F3) : _kText),
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
             fontSize: 13,
@@ -153,7 +152,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
             const SizedBox(height: 16),
             Text(
               'No Members Found',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: _kText,
@@ -165,7 +164,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                   ? 'Try refining your keywords or clearing the search query.'
                   : 'There are no active members currently registered in this category.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 15,
                 color: _kMuted,
                 height: 1.4,
@@ -452,7 +451,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                   children: [
                     Text(
                       'Member Information',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
                         color: _kBrown,
@@ -512,7 +511,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                       m['profile_photo'].toString().isEmpty)
                   ? Text(
                       initials,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: _kBrown,
                         fontWeight: FontWeight.w900,
                         fontSize: 18,
@@ -527,7 +526,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                 children: [
                   Text(
                     name,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 19,
                       color: _kText,
@@ -546,7 +545,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                     ),
                     child: Text(
                       (mType.isNotEmpty ? mType : 'MEMBER').toUpperCase(),
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 11,
                         color: color,
                         fontWeight: FontWeight.w900,
@@ -616,7 +615,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                       children: [
                         Text(
                           row['label'].toString(),
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 11,
                             color: _kMuted,
                             fontWeight: FontWeight.w800,
@@ -626,7 +625,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                         const SizedBox(height: 2),
                         Text(
                           row['val'].toString(),
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 15,
                             color: _kText,
                             fontWeight: FontWeight.w600,
@@ -668,7 +667,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
             icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
             label: Text(
               'Start A Conversation',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -694,7 +693,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    textStyle: GoogleFonts.inter(
+                    textStyle: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
@@ -722,7 +721,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    textStyle: GoogleFonts.inter(
+                    textStyle: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),

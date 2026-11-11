@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart' show Response, FormData, MultipartFile;
 import '../components/app_layout.dart';
 import '../components/custom_dropdown.dart';
@@ -994,7 +993,7 @@ class _PaymentsPageState extends State<PaymentsPage>
             Expanded(
               child: Text(
                 'Uploading ${result.files.length} document(s)…',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
@@ -1084,7 +1083,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   Expanded(
                     child: Text(
                       msg,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -1093,7 +1092,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   ),
                 ],
               )
-            : Text(msg, style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            : Text(msg, style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
@@ -1279,7 +1278,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                 Expanded(
                   child: Text(
                     'Still pending: ${resData['message'] ?? 'Please check your phone for the MoMo prompt.'}',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15.5,
                     ),
@@ -1313,7 +1312,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                 Expanded(
                   child: Text(
                     'Check failed — please try again.',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15.5,
                     ),
@@ -1476,7 +1475,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                                 ),
                                                 child: Text(
                                                   'STEP ${curIdx + 1} OF $totalSteps',
-                                                  style: GoogleFonts.inter(
+                                                  style: TextStyle(
                                                     fontSize: 10,
                                                     fontWeight: FontWeight.w800,
                                                     letterSpacing: 0.6,
@@ -1487,7 +1486,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                               const SizedBox(width: 8),
                                               Text(
                                                 labels[curIdx],
-                                                style: GoogleFonts.inter(
+                                                style: TextStyle(
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.w800,
                                                   color: isDark ? Colors.white : const Color(0xFF1A0F0A),
@@ -1518,7 +1517,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                                     const SizedBox(width: 3),
                                                     Text(
                                                       'Back',
-                                                      style: GoogleFonts.inter(
+                                                      style: TextStyle(
                                                         fontSize: 12,
                                                         fontWeight: FontWeight.w700,
                                                         color: const Color(0xFF64748B),
@@ -1578,7 +1577,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           const SizedBox(width: 6),
                           Text(
                             'Secured by WhitsunPay PCI-DSS Compliance',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 13,
                               color: const Color(0xFF64748b),
                               fontWeight: FontWeight.w700,
@@ -1616,7 +1615,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         const SizedBox(height: 20),
                         Text(
                           'Payment Confirmed!',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF1A0F0A),
@@ -1648,7 +1647,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               children: [
                                 Text(
                                   'AMOUNT PAID',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     color: const Color(0xFF16a34a),
                                     fontWeight: FontWeight.w900,
@@ -1658,7 +1657,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 const SizedBox(height: 4),
                                 Text(
                                   'GH₵ ${double.tryParse(_confirmedAmount)?.toStringAsFixed(2) ?? _confirmedAmount}',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 28,
                                     fontWeight: FontWeight.w800,
                                     color: const Color(0xFF15803d),
@@ -1708,7 +1707,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                               : (redirectUrl != null && redirectUrl.isNotEmpty
                                                   ? 'Return to App'
                                                   : 'View Payment History')),
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
                                       ),
@@ -1727,7 +1726,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                     ),
                                     child: Text(
                                       'View Payment History',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 15,
                                       ),
@@ -1746,7 +1745,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           ),
                           child: Text(
                             'Close',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),
@@ -1780,7 +1779,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         const SizedBox(height: 20),
                         Text(
                           'Transaction Failed',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF1A0F0A),
@@ -1812,7 +1811,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             onPressed: () => setState(() => _showError = false),
                             child: Text(
                               'Try Again',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
@@ -1846,7 +1845,7 @@ class _PaymentsPageState extends State<PaymentsPage>
         children: [
           Text(
             'PAYMENT CATEGORY',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 13,
               color: const Color(0xFF64748b),
               fontWeight: FontWeight.w800,
@@ -2044,7 +2043,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                 const SizedBox(width: 6),
                 Text(
                   'RENEWAL COVERAGE SCOPE',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF64748B),
@@ -2113,7 +2112,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           children: [
                             Text(
                               'TOTAL BILL DUE',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.6,
@@ -2129,7 +2128,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 ),
                                 child: Text(
                                   'PARTIALLY PAID',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 9.5,
                                     fontWeight: FontWeight.w800,
                                     color: const Color(0xFF059669),
@@ -2144,7 +2143,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           alignment: Alignment.centerLeft,
                           child: Text(
                             'GH₵ ${_getCurrentBillTotal().toStringAsFixed(2)}',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 26,
                               fontWeight: FontWeight.w900,
                               color: isDark ? Colors.white : const Color(0xFF1A0F0A),
@@ -2171,7 +2170,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             children: [
                               Text(
                                 'Paid: GH₵ ${_renewalAmountPaid.toStringAsFixed(2)}',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w600,
                                   color: const Color(0xFF059669),
@@ -2179,7 +2178,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               ),
                               Text(
                                 'Balance Due: GH₵ ${_renewalBalanceDue.toStringAsFixed(2)}',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w700,
                                   color: isDark ? Colors.white70 : const Color(0xFF334155),
@@ -2204,7 +2203,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         children: [
                           Text(
                             'PAYMENT OPTION',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.5,
@@ -2250,7 +2249,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                       alignment: Alignment.center,
                                       child: Text(
                                         'Full Payment',
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontSize: 13,
                                           fontWeight: !_isInstallmentMode ? FontWeight.w800 : FontWeight.w600,
                                           color: !_isInstallmentMode ? _kOrange : const Color(0xFF64748B),
@@ -2294,7 +2293,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                       alignment: Alignment.center,
                                       child: Text(
                                         'Installment',
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontSize: 13,
                                           fontWeight: _isInstallmentMode ? FontWeight.w800 : FontWeight.w600,
                                           color: _isInstallmentMode ? _kOrange : const Color(0xFF64748B),
@@ -2312,7 +2311,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             const SizedBox(height: 12),
                             Text(
                               'INSTALLMENT AMOUNT TO PAY',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.5,
@@ -2344,7 +2343,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                     ),
                                     child: Text(
                                       'GH₵',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w800,
                                         color: AppColors.accentOrangeText,
@@ -2359,7 +2358,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                       inputFormatters: [
                                         FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
                                       ],
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 19,
                                         fontWeight: FontWeight.w800,
                                         color: isDark ? Colors.white : const Color(0xFF1A0F0A),
@@ -2385,18 +2384,18 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 if (_amountCtrl.text.isNotEmpty && enteredAmt < (minBal - 0.01)) {
                                   return Text(
                                     'Minimum installment is GH₵ ${minBal.toStringAsFixed(2)}',
-                                    style: GoogleFonts.inter(fontSize: 11.5, color: Colors.redAccent, fontWeight: FontWeight.w600),
+                                    style: TextStyle(fontSize: 11.5, color: Colors.redAccent, fontWeight: FontWeight.w600),
                                   );
                                 }
                                 if (_amountCtrl.text.isNotEmpty && enteredAmt > (maxBal + 0.01)) {
                                   return Text(
                                     'Cannot exceed remaining balance of GH₵ ${maxBal.toStringAsFixed(2)}',
-                                    style: GoogleFonts.inter(fontSize: 11.5, color: Colors.redAccent, fontWeight: FontWeight.w600),
+                                    style: TextStyle(fontSize: 11.5, color: Colors.redAccent, fontWeight: FontWeight.w600),
                                   );
                                 }
                                 return Text(
                                   'Remaining balance after payment: GH₵ ${remainingAfter.toStringAsFixed(2)}',
-                                  style: GoogleFonts.inter(fontSize: 11.5, color: const Color(0xFF64748B), fontWeight: FontWeight.w600),
+                                  style: TextStyle(fontSize: 11.5, color: const Color(0xFF64748B), fontWeight: FontWeight.w600),
                                 );
                               },
                             ),
@@ -2443,7 +2442,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               children: [
                                 Text(
                                   'Itemized Fee Breakdown',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
                                     color: isDark ? Colors.white : const Color(0xFF1E293B),
@@ -2451,7 +2450,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 ),
                                 Text(
                                   '${_renewalFeeBreakdown.length} line items • National & District',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 11,
                                     color: const Color(0xFF64748B),
                                   ),
@@ -2488,7 +2487,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 Expanded(
                                   child: Text(
                                     cleanLabel,
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 12.5,
                                       fontWeight: FontWeight.w500,
                                       color: isDark ? Colors.white70 : const Color(0xFF334155),
@@ -2498,7 +2497,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 const SizedBox(width: 8),
                                 Text(
                                   'GH₵ ${item['amount']?.toString() ?? ''}',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w700,
                                     color: isDark ? Colors.white : const Color(0xFF0F172A),
@@ -2519,7 +2518,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                   const SizedBox(width: 5),
                                   Text(
                                     'NATIONAL STATUTORY CHARGES',
-                                    style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.bold, color: _kBlue, letterSpacing: 0.5),
+                                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: _kBlue, letterSpacing: 0.5),
                                   ),
                                 ],
                               ),
@@ -2534,7 +2533,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                   const SizedBox(width: 5),
                                   Text(
                                     'DISTRICT OPERATIONAL CLEARANCE',
-                                    style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.bold, color: _kGreen, letterSpacing: 0.5),
+                                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: _kGreen, letterSpacing: 0.5),
                                   ),
                                 ],
                               ),
@@ -2588,7 +2587,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               children: [
                                 Text(
                                   'New Membership Dues Breakdown',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
                                     color: isDark ? Colors.white : const Color(0xFF1E293B),
@@ -2596,7 +2595,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 ),
                                 Text(
                                   '${_regFeeBreakdown.length} line items included',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 11,
                                     color: const Color(0xFF64748B),
                                   ),
@@ -2628,7 +2627,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 Expanded(
                                   child: Text(
                                     cleanLabel,
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 12.5,
                                       color: isDark ? Colors.white70 : const Color(0xFF334155),
                                     ),
@@ -2637,7 +2636,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 const SizedBox(width: 8),
                                 Text(
                                   'GH₵ ${item['amount']?.toString() ?? ''}',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w700,
                                     color: isDark ? Colors.white : const Color(0xFF0F172A),
@@ -2693,7 +2692,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     Expanded(
                       child: Text(
                         'Your license is active until $expiryStr. Renewal opens $renewStr (30 days before expiry).',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 13,
                           height: 1.4,
                           color: const Color(0xFF065f46),
@@ -2749,7 +2748,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           Expanded(
                             child: Text(
                               'Document submission is Step 1. The Secretariat will vet your documents and issue your official renewal bill before payment can be made.',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 color: isDark ? const Color(0xFFFDBA74) : const Color(0xFFC2410C),
@@ -2778,7 +2777,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           icon: const Icon(Icons.lock_outline_rounded, size: 18),
                           label: Text(
                             'Pay Annual Renewal Dues (Documents Required)',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14.5,
                             ),
@@ -2808,7 +2807,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         icon: const Icon(Icons.upload_file_rounded, size: 18),
                         label: Text(
                           'Submit Renewal Documents (Step 1)',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
                           ),
@@ -2849,7 +2848,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               children: [
                                 Text(
                                   'ANNUAL RENEWAL DUES SETTLED',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 0.5,
@@ -2859,7 +2858,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 const SizedBox(height: 4),
                                 Text(
                                   'Your Annual Renewal Dues (National & District Clearance) have already been fully paid and confirmed for the current operational cycle. No further renewal payment or document submission is required at this time.',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 12.5,
                                     color: isDark ? Colors.white70 : const Color(0xFF065F46),
                                     height: 1.4,
@@ -2885,7 +2884,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         ),
                         icon: Text(
                           'Annual Renewal Already Settled',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
                         ),
                         label: const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
                       ),
@@ -3002,7 +3001,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     children: [
                       Text(
                         title,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: isDark ? Colors.white : const Color(0xFF1A0F0A),
@@ -3011,7 +3010,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       const SizedBox(height: 1),
                       Text(
                         'Upload required statutory verification files',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 11.5,
                           color: const Color(0xFF64748B),
                         ),
@@ -3039,7 +3038,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         const SizedBox(width: 4),
                         Text(
                           'Compliance',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 11.5,
                             color: AppColors.accentOrangeText,
@@ -3120,7 +3119,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             children: [
                               Text(
                                 'Create Application Entry',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: const Color(0xFF1A0F0A),
@@ -3128,7 +3127,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               ),
                               Text(
                                 'Initiate your compliance application to upload required files.',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 14,
                                   color: const Color(0xFF64748b),
                                 ),
@@ -3141,7 +3140,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     const SizedBox(height: 16),
                     Text(
                       'This payment category requires valid compliance documentation. Click below to start your application and upload required documents.',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 15,
                         color: const Color(0xFF475569),
                         height: 1.5,
@@ -3159,7 +3158,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         ),
                         label: Text(
                           'Initialize Application',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
@@ -3210,7 +3209,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         children: [
                           Text(
                             'APPLICATION STATUS',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
                               color: const Color(0xFF64748b),
@@ -3224,7 +3223,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                       .replaceAll('_', ' ')
                                       .toUpperCase()
                                 : 'DRAFT',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w800,
                               color: _complianceStatus == 'revision_requested'
@@ -3248,7 +3247,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       ),
                       child: Text(
                         _allComplianceDocsUploaded ? 'Ready' : 'Incomplete',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
                           color: _allComplianceDocsUploaded ? _kGreen : _kAmber,
@@ -3263,7 +3262,7 @@ class _PaymentsPageState extends State<PaymentsPage>
               // Required Documents List
               Text(
                 'REQUIRED DOCUMENTS',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 13,
                   color: const Color(0xFF64748b),
                   fontWeight: FontWeight.w800,
@@ -3318,7 +3317,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 children: [
                                   Text(
                                     requirement,
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15,
                                       color: const Color(0xFF1A0F0A),
@@ -3338,7 +3337,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                         uploaded
                                             ? 'Uploaded & Verified'
                                             : 'Required for submission',
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontSize: 12.5,
                                           color: uploaded
                                               ? _kGreen
@@ -3367,7 +3366,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             ),
                             label: Text(
                               uploaded ? 'Replace Document' : 'Upload Document',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14.5,
                               ),
@@ -3417,7 +3416,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   icon: const Icon(Icons.arrow_forward_rounded, size: 18),
                   label: Text(
                     'Continue to Payment Method',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -3442,7 +3441,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   icon: const Icon(Icons.arrow_back_rounded, size: 16),
                   label: Text(
                     'Back to Fee Details',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 15.5,
                     ),
@@ -3494,7 +3493,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                 children: [
                   Text(
                     'PAYMENT CHANNEL',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 11,
                       color: const Color(0xFF64748b),
@@ -3503,7 +3502,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   ),
                   Text(
                     'Mobile Money (Instant Verification)',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                       color: const Color(0xFF1A0F0A),
@@ -3518,7 +3517,7 @@ class _PaymentsPageState extends State<PaymentsPage>
           // ── CHANNEL: MOBILE MONEY ──
           Text(
             'SELECT MOBILE CARRIER',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 13,
                 color: const Color(0xFF64748b),
@@ -3569,7 +3568,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               Flexible(
                                 child: Text(
                                   entry['label']!,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: _momoNetwork == entry['id']
                                         ? FontWeight.w800
@@ -3596,7 +3595,7 @@ class _PaymentsPageState extends State<PaymentsPage>
               children: [
                 Text(
                   'MOMO NUMBER',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
                     color: const Color(0xFF64748b),
@@ -3625,7 +3624,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         const SizedBox(width: 5),
                         Text(
                           _carrierName(_momoNetwork),
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.bold,
                             color: AppColors.accentOrangeText,
@@ -3681,7 +3680,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       keyboardType: TextInputType.phone,
                       maxLength: 10,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 2.0,
@@ -3689,7 +3688,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       ),
                       decoration: InputDecoration(
                         hintText: '024XXXXXXX (10 digits)',
-                        hintStyle: GoogleFonts.inter(
+                        hintStyle: TextStyle(
                           color: const Color(0xFF5F6B7E),
                           fontSize: 17,
                           letterSpacing: 1.0,
@@ -3713,7 +3712,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     : (!isPhoneValid
                         ? 'Enter your 10-digit ${_carrierName(_momoNetwork)} number.'
                         : '✓ ${_carrierName(_momoNetwork)} (Push prompt ready)'),
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 13.5,
                   color: (_momoNetwork.isNotEmpty && isPhoneValid)
                       ? _kOrange
@@ -3762,7 +3761,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       children: [
                         Text(
                           'Direct USSD Push Authorization',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 14.5,
                             color: const Color(0xFF0f172a),
@@ -3771,7 +3770,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         const SizedBox(height: 3),
                         Text(
                           'A PIN authorization prompt will appear on your phone screen automatically once you proceed.',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 13.5,
                             color: const Color(0xFF475569),
                             height: 1.35,
@@ -3801,7 +3800,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     _momoNetwork.isNotEmpty
                         ? 'Continue with ${_carrierName(_momoNetwork)}'
                         : 'Select Carrier to Continue',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 17,
@@ -3833,7 +3832,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         isNoDoc
                             ? 'Back to Payment Type'
                             : 'Back to Supporting Documents',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 15.5,
                         ),
@@ -3908,7 +3907,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           const SizedBox(width: 8),
                           Text(
                             'DIGITAL INVOICE SUMMARY',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w900,
                               fontSize: 13,
@@ -3925,7 +3924,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         ),
                         child: Text(
                           'VERIFIED INVOICE',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
                             fontSize: 9.5,
@@ -3952,7 +3951,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     children: [
                       Text(
                         'TOTAL PAYABLE AMOUNT',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFFC2410C),
@@ -3965,7 +3964,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'GH₵ ${double.tryParse(_amountCtrl.text)?.toStringAsFixed(2) ?? _amountCtrl.text}',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w900,
                             color: AppColors.accentOrangeText,
@@ -3982,7 +3981,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           ),
                           child: Text(
                             'PARTIAL INSTALLMENT  •  Remaining Balance: GH₵ ${((_renewalBalanceDue - (double.tryParse(_amountCtrl.text) ?? 0.0)).clamp(0.0, double.infinity)).toStringAsFixed(2)}',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFFB45309),
@@ -4024,7 +4023,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     child: Text(
                       'ITEMIZED CHARGES BREAKDOWN',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF5F6B7E),
@@ -4053,7 +4052,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 Expanded(
                                   child: Text(
                                     _cleanFeeLabel(it['label']?.toString() ?? ''),
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 12.5,
                                       fontWeight: FontWeight.w500,
                                       color: isDark ? Colors.white70 : const Color(0xFF475569),
@@ -4063,7 +4062,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 const SizedBox(width: 10),
                                 Text(
                                   'GH₵ ${double.tryParse(it['amount']?.toString() ?? '0')?.toStringAsFixed(2) ?? it['amount']}',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w700,
                                     color: isDark ? Colors.white : const Color(0xFF1E293B),
@@ -4119,7 +4118,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         )
                       : Text(
                           'Initiate Mobile Payment',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -4169,7 +4168,7 @@ class _PaymentsPageState extends State<PaymentsPage>
           const SizedBox(height: 20),
           Text(
             'Awaiting Approval',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: const Color(0xFF1A0F0A),
@@ -4223,7 +4222,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         child: Text(
                           noticeTitle,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             color: primary,
                             fontSize: 13,
                             fontWeight: FontWeight.w900,
@@ -4313,7 +4312,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     ),
               label: Text(
                 _manualChecking ? 'Verifying...' : "I've Approved — Check Now",
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -4342,7 +4341,7 @@ class _PaymentsPageState extends State<PaymentsPage>
             ),
             child: Text(
               'Cancel & Change Method',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
               ),
@@ -4416,7 +4415,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         children: [
                           Text(
                             title,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 13.5,
                               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                               color: isDark ? Colors.white : const Color(0xFF1E293B),
@@ -4431,7 +4430,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               ),
                               child: Text(
                                 'RECOMMENDED',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w800,
                                   color: const Color(0xFF059669),
@@ -4443,7 +4442,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       const SizedBox(height: 4),
                       Text(
                         subtitle,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 11.5,
                           color: const Color(0xFF64748B),
                           height: 1.3,
@@ -4455,7 +4454,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                 const SizedBox(width: 10),
                 Text(
                   'GH₵ ${amount.toStringAsFixed(2)}',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     color: isSelected ? _kOrange : const Color(0xFF475569),
@@ -4481,7 +4480,7 @@ class _PaymentsPageState extends State<PaymentsPage>
               children: [
                 Text(
                   label,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF64748B),
@@ -4498,7 +4497,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               value,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w700,
                                 color: const Color(0xFF1E293B),
@@ -4509,7 +4508,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       )
                     : Text(
                         value,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: isHighlight ? 18 : 14.5,
                           fontWeight: isHighlight ? FontWeight.w800 : FontWeight.w700,
                           color: isHighlight ? _kOrange : const Color(0xFF1E293B),
@@ -4526,7 +4525,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                 flex: 4,
                 child: Text(
                   label,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF64748B),
@@ -4548,7 +4547,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.right,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 color: const Color(0xFF1E293B),
@@ -4560,7 +4559,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     : Text(
                         value,
                         textAlign: TextAlign.right,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: isHighlight ? 18 : 14,
                           fontWeight: isHighlight ? FontWeight.w800 : FontWeight.w700,
                           color: isHighlight ? _kOrange : const Color(0xFF1E293B),

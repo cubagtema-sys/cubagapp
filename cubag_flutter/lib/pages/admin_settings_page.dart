@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../utils/session_storage.dart';
@@ -300,7 +299,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                         const SizedBox(width: 8),
                         Text(
                           (_user['role']?.toString() ?? 'ADMIN').toUpperCase(),
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             color: AppColors.accentOrangeText,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -327,11 +326,11 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                   indicatorWeight: 3,
                   labelColor: _kOrange,
                   unselectedLabelColor: subTextCol,
-                  labelStyle: GoogleFonts.inter(
+                  labelStyle: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
-                  unselectedLabelStyle: GoogleFonts.inter(
+                  unselectedLabelStyle: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
                   ),
@@ -427,7 +426,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                     children: [
                       Text(
                         'Admin Profile Overview',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                           color: textCol,
@@ -435,7 +434,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                       ),
                       Text(
                         'Account details associated with your logged-in administrator session.',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 13,
                           color: subTextCol,
                         ),
@@ -588,7 +587,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                     children: [
                       Text(
                         'Security & Password Reset',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                           color: textCol,
@@ -596,7 +595,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                       ),
                       Text(
                         'Update your administrator portal login password for enhanced security.',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 13,
                           color: subTextCol,
                         ),
@@ -635,7 +634,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                       Expanded(
                         child: Text(
                           _pwMessage,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             color: _pwSuccess ? _kGreen : _kRed,
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
@@ -752,7 +751,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                       : const Icon(Icons.key_rounded, size: 16),
                   label: Text(
                     'Update',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
@@ -810,7 +809,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                 children: [
                   Text(
                     'Compliance Scoring Weights',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                       color: textCol,
@@ -818,7 +817,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                   ),
                   Text(
                     'Configure point weights used to calculate member rating scores (0 - 100%).',
-                    style: GoogleFonts.inter(fontSize: 13, color: subTextCol),
+                    style: TextStyle(fontSize: 13, color: subTextCol),
                   ),
                 ],
               ),
@@ -854,7 +853,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                   Expanded(
                     child: Text(
                       _settingsMessage,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: _settingsSuccess ? _kGreen : _kRed,
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
@@ -869,7 +868,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
           // 1. Payment Points
           Text(
             '1. Payment & Financial Standing',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
               color: textCol,
@@ -906,7 +905,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
           // 2. Customs Licensing Points
           Text(
             '2. Customs Operating License Standing',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
               color: textCol,
@@ -943,7 +942,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
           // 3. Operational Tasks & Surveys
           Text(
             '3. Association Engagements & Surveys',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
               color: textCol,
@@ -980,7 +979,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
           // 4. AGM Attendance
           Text(
             '4. AGM & Executive Meetings Attendance',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
               color: textCol,
@@ -1042,7 +1041,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                   : const Icon(Icons.save_rounded, size: 16),
               label: Text(
                 'Save Scoring Weights',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
                 ),
@@ -1067,7 +1066,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,
             color: subTextCol,
@@ -1084,7 +1083,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
           ),
           child: Text(
             value,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: textCol,
@@ -1111,7 +1110,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,
             color: subTextCol,
@@ -1121,7 +1120,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
         TextField(
           controller: ctrl,
           obscureText: !show,
-          style: GoogleFonts.inter(fontSize: 14, color: textCol),
+          style: TextStyle(fontSize: 14, color: textCol),
           decoration: InputDecoration(
             filled: true,
             fillColor: inputBg,
@@ -1171,7 +1170,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,
             color: subTextCol,
@@ -1181,7 +1180,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
         TextField(
           controller: ctrl,
           keyboardType: TextInputType.number,
-          style: GoogleFonts.inter(fontSize: 14, color: textCol),
+          style: TextStyle(fontSize: 14, color: textCol),
           decoration: InputDecoration(
             filled: true,
             fillColor: inputBg,

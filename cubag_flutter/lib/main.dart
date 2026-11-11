@@ -51,7 +51,8 @@ void main() async {
   FlutterError.onError = CrashReporting.recordFlutterError;
 
   // Allow GoogleFonts runtime fetching non-blockingly in the background.
-  GoogleFonts.config.allowRuntimeFetching = true;
+  // UI-06: never download fonts at runtime; Public Sans / Source Serif are bundled.
+  GoogleFonts.config.allowRuntimeFetching = false;
   unawaited(Future.microtask(() => _preloadFonts()));
 
   // 2. Silence logs in Production to boost speed
@@ -129,6 +130,8 @@ Future<void> _preloadDeferredLibraries() async {
 
 Future<void> _initFirebase() async {
   if (kIsWeb) return;
+  // Design-preview debug runs (simulator screenshots): no push set-up.
+  if (kDebugMode && const String.fromEnvironment('DESIGN_LOGIN_EMAIL').isNotEmpty) return;
   try {
     await Firebase.initializeApp();
     await CrashReporting.init();
@@ -197,9 +200,11 @@ class _CubagAppState extends State<CubagApp> with WidgetsBindingObserver {
         );
         return MediaQuery(
           data: mediaQuery.copyWith(textScaler: clampedScaler),
-          child: SelectionArea(
-            child: child ?? const SizedBox.shrink(),
-          ),
+          // UI-14: no app-wide SelectionArea. It sat above the Navigator's
+          // Overlay (an error in current Flutter) and made every label
+          // long-press selectable, fighting taps on cards. Screens that need
+          // copyable text (references, receipts) use SelectableText.
+          child: child ?? const SizedBox.shrink(),
         );
       },
     );
@@ -230,16 +235,8 @@ void _protectWebCollections() {
   }
 }
 
-void _preloadFonts() {
-  GoogleFonts.pendingFonts([
-    GoogleFonts.inter(fontWeight: FontWeight.w300),
-    GoogleFonts.inter(fontWeight: FontWeight.w400),
-    GoogleFonts.inter(fontWeight: FontWeight.w500),
-    GoogleFonts.inter(fontWeight: FontWeight.w600),
-    GoogleFonts.inter(fontWeight: FontWeight.w700),
-    GoogleFonts.inter(fontWeight: FontWeight.w800),
-  ]);
-}
+// Fonts are bundled (pubspec.yaml `fonts:`), so there is nothing to preload.
+void _preloadFonts() {}
 
 Future<void> _initHiveCache() async {
   try {

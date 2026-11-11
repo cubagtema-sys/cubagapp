@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../components/app_logo.dart';
@@ -329,7 +328,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         const SizedBox(height: 18),
                         Text(
                           'Awaiting Approval',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: _kText,
@@ -339,7 +338,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         Text(
                           'A Mobile Money prompt has been sent to ${momoPhoneCtrl.text} ($selectedNetwork).\nOpen your phone and enter your PIN to approve.',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 13.5,
                             color: _kMuted,
                             height: 1.5,
@@ -383,7 +382,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                     const SizedBox(width: 6),
                                     Text(
                                       noticeTitle,
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         color: _kBrown,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w900,
@@ -395,7 +394,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                 const SizedBox(height: 6),
                                 Text(
                                   noticeText,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     color: _kText,
                                     fontSize: 11.5,
                                     height: 1.4,
@@ -420,7 +419,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                             children: [
                               Text(
                                 'Amount Due:',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: _kMuted,
@@ -428,7 +427,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                               ),
                               Text(
                                 _currentCourseFee,
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w900,
                                   color: AppColors.accentOrangeText,
@@ -513,7 +512,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                 : const Icon(Icons.check_circle_outline_rounded, size: 18, color: Colors.white),
                             label: Text(
                               processingPayment ? 'Verifying...' : "I've Approved — Check Now",
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -534,7 +533,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           onPressed: () => setDlgState(() => paymentStep = 'input'),
                           child: Text(
                             'Change Phone Number / Network',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               color: _kMuted,
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -566,7 +565,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                   children: [
                                     Text(
                                       'CTI Course Checkout',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                         color: _kText,
@@ -574,7 +573,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                     ),
                                     Text(
                                       'Mobile Money Payment Authorization',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 12,
                                         color: _kMuted,
                                       ),
@@ -608,7 +607,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                 _courseCtrl.text.trim().isNotEmpty
                                     ? _courseCtrl.text.trim()
                                     : 'CTI Customs & Trade Professional Course',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                   color: _kText,
@@ -617,7 +616,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                               const SizedBox(height: 6),
                               Text(
                                 '📅 Cohort Start: $_currentCourseStartDate · $_currentCourseDurationMode',
-                                style: GoogleFonts.inter(fontSize: 12, color: _kMuted),
+                                style: TextStyle(fontSize: 12, color: _kMuted),
                               ),
                               const SizedBox(height: 12),
                               Row(
@@ -625,7 +624,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                 children: [
                                   Text(
                                     'Total Course Fee:',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                       color: _kMuted,
@@ -633,7 +632,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                   ),
                                   Text(
                                     _currentCourseFee,
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w900,
                                       color: AppColors.accentOrangeText,
@@ -648,7 +647,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
 
                         Text(
                           'Select Mobile Carrier',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: _kBrown,
@@ -676,7 +675,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                               selected: selected,
                               selectedColor: _kAccent,
                               backgroundColor: _kCream,
-                              labelStyle: GoogleFonts.inter(
+                              labelStyle: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: selected ? Colors.white : _kText,
@@ -695,7 +694,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
 
                         Text(
                           'Mobile Money Number (10 Digits)',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: _kText,
@@ -711,17 +710,17 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                             FilteringTextInputFormatter.digitsOnly,
                             LengthLimitingTextInputFormatter(10),
                           ],
-                          style: GoogleFonts.inter(fontSize: 14, color: _kText),
+                          style: TextStyle(fontSize: 14, color: _kText),
                           decoration: InputDecoration(
                             hintText: 'e.g. 0244123456',
-                            hintStyle: GoogleFonts.inter(fontSize: 13, color: _kMuted),
+                            hintStyle: TextStyle(fontSize: 13, color: _kMuted),
                             prefixIcon: Icon(Icons.phone_android_rounded, size: 18, color: _kBrown),
                             suffixIcon: selectedNetwork.isNotEmpty
                                 ? Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                                     child: Text(
                                       selectedNetwork,
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
                                         color: AppColors.accentOrangeText,
@@ -755,7 +754,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                             const SizedBox(width: 6),
                             Text(
                               'Secured Mobile Money Gateway (STK Push)',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 11,
                                 color: _kMuted,
                                 fontWeight: FontWeight.w500,
@@ -860,7 +859,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                   )
                                 : Text(
                                     'Pay $_currentCourseFee Now',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -916,7 +915,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                     children: [
                       Text(
                         title,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: _kBrown,
@@ -926,7 +925,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         const SizedBox(height: 2),
                         Text(
                           '${filteredItems.length} of ${items.length} options available',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 12,
                             color: _kMuted,
                           ),
@@ -957,10 +956,10 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                   autofocus: false,
                   onChanged: (val) =>
                       setModalState(() => searchQuery = val.trim()),
-                  style: GoogleFonts.inter(fontSize: 14, color: _kText),
+                  style: TextStyle(fontSize: 14, color: _kText),
                   decoration: InputDecoration(
                     hintText: 'Search port, border station, or terminal...',
-                    hintStyle: GoogleFonts.inter(fontSize: 13, color: _kMuted),
+                    hintStyle: TextStyle(fontSize: 13, color: _kMuted),
                     prefixIcon: Icon(
                       Icons.search_rounded,
                       size: 20,
@@ -1012,7 +1011,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           const SizedBox(height: 8),
                           Text(
                             'No matching ports found',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: _kText,
                               fontSize: 14,
@@ -1020,7 +1019,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           ),
                           Text(
                             'Try typing a different name or station code.',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               color: _kMuted,
                               fontSize: 12,
                             ),
@@ -1080,7 +1079,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                       children: [
                                         Text(
                                           item['label'] as String,
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: isSelected
                                                 ? FontWeight.bold
@@ -1098,7 +1097,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                           const SizedBox(height: 2),
                                           Text(
                                             item['desc'] as String,
-                                            style: GoogleFonts.inter(
+                                            style: TextStyle(
                                               fontSize: 11,
                                               color: _kMuted,
                                             ),
@@ -1222,7 +1221,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                               children: [
                                 Text(
                                   'CUBAG',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     color: _kBrown,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w900,
@@ -1238,7 +1237,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                   ),
                                   child: Text(
                                     _serviceType == 'cti_training' ? 'CTI PORTAL' : 'MEMBER DESK',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 9.5,
                                       fontWeight: FontWeight.w800,
                                       color: AppColors.accentOrangeText,
@@ -1252,7 +1251,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                               _serviceType == 'clearing_agent'
                                   ? 'Find An Accredited Member (Clearing Agent/Forwarder)'
                                   : 'Register A Course',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 color: _kMuted,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
@@ -1275,7 +1274,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         ),
                         label: Text(
                           isMobile ? 'Sign In' : 'Member Sign In',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             color: _kBrown,
                             fontSize: 12.5,
                             fontWeight: FontWeight.bold,
@@ -1351,7 +1350,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
               _serviceType == 'clearing_agent'
                   ? 'Find An Accredited Member (Clearing Agent/Forwarder)'
                   : 'Register A Course',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 color: _kBrown,
                 fontSize: isMobile ? 20 : 24,
                 fontWeight: FontWeight.w900,
@@ -1362,7 +1361,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
               _serviceType == 'clearing_agent'
                   ? 'Submit your cargo clearance details below. You will instantly be matched with accredited CUBAG members, clearing agents, and freight forwarders across Ghana.'
                   : 'Submit your enrolment details below for CTI certification and professional courses.',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 color: _kMuted,
                 fontSize: 13,
                 height: 1.5,
@@ -1462,7 +1461,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           ),
                           child: Text(
                             'OFFICIAL CTI COHORT',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
                               color: AppColors.accentOrangeText,
@@ -1473,7 +1472,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         const Spacer(),
                         Text(
                           _currentCourseFee,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w900,
                             color: AppColors.accentOrangeText,
@@ -1487,7 +1486,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                       _courseCtrl.text.isNotEmpty
                           ? _courseCtrl.text
                           : 'Customs & Logistics Professional Certification',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: _kText,
@@ -1505,7 +1504,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                             const SizedBox(width: 5),
                             Text(
                               _currentCourseStartDate,
-                              style: GoogleFonts.inter(fontSize: 12.5, color: _kMuted),
+                              style: TextStyle(fontSize: 12.5, color: _kMuted),
                             ),
                           ],
                         ),
@@ -1516,7 +1515,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                             const SizedBox(width: 5),
                             Text(
                               _currentCourseDurationMode,
-                              style: GoogleFonts.inter(fontSize: 12.5, color: _kMuted),
+                              style: TextStyle(fontSize: 12.5, color: _kMuted),
                             ),
                           ],
                         ),
@@ -1527,7 +1526,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                             const SizedBox(width: 5),
                             Text(
                               'Accredited Certificate',
-                              style: GoogleFonts.inter(fontSize: 12.5, color: _kGreen, fontWeight: FontWeight.w600),
+                              style: TextStyle(fontSize: 12.5, color: _kGreen, fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),
@@ -1791,12 +1790,12 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
               validator: (v) => (v == null || v.trim().isEmpty)
                   ? 'Please provide brief details about your cargo or request'
                   : null,
-              style: GoogleFonts.inter(color: _kText, fontSize: 14),
+              style: TextStyle(color: _kText, fontSize: 14),
               decoration: InputDecoration(
                 hintText: _serviceType == 'clearing_agent'
                     ? 'e.g. 1x40ft container of electrical accessories arriving at Tema Port. Need assistance with ICUMS declaration, GRA duty assessment, and port delivery.'
                     : 'e.g. Enrolling 2 staff members in CTI ICUMS Classification Course for September 2026 intake.',
-                hintStyle: GoogleFonts.inter(color: _kMuted, fontSize: 13),
+                hintStyle: TextStyle(color: _kMuted, fontSize: 13),
                 filled: true,
                 fillColor: _kCream,
                 contentPadding: const EdgeInsets.all(16),
@@ -1849,7 +1848,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                             : (_coursePayableInApp
                                 ? 'Proceed to Course Payment ($_currentCourseFee)'
                                 : 'Submit Enrolment Request'),
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1897,7 +1896,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                       Flexible(
                         child: Text(
                           title,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: _kText,
@@ -1918,7 +1917,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           ),
                           child: Text(
                             'LOCKED',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
                               color: _kBrown,
@@ -1930,7 +1929,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                   ),
                   Text(
                     subtitle,
-                    style: GoogleFonts.inter(fontSize: 11, color: _kMuted),
+                    style: TextStyle(fontSize: 11, color: _kMuted),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1963,7 +1962,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
           width: 140,
           child: Text(
             label,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: _kMuted,
@@ -1974,7 +1973,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
         Expanded(
           child: Text(
             value,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,
               color: _kText,
@@ -1987,7 +1986,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
 
   Widget _formLabel(String label) => Text(
     label,
-    style: GoogleFonts.inter(
+    style: TextStyle(
       color: _kBrown,
       fontSize: 13,
       fontWeight: FontWeight.bold,
@@ -2013,10 +2012,10 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
           ? (context, {required currentLength, required isFocused, maxLength}) =>
               null
           : null,
-      style: GoogleFonts.inter(color: _kText, fontSize: 14),
+      style: TextStyle(color: _kText, fontSize: 14),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: GoogleFonts.inter(color: _kMuted, fontSize: 13),
+        hintStyle: TextStyle(color: _kMuted, fontSize: 13),
         prefixIcon: Icon(icon, size: 18, color: _kMuted),
         filled: true,
         fillColor: _kCream,
@@ -2126,7 +2125,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           _serviceType == 'cti_training'
                               ? 'Request Logged with CUBAG Secretariat!'
                               : 'Request Logged with CUBAG Secretariat!',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 18,
                             color: _kText,
@@ -2137,7 +2136,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           _serviceType == 'cti_training'
                               ? 'CTI Reference: ${_referenceNumber != null ? _referenceNumber!.replaceAll('GSR-', 'CTI-') : 'CTI-2026-E3A678'} · Port: $_primaryPort'
                               : 'Tracking Ref: ${_referenceNumber ?? ''} · Port: $_primaryPort',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             color: _kMuted,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -2189,7 +2188,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                               _courseCtrl.text.trim().isNotEmpty
                                   ? _courseCtrl.text.trim()
                                   : 'CTI Customs & Trade Professional Course',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: _kText,
@@ -2207,7 +2206,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                             ),
                             child: Text(
                               'Paid ($_currentCourseFee)',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 color: _kGreen,
@@ -2258,7 +2257,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                     icon: const Icon(Icons.event_available_rounded, size: 20),
                     label: Text(
                       'Add to Calendar',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                       ),
@@ -2289,7 +2288,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                   ),
                   child: Text(
                     '💡 Below are accredited CUBAG Clearing Agents matching your port. Click any member below to view their verified credentials, contact details, and direct connections.',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 13,
                       color: const Color(0xFF1e40af),
                       height: 1.45,
@@ -2330,7 +2329,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                     children: [
                       Text(
                         'ACCREDITED CLEARING AGENTS',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           color: _kBrown,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -2340,7 +2339,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                       const SizedBox(height: 2),
                       Text(
                         'Verified Members',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w900,
                           color: _kText,
@@ -2364,7 +2363,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         const SizedBox(width: 4),
                         Text(
                           'Good Standing Only',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                             color: _kGreen,
@@ -2387,11 +2386,11 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                 child: TextField(
                   controller: _agentSearchCtrl,
                   onChanged: (val) => setState(() {}),
-                  style: GoogleFonts.inter(fontSize: 13, color: _kText),
+                  style: TextStyle(fontSize: 13, color: _kText),
                   decoration: InputDecoration(
                     hintText:
                         'Search clearing agents by name, company, license #...',
-                    hintStyle: GoogleFonts.inter(fontSize: 13, color: _kMuted),
+                    hintStyle: TextStyle(fontSize: 13, color: _kMuted),
                     prefixIcon: Icon(
                       Icons.search_rounded,
                       size: 20,
@@ -2440,7 +2439,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           child: ChoiceChip(
                             label: Text(
                               port,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: isSel
                                     ? FontWeight.bold
@@ -2488,7 +2487,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                       const SizedBox(height: 8),
                       Text(
                         'No clearing agents found',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: _kText,
@@ -2497,7 +2496,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                       const SizedBox(height: 4),
                       Text(
                         'Try clearing the search box or selecting "All" ports.',
-                        style: GoogleFonts.inter(fontSize: 12, color: _kMuted),
+                        style: TextStyle(fontSize: 12, color: _kMuted),
                       ),
                     ],
                   ),
@@ -2544,7 +2543,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                 ),
                 child: Text(
                   'Submit Another Request',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: _kBrown,
                   ),
@@ -2565,7 +2564,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                 ),
                 child: Text(
                   'Back to Portal',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -2627,7 +2626,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                 Flexible(
                                   child: Text(
                                     company,
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,
                                       color: _kText,
@@ -2652,7 +2651,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         name.isNotEmpty && name != company
                             ? '$name · $port'
                             : port,
-                        style: GoogleFonts.inter(fontSize: 12, color: _kMuted),
+                        style: TextStyle(fontSize: 12, color: _kMuted),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -2670,7 +2669,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                             ),
                             child: Text(
                               memNo,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                                 color: _kBrown,
@@ -2680,7 +2679,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           const SizedBox(width: 8),
                           Text(
                             type,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 11,
                               color: _kMuted,
                             ),
@@ -2688,7 +2687,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           const Spacer(),
                           Text(
                             'View Profile & Contact',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: AppColors.accentOrangeText,
@@ -2752,7 +2751,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
               Text(
                 company,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 20,
                   color: _kText,
@@ -2761,7 +2760,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
               const SizedBox(height: 4),
               Text(
                 'Accredited CUBAG Clearing Agent',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 12,
                   color: _kGreen,
                   fontWeight: FontWeight.bold,
@@ -2821,7 +2820,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         icon: const Icon(Icons.phone_outlined, size: 16),
                         label: Text(
                           'Call Member',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
@@ -2845,7 +2844,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         icon: const Icon(Icons.email_outlined, size: 16),
                         label: Text(
                           'Send Email',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
@@ -2873,7 +2872,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                     onPressed: () => Navigator.of(ctx).pop(),
                     child: Text(
                       'Close',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: _kText,
                       ),
@@ -2896,7 +2895,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
           width: 140,
           child: Text(
             label,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
               color: _kMuted,
@@ -2906,7 +2905,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
         Expanded(
           child: Text(
             value,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: _kText,
