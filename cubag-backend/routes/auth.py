@@ -2051,18 +2051,21 @@ def biometric_revoke():
     conn = get_db()
     try:
         with conn.cursor() as cursor:
+            # A presented credential always revokes itself, whoever is signed in
+            # (the phone may hold a credential for a different account).
+            presented = data.get('biometric_token')
+            if presented:
+                row, _reason = biometric_tokens.check(cursor, presented, device_id)
+                if row is not None:
+                    biometric_tokens.revoke_row(cursor, row['id'], 'user_revoked')
             if member_id:
                 if data.get('all') is True:
                     biometric_tokens.revoke_all(cursor, member_id, 'user_revoked_all')
                 elif biometric_tokens.valid_device_id(device_id):
                     biometric_tokens.revoke_device(cursor, member_id, device_id)
-                else:
+                elif not presented:
                     return jsonify({'message': 'device_id is required.'}), 400
-            else:
-                row, _reason = biometric_tokens.check(cursor, data.get('biometric_token'), device_id)
-                if row is not None:
-                    biometric_tokens.revoke_row(cursor, row['id'], 'user_revoked')
-                # Same answer whether or not the credential was valid.
+            # Signed out: same answer whether or not the credential was valid.
             conn.commit()
             return jsonify({'message': 'Biometric sign-in has been turned off.'}), 200
     except Exception as e:

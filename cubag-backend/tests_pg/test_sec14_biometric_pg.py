@@ -268,3 +268,22 @@ def test_deleting_the_member_row_cascades(member, auth, client, sql):
     uid, _ = _setup(member, auth, client)
     sql('DELETE FROM members WHERE id = %s', (uid,))
     assert sql('SELECT COUNT(*) AS n FROM biometric_tokens')[0]['n'] == 0
+
+
+def test_presented_credential_is_revoked_even_when_someone_else_is_signed_in(member, auth, client, sql):
+    """Shared phone: member B signs in and turns biometrics off; A's credential held by the phone dies too."""
+    uid, cred = _setup(member, auth, client)
+    other = member(email='other@example.test')
+    r = client.post(f'{API}/biometric/revoke', headers=auth(other), json={'device_id': DEVICE, 'biometric_token': cred})
+    assert r.status_code == 200
+    assert _row(sql, uid)['revoked_reason'] == 'user_revoked'
+    assert _refused(_bio_login(client, cred))
+
+
+def test_signed_out_device_revokes_itself_but_a_guess_revokes_nothing(member, auth, client, sql):
+    uid, cred = _setup(member, auth, client)
+    row_id = cred.split('.', 1)[0]
+    assert client.post(f'{API}/biometric/revoke', json={'device_id': DEVICE, 'biometric_token': f'{row_id}.' + 'W' * 43}).status_code == 200
+    assert _row(sql, uid)['revoked_at'] is None
+    assert client.post(f'{API}/biometric/revoke', json={'device_id': DEVICE, 'biometric_token': cred}).status_code == 200
+    assert _row(sql, uid)['revoked_reason'] == 'user_revoked'
