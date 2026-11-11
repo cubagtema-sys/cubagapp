@@ -8,6 +8,7 @@ import '../utils/biometric_credential.dart';
 import 'socket_service.dart';
 import 'push_notification_service.dart';
 import '../utils/app_logger.dart';
+import '../utils/auth_messages.dart';
 
 class AuthService extends ChangeNotifier {
   static final AuthService _instance = AuthService._internal();
@@ -445,53 +446,9 @@ class AuthService extends ChangeNotifier {
         return null;
       }
 
-      String errorMessage = 'Unable to sign in. Please try again.';
-      if (response.data is Map<String, dynamic>) {
-        final data = response.data as Map<String, dynamic>;
-        if (data['message'] != null) {
-          errorMessage = data['message'].toString();
-        }
-      } else if (response.data is String) {
-        errorMessage = response.data.toString();
-      }
-
-      if (response.statusCode == 401) {
-        return 'Incorrect email or password.';
-      }
-      if (response.statusCode == 403) {
-        return errorMessage;
-      }
-      if ((response.statusCode ?? 0) >= 500) {
-        return 'Server error. Please try again in a few seconds.';
-      }
-      return errorMessage;
+      return loginErrorFromResponse(response.statusCode, response.data);
     } catch (e) {
-      if (e is DioException) {
-        if (e.response != null) {
-          final statusCode = e.response!.statusCode;
-          if (statusCode == 401) {
-            return 'Incorrect email or password.';
-          }
-          if (statusCode == 403) {
-            final data = e.response!.data;
-            if (data is Map && data['message'] != null) {
-              return data['message'].toString();
-            }
-            return 'Account suspended or access denied.';
-          }
-          if ((statusCode ?? 0) >= 500) {
-            return 'Server error. Please try again in a few seconds.';
-          }
-        }
-      }
-      final err = e.toString().toLowerCase();
-      if (err.contains('timeout')) {
-        return 'Server request timed out. Please try again.';
-      }
-      if (err.contains('connect') || err.contains('socket')) {
-        return 'Unable to reach the server. Please check your internet connection and try again.';
-      }
-      return 'Unable to sign in. Please check your credentials and try again.';
+      return loginErrorFromException(e);
     }
   }
 

@@ -101,4 +101,26 @@ void main() {
       expect(AppValidators.isValidGhanaPhone(''), isFalse);
     });
   });
+
+  group('Email validation (registration)', () {
+    for (final ok in ['kofi@gmail.com', 'ama.mensah@cubag.org.gh', ' a+b@x.io ']) {
+      test('accepts $ok', () => expect(AppValidators.isValidEmail(ok), isTrue));
+    }
+    for (final bad in ['', 'kofi', 'kofi@gmail', 'kofi@@gmail.com', 'kofi @gmail.com',
+        '@gmail.com', 'kofi@gmail.c', 'kofi@gmail..com', 'kofi@.com']) {
+      test('rejects "$bad"', () => expect(AppValidators.isValidEmail(bad), isFalse));
+    }
+  });
+
+  group('New password (registration / reset)', () {
+    test('mismatch is reported first', () {
+      expect(AppValidators.newPasswordError('abcdefgh', 'abcdefgX'), 'Passwords do not match.');
+    });
+    test('shorter than the server minimum', () {
+      expect(AppValidators.newPasswordError('short', 'short'), contains('at least 8'));
+    });
+    test('8 or more matching characters is fine', () {
+      expect(AppValidators.newPasswordError('12345678', '12345678'), isNull);
+    });
+  });
 }

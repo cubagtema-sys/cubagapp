@@ -125,6 +125,11 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
+    if (!AppValidators.isValidEmail(_emailCtrl.text)) {
+      _err('Please enter a valid email address (e.g. name@company.com).');
+      return;
+    }
+
     if (!isCorporate && !AppValidators.isValidName(primaryName)) {
       _err(
         'Please provide a valid Full Name (letters, hyphens, and apostrophes allowed).',
@@ -248,12 +253,9 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _register() async {
-    if (_pwCtrl.text != _cpwCtrl.text) {
-      _err('Passwords do not match.');
-      return;
-    }
-    if (_pwCtrl.text.length < 8) {
-      _err('Password must be at least 8 characters.');
+    final pwError = AppValidators.newPasswordError(_pwCtrl.text, _cpwCtrl.text);
+    if (pwError != null) {
+      _err(pwError);
       return;
     }
     _err('');

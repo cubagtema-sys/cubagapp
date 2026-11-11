@@ -106,4 +106,24 @@ class AppValidators {
     final normalized = normalizePhoneNumber(phone);
     return RegExp(r'^0[0-9]{9}$').hasMatch(normalized);
   }
+
+  /// Practical email check: something@domain.tld, no spaces. Catches typos
+  /// like `kofi@gmail` before a sign-up code is sent to a dead address.
+  static bool isValidEmail(String email) {
+    final e = email.trim();
+    if (e.length > 254) return false;
+    return RegExp(r'^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$').hasMatch(e) &&
+        !e.contains('..');
+  }
+
+  /// Same minimum the server enforces (8 characters). Returns an error
+  /// message, or null when the new password and its confirmation are fine.
+  static const minPasswordLength = 8;
+  static String? newPasswordError(String password, String confirmation) {
+    if (password != confirmation) return 'Passwords do not match.';
+    if (password.length < minPasswordLength) {
+      return 'Password must be at least $minPasswordLength characters.';
+    }
+    return null;
+  }
 }

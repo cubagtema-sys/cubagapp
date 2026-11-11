@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../components/app_logo.dart';
 import '../utils/app_colors.dart';
+import '../utils/validators.dart';
 
 // Balanced CUBAG Brand Palette
 const _kBrown = Color(0xFF6B3E26); // Primary Brown
@@ -33,12 +34,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   String _error = '';
 
   Future<void> _reset() async {
-    if (_pwCtrl.text != _cpwCtrl.text) {
-      setState(() => _error = 'Passwords do not match.');
-      return;
-    }
-    if (_pwCtrl.text.length < 8) {
-      setState(() => _error = 'Password must be at least 8 characters.');
+    final pwError = AppValidators.newPasswordError(_pwCtrl.text, _cpwCtrl.text);
+    if (pwError != null) {
+      setState(() => _error = pwError);
       return;
     }
     setState(() {
