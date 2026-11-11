@@ -9,6 +9,9 @@ Run:
     createdb cubag_test
     TEST_DATABASE_URL="host=127.0.0.1 port=5432 user=postgres dbname=cubag_test" \
         python -m pytest tests_pg -q
+
+Run this suite on its own. Do not combine it with tests_security in one pytest
+invocation: that suite replaces psycopg2 with an in-memory fake.
 """
 import os
 import re
