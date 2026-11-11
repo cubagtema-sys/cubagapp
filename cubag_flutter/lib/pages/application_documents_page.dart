@@ -9,13 +9,12 @@ import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/session_storage.dart';
-import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
+import '../components/cubag_ui.dart';
+import '../components/home/home_sections.dart';
 
-// ── Colour constants ─────────────────────────────────────────────────────────
-const _kGreen = Color(0xFF10b981);
-const _kOrange = Color(0xFFFF5000);
-const _kRed = Color(0xFFef4444);
-const _kGrey = Color(0xFF6b6375);
+const _kGreen = CubagColors.valid;
+const _kRed = CubagColors.lapsed;
 
 class ApplicationDocumentsPage extends StatefulWidget {
   const ApplicationDocumentsPage({super.key});
@@ -236,703 +235,164 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
   void _showSnack(String msg, Color color) {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 4),
-      ),
+      SnackBar(content: Text(msg), duration: const Duration(seconds: 4)),
     );
+  }
+
+  /// Never show a zero or missing fee as an amount.
+  String get _regFeeLabel {
+    final v = double.tryParse(_registrationFeeAmount.replaceAll(',', ''));
+    return (v != null && v > 0) ? 'GH₵ ${v.toStringAsFixed(2)}' : 'the registration fee';
+  }
+
+  void _pay(String fee) =>
+      context.go('/payments?fee=${Uri.encodeComponent(fee)}&redirect=/application-documents');
+
+  /// The onboarding sequence, with the one action that moves it forward.
+  /// Same rules as before the redesign; only the presentation changed.
+  List<ChecklistStep> _steps() {
+    final noDocs = _totalDocs == 0;
+    final submitted = _memberStatus == 'pending_review' || _memberStatus == 'active';
+    final allUploaded = noDocs || _uploadedCount >= _totalDocs;
+    final approved = _allRequiredApproved || _memberStatus == 'approved';
+
+    Widget button(String label, VoidCallback? onPressed) => Align(
+          alignment: Alignment.centerLeft,
+          child: FilledButton(onPressed: onPressed, child: Text(label)),
+        );
+
+    final steps = <ChecklistStep>[];
+    if (!noDocs) {
+      steps.add(ChecklistStep(
+        'Upload your documents',
+        detail: '$_uploadedCount of $_totalDocs uploaded',
+        state: allUploaded ? ChecklistState.done : ChecklistState.current,
+      ));
+      steps.add(ChecklistStep(
+        'Submit for review',
+        detail: submitted ? 'Submitted to the Secretariat' : 'Send your documents to the Secretariat',
+        state: submitted ? ChecklistState.done : (allUploaded ? ChecklistState.current : ChecklistState.upcoming),
+        action: button(
+          _submitting ? 'Submitting…' : 'Submit application',
+          _submitting ? null : _submitApplication,
+        ),
+      ));
+    }
+    final feeState = _registrationFeePaid
+        ? ChecklistState.done
+        : ((noDocs || submitted) ? ChecklistState.current : ChecklistState.upcoming);
+    final payPackage = submitted && approved && !_registrationFeePaid;
+    steps.add(ChecklistStep(
+      payPackage ? 'Pay the membership package' : 'Pay the registration fee',
+      detail: _registrationFeePaid
+          ? 'Paid'
+          : (payPackage
+              ? 'Your documents are approved'
+              : 'Paid once, $_regFeeLabel'),
+      state: feeState,
+      action: button(
+        'Pay now',
+        () => _pay(payPackage ? 'Membership Entrance Package' : 'Registration Fee'),
+      ),
+    ));
+    steps.add(ChecklistStep(
+      'Secretariat approval',
+      detail: 'We\'ll notify you when your membership is active',
+      state: (_registrationFeePaid && (noDocs || submitted)) ? ChecklistState.current : ChecklistState.upcoming,
+    ));
+    return steps;
   }
 
   @override
   Widget build(BuildContext context) {
     if (_loading && _requirements.isEmpty) {
       return const AppLayout(
-        title: 'Complete Your Application',
-        child: Center(
-          child: CircularProgressIndicator(color: _kOrange),
-        ),
+        title: 'Your application',
+        background: CubagColors.paper,
+        child: Center(child: CircularProgressIndicator()),
       );
     }
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final progress = _totalDocs > 0 ? _uploadedCount / _totalDocs : 0.0;
-
     return AppLayout(
-      title: 'Complete Your Application',
+      title: 'Your application',
       scrollable: false,
-      child: RefreshIndicator(
+      background: CubagColors.paper,
+      child: PageBody(
         onRefresh: _fetchRequirements,
-        color: _kOrange,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 24,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Header card ──
-                    _buildHeaderCard(isDark, progress),
-                    const SizedBox(height: 16),
-
-                    // ── Primary Action / Payment Card (PLACED AT TOP BEFORE DOCUMENTS LIST) ──
-                    _buildActionCard(isDark),
-                    const SizedBox(height: 24),
-
-                    // ── Requirements list ──
-                    if (_loading)
-                      const Center(
-                        child: CircularProgressIndicator(color: _kOrange),
-                      )
-                    else if (_totalDocs > 0 && _requirements.isNotEmpty) ...[
-                      Text(
-                        'Required Documents (${_requirements.length})',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: isDark
-                              ? Colors.white
-                              : const Color(0xFF1A0F0A),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Upload each document as a PDF or image (max 15MB each).',
-                        style: TextStyle(fontSize: 15, color: _kGrey),
-                      ),
-                      const SizedBox(height: 16),
-                      ..._requirements
-                          .asMap()
-                          .map(
-                            (i, req) =>
-                                MapEntry(i, _buildDocCard(req, i + 1, isDark)),
-                          )
-                          .values,
-                    ],
-                    const SizedBox(height: 40),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderCard(bool isDark, double progress) {
-    final hasDocs = _totalDocs > 0;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6B3E26), Color(0xFF3E2418)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF3E2418).withAlpha(45),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(hasDocs ? Icons.folder_open_rounded : Icons.verified_user_rounded, color: _kOrange, size: 28),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'CUBAG Membership Application',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
+          const PageIntro(
+            'Complete your application',
+            subtitle: 'Your account is ready. Finish these steps and the Secretariat will activate your membership.',
           ),
-          const SizedBox(height: 12),
-          Text(
-            hasDocs
-                ? 'Your account has been created. To complete your CUBAG membership, please upload all required documents below. The secretariat will review and activate your account.'
-                : 'Your account has been created. To complete your CUBAG membership, please pay your Registration Fee below to activate your account.',
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.white,
-              fontWeight: FontWeight.w400,
-              height: 1.55,
-            ),
-          ),
-          if (hasDocs) ...[
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '$_uploadedCount of $_totalDocs documents uploaded',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  '${(progress * 100).toInt()}%',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.accentOrangeText,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 8,
-                backgroundColor: Colors.white.withAlpha(50),
-                valueColor: const AlwaysStoppedAnimation<Color>(_kOrange),
-              ),
-            ),
+          const SizedBox(height: CubagSpace.xl),
+          StepChecklist(steps: _steps()),
+          if (_totalDocs > 0 && _requirements.isNotEmpty) ...[
+            const SizedBox(height: CubagSpace.xxl),
+            const Text('Documents', style: CubagType.headline),
+            const SizedBox(height: CubagSpace.xxs),
+            const Text('PDF or photo, up to 15 MB each.', style: CubagType.small),
+            const SizedBox(height: CubagSpace.sm),
+            HomeGroup(children: [for (final r in _requirements) _docRow(Map<String, dynamic>.from(r as Map))]),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildDocCard(Map<String, dynamic> req, int index, bool isDark) {
+  Widget _docRow(Map<String, dynamic> req) {
     final key = req['key']?.toString() ?? '';
     final status = req['status']?.toString() ?? 'not_uploaded';
     final uploaded = req['uploaded'] == true;
     final isUploading = _uploading[key] == true;
     final fileName = req['file_name']?.toString();
-    final adminNote = req['admin_note']?.toString();
+    final note = req['admin_note']?.toString().trim() ?? '';
 
-    Color statusColor;
-    IconData statusIcon;
-    String statusLabel;
+    final (chipLabel, chipKind) = switch (status) {
+      'approved' => ('Approved', StatusKind.good),
+      'rejected' => ('Rejected', StatusKind.bad),
+      'pending' => ('Under review', StatusKind.pending),
+      _ => (uploaded ? 'Under review' : 'Not uploaded', uploaded ? StatusKind.pending : StatusKind.neutral),
+    };
+    final canUpload = !uploaded || status == 'rejected';
 
-    switch (status) {
-      case 'approved':
-        statusColor = _kGreen;
-        statusIcon = Icons.check_circle_rounded;
-        statusLabel = 'Approved';
-        break;
-      case 'rejected':
-        statusColor = _kRed;
-        statusIcon = Icons.cancel_rounded;
-        statusLabel = 'Rejected';
-        break;
-      case 'pending':
-        statusColor = _kOrange;
-        statusIcon = Icons.hourglass_top_rounded;
-        statusLabel = 'Pending Review';
-        break;
-      default:
-        statusColor = _kGrey;
-        statusIcon = Icons.upload_file_rounded;
-        statusLabel = 'Not Uploaded';
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF281710) : Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: uploaded
-              ? statusColor.withAlpha(100)
-              : (isDark ? const Color(0xFF4D2D20) : const Color(0xFFE8DED6)),
-          width: 1.5,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Index + status icon
-          Column(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: statusColor.withAlpha(30),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: uploaded
-                      ? Icon(statusIcon, color: statusColor, size: 18)
-                      : Text(
-                          '$index',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: _kGrey,
-                          ),
-                        ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 14),
-          // Content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  req['label']?.toString() ?? '',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : const Color(0xFF1A0F0A),
-                  ),
-                ),
-                if (uploaded && fileName != null) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.attach_file_rounded,
-                        size: 13,
-                        color: statusColor,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          fileName,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: statusColor,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-                if (adminNote != null && adminNote.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    'Admin note: $adminNote',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: _kRed,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 10),
-                if (isUploading)
-                  SizedBox(
-                    height: 38,
-                    child: ElevatedButton.icon(
-                      onPressed: null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey.shade100,
-                        foregroundColor: const Color(0xFF374151),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                      ),
-                      icon: const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: _kOrange,
-                        ),
-                      ),
-                      label: Text(
-                        'Uploading...',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  )
-                else if (status == 'approved')
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _kGreen.withAlpha(20),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: _kGreen.withAlpha(80)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.check_circle_rounded, size: 15, color: _kGreen),
-                        const SizedBox(width: 5),
-                        Text(
-                          'Verified',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                            color: _kGreen,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else if (uploaded && status != 'rejected')
-                  Opacity(
-                    opacity: 0.55,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.lock_outline_rounded, size: 14, color: Color(0xFF6B7280)),
-                          const SizedBox(width: 5),
-                          Text(
-                            'Under Review',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                              color: const Color(0xFF6B7280),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                else
-                  SizedBox(
-                    height: 38,
-                    child: ElevatedButton.icon(
-                      key: ValueKey('upload_btn_${req['id']}_$isDark'),
-                      onPressed: () => _pickAndUpload(req),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: status == 'rejected' ? _kRed : _kOrange,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                      ),
-                      icon: Icon(
-                        status == 'rejected'
-                            ? Icons.error_outline_rounded
-                            : Icons.upload_rounded,
-                        size: 16,
-                      ),
-                      label: Text(
-                        status == 'rejected' ? 'Re-upload' : 'Upload',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          // Status badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: statusColor.withAlpha(20),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              statusLabel,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: statusColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionCard(bool isDark) {
-    final alreadySubmitted =
-        _memberStatus == 'pending_review' || _memberStatus == 'active';
-    final allUploaded = _uploadedCount >= _totalDocs && _totalDocs > 0;
-    final canSubmit = allUploaded && !_submitting && !alreadySubmitted;
-
-    Color cardBg = isDark ? const Color(0xFF281710) : const Color(0xFFf8fafc);
-    Color borderColor = isDark
-        ? const Color(0xFF4D2D20)
-        : const Color(0xFFE8DED6);
-    String titleText = 'Application Steps';
-    String descText = '';
-    String btnText = '';
-    IconData btnIcon = Icons.send_rounded;
-    Color btnBg = _kGreen;
-    VoidCallback? onBtnPressed;
-
-    final displayRegFee = _registrationFeeAmount.isNotEmpty
-        ? 'GHS $_registrationFeeAmount'
-        : (_loading ? '...' : 'GHS 1.00');
-
-    if (_totalDocs == 0) {
-      if (_registrationFeePaid) {
-        cardBg = isDark ? const Color(0xFF062e1e) : const Color(0xFFf0fdf4);
-        borderColor = const Color(0xFF86efac);
-        titleText = '✅ Registration Fee Paid & Confirmed';
-        descText =
-            'Your Registration Fee has been successfully received. Your membership application is complete and being processed for activation.';
-        btnText = 'Registration Fee Paid (Confirmed)';
-        btnIcon = Icons.check_circle_rounded;
-        btnBg = Colors.grey.shade400;
-        onBtnPressed = null;
-      } else {
-        cardBg = isDark ? const Color(0xFF062e1e) : const Color(0xFFf0fdf4);
-        borderColor = const Color(0xFF86efac);
-        titleText = 'Pay Fee to Complete Membership';
-        descText =
-            'No document uploads are required for your membership category. Please pay your fee to complete your membership activation.';
-        btnText = 'Pay Fee';
-        btnIcon = Icons.payment_rounded;
-        btnBg = const Color(0xFFea580c);
-        onBtnPressed = () {
-          context.go(
-            '/payments?fee=Registration%20Fee&redirect=/application-documents',
-          );
-        };
-      }
-    } else if (alreadySubmitted) {
-      if (_registrationFeePaid) {
-        cardBg = isDark ? const Color(0xFF062e1e) : const Color(0xFFf0fdf4);
-        borderColor = const Color(0xFF86efac);
-        titleText = 'Registration Fee Paid';
-        descText =
-            'Your Registration Fee has been successfully paid and confirmed. Your application documents are currently being reviewed by the Secretariat for final membership activation.';
-        btnText = 'Registration Fee Paid (Confirmed)';
-        btnIcon = Icons.check_circle_rounded;
-        btnBg = Colors.grey.shade400;
-        onBtnPressed = null;
-      } else if (_allRequiredApproved || _memberStatus == 'approved') {
-        cardBg = isDark ? const Color(0xFF062e1e) : const Color(0xFFf0fdf4);
-        borderColor = const Color(0xFF86efac);
-        titleText = '✅ Documents Approved! Pay Fee';
-        descText =
-            'Great news! Your $_totalDocs application documents have been reviewed and approved by the CUBAG Secretariat. Please pay your fee to complete your membership activation.';
-        btnText = 'Pay Fee';
-        btnIcon = Icons.payment_rounded;
-        btnBg = const Color(0xFFea580c);
-        onBtnPressed = () {
-          context.go(
-            '/payments?fee=Membership%20Entrance%20Package&redirect=/application-documents',
-          );
-        };
-      } else {
-        cardBg = isDark ? const Color(0xFF2e1000) : const Color(0xFFfff7ed);
-        borderColor = const Color(0xFFfdba74);
-        titleText = 'Application Submitted & Under Secretariat Review';
-        descText =
-            'Your $_totalDocs documents have been uploaded and submitted. The Secretariat is currently reviewing your application files. Please pay your fee if you have not already done so.';
-        btnText = 'Pay Fee';
-        btnIcon = Icons.payment_rounded;
-        btnBg = const Color(0xFFea580c);
-        onBtnPressed = () {
-          context.go(
-            '/payments?fee=Registration%20Fee&redirect=/application-documents',
-          );
-        };
-      }
-    } else if (allUploaded) {
-      cardBg = isDark ? const Color(0xFF062e1e) : const Color(0xFFf0fdf4);
-      borderColor = const Color(0xFF86efac);
-      titleText = 'All $_totalDocs Documents Uploaded!';
-      descText =
-          'Great job! All required documents have been uploaded. Click below to submit your application files for Secretariat vetting.';
-      btnText = _submitting ? 'Submitting...' : 'Upload To Submit & Pay';
-      btnIcon = Icons.send_rounded;
-      btnBg = _kGreen;
-      onBtnPressed = canSubmit ? _submitApplication : null;
-    } else {
-      cardBg = isDark ? const Color(0xFF281710) : const Color(0xFFf8fafc);
-      borderColor = isDark ? const Color(0xFF4D2D20) : const Color(0xFFcbd5e1);
-      titleText = 'Upload All Documents to Unlock Payment';
-      descText =
-          'You must upload all $_totalDocs required statutory documents before you can submit your application files and unlock fee payment. ($_uploadedCount of $_totalDocs uploaded so far)';
-      btnText = 'Pay Fee';
-      btnIcon = Icons.payment_rounded;
-      btnBg = isDark ? Colors.white24 : Colors.grey.shade400;
-      onBtnPressed = null;
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 30 : 10),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.all(CubagSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                alreadySubmitted
-                    ? Icons.verified_rounded
-                    : (allUploaded
-                          ? Icons.check_circle_rounded
-                          : Icons.pending_actions_rounded),
-                color: alreadySubmitted
-                    ? const Color(0xFFea580c)
-                    : (allUploaded ? _kGreen : _kOrange),
-                size: 22,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  titleText,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : const Color(0xFF1A0F0A),
-                  ),
-                ),
-              ),
+              Expanded(child: Text(req['label']?.toString() ?? 'Document', style: CubagType.bodyStrong)),
+              const SizedBox(width: CubagSpace.xs),
+              StatusChip(chipLabel, kind: chipKind),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            descText,
-            style: TextStyle(
-              fontSize: 15,
-              color: isDark ? Colors.white70 : const Color(0xFF475569),
-              height: 1.5,
-            ),
-          ),
-          if (!_registrationFeePaid) ...[
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withAlpha(8)
-                    : Colors.black.withAlpha(4),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDark ? Colors.white12 : Colors.grey.shade300,
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'REGISTRATION FEE',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.accentOrangeText,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Paid separately upon registration before the statutory documents are vetted.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: isDark
-                                ? Colors.white70
-                                : const Color(0xFF475569),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    displayRegFee,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: isDark ? Colors.white : const Color(0xFF0f172a),
-                    ),
-                  ),
-                ],
-              ),
+          if (uploaded && fileName != null && fileName.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.attach_file_rounded, size: 16, color: CubagColors.muted),
+                const SizedBox(width: 4),
+                Expanded(child: Text(fileName, style: CubagType.small, overflow: TextOverflow.ellipsis)),
+              ],
             ),
           ],
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton.icon(
-              key: ValueKey('action_btn_${_registrationFeePaid}_$isDark'),
-              onPressed: onBtnPressed,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: btnBg,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: isDark
-                    ? const Color(0xFF281710)
-                    : Colors.grey.shade300,
-                disabledForegroundColor: isDark
-                    ? Colors.white38
-                    : Colors.grey.shade600,
-                elevation: onBtnPressed != null ? 2 : 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              icon: _submitting
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Icon(btnIcon, size: 20),
-              label: Text(
-                btnText,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+          if (status == 'rejected' && note.isNotEmpty) ...[
+            const SizedBox(height: CubagSpace.xs),
+            Text('Secretariat note: $note', style: CubagType.small.copyWith(color: CubagColors.lapsed)),
+          ],
+          if (canUpload) ...[
+            const SizedBox(height: CubagSpace.sm),
+            OutlinedButton.icon(
+              onPressed: isUploading ? null : () => _pickAndUpload(req),
+              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
+              icon: isUploading
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.upload_rounded, size: 20),
+              label: Text(isUploading ? 'Uploading…' : (status == 'rejected' ? 'Upload again' : 'Upload')),
             ),
-          ),
+          ],
         ],
       ),
     );
