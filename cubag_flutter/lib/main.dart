@@ -244,9 +244,7 @@ void _preloadFonts() {
 Future<void> _initHiveCache() async {
   try {
     await Hive.initFlutter();
-    if (!Hive.isBoxOpen('api_cache')) {
-      await Hive.openBox('api_cache');
-    }
+    await ApiService.openApiCacheBox();
   } catch (e, st) {
     debugPrint('Hive cache initialization failed: $e');
     debugPrint('$st');

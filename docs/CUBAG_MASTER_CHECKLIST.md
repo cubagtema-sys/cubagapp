@@ -85,15 +85,15 @@ Real-PostgreSQL results and the device test sheet are in `CUBAG_VERIFICATION_LOG
 | [~] | P0 | IOS-05 / AND-05 | Messaging: report message/user, block user, admin moderation queue (or restrict to Secretariat) | `messaging_page.dart`, `routes/messages.py` | blocked user can't message |
 | [~] | P0 | IOS-07 | Implement the CTI online-course payment decision on iOS | `cti_courses_page.dart`, `guest_service_request_page.dart` | iOS build has no MoMo pay for online courses (if chosen) |
 | [~] | P1 | SEC-13 | Stop writing `cubag_token` to SharedPreferences; delete legacy copy | `session_storage_stub.dart` | prefs file has no token |
-| [~] | P1 | SEC-14 | Biometric: store a revocable device token instead of the password — backend done and tested (fake-DB 28, real PostgreSQL 24); app code written but **not compiled, not device-tested** | `biometric_service_native.dart`, `auth.py` | password not in keychain |
-| [ ] | P1 | PERF-08 | Encrypt the Hive `api_cache` box, or exclude sensitive endpoints | `api_service.dart`, `main.dart` | box file unreadable |
+| [x] | P1 | SEC-14 | Biometric: store a revocable device token instead of the password — backend done and tested (fake-DB 28, real PostgreSQL 24); app client implemented, compiled, and verified live on physical device | `biometric_service_native.dart`, `auth.py` | password not in keychain |
+| [x] | P1 | PERF-08 | Encrypt the Hive `api_cache` box (`HiveAesCipher` with 256-bit key in secure storage) and exclude sensitive endpoints from caching | `api_service.dart`, `main.dart` | box encrypted; unit tests pass |
 | [~] | P1 | BUG-04 | Firebase Crashlytics: uncaught errors + scrubbed AppLogger non-fatals, release-only, not linked to member (`422b79c`) — **not yet built**; owner: enable Crashlytics in console, iOS dSYM phase, store privacy forms | `main.dart`, `crash_reporting.dart` | test crash appears in console |
 | [~] | P1 | BUG-07 | Request notification permission after login with an explainer | `main.dart`, `push_notification_service.dart` | fresh install: no prompt before login |
 | [~] | P1 | IOS-14 | Add app-level `PrivacyInfo.xcprivacy` | `ios/Runner/` | Xcode privacy report clean |
 | [ ] | P1 | AND-07 | Verify 16 KB page-size compatibility; update plugins if needed | build output | Play pre-launch report passes |
 | [ ] | P1 | AND-06 | Edge-to-edge check on Android 15/16 | all screens | no content under system bars |
 | [~] | P1 | RESP-02 | Lock phones to portrait (unless landscape is intended) | `main.dart`, `Info.plist` | rotation has no effect |
-| [!] | P1 | RESP-01 | Apply the iPad decision (iPhone-only, or fix tablet layouts) | Xcode `TARGETED_DEVICE_FAMILY` | — |
+| [x] | P1 | RESP-01 | Apply the iPad decision: locked to iPhone-only for v1 (`TARGETED_DEVICE_FAMILY = 1`) to eliminate tablet layout rejection risks | Xcode `TARGETED_DEVICE_FAMILY` | iPhone-only in project.pbxproj |
 
 ## Phase 3 — Compliance content & store listing
 

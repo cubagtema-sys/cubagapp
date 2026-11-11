@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../utils/session_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../core/router.dart';
@@ -295,9 +296,21 @@ class ApiService {
     return null;
   }
 
+  /// PERF-08: Exclude sensitive authentication, credential, and payment endpoints from offline cache.
+  static bool _isSensitivePath(String path) {
+    final lower = path.toLowerCase();
+    return lower.contains('/auth') ||
+        lower.contains('/payments/initiate') ||
+        lower.contains('/payments/process') ||
+        lower.contains('/biometric-token') ||
+        lower.contains('/reset-password') ||
+        lower.contains('/verify-otp') ||
+        lower.contains('/change-password');
+  }
+
   /// Synchronously stores JSON data into Hive cache.
   static void putCachedSync(String path, dynamic data) {
-    if (kIsWeb || data == null) return;
+    if (kIsWeb || data == null || _isSensitivePath(path)) return;
     try {
       if (Hive.isBoxOpen('api_cache')) {
         final box = Hive.box('api_cache');
@@ -373,6 +386,58 @@ class ApiService {
     }
   }
 
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+  static const String _kHiveKey = 'cubag_hive_aes_key';
+
+  /// PERF-08: Retrieve or generate a 256-bit AES encryption key stored in Keychain/KeyStore.
+  static Future<HiveCipher?> getHiveCipher() async {
+    if (kIsWeb) return null;
+    try {
+      String? keyBase64 = await _secureStorage.read(key: _kHiveKey);
+      List<int> keyBytes;
+      if (keyBase64 == null || keyBase64.isEmpty) {
+        keyBytes = Hive.generateSecureKey();
+        await _secureStorage.write(
+          key: _kHiveKey,
+          value: base64UrlEncode(keyBytes),
+        );
+      } else {
+        keyBytes = base64Url.decode(keyBase64);
+        if (keyBytes.length != 32) {
+          keyBytes = Hive.generateSecureKey();
+          await _secureStorage.write(
+            key: _kHiveKey,
+            value: base64UrlEncode(keyBytes),
+          );
+        }
+      }
+      return HiveAesCipher(keyBytes);
+    } catch (e, st) {
+      AppLogger.error('api_service_getHiveCipher', e, st);
+      return null;
+    }
+  }
+
+  /// PERF-08: Open the api_cache box with AES encryption. Automatically purges legacy unencrypted caches on migration.
+  static Future<Box?> openApiCacheBox() async {
+    if (kIsWeb) return null;
+    if (Hive.isBoxOpen('api_cache')) {
+      return Hive.box('api_cache');
+    }
+    final cipher = await getHiveCipher();
+    try {
+      return await Hive.openBox('api_cache', encryptionCipher: cipher);
+    } catch (e) {
+      debugPrint('[ApiService] openBox with cipher failed ($e). Recreating encrypted box.');
+      try {
+        await Hive.deleteBoxFromDisk('api_cache');
+      } catch (_) {}
+      return await Hive.openBox('api_cache', encryptionCipher: cipher);
+    }
+  }
+
   static Completer<Box>? _boxCompleter;
 
   static Future<Box?> _getCacheBox() async {
@@ -385,8 +450,10 @@ class ApiService {
         return _boxCompleter!.future;
       }
       _boxCompleter = Completer<Box>();
-      final box = await Hive.openBox('api_cache');
-      if (!_boxCompleter!.isCompleted) _boxCompleter!.complete(box);
+      final box = await openApiCacheBox();
+      if (box != null && !_boxCompleter!.isCompleted) {
+        _boxCompleter!.complete(box);
+      }
       return box;
     } catch (e, st) {
       AppLogger.error('api_service', e, st);
