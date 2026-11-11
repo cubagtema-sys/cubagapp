@@ -2564,7 +2564,7 @@ class _State extends State<AdminSurveysPage>
           ),
           const SizedBox(width: 12),
 
-          GestureDetector(
+          Semantics(button: true, label: 'Add photo', child: GestureDetector(
             onTap: isUploading ? null : () => _pickOptionPhoto(idx),
             child: Stack(
               children: [
@@ -2623,7 +2623,7 @@ class _State extends State<AdminSurveysPage>
                   ),
               ],
             ),
-          ),
+          )),
           const SizedBox(width: 12),
 
           Expanded(
@@ -2647,6 +2647,7 @@ class _State extends State<AdminSurveysPage>
             Padding(
               padding: const EdgeInsets.only(left: 8),
               child: IconButton(
+                tooltip: 'Delete',
                 icon: const Icon(
                   Icons.delete_outline_rounded,
                   color: _kRed,

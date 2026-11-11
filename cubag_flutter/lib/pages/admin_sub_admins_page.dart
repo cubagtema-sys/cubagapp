@@ -1098,6 +1098,7 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
                   label: 'Temporary Password',
                   icon: Icons.lock_outline_rounded,
                   suffix: IconButton(
+                    tooltip: 'Show or hide password',
                     icon: Icon(
                       _obscure
                           ? Icons.visibility_off_outlined
@@ -1434,6 +1435,7 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
                     ),
                   ),
                   IconButton(
+                    tooltip: 'Close',
                     icon: const Icon(Icons.close_rounded, size: 20),
                     onPressed: () => Navigator.of(context).pop(),
                   ),

@@ -2103,6 +2103,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                     ),
                   ),
                   IconButton(
+                    tooltip: 'Close',
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close_rounded),
                     color: subTextColor,

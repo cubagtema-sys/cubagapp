@@ -1779,6 +1779,7 @@ class _RegisterPageState extends State<RegisterPage> {
               hint: 'At least 8 characters',
               icon: Icons.lock_outline,
               suffix: IconButton(
+                tooltip: 'Show or hide password',
                 icon: Icon(
                   _showPw
                       ? Icons.visibility_off_outlined
@@ -1805,6 +1806,7 @@ class _RegisterPageState extends State<RegisterPage> {
               hint: 'Repeat password',
               icon: Icons.lock_outline,
               suffix: IconButton(
+                tooltip: 'Show or hide password',
                 icon: Icon(
                   _showConfirm
                       ? Icons.visibility_off_outlined

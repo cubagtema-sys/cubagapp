@@ -469,6 +469,7 @@ class _State extends State<AdminIntelligencePage> {
                     contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
                     suffixIcon: _newsSearchCtrl.text.isNotEmpty
                         ? IconButton(
+                            tooltip: 'Close',
                             icon: const Icon(Icons.close_rounded, size: 14),
                             onPressed: () {
                               _newsSearchCtrl.clear();

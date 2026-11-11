@@ -488,6 +488,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             fillColor: _kWhite,
             prefixIcon: Icon(Icons.lock_outline, color: _kBrown, size: 20),
             suffixIcon: IconButton(
+              tooltip: 'Show or hide password',
               icon: Icon(
                 _showPw
                     ? Icons.visibility_off_outlined
@@ -535,6 +536,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             fillColor: _kWhite,
             prefixIcon: Icon(Icons.lock_outline, color: _kBrown, size: 20),
             suffixIcon: IconButton(
+              tooltip: 'Show or hide password',
               icon: Icon(
                 _showCpw
                     ? Icons.visibility_off_outlined

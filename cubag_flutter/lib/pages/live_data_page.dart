@@ -511,6 +511,7 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     IconButton(
+                                      tooltip: 'Back',
                                       icon: const Icon(
                                         Icons.arrow_back_ios_new_rounded,
                                         size: 13,
@@ -558,6 +559,7 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                     }),
                                     const SizedBox(width: 6),
                                     IconButton(
+                                      tooltip: 'Open',
                                       icon: const Icon(
                                         Icons.arrow_forward_ios_rounded,
                                         size: 13,

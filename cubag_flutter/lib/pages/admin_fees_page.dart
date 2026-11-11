@@ -154,6 +154,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             ],
                           ),
                           IconButton(
+                            tooltip: 'Close',
                             onPressed: () => Navigator.of(dlgCtx).pop(),
                             icon: Icon(Icons.close_rounded, color: textCol.withAlpha(150)),
                           ),

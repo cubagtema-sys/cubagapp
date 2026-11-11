@@ -658,7 +658,7 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 children: [
                   // Avatar with upload
-                  GestureDetector(
+                  Semantics(button: true, label: 'Change profile photo', child: GestureDetector(
                     onTap: _uploadingPhoto ? null : _uploadAvatar,
                     child: Stack(
                       alignment: Alignment.bottomRight,
@@ -695,7 +695,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ],
                     ),
-                  ),
+                  )),
                   const SizedBox(height: 12),
                   Text(
                     _user['name']?.toString() ?? 'Member',
@@ -1173,7 +1173,7 @@ class _ProfilePageState extends State<ProfilePage> {
             alignment: Alignment.centerRight,
             child: Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: GestureDetector(
+              child: Semantics(button: true, label: 'Close', child: GestureDetector(
                 onTap: () => Navigator.of(dialogCtx).pop(),
                 child: Container(
                   padding: const EdgeInsets.all(6),
@@ -1189,7 +1189,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   child: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF1E293B)),
                 ),
-              ),
+              )),
             ),
           ),
 

@@ -237,6 +237,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                           style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w900, color: textCol),
                         ),
                         IconButton(
+                          tooltip: 'Close',
                           icon: const Icon(Icons.close_rounded, size: 20),
                           onPressed: isSubmitting ? null : () => Navigator.pop(sheetCtx),
                         ),
@@ -934,6 +935,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
               ),
               if (_searchCtrl.text.isNotEmpty)
                 IconButton(
+                  tooltip: 'Close',
                   icon: const Icon(Icons.close_rounded, size: 18),
                   color: textMuted,
                   onPressed: () {

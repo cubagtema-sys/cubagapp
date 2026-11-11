@@ -530,6 +530,7 @@ class _FileUploadFieldState extends State<FileUploadField> {
                   ),
                 ),
                 IconButton(
+                  tooltip: 'Close',
                   icon: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(

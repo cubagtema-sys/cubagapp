@@ -459,6 +459,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                       ),
                     ),
                     IconButton(
+                      tooltip: 'Close',
                       icon: const Icon(Icons.close_rounded, color: _kMuted),
                       onPressed: () => Navigator.pop(ctx),
                       splashRadius: 20,
@@ -847,6 +848,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                       ),
                       suffixIcon: _searchCtrl.text.isNotEmpty
                           ? IconButton(
+                              tooltip: 'Clear',
                               icon: Icon(
                                 Icons.clear_rounded,
                                 color: _kMuted,

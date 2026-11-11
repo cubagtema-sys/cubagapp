@@ -283,6 +283,7 @@ class AdminToolbar extends StatelessWidget {
                       searchController != null &&
                           searchController!.text.isNotEmpty
                       ? IconButton(
+                          tooltip: 'Clear',
                           icon: const Icon(Icons.clear_rounded, size: 16),
                           color: subTextColor,
                           onPressed: () {

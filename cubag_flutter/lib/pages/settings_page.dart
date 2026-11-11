@@ -1023,6 +1023,7 @@ class _SettingsPageState extends State<SettingsPage> {
           vertical: 12,
         ),
         suffixIcon: IconButton(
+          tooltip: show ? 'Hide password' : 'Show password',
           icon: Icon(
             show ? Icons.visibility_rounded : Icons.visibility_off_rounded,
             color: muted,

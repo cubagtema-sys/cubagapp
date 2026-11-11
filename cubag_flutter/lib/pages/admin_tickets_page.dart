@@ -473,6 +473,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                         contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
+                                tooltip: 'Close',
                                 icon: const Icon(Icons.close_rounded, size: 14),
                                 onPressed: () {
                                   _searchCtrl.clear();
@@ -771,12 +772,14 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                 Row(
                   children: [
                     IconButton(
+                      tooltip: 'Previous page',
                       icon: const Icon(Icons.chevron_left_rounded, size: 18),
                       onPressed: _page > 1 ? () => _fetchTickets(page: _page - 1) : null,
                       visualDensity: VisualDensity.compact,
                     ),
                     Text('$_page', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
                     IconButton(
+                      tooltip: 'Next page',
                       icon: const Icon(Icons.chevron_right_rounded, size: 18),
                       onPressed: _hasMore ? () => _fetchTickets(page: _page + 1) : null,
                       visualDensity: VisualDensity.compact,

@@ -680,7 +680,7 @@ class _AppLayoutState extends State<AppLayout> {
         : const Color(0xFFe2e8f0);
 
     if (isSmall) {
-      return InkWell(
+      return Semantics(button: true, label: 'Account menu', child: InkWell(
         onTap: () => _showMobileProfileSheet(
           context,
           authService,
@@ -743,7 +743,7 @@ class _AppLayoutState extends State<AppLayout> {
             ),
           ),
         ),
-      );
+      ));
     }
 
     return PopupMenuButton<String>(
@@ -1615,6 +1615,7 @@ class _AppLayoutState extends State<AppLayout> {
           const Spacer(),
           if (!widget.hideSearch)
             IconButton(
+              tooltip: 'Search',
               icon: Icon(Icons.search_rounded, color: iconColor),
               onPressed: () => showSearch(
                 context: context,
@@ -1882,7 +1883,7 @@ class _AppLayoutState extends State<AppLayout> {
       ),
       child: _isSidebarCollapsed
           ? Center(
-              child: GestureDetector(
+              child: Semantics(button: true, label: 'Profile', child: GestureDetector(
                 onTap: () => context.go('/profile'),
                 child: Tooltip(
                   message: authService.userName ?? 'My Profile',
@@ -1937,7 +1938,7 @@ class _AppLayoutState extends State<AppLayout> {
                     ),
                   ),
                 ),
-              ),
+              )),
             )
           : Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
@@ -2007,6 +2008,7 @@ class _AppLayoutState extends State<AppLayout> {
                   Tooltip(
                     message: 'Sign Out',
                     child: IconButton(
+                      tooltip: 'Sign out',
                       icon: const Icon(
                         Icons.logout_rounded,
                         size: 16,

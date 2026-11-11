@@ -1142,6 +1142,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
               borderSide: const BorderSide(color: _kOrange, width: 1.5),
             ),
             suffixIcon: IconButton(
+              tooltip: show ? 'Hide password' : 'Show password',
               icon: Icon(
                 show
                     ? Icons.visibility_off_outlined

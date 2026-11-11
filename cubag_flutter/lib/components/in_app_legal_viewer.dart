@@ -55,6 +55,7 @@ class InAppLegalViewer {
                     ),
                   ),
                   IconButton(
+                    tooltip: 'Close',
                     icon: const Icon(Icons.close_rounded, color: Color(0xFF64748b)),
                     onPressed: () => Navigator.pop(ctx),
                   ),

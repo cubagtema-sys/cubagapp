@@ -825,6 +825,7 @@ class _LoginPageState extends State<LoginPage> {
                     onPressed: _loading ? null : _handleBiometricLogin,
                   ),
                 IconButton(
+                  tooltip: _showPw ? 'Hide password' : 'Show password',
                   icon: Icon(
                     _showPw
                         ? Icons.visibility_off_outlined

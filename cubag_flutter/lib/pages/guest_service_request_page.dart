@@ -584,6 +584,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                               ],
                             ),
                             IconButton(
+                              tooltip: 'Close',
                               icon: Icon(Icons.close_rounded, color: _kMuted),
                               onPressed: () => Navigator.pop(ctx),
                             ),
@@ -935,6 +936,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                   ),
                 ),
                 IconButton(
+                  tooltip: 'Close',
                   icon: Icon(Icons.close_rounded, size: 20, color: _kMuted),
                   onPressed: () => Navigator.pop(ctx),
                 ),
@@ -966,6 +968,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                     ),
                     suffixIcon: searchQuery.isNotEmpty
                         ? IconButton(
+                            tooltip: 'Clear',
                             icon: Icon(
                               Icons.clear_rounded,
                               size: 16,
@@ -2396,6 +2399,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                     ),
                     suffixIcon: _agentSearchCtrl.text.isNotEmpty
                         ? IconButton(
+                            tooltip: 'Clear',
                             icon: Icon(
                               Icons.clear_rounded,
                               size: 18,

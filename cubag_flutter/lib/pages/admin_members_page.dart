@@ -686,6 +686,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                                     ),
                                   ),
                                   IconButton(
+                                    tooltip: 'Close',
                                     icon: Icon(
                                       Icons.close,
                                       color: subTextColor,
@@ -2137,7 +2138,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (hasReceipt)
-                GestureDetector(
+                Semantics(button: true, label: 'View deposit slip', child: GestureDetector(
                   onTap: () => _showDepositSlipModal(context, receiptUrl, payRef, m['name']?.toString() ?? 'Member', amount),
                   child: Container(
                     width: 80,
@@ -2165,7 +2166,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                       ],
                     ),
                   ),
-                )
+                ))
               else
                 Container(
                   width: 60,
@@ -2339,6 +2340,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     ),
                   ),
                   IconButton(
+                    tooltip: 'Close',
                     icon: const Icon(Icons.close_rounded),
                     onPressed: () => Navigator.pop(ctx),
                   ),

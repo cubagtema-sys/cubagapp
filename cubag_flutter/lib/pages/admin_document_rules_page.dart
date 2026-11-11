@@ -1169,6 +1169,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                     ],
                   ),
                   IconButton(
+                    tooltip: 'Close',
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close_rounded),
                     color: Colors.grey,

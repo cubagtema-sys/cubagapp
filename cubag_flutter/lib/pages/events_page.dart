@@ -213,6 +213,7 @@ class _EventsPageState extends State<EventsPage> {
               ),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
+                      tooltip: 'Clear',
                       icon: Icon(
                         Icons.clear_rounded,
                         color: mutedColor,
@@ -449,6 +450,7 @@ class _EventsPageState extends State<EventsPage> {
                       ),
                     ),
                     IconButton(
+                      tooltip: 'Close',
                       icon: const Icon(
                         Icons.close_rounded,
                         color: Color(0xFF64748b),

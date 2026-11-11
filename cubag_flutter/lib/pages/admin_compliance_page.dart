@@ -1449,6 +1449,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                     tooltip: 'Open in new tab',
                   ),
                   IconButton(
+                    tooltip: 'Close',
                     icon: const Icon(Icons.close_rounded),
                     onPressed: () => Navigator.pop(ctx),
                   ),
@@ -1491,7 +1492,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
       ),
       child: Row(
         children: [
-          InkWell(
+          Semantics(button: true, label: 'Back', child: InkWell(
             onTap: () {
               if (context.canPop()) {
                 context.pop();
@@ -1513,7 +1514,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                 color: isDark ? Colors.white : _kTextDark,
               ),
             ),
-          ),
+          )),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -2145,6 +2146,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                   ),
                   if (_billItemControllers.length > 1)
                     IconButton(
+                      tooltip: 'Delete',
                       icon: const Icon(Icons.delete_outline_rounded, color: _kRed, size: 18),
                       onPressed: () => setState(() {
                         final removed = _billItemControllers.removeAt(idx);
@@ -3232,7 +3234,7 @@ class _AdminDocRowState extends State<_AdminDocRow> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                InkWell(
+                Semantics(button: true, label: 'Open document', child: InkWell(
                   onTap: () async {
                     final resolved = await ApiService.signedDocumentUrl(ApiService.resolveImageUrl(fileUrl));
                     final uri = Uri.parse(resolved);
@@ -3244,7 +3246,7 @@ class _AdminDocRowState extends State<_AdminDocRow> {
                     padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     child: Icon(Icons.open_in_new_rounded, size: 13, color: Colors.grey),
                   ),
-                ),
+                )),
               ],
             ),
 

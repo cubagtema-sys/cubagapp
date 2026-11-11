@@ -1241,6 +1241,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                     tooltip: 'Open in new tab',
                   ),
                   IconButton(
+                    tooltip: 'Close',
                     icon: const Icon(Icons.close_rounded),
                     onPressed: () => Navigator.pop(ctx),
                   ),
@@ -1494,7 +1495,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                         children: [
                           Row(
                             children: [
-                              InkWell(
+                              Semantics(button: true, label: 'Back', child: InkWell(
                                 onTap: () {
                                   if (context.canPop()) {
                                     context.pop();
@@ -1518,7 +1519,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                     color: textPrimary,
                                   ),
                                 ),
-                              ),
+                              )),
                               const SizedBox(width: 12),
 
                               CircleAvatar(

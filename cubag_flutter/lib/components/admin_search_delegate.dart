@@ -30,6 +30,7 @@ class AdminSearchDelegate extends SearchDelegate<String> {
     return [
       if (query.isNotEmpty)
         IconButton(
+          tooltip: 'Clear',
           icon: const Icon(Icons.clear, size: 20),
           onPressed: () {
             query = '';
@@ -42,6 +43,7 @@ class AdminSearchDelegate extends SearchDelegate<String> {
   @override
   Widget? buildLeading(BuildContext context) {
     return IconButton(
+      tooltip: 'Back',
       icon: const Icon(Icons.arrow_back, size: 20),
       onPressed: () {
         _debounce?.cancel();

@@ -581,6 +581,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
               onPressed: () => launchUrl(Uri.parse(fullUrl), mode: LaunchMode.externalApplication),
             ),
             IconButton(
+              tooltip: 'Close',
               icon: const Icon(Icons.close_rounded, size: 20),
               onPressed: () => Navigator.pop(ctx),
             ),
@@ -764,7 +765,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                     children: [
                       // Thumbnail
                       if (hasReceipt)
-                        GestureDetector(
+                        Semantics(button: true, label: 'View receipt', child: GestureDetector(
                           onTap: () => _showReceiptDialog(
                             receiptUrl,
                             _member!['name']?.toString() ?? 'Member',
@@ -799,7 +800,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                               ],
                             ),
                           ),
-                        )
+                        ))
                       else
                         Container(
                           width: 56,

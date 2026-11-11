@@ -296,6 +296,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
               prefixIcon: const Icon(Icons.search_rounded, color: _kBrown, size: 20),
               suffixIcon: _searchCtrl.text.isNotEmpty
                   ? IconButton(
+                      tooltip: 'Clear',
                       icon: const Icon(Icons.clear_rounded, size: 18),
                       onPressed: () {
                         _searchCtrl.clear();

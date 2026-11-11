@@ -244,6 +244,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                           ),
                         ),
                         IconButton(
+                          tooltip: 'Close',
                           icon: const Icon(Icons.close_rounded, size: 20),
                           onPressed: () => Navigator.pop(ctx),
                         ),
@@ -441,6 +442,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                           child: Text('Edit Announcement', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800, color: textCol)),
                         ),
                         IconButton(
+                          tooltip: 'Close',
                           icon: const Icon(Icons.close_rounded, size: 20),
                           onPressed: () => Navigator.pop(ctx),
                         ),
@@ -750,6 +752,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                               contentPadding: const EdgeInsets.symmetric(vertical: 10),
                               suffixIcon: _searchQuery.isNotEmpty
                                   ? IconButton(
+                                      tooltip: 'Close',
                                       icon: const Icon(Icons.close_rounded, size: 15),
                                       onPressed: () => setState(() => _searchQuery = ''),
                                     )

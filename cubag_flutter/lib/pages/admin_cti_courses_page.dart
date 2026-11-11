@@ -1228,6 +1228,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                   ),
                 ),
                 IconButton(
+                  tooltip: 'Close',
                   icon: const Icon(Icons.close_rounded, size: 18),
                   color: textMuted,
                   onPressed: () => Navigator.pop(dlgCtx),

@@ -514,6 +514,7 @@ class _SurveysPageState extends State<SurveysPage> {
           Row(
             children: [
               IconButton(
+                tooltip: 'Back',
                 icon: const Icon(Icons.arrow_back_rounded),
                 onPressed: () => setState(() => _answering = null),
               ),

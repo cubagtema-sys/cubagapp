@@ -407,6 +407,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                                 contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
                                 suffixIcon: _searchQuery.isNotEmpty
                                     ? IconButton(
+                                        tooltip: 'Close',
                                         icon: const Icon(Icons.close_rounded, size: 14),
                                         onPressed: () {
                                           _searchCtrl.clear();

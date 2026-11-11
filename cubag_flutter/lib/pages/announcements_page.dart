@@ -346,6 +346,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                           ),
                           suffixIcon: _searchCtrl.text.isNotEmpty
                               ? IconButton(
+                                  tooltip: 'Clear',
                                   icon: const Icon(
                                     Icons.clear_rounded,
                                     color: Color(0xFF5F6B7E),

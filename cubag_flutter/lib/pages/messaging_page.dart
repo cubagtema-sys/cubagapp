@@ -401,7 +401,7 @@ class _MessagingPageState extends State<MessagingPage> {
                   ),
                 ),
                 if (_search.isNotEmpty)
-                  GestureDetector(
+                  Semantics(button: true, label: 'Clear search', child: GestureDetector(
                     onTap: () {
                       _searchCtrl.clear();
                       setState(() => _applySearch(''));
@@ -411,7 +411,7 @@ class _MessagingPageState extends State<MessagingPage> {
                       color: hintCol,
                       size: 18,
                     ),
-                  ),
+                  )),
               ],
             ),
           ),
@@ -768,6 +768,7 @@ class _MessagingPageState extends State<MessagingPage> {
               children: [
                 if (!isWide)
                   IconButton(
+                    tooltip: 'Back',
                     icon: Icon(
                       Icons.arrow_back_ios_new_rounded,
                       color: textCol,
@@ -1036,7 +1037,7 @@ class _MessagingPageState extends State<MessagingPage> {
                 Material(
                   color: primary,
                   shape: const CircleBorder(),
-                  child: InkWell(
+                  child: Semantics(button: true, label: 'Send message', child: InkWell(
                     borderRadius: BorderRadius.circular(100),
                     onTap: _isSending ? null : _send,
                     child: Container(
@@ -1058,7 +1059,7 @@ class _MessagingPageState extends State<MessagingPage> {
                               size: 18,
                             ),
                     ),
-                  ),
+                  )),
                 ),
               ],
             ),

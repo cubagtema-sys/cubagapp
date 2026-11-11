@@ -1159,6 +1159,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                               ),
                             ),
                             IconButton(
+                              tooltip: 'Close',
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                               icon: const Icon(

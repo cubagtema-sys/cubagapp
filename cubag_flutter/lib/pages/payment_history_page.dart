@@ -559,6 +559,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                       ],
                     ),
                     IconButton(
+                      tooltip: 'Close',
                       icon: Icon(
                         Icons.close_rounded,
                         size: 20,
@@ -1307,6 +1308,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                                 ),
                                 suffixIcon: _searchQuery.isNotEmpty
                                     ? IconButton(
+                                        tooltip: 'Clear',
                                         icon: Icon(
                                           Icons.clear_rounded,
                                           size: 16,
@@ -1375,6 +1377,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                               ),
                               suffixIcon: _searchQuery.isNotEmpty
                                   ? IconButton(
+                                      tooltip: 'Clear',
                                       icon: Icon(
                                         Icons.clear_rounded,
                                         size: 16,
@@ -1841,6 +1844,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
+                      tooltip: 'Previous page',
                       icon: Icon(Icons.chevron_left_rounded, color: titleCol),
                       onPressed: _page > 1
                           ? () => setState(() => _page--)
@@ -1877,6 +1881,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                     }),
                     const SizedBox(width: 8),
                     IconButton(
+                      tooltip: 'Next page',
                       icon: Icon(Icons.chevron_right_rounded, color: titleCol),
                       onPressed: _page < totalPages
                           ? () => setState(() => _page++)

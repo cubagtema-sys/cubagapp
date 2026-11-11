@@ -423,6 +423,7 @@ class _CargoSchedulesPageState extends State<CargoSchedulesPage> {
               ),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
+                      tooltip: 'Clear',
                       icon: const Icon(Icons.clear),
                       onPressed: () {
                         setState(() {

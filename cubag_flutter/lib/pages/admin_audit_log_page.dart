@@ -986,11 +986,13 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                 Row(
                   children: [
                     IconButton.outlined(
+                      tooltip: 'Previous page',
                       icon: const Icon(Icons.chevron_left_rounded, size: 18),
                       onPressed: _offset > 0 ? _prevPage : null,
                     ),
                     const SizedBox(width: 8),
                     IconButton.outlined(
+                      tooltip: 'Next page',
                       icon: const Icon(Icons.chevron_right_rounded, size: 18),
                       onPressed: _offset + _limit < _total ? _nextPage : null,
                     ),

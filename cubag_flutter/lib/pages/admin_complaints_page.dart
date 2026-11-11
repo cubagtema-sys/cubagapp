@@ -435,6 +435,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
               ),
             ),
             IconButton(
+              tooltip: 'Close',
               icon: const Icon(Icons.close_rounded, size: 18),
               color: subTextColor,
               onPressed: () => Navigator.pop(dialogCtx),
@@ -639,6 +640,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                                   contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
                                   suffixIcon: _searchCtrl.text.isNotEmpty
                                       ? IconButton(
+                                          tooltip: 'Close',
                                           icon: const Icon(Icons.close_rounded, size: 14),
                                           onPressed: () {
                                             _searchCtrl.clear();

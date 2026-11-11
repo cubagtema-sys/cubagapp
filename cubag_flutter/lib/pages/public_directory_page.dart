@@ -519,6 +519,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                               children: [
                                 if (_searchCtrl.text.isNotEmpty)
                                   IconButton(
+                                    tooltip: 'Clear',
                                     icon: const Icon(
                                       Icons.clear_rounded,
                                       size: 18,

@@ -952,6 +952,7 @@ class _State extends State<AdminLicenseRenewalPage> {
               ),
               const Spacer(),
               IconButton(
+                tooltip: 'Close',
                 icon: const Icon(Icons.close),
                 onPressed: () => setState(() => _selectedPayment = null),
               ),

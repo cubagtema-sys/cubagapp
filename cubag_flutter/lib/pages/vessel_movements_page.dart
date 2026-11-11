@@ -337,6 +337,7 @@ class _VesselMovementsPageState extends State<VesselMovementsPage> {
         ),
         suffixIcon: _search.isNotEmpty
             ? IconButton(
+                tooltip: 'Clear',
                 icon: Icon(Icons.clear_rounded, color: muted, size: 16),
                 onPressed: () {
                   setState(() {

@@ -430,6 +430,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                       ),
                       IconButton(
+                        tooltip: 'Close',
                         onPressed: () {
                           final bId = billData['id']?.toString() ?? '';
                           if (bId.isNotEmpty) {

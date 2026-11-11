@@ -801,6 +801,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                         ),
                         ),
                         IconButton(
+                          tooltip: 'Refresh',
                           icon: const Icon(
                             Icons.refresh,
                             color: Color(0xFFef4444),

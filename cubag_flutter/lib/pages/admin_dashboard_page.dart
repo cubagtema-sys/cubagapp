@@ -1211,6 +1211,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ),
           ),
           IconButton(
+            tooltip: 'Refresh',
             icon: const Icon(Icons.refresh, color: Color(0xFFef4444), size: 18),
             onPressed: _fetchData,
           ),
@@ -2002,6 +2003,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                   ],
                 ),
                 IconButton(
+                  tooltip: 'Close',
                   icon: const Icon(Icons.close_rounded),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
