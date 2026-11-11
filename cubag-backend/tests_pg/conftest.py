@@ -79,7 +79,8 @@ PASSWORD = 'Password123!'
 # Tables holding per-test data. Reference/seed tables (fees, settings) are left alone.
 _DATA_TABLES = ('members', 'cti_courses', 'otp_codes', 'member_blocks', 'message_reports',
                 'complaints', 'payments', 'messages', 'notifications', 'cti_course_enrollments',
-                'biometric_tokens')
+                'biometric_tokens', 'compliance_applications', 'compliance_documents',
+                'member_rating_history')
 
 
 @pytest.fixture(scope='session')

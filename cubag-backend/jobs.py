@@ -96,8 +96,42 @@ def check_expired_licenses():
         conn.close()
 
 
+def backfill_missing_licence_numbers(cursor):
+    """BUG-09: active members without a licence number get one here (same
+    CUBAG-LIC-<year>-<id> format used at activation) instead of on a GET
+    request. Returns the number of members updated."""
+    from datetime import datetime as _dt
+    cursor.execute("""
+        SELECT id FROM members
+        WHERE LOWER(COALESCE(status, '')) = 'active'
+          AND role NOT IN ('admin', 'super_admin', 'sub_admin')
+          AND (license_number IS NULL OR LOWER(TRIM(license_number)) IN ('', 'pending', 'none', 'n/a'))
+    """)
+    ids = [r['id'] for r in cursor.fetchall()]
+    year = _dt.now().year
+    for mid in ids:
+        cursor.execute(
+            "UPDATE members SET license_number = %s WHERE id = %s "
+            "AND (license_number IS NULL OR LOWER(TRIM(license_number)) IN ('', 'pending', 'none', 'n/a'))",
+            (f"CUBAG-LIC-{year}-{mid:04d}", mid),
+        )
+    return len(ids)
+
+
 def run_rating_update_cycle():
     logger.info("[Jobs] Starting full compliance update cycle...")
+    try:
+        _c = get_db()
+        try:
+            with _c.cursor() as _cur:
+                n = backfill_missing_licence_numbers(_cur)
+            _c.commit()
+            if n:
+                logger.info(f"[Jobs] Assigned licence numbers to {n} active member(s).")
+        finally:
+            _c.close()
+    except Exception as e:
+        logger.error(f"[Jobs] Licence backfill failed: {e}")
     conn = get_db()
     try:
         with conn.cursor() as cursor:

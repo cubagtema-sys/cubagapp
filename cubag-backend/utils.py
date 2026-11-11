@@ -179,7 +179,16 @@ def send_push_to_all(title, body, data=None):
     finally:
         conn.close()
 
-def calculate_and_update_member_rating(member_id, cursor=None):
+def compute_member_rating(member_id, cursor):
+    """Read-only rating for display (BUG-09): same numbers as
+    calculate_and_update_member_rating, but writes nothing, sends nothing and
+    never commits the caller's transaction. Use this on GET paths."""
+    return calculate_and_update_member_rating(member_id, cursor, persist=False)
+
+
+def calculate_and_update_member_rating(member_id, cursor=None, persist=True):
+    """Recalculate and SAVE a member's rating (members row, history, standing
+    notifications). Call from write events and the scheduler, not from reads."""
     from datetime import date
     should_close = False
     if cursor is None:
@@ -201,7 +210,8 @@ def calculate_and_update_member_rating(member_id, cursor=None):
             
         role = str(member_row.get('role') or 'member').lower().strip()
         if role in ('admin', 'super_admin', 'sub_admin', 'staff', 'system'):
-            cursor.execute("UPDATE members SET compliance_score = NULL, star_rating = NULL, manual_review_score = NULL WHERE id = %s", (member_id,))
+            if persist:
+                cursor.execute("UPDATE members SET compliance_score = NULL, star_rating = NULL, manual_review_score = NULL WHERE id = %s", (member_id,))
             return {'compliance_score': None, 'star_rating': None, 'manual_review_score': None}
 
         old_score = member_row.get('compliance_score')
@@ -293,7 +303,7 @@ def calculate_and_update_member_rating(member_id, cursor=None):
         star_rating = round(total_score / 20.0, 2)
 
         # Save to database only if score or rating actually changed or is missing
-        if old_score != total_score or float(old_rating or -1.0) != float(star_rating):
+        if persist and (old_score != total_score or float(old_rating or -1.0) != float(star_rating)):
             cursor.execute("""
                 UPDATE members 
                 SET compliance_score = %s, star_rating = %s, manual_review_score = %s
@@ -301,20 +311,22 @@ def calculate_and_update_member_rating(member_id, cursor=None):
             """, (total_score, star_rating, manual_review, member_id))
 
         # Log history ONLY if this is a new score/rating compared to the latest history entry
-        cursor.execute("""
-            SELECT compliance_score, star_rating 
-            FROM member_rating_history 
-            WHERE member_id = %s 
-            ORDER BY recorded_at DESC LIMIT 1
-        """, (member_id,))
-        last_hist = cursor.fetchone()
-        if not last_hist or int(last_hist['compliance_score'] or -1) != int(total_score) or float(last_hist['star_rating'] or -1.0) != float(star_rating):
+        last_hist = None
+        if persist:
+            cursor.execute("""
+                SELECT compliance_score, star_rating
+                FROM member_rating_history
+                WHERE member_id = %s
+                ORDER BY recorded_at DESC LIMIT 1
+            """, (member_id,))
+            last_hist = cursor.fetchone()
+        if persist and (not last_hist or int(last_hist['compliance_score'] or -1) != int(total_score) or float(last_hist['star_rating'] or -1.0) != float(star_rating)):
             cursor.execute("""
                 INSERT INTO member_rating_history (member_id, compliance_score, star_rating)
                 VALUES (%s, %s, %s)
             """, (member_id, total_score, star_rating))
 
-        if should_close:
+        if should_close and persist:
             conn.commit()
 
         breakdown = {
@@ -355,8 +367,10 @@ def calculate_and_update_member_rating(member_id, cursor=None):
             else: return "Suspended/Delinquent"
 
         new_tier = get_tier(total_score)
-        
-        if prev_score is not None:
+
+        if not persist:
+            pass  # read-only: no notifications, no push, no commit
+        elif prev_score is not None:
             prev_tier = get_tier(prev_score)
             if prev_tier != new_tier:
                 # standing tier transition alert
@@ -396,7 +410,8 @@ def calculate_and_update_member_rating(member_id, cursor=None):
                     VALUES (%s, %s, %s, %s, %s)
                 """, (member_id, title, body, 'Compliance', 'compliance'))
 
-        cursor.connection.commit()
+        if persist:
+            cursor.connection.commit()
 
         return {
             'compliance_score': total_score,
@@ -407,6 +422,8 @@ def calculate_and_update_member_rating(member_id, cursor=None):
     except Exception as e:
         logger.exception("Error calculating member rating: %s", e)
         try:
+            # Read-only callers have nothing to undo, but a failed statement
+            # leaves the transaction aborted, so the rollback is still needed.
             cursor.connection.rollback()
         except Exception as re:
             logger.exception("Error rolling back DB after rating calc failure: %s", re)

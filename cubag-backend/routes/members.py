@@ -575,18 +575,7 @@ def get_license_history():
             if not member:
                 return jsonify({'message': 'Member not found'}), 404
 
-            # Auto-heal license number if active but has none/pending/none string
-            status = str(member.get('status')).lower()
-            lic_num = member.get('license_number')
-            if status == 'active' and (not lic_num or str(lic_num).lower() in ('pending', 'none', 'n/a', '')):
-                import datetime
-                year = datetime.datetime.now().year
-                new_license = f"CUBAG-LIC-{year}-{member_id:04d}"
-                cursor.execute("UPDATE members SET license_number = %s WHERE id = %s", (new_license, member_id))
-                conn.commit()
-                # Update in local dict
-                member = dict(member)
-                member['license_number'] = new_license
+            # BUG-09: no licence-number assignment on a read (see get_member).
 
         # Always build a history entry from the member's current record.
         # A record is considered "submitted" if payment_ref is set OR status is active/pending.
@@ -889,22 +878,14 @@ def get_member(member_id):
                 return jsonify({'message': 'Member not found'}), 404
 
             if is_owner or is_admin:
-                # Auto-heal license number if active but has none/pending/none string
-                status = str(member.get('status')).lower()
-                lic_num = member.get('license_number')
-                if status == 'active' and (not lic_num or str(lic_num).lower() in ('pending', 'none', 'n/a', '')):
-                    import datetime
-                    year = datetime.datetime.now().year
-                    new_license = f"CUBAG-LIC-{year}-{member_id:04d}"
-                    cursor.execute("UPDATE members SET license_number = %s WHERE id = %s", (new_license, member_id))
-                    # Update local dict
-                    result_member = dict(member)
-                    result_member['license_number'] = new_license
-                else:
-                    result_member = dict(member)
+                # BUG-09: reading a profile writes nothing. Missing licence numbers
+                # are backfilled by the daily job (jobs.backfill_missing_licence_numbers)
+                # and assigned at activation; ratings are saved by the scheduler,
+                # at sign-in and on admin score changes.
+                result_member = dict(member)
 
-                from utils import calculate_and_update_member_rating
-                rating_data = calculate_and_update_member_rating(member_id, cursor)
+                from utils import compute_member_rating
+                rating_data = compute_member_rating(member_id, cursor)
                 cursor.execute("""
                     SELECT compliance_score, star_rating, recorded_at
                     FROM member_rating_history WHERE member_id = %s
@@ -946,9 +927,6 @@ def get_member(member_id):
                     payments_list.append(item)
                 result['payments'] = payments_list
 
-                # Commit the rating updates made by calculate_and_update_member_rating
-                conn.commit()
-                
                 return jsonify(result), 200
 
             return jsonify(dict(member)), 200
