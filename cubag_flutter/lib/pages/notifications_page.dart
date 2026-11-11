@@ -7,8 +7,9 @@ import '../services/notification_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
+const _kOrange = CubagColors.action;
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -25,7 +26,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   final Map<String, Map<String, dynamic>> _categories = {
     'payment': {
       'icon': Icons.payments_outlined,
-      'color': const Color(0xFF10b981),
+      'color': CubagColors.valid,
       'label': 'Payment',
     },
     'meeting': {
@@ -35,7 +36,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     },
     'compliance': {
       'icon': Icons.task_alt_outlined,
-      'color': const Color(0xFFf59e0b),
+      'color': CubagColors.due,
       'label': 'Compliance',
     },
     'system': {
@@ -221,10 +222,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         margin: const EdgeInsets.only(right: 8),
         decoration: BoxDecoration(
-          color: isSelected ? _kOrange : const Color(0xFFf1f5f9),
+          color: isSelected ? _kOrange : CubagColors.sand,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? _kOrange : const Color(0xFFe2e8f0),
+            color: isSelected ? _kOrange : CubagColors.line,
             width: 1,
           ),
           boxShadow: isSelected
@@ -240,7 +241,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : const Color(0xFF475569),
+            color: isSelected ? Colors.white : CubagColors.inkSoft,
             fontWeight: FontWeight.w800,
             fontSize: 14,
           ),
@@ -259,13 +260,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
-                color: Color(0xFFf8fafc),
+                color: CubagColors.sand,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.notifications_none_rounded,
                 size: 48,
-                color: Color(0xFFcbd5e1),
+                color: CubagColors.lineStrong,
               ),
             ),
             const SizedBox(height: 16),
@@ -274,7 +275,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: const Color(0xFF475569),
+                color: CubagColors.inkSoft,
               ),
             ),
             const SizedBox(height: 8),
@@ -297,7 +298,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   _filter = 'all';
                 }),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFFcbd5e1)),
+                  side: const BorderSide(color: CubagColors.lineStrong),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -305,7 +306,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 child: const Text(
                   'Reset Filters',
                   style: TextStyle(
-                    color: Color(0xFF475569),
+                    color: CubagColors.inkSoft,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -354,7 +355,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFcbd5e1),
+                        color: CubagColors.lineStrong,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -397,13 +398,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
-                                      (cat['label']?.toString() ?? 'SYSTEM')
-                                          .toUpperCase(),
+                                      cat['label']?.toString() ?? 'System',
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: color,
                                         fontWeight: FontWeight.w900,
-                                        letterSpacing: 0.5,
                                       ),
                                     ),
                                   ),
@@ -428,7 +427,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1A0F0A),
+                            color: CubagColors.ink,
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -436,9 +435,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFf8fafc),
+                            color: CubagColors.sand,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFFe2e8f0)),
+                            border: Border.all(color: CubagColors.line),
                           ),
                           child: SelectableText(
                             n['message']?.toString() ?? '',
@@ -473,7 +472,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             ),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1A0F0A),
+                                backgroundColor: CubagColors.ink,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -513,13 +512,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final label = (cat['label'] ?? 'System').toString();
 
     final cardBg = isDark
-        ? (isRead ? const Color(0xFF1A0F0A) : const Color(0xFF241610))
+        ? (isRead ? CubagColors.ink : const Color(0xFF241610))
         : Colors.white;
     final borderColor = isDark
         ? (isRead ? const Color(0xFF2E1D14) : color.withAlpha(110))
         : (isRead ? const Color(0xFFE7ECF3) : color.withAlpha(85));
     final accentColor = isRead
-        ? (isDark ? const Color(0xFF3A2A20) : const Color(0xFFE2E8F0))
+        ? (isDark ? const Color(0xFF3A2A20) : CubagColors.line)
         : color;
 
     return Dismissible(
@@ -531,7 +530,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         padding: const EdgeInsets.only(right: 22),
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFFef4444),
+          color: CubagColors.lapsed,
           borderRadius: BorderRadius.circular(16),
         ),
         child: const Row(
@@ -560,7 +559,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
             BoxShadow(
               color: isDark
                   ? Colors.black26
-                  : const Color(0xFF0F172A).withAlpha(isRead ? 8 : 18),
+                  : CubagColors.ink.withAlpha(isRead ? 8 : 18),
               blurRadius: isRead ? 6 : 16,
               offset: const Offset(0, 4),
             ),
@@ -615,7 +614,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                               : FontWeight.w800,
                                           color: isDark
                                               ? Colors.white
-                                              : const Color(0xFF0F172A),
+                                              : CubagColors.ink,
                                         ),
                                       ),
                                     ),
@@ -644,7 +643,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     height: 1.35,
                                     color: isDark
                                         ? Colors.white70
-                                        : const Color(0xFF475569),
+                                        : CubagColors.inkSoft,
                                   ),
                                 ),
                                 const SizedBox(height: 10),
@@ -660,11 +659,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
-                                        label.toUpperCase(),
+                                        label,
                                         style: TextStyle(
                                           fontSize: 10.5,
                                           fontWeight: FontWeight.w800,
-                                          letterSpacing: 0.4,
                                           color: color,
                                         ),
                                       ),
@@ -785,7 +783,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   fontWeight: FontWeight.w800,
                                   color: isDark
                                       ? Colors.white
-                                      : const Color(0xFF1A0F0A),
+                                      : CubagColors.ink,
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -794,7 +792,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 style: TextStyle(
                                   color: isDark
                                       ? Colors.white70
-                                      : const Color(0xFF64748b),
+                                      : CubagColors.muted,
                                   fontSize: 13.5,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -869,12 +867,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       decoration: BoxDecoration(
                         color: isDark
                             ? const Color(0xFF241610)
-                            : const Color(0xFFf8fafc),
+                            : CubagColors.sand,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: isDark
                               ? const Color(0xFF3A2A20)
-                              : const Color(0xFFe2e8f0),
+                              : CubagColors.line,
                         ),
                       ),
                       child: TextFormField(
@@ -940,15 +938,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         Expanded(
                           child: Text(
                             searchQuery.isNotEmpty
-                                ? 'SEARCH RESULTS (${filtered.length})'
-                                : 'LATEST UPDATES (${filtered.length})',
+                                ? 'Search results (${filtered.length})'
+                                : 'Latest updates (${filtered.length})',
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 13,
                               color: isDark
                                   ? Colors.white70
-                                  : const Color(0xFF64748b),
-                              letterSpacing: 0.6,
+                                  : CubagColors.muted,
                             ),
                           ),
                         ),

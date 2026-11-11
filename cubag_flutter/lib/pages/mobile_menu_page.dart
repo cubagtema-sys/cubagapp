@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../components/app_layout.dart';
+import '../design/cubag_design.dart';
 
 class MobileMenuPage extends StatelessWidget {
   const MobileMenuPage({super.key});
@@ -18,7 +19,7 @@ class MobileMenuPage extends StatelessWidget {
     List<Widget> sections = [];
     if (isAdmin) {
       sections = [
-        _buildSection(context, 'CORE MANAGEMENT', [
+        _buildSection(context, 'Core management', [
           _MenuItem('Dashboard', Icons.grid_view_rounded, '/admin/dashboard'),
           _MenuItem('Members', Icons.people_alt_rounded, '/admin/members'),
           _MenuItem(
@@ -42,7 +43,7 @@ class MobileMenuPage extends StatelessWidget {
             '/admin/announcements',
           ),
         ]),
-        _buildSection(context, 'OPERATIONS & SUPPORT', [
+        _buildSection(context, 'Operations & support', [
           _MenuItem(
             'Port Operational News',
             Icons.feed_rounded,
@@ -74,7 +75,7 @@ class MobileMenuPage extends StatelessWidget {
             '/admin/message-reports',
           ),
         ]),
-        _buildSection(context, 'FINANCIALS & RECORDS', [
+        _buildSection(context, 'Financials & records', [
           _MenuItem(
             'Financial Center',
             Icons.account_balance_wallet_rounded,
@@ -92,7 +93,7 @@ class MobileMenuPage extends StatelessWidget {
           ),
           _MenuItem('Platform Fees', Icons.receipt_rounded, '/admin/fees'),
         ]),
-        _buildSection(context, 'ENGAGEMENT & EVENTS', [
+        _buildSection(context, 'Engagement & events', [
           _MenuItem('Events & Meetings', Icons.event_rounded, '/admin/events'),
           _MenuItem(
             'CTI Short Courses',
@@ -110,7 +111,7 @@ class MobileMenuPage extends StatelessWidget {
             '/admin/surveys',
           ),
         ]),
-        _buildSection(context, 'ADMINISTRATION', [
+        _buildSection(context, 'Administration', [
           _MenuItem(
             'Sub-Admins',
             Icons.admin_panel_settings_rounded,
@@ -255,11 +256,11 @@ class MobileMenuPage extends StatelessWidget {
 
       sections = [
         if (showDashboard)
-          _buildSection(context, 'OVERVIEW', [
+          _buildSection(context, 'Overview', [
             _MenuItem('Dashboard', Icons.grid_view_rounded, '/admin/dashboard'),
           ]),
         if (permittedItems.isNotEmpty)
-          _buildSection(context, 'MY MODULES', permittedItems),
+          _buildSection(context, 'My modules', permittedItems),
       ];
     } else {
       final status = auth.membershipStatus.toLowerCase().trim();
@@ -267,7 +268,7 @@ class MobileMenuPage extends StatelessWidget {
 
       if (isPending) {
         sections = [
-          _buildSection(context, 'APPLICATION ONBOARDING', [
+          _buildSection(context, 'Application onboarding', [
             _MenuItem(
               'Complete Application',
               Icons.assignment_turned_in_rounded,
@@ -282,10 +283,10 @@ class MobileMenuPage extends StatelessWidget {
         ];
       } else {
         sections = [
-          _buildSection(context, 'MAIN', [
+          _buildSection(context, 'Main', [
             _MenuItem('Dashboard', Icons.home_rounded, '/dashboard'),
           ]),
-          _buildSection(context, 'SERVICES', [
+          _buildSection(context, 'Services', [
             _MenuItem(
               'Membership Hub',
               Icons.card_membership_rounded,
@@ -329,7 +330,7 @@ class MobileMenuPage extends StatelessWidget {
               '/engagement',
             ),
           ]),
-          _buildSection(context, 'RESOURCES', [
+          _buildSection(context, 'Resources', [
             _MenuItem('Intelligence Hub', Icons.analytics_rounded, '/live-data'),
             _MenuItem(
               'Vessel Movements',
@@ -352,7 +353,7 @@ class MobileMenuPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               ...sections,
-              _buildSection(context, 'ACCOUNT', [
+              _buildSection(context, 'Account', [
                 if (!isPending)
                   _MenuItem(
                     'Settings',
@@ -392,8 +393,7 @@ class MobileMenuPage extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w900,
-              color: isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748b),
-              letterSpacing: 1.0,
+              color: isDark ? const Color(0xFF5F6B7E) : CubagColors.muted,
             ),
           ),
         ),
@@ -404,7 +404,7 @@ class MobileMenuPage extends StatelessWidget {
             border: Border.all(
               color: isDark
                   ? const Color(0xFF4D2D20)
-                  : const Color(0xFFcbd5e1).withValues(alpha: 0.5),
+                  : CubagColors.lineStrong.withValues(alpha: 0.5),
               width: 1.0,
             ),
             boxShadow: [
@@ -431,7 +431,7 @@ class MobileMenuPage extends StatelessWidget {
                         endIndent: 0,
                         color: isDark
                             ? const Color(0xFF4D2D20)
-                            : const Color(0xFFf1f5f9),
+                            : CubagColors.sand,
                       ),
                   ],
                 );
@@ -448,12 +448,12 @@ class MobileMenuPage extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Normal vs Logout styling
-    final Color iconColor = item.isLogout ? const Color(0xFFef4444) : primary;
+    final Color iconColor = item.isLogout ? CubagColors.lapsed : primary;
     final Color badgeBgColor = item.isLogout
-        ? const Color(0xFFef4444).withValues(alpha: 0.1)
+        ? CubagColors.lapsed.withValues(alpha: 0.1)
         : primary.withValues(alpha: 0.1);
     final Color textColor = item.isLogout
-        ? const Color(0xFFef4444)
+        ? CubagColors.lapsed
         : (isDark ? Colors.white : const Color(0xFF281710));
 
     return Material(
@@ -497,7 +497,7 @@ class MobileMenuPage extends StatelessWidget {
                 Icons.chevron_right_rounded,
                 color: isDark
                     ? const Color(0xFF4b5563)
-                    : const Color(0xFFcbd5e1),
+                    : CubagColors.lineStrong,
                 size: 20,
               ),
             ],

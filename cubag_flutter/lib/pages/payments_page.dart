@@ -1419,8 +1419,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     child: Column(
                     children: [
                       // Plain page: no card around the whole flow.
-                      Container(
-                        child: Column(
+                      Column(
                           children: [
                             // ── Sleek Segmented Flow Stepper ──
                             Container(
@@ -1550,7 +1549,6 @@ class _PaymentsPageState extends State<PaymentsPage>
                             ),
                           ],
                         ),
-                      ),
                       const SizedBox(height: 20),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,

@@ -14,17 +14,18 @@ import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/session_storage.dart';
+import '../design/cubag_design.dart';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const _kPrimary = Color(0xFFFF5000);
+const _kPrimary = CubagColors.action;
 const _kOrange = _kPrimary;
-const _kGreen = Color(0xFF10b981);
-const _kAmber = Color(0xFFf59e0b);
-const _kRed = Color(0xFFef4444);
-const _kDarkBg = Color(0xFF1A0F0A);
+const _kGreen = CubagColors.valid;
+const _kAmber = CubagColors.due;
+const _kRed = CubagColors.lapsed;
+const _kDarkBg = CubagColors.ink;
 const _kCardDark = Color(0xFF281710);
 const _kBorderDark = Color(0xFF4D2D20);
-const _kTextDark = Color(0xFF2B211D);
+const _kTextDark = CubagColors.ink;
 
 Color _statusColor(String? s) {
   switch (s) {
@@ -288,7 +289,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF1A0F0A) : Colors.white,
+        backgroundColor: isDark ? CubagColors.ink : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Start Compliance Application',
@@ -306,7 +307,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
               'Select the statutory application category you wish to initiate:',
               style: TextStyle(
                 fontSize: 14,
-                color: isDark ? Colors.white70 : const Color(0xFF64748b),
+                color: isDark ? Colors.white70 : CubagColors.muted,
               ),
             ),
             const SizedBox(height: 18),
@@ -316,7 +317,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
-                  color: isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6),
+                  color: isDark ? const Color(0xFF3D261C) : CubagColors.line,
                 ),
               ),
               leading: Container(
@@ -332,14 +333,14 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
-                  color: isDark ? Colors.white : const Color(0xFF1A0F0A),
+                  color: isDark ? Colors.white : CubagColors.ink,
                 ),
               ),
               subtitle: Text(
                 'Annual membership renewal, good standing review, and tax clearance',
                 style: TextStyle(
                   fontSize: 12.5,
-                  color: isDark ? Colors.white60 : const Color(0xFF64748b),
+                  color: isDark ? Colors.white60 : CubagColors.muted,
                 ),
               ),
               trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
@@ -355,7 +356,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
-                  color: isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6),
+                  color: isDark ? const Color(0xFF3D261C) : CubagColors.line,
                 ),
               ),
               leading: Container(
@@ -371,14 +372,14 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
-                  color: isDark ? Colors.white : const Color(0xFF1A0F0A),
+                  color: isDark ? Colors.white : CubagColors.ink,
                 ),
               ),
               subtitle: Text(
                 'GRA operational license endorsement and official CUBAG member ID',
                 style: TextStyle(
                   fontSize: 12.5,
-                  color: isDark ? Colors.white60 : const Color(0xFF64748b),
+                  color: isDark ? Colors.white60 : CubagColors.muted,
                 ),
               ),
               trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
@@ -396,7 +397,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
               'Cancel',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white70 : const Color(0xFF64748b),
+                color: isDark ? Colors.white70 : CubagColors.muted,
               ),
             ),
           ),
@@ -434,7 +435,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                 fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
                 color: isSel
                     ? (isDark ? Colors.white : _kTextDark)
-                    : (isDark ? Colors.white60 : const Color(0xFF6F625B)),
+                    : (isDark ? Colors.white60 : CubagColors.muted),
               ),
             ),
           ),
@@ -623,7 +624,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                       decoration: BoxDecoration(
                         color: isDark ? _kCardDark : Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: isDark ? _kBorderDark : const Color(0xFFE8DED6)),
+                        border: Border.all(color: isDark ? _kBorderDark : CubagColors.line),
                       ),
                       child: Center(
                         child: Column(
@@ -633,7 +634,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                                   ? Icons.assignment_turned_in_outlined
                                   : Icons.hourglass_empty_rounded,
                               size: 36,
-                              color: isDark ? Colors.white54 : const Color(0xFF6F625B),
+                              color: isDark ? Colors.white54 : CubagColors.muted,
                             ),
                             const SizedBox(height: 10),
                             Text(
@@ -852,7 +853,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
         color: isDark ? _kCardDark : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? _kBorderDark : const Color(0xFFE2E8F0),
+          color: isDark ? _kBorderDark : CubagColors.line,
           width: 1.0,
         ),
       ),
@@ -882,7 +883,6 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     color: _kPrimary,
-                    letterSpacing: 0.5,
                   ),
                 ),
               ),
@@ -896,7 +896,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
               final isCurrent = currentStepIdx == i;
               final Color circleColor = isPassed
                   ? _kGreen
-                  : (isCurrent ? _kPrimary : (isDark ? Colors.white24 : const Color(0xFFCBD5E1)));
+                  : (isCurrent ? _kPrimary : (isDark ? Colors.white24 : CubagColors.lineStrong));
 
               return Expanded(
                 child: Column(
@@ -910,7 +910,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                                 ? Colors.transparent
                                 : (currentStepIdx >= i
                                     ? _kPrimary
-                                    : (isDark ? Colors.white12 : const Color(0xFFE2E8F0))),
+                                    : (isDark ? Colors.white12 : CubagColors.line)),
                           ),
                         ),
                         Container(
@@ -949,7 +949,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                                 ? Colors.transparent
                                 : (currentStepIdx > i
                                     ? _kPrimary
-                                    : (isDark ? Colors.white12 : const Color(0xFFE2E8F0))),
+                                    : (isDark ? Colors.white12 : CubagColors.line)),
                           ),
                         ),
                       ],
@@ -967,7 +967,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                             ? _kPrimary
                             : (isPassed
                                 ? _kGreen
-                                : (isDark ? Colors.white60 : const Color(0xFF64748B))),
+                                : (isDark ? Colors.white60 : CubagColors.muted)),
                       ),
                     ),
                   ],
@@ -979,10 +979,10 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withAlpha(5) : const Color(0xFFF8FAFC),
+              color: isDark ? Colors.white.withAlpha(5) : CubagColors.sand,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+                color: isDark ? Colors.white10 : CubagColors.line,
               ),
             ),
             child: Row(
@@ -990,7 +990,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                 Icon(
                   Icons.info_outline_rounded,
                   size: 16,
-                  color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                  color: isDark ? Colors.white70 : CubagColors.muted,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -999,7 +999,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                     style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white70 : const Color(0xFF475569),
+                      color: isDark ? Colors.white70 : CubagColors.inkSoft,
                     ),
                   ),
                 ),
@@ -1118,7 +1118,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
     final allUploaded = uploadedCount == totalCount && totalCount > 0;
 
     return Scaffold(
-      backgroundColor: isDark ? _kDarkBg : const Color(0xFFf8fafc),
+      backgroundColor: isDark ? _kDarkBg : CubagColors.sand,
       appBar: AppBar(
         backgroundColor: isRevision
             ? (status == 'rejected' ? _kRed : _kAmber)
@@ -1361,7 +1361,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
             ],
           ),
           const SizedBox(height: 16),
-          Divider(color: isDark ? _kBorderDark : const Color(0xFFE2E8F0)),
+          Divider(color: isDark ? _kBorderDark : CubagColors.line),
           const SizedBox(height: 12),
 
           if (breakdown.isNotEmpty) ...[
@@ -1379,7 +1379,7 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
                 ),
               );
             }),
-            Divider(color: isDark ? _kBorderDark : const Color(0xFFE2E8F0)),
+            Divider(color: isDark ? _kBorderDark : CubagColors.line),
             const SizedBox(height: 8),
           ],
 
@@ -1438,21 +1438,21 @@ class _ApplicationDetailPageState extends State<_ApplicationDetailPage> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                color: CubagColors.valid.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                border: Border.all(color: CubagColors.valid.withValues(alpha: 0.3)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 20),
+                  const Icon(Icons.check_circle_rounded, color: CubagColors.valid, size: 20),
                   const SizedBox(width: 8),
                   Text(
                     'Payment Confirmed ✓',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15.5,
-                      color: const Color(0xFF10B981),
+                      color: CubagColors.valid,
                     ),
                   ),
                 ],
@@ -1573,7 +1573,7 @@ class _StatusViewPage extends StatelessWidget {
     final color = _statusColor(status);
 
     return Scaffold(
-      backgroundColor: isDark ? _kDarkBg : const Color(0xFFf8fafc),
+      backgroundColor: isDark ? _kDarkBg : CubagColors.sand,
       appBar: AppBar(
         backgroundColor: color,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -1745,12 +1745,11 @@ class _SectionHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'COMPLIANCE & STATUTORY CENTRE',
+                'Compliance & statutory centre',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
                   fontSize: 18,
-                  letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 4),
@@ -1834,7 +1833,7 @@ class _ApplicationCard extends StatelessWidget {
           border: Border.all(
             color: status == 'revision_requested'
                 ? _kAmber.withValues(alpha: 0.5)
-                : (isDark ? _kBorderDark : const Color(0xFFE8DED6)),
+                : (isDark ? _kBorderDark : CubagColors.line),
             width: 1.0,
           ),
         ),
@@ -1881,7 +1880,7 @@ class _ApplicationCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w500,
-                            color: isDark ? Colors.white60 : const Color(0xFF6F625B),
+                            color: isDark ? Colors.white60 : CubagColors.muted,
                             fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                           maxLines: 1,
@@ -2085,7 +2084,7 @@ class _ProgressCard extends StatelessWidget {
         color: isDark ? _kCardDark : Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: isDark ? _kBorderDark : const Color(0xFFE8DED6),
+          color: isDark ? _kBorderDark : CubagColors.line,
           width: 1.0,
         ),
       ),
@@ -2121,7 +2120,7 @@ class _ProgressCard extends StatelessWidget {
               minHeight: 8,
               backgroundColor: isDark
                   ? const Color(0xFF3E2418)
-                  : const Color(0xFFE8DED6),
+                  : CubagColors.line,
               valueColor: AlwaysStoppedAnimation<Color>(barColor),
             ),
           ),
@@ -2130,7 +2129,7 @@ class _ProgressCard extends StatelessWidget {
             noteText,
             style: TextStyle(
               fontSize: 13,
-              color: isDark ? Colors.white60 : const Color(0xFF6F625B),
+              color: isDark ? Colors.white60 : CubagColors.muted,
             ),
           ),
         ],
@@ -2189,7 +2188,7 @@ class _DocRow extends StatelessWidget {
         ? _kRed.withValues(alpha: 0.4)
         : isStaleDoc
         ? _kAmber.withValues(alpha: 0.4)
-        : (isDark ? _kBorderDark : const Color(0xFFE8DED6));
+        : (isDark ? _kBorderDark : CubagColors.line);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -2592,7 +2591,7 @@ class _EmptyState extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : const Color(0xFF1A0F0A),
+                color: isDark ? Colors.white : CubagColors.ink,
               ),
             ),
             const SizedBox(height: 8),
@@ -2603,7 +2602,7 @@ class _EmptyState extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: isDark ? Colors.white60 : const Color(0xFF64748b),
+                  color: isDark ? Colors.white60 : CubagColors.muted,
                   height: 1.5,
                 ),
               ),

@@ -8,6 +8,7 @@ import '../utils/session_storage.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/biometric_service.dart';
+import '../design/cubag_design.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -31,9 +32,9 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _showConfirm = false;
 
   static const _kBrown = Color(0xFF6B3E26);
-  static const _kOrange = Color(0xFFFF5000);
-  static const _kGreen = Color(0xFF10B981);
-  static const _kRed = Color(0xFFDC2626);
+  static const _kOrange = CubagColors.action;
+  static const _kGreen = CubagColors.valid;
+  static const _kRed = CubagColors.lapsed;
 
   @override
   void initState() {
@@ -294,9 +295,9 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF1E130D) : Colors.white;
-    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
-    final text = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
-    final muted = isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B);
+    final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
+    final text = isDark ? const Color(0xFFFFF8F3) : CubagColors.ink;
+    final muted = isDark ? const Color(0xFFC8ADA0) : CubagColors.muted;
     final surfaceRaised = isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
 
     return AppLayout(
@@ -343,12 +344,11 @@ class _SettingsPageState extends State<SettingsPage> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
                 child: Text(
-                  'SECURITY & PREFERENCES',
+                  'Security & preferences',
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: _kBrown,
-                    letterSpacing: 0.5,
                   ),
                 ),
               ),
@@ -519,12 +519,11 @@ class _SettingsPageState extends State<SettingsPage> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
                 child: Text(
-                  'SECRETARIAT & LIAISON',
+                  'Secretariat & liaison',
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: _kBrown,
-                    letterSpacing: 0.5,
                   ),
                 ),
               ),
@@ -585,12 +584,11 @@ class _SettingsPageState extends State<SettingsPage> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
                 child: Text(
-                  'GOVERNANCE & STATUTES',
+                  'Governance & statutes',
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: _kBrown,
-                    letterSpacing: 0.5,
                   ),
                 ),
               ),
@@ -682,12 +680,11 @@ class _SettingsPageState extends State<SettingsPage> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
                 child: Text(
-                  'ACCOUNT DECOMMISSIONING',
+                  'Account decommissioning',
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: _kRed,
-                    letterSpacing: 0.5,
                   ),
                 ),
               ),

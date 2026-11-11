@@ -12,11 +12,12 @@ import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/socket_service.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10b981);
-const _kRed = Color(0xFFef4444);
-const _kAmber = Color(0xFFf59e0b);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
+const _kRed = CubagColors.lapsed;
+const _kAmber = CubagColors.due;
 
 class StandingTier {
   final String label;
@@ -37,28 +38,28 @@ class StandingTier {
         label: 'Elite Standing',
         color: const Color(0xFFD4AF37),
         icon: Icons.workspace_premium_rounded,
-        badgeText: 'ELITE MEMBER',
+        badgeText: 'Elite member',
       );
     } else if (stars >= 3.5) {
       return StandingTier(
         label: 'Good Standing',
-        color: const Color(0xFF10B981),
+        color: CubagColors.valid,
         icon: Icons.verified_user_rounded,
-        badgeText: 'ACTIVE MEMBER',
+        badgeText: 'Active member',
       );
     } else if (stars >= 2.0) {
       return StandingTier(
         label: 'Warning / Probationary',
-        color: const Color(0xFFF59E0B),
+        color: CubagColors.due,
         icon: Icons.warning_amber_rounded,
-        badgeText: 'PROBATIONARY',
+        badgeText: 'Probationary',
       );
     } else {
       return StandingTier(
         label: 'Suspended / Delinquent',
-        color: const Color(0xFFEF4444),
+        color: CubagColors.lapsed,
         icon: Icons.block_rounded,
-        badgeText: 'SUSPENDED',
+        badgeText: 'Suspended',
       );
     }
   }
@@ -229,8 +230,8 @@ class _ProfilePageState extends State<ProfilePage> {
         builder: (ctx, setSheetState) {
           final isDark = Theme.of(ctx).brightness == Brightness.dark;
           final sheetBg = isDark ? const Color(0xFF1E130D) : Colors.white;
-          final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-          final textMuted = isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748B);
+          final textPrimary = isDark ? Colors.white : CubagColors.ink;
+          final textMuted = isDark ? const Color(0xFF5F6B7E) : CubagColors.muted;
 
           return Padding(
             padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
@@ -296,14 +297,14 @@ class _ProfilePageState extends State<ProfilePage> {
                         prefixIcon: const Icon(Icons.email_outlined, size: 18),
                         hintText: 'member@company.com',
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF281710) : const Color(0xFFF8FAFC),
+                        fillColor: isDark ? const Color(0xFF281710) : CubagColors.sand,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                          borderSide: BorderSide(color: isDark ? Colors.white12 : CubagColors.line),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                          borderSide: BorderSide(color: isDark ? Colors.white12 : CubagColors.line),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -334,14 +335,14 @@ class _ProfilePageState extends State<ProfilePage> {
                         prefixIcon: const Icon(Icons.phone_outlined, size: 18),
                         hintText: '024 123 4567',
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF281710) : const Color(0xFFF8FAFC),
+                        fillColor: isDark ? const Color(0xFF281710) : CubagColors.sand,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                          borderSide: BorderSide(color: isDark ? Colors.white12 : CubagColors.line),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                          borderSide: BorderSide(color: isDark ? Colors.white12 : CubagColors.line),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -581,11 +582,11 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC);
-    final cardBg = isDark ? const Color(0xFF1A0F0A) : Colors.white;
-    final border = isDark ? const Color(0xFF281710) : const Color(0xFFE2E8F0);
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748B);
+    final bg = isDark ? CubagColors.ink : CubagColors.sand;
+    final cardBg = isDark ? CubagColors.ink : Colors.white;
+    final border = isDark ? const Color(0xFF281710) : CubagColors.line;
+    final textPrimary = isDark ? Colors.white : CubagColors.ink;
+    final textMuted = isDark ? const Color(0xFF5F6B7E) : CubagColors.muted;
     final tileBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F4);
     final isMobile = MediaQuery.of(context).size.width < 600;
 
@@ -864,11 +865,10 @@ class _ProfilePageState extends State<ProfilePage> {
                         border: Border.all(color: _kOrange.withValues(alpha: 0.3)),
                       ),
                       child: Text(
-                        'OFFICIAL ID',
+                        'Official ID',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
-                          letterSpacing: 0.4,
                           color: AppColors.accentOrangeText,
                         ),
                       ),
@@ -944,7 +944,6 @@ class _ProfilePageState extends State<ProfilePage> {
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
-                              letterSpacing: 0.4,
                               color: complianceScore >= 80 ? _kGreen : _kAmber,
                             ),
                           ),
@@ -1044,11 +1043,10 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  label.toUpperCase(),
+                  label,
                   style: TextStyle(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 0.6,
                     color: textMuted,
                   ),
                 ),
@@ -1067,11 +1065,10 @@ class _ProfilePageState extends State<ProfilePage> {
                           const Icon(Icons.edit_outlined, size: 12, color: _kOrange),
                           const SizedBox(width: 4),
                           Text(
-                            'EDIT',
+                            'Edit',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              letterSpacing: 0.4,
                               color: AppColors.accentOrangeText,
                             ),
                           ),
@@ -1108,11 +1105,10 @@ class _ProfilePageState extends State<ProfilePage> {
                           Icon(Icons.copy_rounded, size: 11.5, color: textMuted),
                           const SizedBox(width: 4),
                           Text(
-                            'COPY',
+                            'Copy',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              letterSpacing: 0.4,
                               color: textMuted,
                             ),
                           ),
@@ -1152,8 +1148,8 @@ class _ProfilePageState extends State<ProfilePage> {
         ? 'Pending'
         : (isGoodStanding ? 'Active' : 'Inactive');
     final badgeColor = isPackagePending
-        ? const Color(0xFFF59E0B)
-        : (isGoodStanding ? const Color(0xFF10B981) : const Color(0xFFEF4444));
+        ? CubagColors.due
+        : (isGoodStanding ? CubagColors.valid : CubagColors.lapsed);
 
     final expireText = (!isGoodStanding || isPackagePending)
         ? 'Pending Renewal'
@@ -1187,7 +1183,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF1E293B)),
+                  child: const Icon(Icons.close_rounded, size: 20, color: CubagColors.ink),
                 ),
               )),
             ),
@@ -1200,7 +1196,7 @@ class _ProfilePageState extends State<ProfilePage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+              border: Border.all(color: CubagColors.line, width: 1),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withAlpha(35),
@@ -1239,17 +1235,15 @@ class _ProfilePageState extends State<ProfilePage> {
                               style: TextStyle(
                                 fontWeight: FontWeight.w900,
                                 fontSize: 16,
-                                color: const Color(0xFF0F172A),
-                                letterSpacing: 0.5,
+                                color: CubagColors.ink,
                               ),
                             ),
                             Text(
-                              'DIGITAL ID',
+                              'Digital ID',
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 8.5,
                                 color: AppColors.accentOrangeText,
-                                letterSpacing: 0.8,
                               ),
                             ),
                           ],
@@ -1276,12 +1270,11 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           const SizedBox(width: 5),
                           Text(
-                            badgeText.toUpperCase(),
+                            badgeText,
                             style: TextStyle(
                               color: badgeColor,
                               fontWeight: FontWeight.w800,
                               fontSize: 10.5,
-                              letterSpacing: 0.4,
                             ),
                           ),
                         ],
@@ -1325,7 +1318,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
-                              color: const Color(0xFF0F172A),
+                              color: CubagColors.ink,
                               height: 1.15,
                             ),
                             maxLines: 2,
@@ -1336,7 +1329,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             companyName,
                             style: TextStyle(
                               fontSize: 12.5,
-                              color: const Color(0xFF64748B),
+                              color: CubagColors.muted,
                               height: 1.2,
                             ),
                             maxLines: 1,
@@ -1346,7 +1339,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
+                              color: CubagColors.sand,
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -1354,7 +1347,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               style: TextStyle(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w600,
-                                color: const Color(0xFF475569),
+                                color: CubagColors.inkSoft,
                               ),
                             ),
                           ),
@@ -1365,7 +1358,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
 
                 const SizedBox(height: 16),
-                const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                const Divider(height: 1, color: CubagColors.line),
                 const SizedBox(height: 12),
 
                 // 3. Footer: Credentials & Verification QR
@@ -1377,12 +1370,11 @@ class _ProfilePageState extends State<ProfilePage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'MEMBER ID',
+                          'Member ID',
                           style: TextStyle(
                             fontSize: 9.5,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF5F6B7E),
-                            letterSpacing: 0.5,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -1391,17 +1383,16 @@ class _ProfilePageState extends State<ProfilePage> {
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 14,
-                            color: const Color(0xFF0F172A),
+                            color: CubagColors.ink,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'VALID THRU',
+                          'Valid thru',
                           style: TextStyle(
                             fontSize: 9.5,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF5F6B7E),
-                            letterSpacing: 0.5,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -1410,7 +1401,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 12.5,
-                            color: isGoodStanding ? const Color(0xFF334155) : const Color(0xFFEF4444),
+                            color: isGoodStanding ? CubagColors.inkSoft : CubagColors.lapsed,
                           ),
                         ),
                       ],
@@ -1420,7 +1411,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                        border: Border.all(color: CubagColors.line, width: 1),
                       ),
                       child: QrImageView(
                         data: 'https://cubag-api-server.fly.dev/#/verify-member?id=${_membershipId.isNotEmpty && _membershipId != 'Pending' ? _membershipId : (_user['id']?.toString() ?? '')}',
@@ -1430,11 +1421,11 @@ class _ProfilePageState extends State<ProfilePage> {
                         padding: EdgeInsets.zero,
                         eyeStyle: const QrEyeStyle(
                           eyeShape: QrEyeShape.square,
-                          color: Color(0xFF0F172A),
+                          color: CubagColors.ink,
                         ),
                         dataModuleStyle: const QrDataModuleStyle(
                           dataModuleShape: QrDataModuleShape.square,
-                          color: Color(0xFF0F172A),
+                          color: CubagColors.ink,
                         ),
                       ),
                     ),
