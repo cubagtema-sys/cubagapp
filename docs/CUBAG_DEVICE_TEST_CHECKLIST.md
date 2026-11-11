@@ -91,16 +91,21 @@ Column meanings: **Backend** = fake-DB unit (`tests_security`) / real PostgreSQL
 
 ## 9. Biometric authentication and token revocation
 
-SEC-14 (revocable biometric tokens) is **not implemented yet**. Today the app stores the account password in the keychain for biometric login. These rows are the acceptance test for SEC-14 and are all `Not tested`.
+SEC-14 is implemented on the backend (tested: fake-DB and real PostgreSQL) and written in the app (commit `11cad02`), but the app code has **not been compiled or run**. Every device column below is `Not tested`.
 
 | # | Step | Expected after SEC-14 | Backend | Flutter unit | Simulator | Physical device |
 |---|---|---|---|---|---|---|
-| 9.1 | Enable biometric login | Works; the password is not stored on the device | Not implemented | Not tested | Not tested | Not tested |
-| 9.2 | Sign out, sign in with Face ID / fingerprint | Works | Not implemented | Not tested | Not tested | Not tested |
-| 9.3 | Change password on another device, then use biometrics here | Refused; asks for the password | Not implemented | Not tested | Not tested | Not tested |
-| 9.4 | Disable biometric login, then try the old credential | Refused | Not implemented | Not tested | Not tested | Not tested |
-| 9.5 | Add a new fingerprint/face in system settings | Biometric login requires the password once | Not implemented | Not tested | Not tested | Not tested |
-| 9.6 | Upgrade with biometric login already enabled | Old stored password removed; user asked to re-enable | Not implemented | Not tested | Not tested | Not tested |
+| 9.1 | Sign in with password, "Keep me signed in" ticked | Biometric sign-in enabled; the password is not stored on the device | Tested (enrolment, hash-only storage) | Tested (credential helpers only) | Not tested | Not tested |
+| 9.2 | Sign out, sign in with Face ID / fingerprint; repeat 3 times | Works every time (credential is replaced on each use) | Tested (rotation) | Not tested | Not tested | Not tested |
+| 9.3 | Change password on another device, then use biometrics here | Refused; asks for the password; biometric toggle now off | Tested | Not tested | Not tested | Not tested |
+| 9.4 | Settings: turn biometric sign-in off, sign out | No biometric button action; old credential refused by server | Tested (revoke) | Not tested | Not tested | Not tested |
+| 9.5 | Settings: turn it on again | Asks for biometrics, then the password; wrong password shows an error and does **not** sign out | Tested (400, lockout after 5) | Not tested | Not tested | Not tested |
+| 9.6 | Change password in the app on this device | Stays signed in; biometric sign-in still works afterwards | Tested (re-enrolment) | Not tested | Not tested | Not tested |
+| 9.7 | Upgrade from a build that had biometric login enabled | Old stored password removed; biometric off until next password sign-in | — | Not tested | Not tested | Not tested |
+| 9.8 | Suspend the member (admin), try biometrics | Suspension message; after reinstatement biometrics work again | Tested | Not tested | Not tested | Not tested |
+| 9.9 | Delete account, then try biometrics | No credential on device; refused | Tested | Not tested | Not tested | Not tested |
+| 9.10 | Airplane mode, try biometrics | Connection error; credential kept; works when back online | — | Tested (refusal rule) | Not tested | Not tested |
+| 9.11 | Add a new fingerprint/face in system settings, then sign in | **Known limit:** still works (no OS-level binding — see design doc §4) | — | — | Not tested | Not tested |
 
 Biometric rows need a physical device (or a simulator with enrolled Face ID/Touch ID for 9.1–9.4).
 

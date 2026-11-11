@@ -126,3 +126,45 @@ All branch failures also fail on the base commit at the same lines, so none were
 - 4 skipped: need `TEST_ADMIN_EMAIL` / `TEST_ADMIN_PASSWORD`.
 
 Isolation of the legacy suite before this session: none. No test database, no transactions or rollback, and `DB_HOST`/`DB_PASSWORD` came from the developer's `.env` — so `pytest tests` on the Mac would have run `init_db()` DDL and at least one insert against production. Fixed in `e88b117` (local `*_test` database only; otherwise a closed local port).
+
+
+## SEC-14 — 10–11 Nov 2026 (after run 2)
+
+Order followed: review of the existing flow → design and risks (`CUBAG_SEC14_DESIGN.md`, commit `f3847f8`) → backend → tests → app.
+
+Backend, fake DB (Linux workspace on the Mac, Python 3.10), commit `1e5f797`:
+
+| Command | Result |
+|---|---|
+| `python3 -m pytest tests_security -q -p no:cacheprovider` | **103 passed** (75 existing + 28 in `test_sec14_biometric_tokens.py`) |
+
+Backend, real PostgreSQL 16.15 (local throwaway cluster, fresh database, same test-only libpq adapter caveat as above), commit `1e5f797`:
+
+| Command | Result |
+|---|---|
+| `TEST_DATABASE_URL=…cubag_test python3 -m pytest tests_pg -q` | first run: 42 passed, 1 failed (a mistake in the new test's SQL, not in the app) |
+| same, after fixing the test | **45 passed** (21 existing + 24 in `test_sec14_biometric_pg.py`), repeated 5 times with the same result |
+| Legacy `tests/` | 72 passed, 10 failed, 4 skipped — the same pre-existing failures |
+
+The login refactor (`_complete_login`) is covered by the existing login tests in both suites, which still pass.
+
+Required cases and where they are proven (F = fake DB, P = real PostgreSQL):
+
+| Case | Evidence |
+|---|---|
+| Valid credential | F, P (signs in, session works, credential replaced, replacement works) |
+| Expired | F, P |
+| Revoked | F, P |
+| Token reuse (rotated credential replayed) | F, P — device revoked, legitimate credential cut off too |
+| Simultaneous double use | P — two threads, exactly one 200 and one 401 |
+| Device mismatch | F, P |
+| Wrong secret / guessing | F, P — revoked after 5 |
+| Cross-member use | P |
+| Logout | F, P — plain keeps, forget-device revokes one, all-devices revokes all and kills sessions |
+| Password change | F, P — incl. re-enrolment needing the new password |
+| Password reset | P |
+| Account security changes | P — confirmed email change, account deletion, role change to admin, suspension (blocked, not consumed) |
+| Unauthorised enrolment / refresh | F, P — no session 401, wrong password 400 + lockout, admin 403, bad device id 400 |
+| Secret never stored or logged in clear | F, P |
+
+App (Flutter), commit `11cad02`: **not compiled, not analyzed, not run.** New unit tests in `test/biometric_service_test.dart` have not been executed. Verification run 3 (`verify_cubag.command`) is required before any of it counts as verified, and device rows 9.1–9.11 after that.

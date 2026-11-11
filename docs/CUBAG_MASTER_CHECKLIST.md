@@ -9,7 +9,7 @@ _Last updated: 10 Nov 2026 (session 2, second verification directive) — branch
 **Status rules used:** `[x]` = implemented **and** its automated tests ran and passed (backend: `python -m pytest tests_security`).
 `[~]` = implemented but not yet verified end-to-end. Verification run 2 (10 Nov 22:42 PST): `flutter analyze` 0 issues, `flutter test` 84/84,
 iOS release build passes, Android debug build passed (manifest conflict verified fixed), backend fake-DB 75/75 passed.
-Physical device/simulator tests remain pending per `CUBAG_DEVICE_TEST_CHECKLIST.md`. Phase 1 verification complete; SEC-14 unblocked.
+Physical device/simulator tests remain pending per `CUBAG_DEVICE_TEST_CHECKLIST.md`. Phase 1 verification complete. SEC-14 code written after run 2 (11 Nov) has **not** been through analyze/test/build yet — run 3 needed.
 Real-PostgreSQL results and the device test sheet are in `CUBAG_VERIFICATION_LOG.md` and `CUBAG_DEVICE_TEST_CHECKLIST.md`. See `CUBAG_NEXT_STEPS.md`.
 `[!]` = blocked on an owner action or decision (see `CUBAG_NEXT_STEPS.md`).
 
@@ -78,7 +78,7 @@ Real-PostgreSQL results and the device test sheet are in `CUBAG_VERIFICATION_LOG
 | [~] | P0 | IOS-05 / AND-05 | Messaging: report message/user, block user, admin moderation queue (or restrict to Secretariat) | `messaging_page.dart`, `routes/messages.py` | blocked user can't message |
 | [~] | P0 | IOS-07 | Implement the CTI online-course payment decision on iOS | `cti_courses_page.dart`, `guest_service_request_page.dart` | iOS build has no MoMo pay for online courses (if chosen) |
 | [~] | P1 | SEC-13 | Stop writing `cubag_token` to SharedPreferences; delete legacy copy | `session_storage_stub.dart` | prefs file has no token |
-| [ ] | P1 | SEC-14 | Biometric: store a revocable device token instead of the password (backend support needed) | `biometric_service_native.dart`, `auth.py` | password not in keychain |
+| [~] | P1 | SEC-14 | Biometric: store a revocable device token instead of the password — backend done and tested (fake-DB 28, real PostgreSQL 24); app code written but **not compiled, not device-tested** | `biometric_service_native.dart`, `auth.py` | password not in keychain |
 | [ ] | P1 | PERF-08 | Encrypt the Hive `api_cache` box, or exclude sensitive endpoints | `api_service.dart`, `main.dart` | box file unreadable |
 | [ ] | P1 | BUG-04 | Add Crashlytics or `sentry_flutter`; route `FlutterError`/`PlatformDispatcher` errors to it | `main.dart` | test crash appears in console |
 | [~] | P1 | BUG-07 | Request notification permission after login with an explainer | `main.dart`, `push_notification_service.dart` | fresh install: no prompt before login |
@@ -175,20 +175,20 @@ _Recalculated directly from the `[ ]/[~]/[x]/[!]` marker on every row above — 
 |---|---|---|---|---|---|
 | 0 Owner verifications | 12 | 1 | 0 | 0 | 11 |
 | 1 Backend security | 25 | 13 | 5 | 2 | 5 |
-| 2 Mobile & store blockers | 21 | 0 | 12 | 4 | 5 |
+| 2 Mobile & store blockers | 21 | 0 | 13 | 4 | 4 |
 | 3 Compliance & listing | 10 | 2 | 0 | 0 | 8 |
 | 4 Functional & testing | 7 | 0 | 1 | 1 | 5 |
 | 5 DB & ops | 9 | 0 | 0 | 1 | 8 |
 | 6 UI/UX & responsive | 18 | 0 | 0 | 0 | 18 |
 | 7 Cleanup | 8 | 0 | 0 | 0 | 8 |
-| **Total** | **110** | **16** | **18** | **8** | **68** |
+| **Total** | **110** | **16** | **19** | **8** | **67** |
 
 By priority (same rows, split the other way):
 
 | Priority | Rows | Done | In progress | Blocked | Not started |
 |---|---|---|---|---|---|
 | P0 | 39 | 10 | 12 | 5 | 12 |
-| P1 | 36 | 6 | 6 | 3 | 21 |
+| P1 | 36 | 6 | 7 | 3 | 20 |
 | P2 | 24 | 1 | 3 | 0 | 20 |
 | P3 | 11 | 0 | 0 | 0 | 11 |
 

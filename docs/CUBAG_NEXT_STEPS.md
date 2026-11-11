@@ -16,8 +16,10 @@ Full evidence: `docs/CUBAG_VERIFICATION_LOG.md`. Device test sheet: `docs/CUBAG_
 | 2 Android release signing | Reviewed (below). Configuration is correct; `android/key.properties` and a keystore do not exist — owner action. |
 | 3 Real PostgreSQL | Done on a local PostgreSQL 16: new `tests_pg/` 21 passed; legacy `tests/` 9–10 pre-existing failures; 3 real bugs found and fixed (`da03dd5`). |
 | 4 Device verification | Checklist written. **Nothing tested on a simulator or device.** |
-| 5 SEC-14 | **Unblocked** — Phase 1 verification complete; ready to proceed. |
+| 5 SEC-14 | **Backend implemented and tested; app code written but unverified.** Design: `CUBAG_SEC14_DESIGN.md`. Backend: fake-DB 103 passed (28 new), real PostgreSQL 45 passed (24 new). Flutter changes (commit `11cad02`) have **not** been compiled, analyzed or run — verification run 3 needed, then device rows 9.1–9.6. |
 | 6 Docs | Updated. |
+
+SEC-14 commits (11 Nov): `f3847f8` design · `556330b` backend · `1e5f797` revoke fix · `11cad02` app (unverified).
 
 Commits this session: `b191564` test fixture · `12bab57` docs · `a8b41f8` debug manifest + analyzer infos · `da03dd5` delete-account / fresh-DB fixes · `e88b117` `tests_pg` + legacy guard · `71546e0` note · docs commit after this one.
 
@@ -204,7 +206,7 @@ Then the manual iOS check for the CTI policy (directive §3.4 items 1–3 visual
 ## Exact next tasks (in order)
 
 1. Fix anything `flutter analyze`/`flutter test` reports in the files above; then mark those rows `[x]`.
-2. **SEC-14** biometric: replace stored password with a revocable device token (`POST /auth/biometric-token`, stored hashed; revoke on logout/password change/deletion).
+2. **SEC-14** — implemented (see Session 2 status); remaining: verification run 3 and device testing.
 3. **PERF-08** encrypt the Hive `api_cache` box (`HiveAesCipher`, key in secure storage).
 4. **BUG-04** crash reporting (Crashlytics or `sentry_flutter`) — adds a dependency; confirm choice.
 5. **BUG-10 (rest)**: `/api/vessels` no longer serves the AIS *simulation* as live, and the static registry no longer carries stale ETAs (done, tested). Still to do: label the default market-intelligence data (`data/intelligence.json`) in the app, and make the vessel screen show an empty state when `live` is false.
