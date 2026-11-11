@@ -6,6 +6,18 @@ _Checkpoint written 10 Nov 2026 at the end of implementation session 1; updated 
 
 You pasted the real `cubag-backend/.env` file (with live `DB_PASSWORD`, `DATABASE_URL`, `SECRET_KEY`, `JWT_SECRET_KEY`, `SMTP_PASS`, `RESEND_API_KEY`, `WHITSUNPAY_API_KEY` (`wp_live_...`), `WHITSUNPAY_WEBHOOK_SECRET`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `AIS_API_KEY`, and the full Firebase service-account private key) directly into the conversation. None of those values were used, logged, or sent anywhere by me — I never need them for this work and never connect to your production services — but once a secret has been typed into a chat it should be treated as potentially exposed. Please rotate **all** of the above (new DB password, new Supabase service/anon keys via Supabase dashboard, new JWT/Flask secret keys, new SMTP app password, new Resend key, new WhitsunPay API key + webhook secret, and a new Firebase service-account key with the old one revoked in the Firebase/GCP console) — this is the same rotation already listed as owner action #3 below, now more urgent.
 
+## Session 3 status (11 Nov 2026) — read this first
+
+**URGENT owner action (SEC-26):** deploy commit `df9b3e0`, then rotate the Supabase service-role key (Project Settings → API), update it on the server, and review Supabase API logs for service-role requests that did not come from the server. Rotate *after* deploying, or the new key leaks the same way.
+
+- Verification run 3 and the Mac real-PostgreSQL run (45/45, real driver) confirmed SEC-14's app code compiles, passes tests and builds. Device testing (section 9 of the device checklist) is in progress on the owner's iPhone.
+- Bug section, code-fixable items: BUG-09, BUG-13 done; BUG-08 mostly done (remaining items listed in the checklist); plus new BUG-14/15/16, SEC-26, SEC-27 (see `CUBAG_VERIFICATION_LOG.md`).
+- Remaining bug-section items: **BUG-04 crash reporting** (needs owner choice: Firebase Crashlytics or Sentry), BUG-01 (owner: APNs key in Firebase), BUG-03 (owner: keystore), BUG-06 (owner: copy `docs/ci.yml.proposed` to `.github/workflows/ci.yml`), BUG-07 (device check).
+- Uncommitted iOS changes on disk that are **not mine**: `project.pbxproj` (Xcode format upgrade) and `Runner.entitlements` with `aps-environment` removed. Fine for a free-Apple-ID device install, but **do not commit the entitlements change** — it disables push notifications.
+- Commits: `df9b3e0` key leak + BUG-13 · `c9f90e4` BUG-09/BUG-08 · `67fde84` certificate + lost uploads + /me & profile crashes · docs commit after this.
+- Real-PG suite is now 54 tests; re-run it on the Mac with the real driver:
+  `TEST_DATABASE_URL="host=127.0.0.1 port=5432 dbname=cubag_test" ./venv/bin/python -m pytest tests_pg -q`
+
 ## Session 2 status (10 Nov 2026, ~16:15 PST) — read this first
 
 Full evidence: `docs/CUBAG_VERIFICATION_LOG.md`. Device test sheet: `docs/CUBAG_DEVICE_TEST_CHECKLIST.md`.

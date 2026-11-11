@@ -168,3 +168,52 @@ Required cases and where they are proven (F = fake DB, P = real PostgreSQL):
 | Secret never stored or logged in clear | F, P |
 
 App (Flutter), commit `11cad02`: **not compiled, not analyzed, not run.** New unit tests in `test/biometric_service_test.dart` have not been executed. Verification run 3 (`verify_cubag.command`) is required before any of it counts as verified, and device rows 9.1–9.11 after that.
+
+
+## Run 3 — 11 Nov 2026 03:58–04:02 PST, commit `c4c9d34` (includes SEC-14 app code)
+
+Run on the owner's Mac by the owner's local assistant; logs read and confirmed: `docs/verify_logs/run_20261111_035842/`.
+
+| Step | Result |
+|---|---|
+| `flutter analyze` | No issues found |
+| `flutter test` | **86 passed** (84 + 2 net new biometric credential tests) |
+| `flutter build apk --debug` | Built; merged manifest `minSdkVersion 24`, `targetSdkVersion 36` |
+| `flutter build appbundle --release` | Stopped by design (no `android/key.properties`) |
+| `flutter build ios --release --no-codesign` | Built, 38.2 MB |
+| Backend fake-DB | 103 passed |
+| `tests_pg` guard (no DB) | 2 passed, 43 skipped |
+
+Real PostgreSQL on the owner's Mac, same commit: **45 passed** with the real `psycopg2` 2.9.12 driver on PostgreSQL 18.6, database `cubag_test` on 127.0.0.1 (`docs/verify_logs/tests_pg_mac_20261111_0358/tests_pg.log`, password omitted). This removes the dependency on the sandbox's test-only driver adapter for the 45 tests that existed at that point.
+
+Note: run 2's first attempt hung at `flutter pub get` for 9 minutes and was restarted; its partial log folder was deleted. The run 2 logs on record are from the restart.
+
+## Bug section — 11 Nov 2026, commits `df9b3e0`, `c9f90e4`, `67fde84`
+
+Backend only. Fake-DB on the Linux workspace on the Mac; real PostgreSQL 16.15 in an isolated sandbox (test-only libpq adapter, see above) on a fresh `cubag_test` database each run.
+
+| Suite | Before | After |
+|---|---|---|
+| `tests_security` (fake DB) | 103 passed | **124 passed** (21 new) |
+| `tests_pg` (real PostgreSQL) | 45 passed | **54 passed** (9 new), twice in a row |
+| Legacy `tests/` | 10 failed | 9 failed, 73 passed, 4 skipped — same pre-existing failures; the flaky compliance-duplicates test now passes |
+
+The 8 new tests in `test_upload_safety.py` were also run against the code before `df9b3e0` (in a temporary git worktree): **all 8 failed**, so they detect the problems they target.
+
+Findings (details in the commit messages):
+
+| ID | Finding | Origin | Proven by |
+|---|---|---|---|
+| SEC-26 | Supabase **service-role key** returned by two `sign-upload` endpoints to any signed-in member | pre-existing since `17d96c9` (14 Sep) | fake DB + static guard + real PG |
+| SEC-27 | Compliance certificate served with no token, any application, any status | pre-existing | fake DB + real PG |
+| BUG-11 (leftover) | Compliance certificate printed "HART LOGISTICS", "KIA Air Cargo", invented licence number and expiry | pre-existing; missed when BUG-11 was closed | fake DB |
+| BUG-16 | Certificate download from the app returned 401 | **introduced by this branch** (SEC-03) | fake DB |
+| BUG-14 | Compliance upload record silently rolled back while API said success (`members.company_name` missing on a fresh schema; production impact depends on whether production has that column) | pre-existing | real PG only |
+| BUG-15 | `GET /auth/me` 500 for members without district rows; profile update with districts always 500 | pre-existing | real PG only |
+| BUG-08 | Listing compliance applications deleted older duplicate drafts and their documents | pre-existing | real PG |
+| BUG-09 | Profile reads wrote ratings, history, notifications, push and licence numbers | pre-existing | real PG table snapshots |
+| BUG-13 | Compliance file stored before ownership check | pre-existing | fake DB + real PG |
+
+BUG-14 and BUG-15 were found only because the real-PostgreSQL suite exists; the fake DB cannot see aborted transactions or type errors.
+
+Not deployed. Nothing was run against production.

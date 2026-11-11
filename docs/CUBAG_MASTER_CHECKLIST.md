@@ -4,12 +4,13 @@ Status: `[ ]` Not started · `[~]` In progress · `[x]` Completed · `[!]` Block
 Priority: **P0** must fix before release · **P1** production readiness · **P2** quality & experience · **P3** optional
 IDs refer to `CUBAG_AUDIT_REPORT.md` (SEC/BUG/UI/RESP/DB/PERF/IOS/AND/INC). Phases match `CUBAG_IMPLEMENTATION_ROADMAP.md`.
 
-_Last updated: 10 Nov 2026 (session 2, second verification directive) — branch `release/p0-hardening`._
+_Last updated: 11 Nov 2026 (bug section) — branch `release/p0-hardening`._
 
 **Status rules used:** `[x]` = implemented **and** its automated tests ran and passed (backend: `python -m pytest tests_security`).
 `[~]` = implemented but not yet verified end-to-end. Verification run 2 (10 Nov 22:42 PST): `flutter analyze` 0 issues, `flutter test` 84/84,
 iOS release build passes, Android debug build passed (manifest conflict verified fixed), backend fake-DB 75/75 passed.
-Physical device/simulator tests remain pending per `CUBAG_DEVICE_TEST_CHECKLIST.md`. Phase 1 verification complete. SEC-14 code written after run 2 (11 Nov) has **not** been through analyze/test/build yet — run 3 needed.
+Verification run 3 (11 Nov 04:02 PST, commit `c4c9d34`, incl. SEC-14 app code): analyze 0 issues, `flutter test` 86/86, Android debug + iOS release builds pass, backend fake-DB 103/103; `tests_pg` 45/45 on the owner's Mac (real psycopg2, PostgreSQL 18.6).
+Physical device/simulator tests remain pending per `CUBAG_DEVICE_TEST_CHECKLIST.md`, so mobile rows stay `[~]`.
 Real-PostgreSQL results and the device test sheet are in `CUBAG_VERIFICATION_LOG.md` and `CUBAG_DEVICE_TEST_CHECKLIST.md`. See `CUBAG_NEXT_STEPS.md`.
 `[!]` = blocked on an owner action or decision (see `CUBAG_NEXT_STEPS.md`).
 
@@ -31,6 +32,10 @@ Real-PostgreSQL results and the device test sheet are in `CUBAG_VERIFICATION_LOG
 | [ ] | P0 | IOS-05 | Decide messaging scope for v1: member↔member (needs report/block) or member↔Secretariat only | Owner |
 | [ ] | P1 | 5.11 | Organisation developer accounts for Apple and Google (D-U-N-S) | Owner |
 | [ ] | P1 | RESP-01 | Decide iPad support for v1 (recommend iPhone-only) | Owner |
+
+| Status | Pri | ID | Task | Test |
+|---|---|---|---|---|
+| [ ] | P0 | SEC-26 | **Deploy `df9b3e0`, then rotate the Supabase service-role key** and review Supabase API logs for service-role use not from the server (the key was obtainable by any registered member since 14 Sep 2026) | old key rejected by Supabase |
 
 ## Phase 1 — Critical security fixes (backend)
 
@@ -59,6 +64,8 @@ Real-PostgreSQL results and the device test sheet are in `CUBAG_VERIFICATION_LOG
 | [ ] | P2 | SEC-22 | Restrict CORS/Socket.IO origins to real web origins | `server.py:201`, `socket_instance.py` | foreign origin blocked (web) |
 | [ ] | P2 | SEC-23 | Admin re-confirms fee category/scale at approval | admin members flow | — |
 | [ ] | P2 | SEC-24 | Mask phone/account numbers in logs | `routes/payments.py` | log review |
+| [x] | P0 | SEC-26 | Service-role key returned by `/documents/sign-upload` and `/compliance/applications/<id>/sign-upload` — both withdrawn (410) with their `confirm-upload` partners (11 Nov, `df9b3e0`) | `routes/documents.py`, `routes/compliance.py` | `test_upload_safety.py`: no key in any response; static guard |
+| [x] | P0 | SEC-27 | Compliance certificate served to callers with no token, for any application in any status — now sign-in, owner/admin, approved only (`67fde84`) | `routes/compliance.py` | 401/404/409 tests (fake + real PG) |
 | [x] | P2 | BUG-12 | Messaging: validate recipient, max length, rate limit | `routes/messages.py` | 2,001-char message → 400 |
 | [~] | P2 | — | Add rate limits to `/auth/verify-otp` alias, `/members/verify/<id>`, public survey respond | routes | 429 after limit |
 
@@ -111,9 +118,12 @@ Real-PostgreSQL results and the device test sheet are in `CUBAG_VERIFICATION_LOG
 | [~] | P1 | INC-09 | Backend tests for every SEC fix (authorisation matrix: anon/member/sub-admin(no perm)/sub-admin(perm)/admin) against a disposable Postgres — `tests_pg/` added (21 pass on local PostgreSQL 16); not the full matrix, not in CI | tests pass in CI |
 | [ ] | P1 | INC-09 | Flutter: router redirect tests (exist), login/registration widget tests, API error-mapping tests | tests pass in CI |
 | [ ] | P1 | — | Manual smoke test on 4–5 devices: register → OTP → documents → pay → approval → dashboard → renew → message → delete account | test log signed off |
-| [ ] | P1 | BUG-09 / PERF-07 | Move rating recalculation off read paths | `GET /members/<id>` performs no writes |
-| [ ] | P2 | BUG-13 | Ownership check before storing compliance uploads | non-owner upload leaves no file |
-| [ ] | P2 | BUG-08 | No writes on GET anywhere (search for UPDATE in GET handlers) | code review |
+| [x] | P1 | BUG-09 / PERF-07 | Move rating recalculation off read paths — `compute_member_rating()` on GET; saved by daily job/sign-in/write events; licence backfill moved to daily job (`c9f90e4`) | `GET /members/<id>`, `/auth/me`, `/members/license-history` leave all tables unchanged (real PG) |
+| [x] | P2 | BUG-13 | Ownership check before storing compliance uploads; re-checked under row lock (`df9b3e0`) | non-owner upload leaves no file (fake + real PG) |
+| [~] | P2 | BUG-08 | No writes on GET anywhere — done: certificate (SEC-03), profile/rating/licence (BUG-09), `my-applications` no longer deletes drafts. Remaining by decision: payment-status syncs in `GET /auth/me` and `GET /compliance/my-applications`, guest payment status poll (need end-to-end payment testing to move), message read-marking (accepted), schema DDL inside some admin GETs (DB-01) | code review |
+| [x] | P1 | BUG-14 | Compliance uploads silently lost: notification helper queried a missing column, aborted the transaction, document INSERT rolled back while API said success (`67fde84`) | real PG: record exists after upload |
+| [x] | P1 | BUG-15 | `GET /auth/me` and profile update with districts returned 500 (member id typed as text in `UNION ALL`) (`67fde84`) | real PG: `/me` 200, districts saved |
+| [x] | P1 | BUG-16 | Regression from SEC-03 on this branch: certificate download from the app returned 401 (redirect dropped `?token=`) (`67fde84`) | redirect keeps token |
 
 ## Phase 5 — Database & backend operations
 
@@ -173,23 +183,23 @@ _Recalculated directly from the `[ ]/[~]/[x]/[!]` marker on every row above — 
 
 | Phase | Rows | Done `[x]` | In progress `[~]` | Blocked `[!]` | Not started `[ ]` |
 |---|---|---|---|---|---|
-| 0 Owner verifications | 12 | 1 | 0 | 0 | 11 |
-| 1 Backend security | 25 | 13 | 5 | 2 | 5 |
+| 0 Owner verifications | 13 | 1 | 0 | 0 | 12 |
+| 1 Backend security | 27 | 15 | 5 | 2 | 5 |
 | 2 Mobile & store blockers | 21 | 0 | 13 | 4 | 4 |
 | 3 Compliance & listing | 10 | 2 | 0 | 0 | 8 |
-| 4 Functional & testing | 7 | 0 | 1 | 1 | 5 |
+| 4 Functional & testing | 10 | 5 | 2 | 1 | 2 |
 | 5 DB & ops | 9 | 0 | 0 | 1 | 8 |
 | 6 UI/UX & responsive | 18 | 0 | 0 | 0 | 18 |
 | 7 Cleanup | 8 | 0 | 0 | 0 | 8 |
-| **Total** | **110** | **16** | **19** | **8** | **67** |
+| **Total** | **116** | **23** | **20** | **8** | **65** |
 
 By priority (same rows, split the other way):
 
 | Priority | Rows | Done | In progress | Blocked | Not started |
 |---|---|---|---|---|---|
-| P0 | 39 | 10 | 12 | 5 | 12 |
-| P1 | 36 | 6 | 7 | 3 | 20 |
-| P2 | 24 | 1 | 3 | 0 | 20 |
+| P0 | 42 | 12 | 10 | 4 | 16 |
+| P1 | 39 | 9 | 7 | 4 | 19 |
+| P2 | 24 | 2 | 3 | 0 | 19 |
 | P3 | 11 | 0 | 0 | 0 | 11 |
 
-**Reading this correctly:** "Done" (`[x]`) means implemented *and* its automated test passed. "In progress" (`[~]`) is implemented but unverified — this is every Flutter/iOS/Android row right now, because no `flutter analyze`/`flutter test`/device build has completed yet (see `CUBAG_NEXT_STEPS.md`, verification batch). None of the 12 `[~]` P0 rows should be treated as release-ready until that verification lands.
+**Reading this correctly:** "Done" (`[x]`) means implemented *and* its automated test passed. "In progress" (`[~]`) is implemented but not verified at the level it needs — for Flutter/iOS/Android rows that means builds and unit tests pass (run 3) but nothing has been exercised on a device yet. No `[~]` P0 row is release-ready.
