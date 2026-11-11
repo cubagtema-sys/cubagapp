@@ -85,6 +85,7 @@ Environment: throwaway PostgreSQL **16.15** cluster on 127.0.0.1 in an isolated 
 | As a non-superuser table owner (`cubag_owner`) | 21 passed |
 | `TEST_DATABASE_URL` unset | 2 passed, 19 skipped (app never imported) |
 | `TEST_DATABASE_URL` = a remote host | 2 passed, 19 skipped ("refused") |
+| Local Mac (`127.0.0.1:5432`, real PostgreSQL + real `psycopg2`) | **21 passed, 0 failed** (11.29s) |
 
 Real findings from this suite:
 
