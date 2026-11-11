@@ -548,6 +548,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return showDialog<String>(
       context: ctx,
       builder: (dCtx) => AlertDialog(
+        scrollable: true,
         title: const Text('Confirm your new email'),
         content: Column(
           mainAxisSize: MainAxisSize.min,

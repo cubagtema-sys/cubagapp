@@ -53,6 +53,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
+        scrollable: true,
         title: const Text('Confirm your password'),
         content: Column(
           mainAxisSize: MainAxisSize.min,

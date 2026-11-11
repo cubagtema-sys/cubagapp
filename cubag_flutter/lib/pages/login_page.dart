@@ -479,6 +479,7 @@ class _LoginPageState extends State<LoginPage> {
           }
 
           return AlertDialog(
+            scrollable: true,
             title: const Text('Admin sign-in code'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
