@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
+import 'admin_qr_scanner_page.dart';
 
 // Unified CUBAG Brand Palette
 const _kBrown = Color(0xFF6B3E26); // Primary brand brown
@@ -512,8 +513,11 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                               color: _kBrown,
                               size: 22,
                             ),
-                            suffixIcon: _searchCtrl.text.isNotEmpty
-                                ? IconButton(
+                            suffixIcon: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (_searchCtrl.text.isNotEmpty)
+                                  IconButton(
                                     icon: const Icon(
                                       Icons.clear_rounded,
                                       size: 18,
@@ -523,8 +527,31 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                                       _searchCtrl.clear();
                                       _fetchMembers('');
                                     },
-                                  )
-                                : null,
+                                  ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.qr_code_scanner_rounded,
+                                    color: _kAccent,
+                                    size: 22,
+                                  ),
+                                  tooltip: 'Scan Member Badge QR',
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => AdminQrScannerPage(
+                                          onScan: (scanned) {
+                                            if (scanned.isNotEmpty) {
+                                              context.push('/verify-member?id=${Uri.encodeComponent(scanned)}');
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                            ),
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 20,

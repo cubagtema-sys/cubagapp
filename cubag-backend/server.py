@@ -507,6 +507,10 @@ from routes.compliance import compliance_bp
 from routes.complaints import complaints_bp
 from routes.gdpr import gdpr_bp
 from routes.public import public_bp
+from routes.public_pages import public_pages_bp
+
+# Register public web pages (privacy, terms, account deletion) at root
+app.register_blueprint(public_pages_bp)
 
 _BLUEPRINTS = [
     (public_bp,        '/public'),

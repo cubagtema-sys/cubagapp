@@ -1,0 +1,9 @@
+# CUBAG Android Release Keystore Configuration Template
+# 1. Generate an upload keystore:
+#    keytool -genkey -v -keystore ~/cubag-upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+# 2. Copy this file to 'key.properties' in this directory (CUSTOMS/cubag_flutter/android/key.properties).
+# 3. Fill in the values below:
+storePassword=YOUR_KEYSTORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=upload
+storeFile=/Users/YOUR_USERNAME/cubag-upload-keystore.jks

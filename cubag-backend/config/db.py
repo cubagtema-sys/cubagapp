@@ -1101,15 +1101,30 @@ def init_db():
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS data_deletion_requests (
                     id SERIAL PRIMARY KEY,
-                    member_id INTEGER NOT NULL REFERENCES members(id),
-                    requested_by INTEGER NOT NULL REFERENCES members(id),
+                    member_id INTEGER REFERENCES members(id),
+                    requested_by INTEGER REFERENCES members(id),
                     status VARCHAR(20) DEFAULT 'pending',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     approved_by INTEGER REFERENCES members(id),
                     completed_at TIMESTAMP,
-                    notes TEXT
+                    notes TEXT,
+                    email VARCHAR(255),
+                    phone VARCHAR(50),
+                    reason TEXT,
+                    request_source VARCHAR(50) DEFAULT 'in_app',
+                    tracking_code VARCHAR(64)
                 )
             """)
+            try:
+                cursor.execute("ALTER TABLE data_deletion_requests ALTER COLUMN member_id DROP NOT NULL")
+                cursor.execute("ALTER TABLE data_deletion_requests ALTER COLUMN requested_by DROP NOT NULL")
+                cursor.execute("ALTER TABLE data_deletion_requests ADD COLUMN IF NOT EXISTS email VARCHAR(255)")
+                cursor.execute("ALTER TABLE data_deletion_requests ADD COLUMN IF NOT EXISTS phone VARCHAR(50)")
+                cursor.execute("ALTER TABLE data_deletion_requests ADD COLUMN IF NOT EXISTS reason TEXT")
+                cursor.execute("ALTER TABLE data_deletion_requests ADD COLUMN IF NOT EXISTS request_source VARCHAR(50) DEFAULT 'in_app'")
+                cursor.execute("ALTER TABLE data_deletion_requests ADD COLUMN IF NOT EXISTS tracking_code VARCHAR(64)")
+            except Exception as _e:
+                logger.debug("data_deletion_requests migration: %s", _e)
 
         conn.commit()
         logger.info("[OK] Database tables initialised successfully.")

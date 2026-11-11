@@ -26,14 +26,20 @@ class _AdminQrScannerPageState extends State<AdminQrScannerPage> {
           _isProcessing = true;
         });
 
-        // Expected format: https://winningedgeinvestment.com/#/verify-member/123
-        // Or if the backend URL is scanned: https://winningedgeinvestment.com/api/verify-member/123
+        // Expected format: https://cubag-api-server.fly.dev/#/verify-member?id=CUBAG-2026-0001
+        // Or /verify-member/123 or raw member number
         String memberId = '';
-        if (code.contains('/verify-member/')) {
-          memberId = code.split('/verify-member/').last;
+        if (code.contains('id=')) {
+          final uri = Uri.tryParse(code);
+          if (uri != null && uri.queryParameters['id'] != null) {
+            memberId = uri.queryParameters['id']!;
+          } else {
+            memberId = code.split('id=').last.split('&').first;
+          }
+        } else if (code.contains('/verify-member/')) {
+          memberId = code.split('/verify-member/').last.split('?').first;
         } else {
-          // Fallback if they scan just an ID
-          memberId = code;
+          memberId = code.trim();
         }
 
         // Call callback and pop
@@ -100,3 +106,6 @@ class _AdminQrScannerPageState extends State<AdminQrScannerPage> {
     super.dispose();
   }
 }
+
+typedef QrScannerPage = AdminQrScannerPage;
+

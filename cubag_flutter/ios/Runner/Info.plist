@@ -58,7 +58,7 @@
 		<key>NSCalendarsFullAccessUsageDescription</key>
 		<string>CUBAG needs calendar access to add association events and seminars to your calendar.</string>
 		<key>NSCameraUsageDescription</key>
-		<string>This app requires camera access to scan member QR codes for event verification.</string>
+		<string>CUBAG requires camera access to scan member digital ID QR badges and verify customs brokerage credentials.</string>
 		<key>NSFaceIDUsageDescription</key>
 		<string>CUBAG uses Face ID / Touch ID for quick and secure biometric login.</string>
 		<key>NSPhotoLibraryUsageDescription</key>

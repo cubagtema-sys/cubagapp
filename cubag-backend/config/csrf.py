@@ -52,6 +52,8 @@ CSRF_EXEMPT_ENDPOINTS = {
     '/api/v1/health',
     '/api/ping',
     '/api/v1/ping',
+    '/delete-account',
+    '/api/v1/public/delete-account',
 }
 
 
