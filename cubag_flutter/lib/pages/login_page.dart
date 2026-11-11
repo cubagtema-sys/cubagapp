@@ -9,10 +9,10 @@ import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../services/biometric_service.dart';
 import '../services/push_notification_service.dart';
-import '../components/app_logo.dart';
 import '../core/router.dart';
 import '../services/theme_service.dart';
 import '../design/cubag_design.dart';
+import '../components/auth_scaffold.dart';
 
 // Balanced CUBAG Dynamic Palette
 bool get _isDark => ThemeService.instance.isDark;
@@ -535,97 +535,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     Provider.of<ThemeService>(context);
-    final width = MediaQuery.sizeOf(context).width;
-    final wide = width >= 600;
-
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      // Light status-bar icons over the cocoa header.
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-      ),
-      child: Scaffold(
-        backgroundColor: CubagColors.cocoa,
-        body: SingleChildScrollView(
-          physics: const ClampingScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: MediaQuery.sizeOf(context).height),
-            child: Column(
-              children: [
-                _buildHeader(context),
-                Container(
-                  width: double.infinity,
-                  constraints: BoxConstraints(
-                    minHeight: MediaQuery.sizeOf(context).height * (wide ? 0.6 : 0.62),
-                  ),
-                  decoration: const BoxDecoration(
-                    color: CubagColors.paper,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(CubagRadius.hero),
-                    ),
-                  ),
-                  padding: EdgeInsets.fromLTRB(
-                    CubagSpace.lg,
-                    CubagSpace.xl,
-                    CubagSpace.lg,
-                    CubagSpace.xl + MediaQuery.paddingOf(context).bottom,
-                  ),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 440),
-                      child: _buildForm(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// The association, as on its seal: mark, full name, motto.
-  Widget _buildHeader(BuildContext context) {
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          CubagSpace.lg, CubagSpace.xxl, CubagSpace.lg, CubagSpace.xxl,
-        ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: CubagColors.paper,
-                  ),
-                  padding: const EdgeInsets.all(3),
-                  child: const AppLogo(size: 64, borderRadius: 32, showShadow: false),
-                ),
-                const SizedBox(height: CubagSpace.lg),
-                Text(
-                  // Two balanced lines rather than a lone "Ghana".
-                  'Customs Brokers\nAssociation of Ghana',
-                  semanticsLabel: 'Customs Brokers Association of Ghana',
-                  style: CubagType.display.copyWith(color: CubagColors.onCocoa),
-                ),
-                const SizedBox(height: CubagSpace.xs),
-                Text(
-                  'Honesty and Efficiency',
-                  style: CubagType.body.copyWith(color: CubagColors.onCocoaMuted),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+    return AuthScaffold(child: _buildForm());
   }
 
   Widget _buildForm() {
@@ -641,7 +551,7 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: CubagSpace.lg),
 
           if (_error != null) ...[
-            _ErrorNote(message: _error!),
+            AuthNote(message: _error!),
             // SEC-11: developer server switcher — debug builds only.
             if (!kReleaseMode &&
                 (_error!.toLowerCase().contains('reach') ||
@@ -684,7 +594,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
           const SizedBox(height: CubagSpace.lg),
 
-          _FieldLabel(isEmail ? 'Email address' : 'Phone number'),
+          AuthFieldLabel(isEmail ? 'Email address' : 'Phone number'),
           TextFormField(
             enabled: !_loading,
             controller: _identifierCtrl,
@@ -703,7 +613,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
           const SizedBox(height: CubagSpace.md),
 
-          _FieldLabel('Password'),
+          AuthFieldLabel('Password'),
           TextFormField(
             enabled: !_loading,
             controller: _passCtrl,
@@ -917,43 +827,3 @@ class _FaceIdPainter extends CustomPainter {
       oldDelegate.color != color;
 }
 
-
-class _FieldLabel extends StatelessWidget {
-  final String text;
-  const _FieldLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Text(text, style: CubagType.label),
-      );
-}
-
-class _ErrorNote extends StatelessWidget {
-  final String message;
-  const _ErrorNote({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      liveRegion: true,
-      child: Container(
-        padding: const EdgeInsets.all(CubagSpace.sm),
-        decoration: BoxDecoration(
-          color: CubagColors.lapsedTint,
-          borderRadius: BorderRadius.circular(CubagRadius.control),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(Icons.error_outline_rounded, color: CubagColors.lapsed, size: 20),
-            const SizedBox(width: CubagSpace.xs),
-            Expanded(
-              child: Text(message, style: CubagType.small.copyWith(color: CubagColors.lapsed)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

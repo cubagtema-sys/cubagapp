@@ -1841,29 +1841,40 @@ def delete_account():
 
 
 def send_reset_email(to_email, token):
+    """Password reset email. Leads with the 8-digit code (typed into the app's
+    Forgot password screen); the link is a fallback that opens the web app."""
+    from urllib.parse import quote
+    from html import escape
     client_url = os.getenv('CLIENT_URL', '')
     if not client_url or 'localhost' in client_url or '127.0.0.1' in client_url:
         client_url = 'https://cubag-api-server.fly.dev'
-    
+
     client_url = client_url.rstrip('/#')
-    reset_link = f'{client_url}/#/reset-password?token={token}&email={to_email}'
-    subject   = 'Reset your CUBAG Password'
+    reset_link = f'{client_url}/#/reset-password?token={quote(str(token))}&email={quote(to_email)}'
+    spaced = f'{str(token)[:4]} {str(token)[4:]}'
+    # No code in the subject: subjects show in lock-screen previews.
+    subject   = 'Reset your CUBAG password'
     body_text = (
         f'Hello,\n\n'
-        f'You requested a password reset for your CUBAG account.\n\n'
-        f'Click the link below to reset your password:\n\n'
-        f'  {reset_link}\n\n'
-        f'If you did not request this, please ignore this email.\n\n'
-        f'Thanks,\nCUBAG Secretariat'
+        f'Use this code to reset your CUBAG password:\n\n'
+        f'    {spaced}\n\n'
+        f'Enter it in the CUBAG app (Forgot password). It expires in 1 hour.\n\n'
+        f'Or open this link to reset it in your browser:\n{reset_link}\n\n'
+        f'If you did not ask to reset your password, ignore this email; your password will not change.\n\n'
+        f'CUBAG Secretariat'
     )
     body_html = (
-        f'<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e2e8f0;border-radius:12px;">'
-        f'<h2 style="color:#FF5000;margin-bottom:8px;">CUBAG Password Reset</h2>'
-        f'<p style="color:#475569;">You requested a password reset. Click the button below:</p>'
-        f'<a href="{reset_link}" style="display:block;text-align:center;background:#FF5000;color:#fff;'
-        f'font-weight:bold;padding:14px 24px;border-radius:10px;text-decoration:none;margin:24px 0;">'
-        f'Reset My Password</a>'
-        f'<p style="color:#94a3b8;font-size:12px;">If you did not request this, ignore this email. This link expires shortly.</p>'
+        f'<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:32px;'
+        f'border:1px solid #E9E2DB;border-radius:14px;color:#2A1810;">'
+        f'<h2 style="font-family:Georgia,serif;font-weight:600;color:#2A1810;margin:0 0 8px;">Reset your password</h2>'
+        f'<p style="color:#4A3A32;margin:0 0 20px;">Enter this code in the CUBAG app. It expires in 1 hour.</p>'
+        f'<p style="font-size:32px;letter-spacing:6px;font-weight:bold;color:#5C3421;'
+        f'background:#F7F4F1;border-radius:10px;padding:16px;text-align:center;margin:0 0 20px;">{escape(spaced)}</p>'
+        f'<p style="color:#4A3A32;margin:0 0 8px;">Or reset it in your browser:</p>'
+        f'<a href="{escape(reset_link)}" style="display:inline-block;background:#C2410C;color:#fff;'
+        f'font-weight:bold;padding:12px 20px;border-radius:10px;text-decoration:none;">Reset password</a>'
+        f'<p style="color:#6E625B;font-size:12px;margin-top:24px;">If you did not ask to reset your password, '
+        f'ignore this email; your password will not change.</p>'
         f'</div>'
     )
     return _send_email(to_email, subject, body_text, body_html)

@@ -280,3 +280,14 @@ def test_sec19_valid_signed_webhook_accepted(client):
     body = json.dumps({'transactionReference': 'NOPE', 'status': 'successful'}).encode()
     r = client.post(f'{API}/compliance/payment-webhook', data=body, headers=_signed(body))
     assert r.status_code == 200
+
+
+def test_reset_email_leads_with_code_not_in_subject(monkeypatch):
+    import routes.auth as auth_routes
+    sent = {}
+    monkeypatch.setattr(auth_routes, '_send_email',
+                        lambda to, subj, txt, html=None: sent.update(subj=subj, txt=txt, html=html) or True)
+    auth_routes.send_reset_email('ama+cubag@example.com', '12345678')
+    assert '12345678' not in sent['subj']
+    assert '1234 5678' in sent['txt'] and '1234 5678' in sent['html']
+    assert 'email=ama%2Bcubag%40example.com' in sent['txt']

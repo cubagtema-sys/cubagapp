@@ -1,557 +1,318 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
+
+import '../components/auth_scaffold.dart';
+import '../design/cubag_design.dart';
 import '../services/api_service.dart';
-import '../services/theme_service.dart';
-import '../components/app_logo.dart';
-import '../utils/app_colors.dart';
+import '../utils/validators.dart';
 
-// Balanced CUBAG Dynamic Palette
-bool get _isDark => ThemeService.instance.isDark;
-Color get _kBrown => const Color(0xFF6B3E26); // Primary Brown
-Color get _kOrange => const Color(0xFFFF5000); // Primary Orange CTA
-Color get _kCream => _isDark
-    ? const Color(0xFF281710)
-    : const Color(0xFFF8F4F0); // Warm Velvet Chocolate / Light Cream
-Color get _kWhite => _isDark
-    ? const Color(0xFF1A0F0A)
-    : const Color(0xFFFFFFFF); // Chocolate Card / White Surfaces
-Color get _kText => _isDark
-    ? const Color(0xFFFFF8F3)
-    : const Color(0xFF2B211D); // Warm Ivory / Deep Body Text
-Color get _kMuted => _isDark
-    ? const Color(0xFFC8ADA0)
-    : const Color(0xFF6F625B); // Cocoa Tan / Muted Text
-Color get _kBorder => _isDark
-    ? const Color(0xFF4D2D20)
-    : const Color(0xFFE8DED6); // Bronze / Warm Border
+enum _Step { request, setPassword, done }
 
+/// Password reset, entirely in the app:
+///  1. email -> "Send code" (POST /auth/forgot-password; the server answers the
+///     same whether or not the account exists),
+///  2. the 8-digit code from the email + new password (POST /auth/reset-password),
+///  3. done -> sign in.
+/// The emailed link opens /reset-password, which lands on step 2 with the
+/// code already filled in.
 class ForgotPasswordPage extends StatefulWidget {
-  const ForgotPasswordPage({super.key});
+  final String? initialEmail;
+  final String? initialCode;
+  const ForgotPasswordPage({super.key, this.initialEmail, this.initialCode});
+
   @override
   State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _emailCtrl = TextEditingController();
-  bool _loading = false;
-  bool _sent = false;
-  String _error = '';
+  final _codeCtrl = TextEditingController();
+  final _pwCtrl = TextEditingController();
+  final _cpwCtrl = TextEditingController();
+  final _pwFocus = FocusNode();
+  final _cpwFocus = FocusNode();
 
-  Future<void> _submit() async {
-    if (_emailCtrl.text.trim().isEmpty) {
-      setState(() => _error = 'Please enter your email address.');
+  late _Step _step;
+  bool _loading = false;
+  String? _error;
+  String? _notice;
+
+  /// Came from the emailed link: the code is known, don't ask for it.
+  bool get _codeFromLink => (widget.initialCode ?? '').isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailCtrl.text = widget.initialEmail ?? '';
+    _codeCtrl.text = widget.initialCode ?? '';
+    _step = _codeFromLink ? _Step.setPassword : _Step.request;
+  }
+
+  @override
+  void dispose() {
+    for (final c in [_emailCtrl, _codeCtrl, _pwCtrl, _cpwCtrl]) {
+      c.dispose();
+    }
+    _pwFocus.dispose();
+    _cpwFocus.dispose();
+    super.dispose();
+  }
+
+  String _messageFrom(Object e, String fallback) {
+    if (e is DioException) {
+      final data = e.response?.data;
+      if (data is Map && data['message'] != null) return data['message'].toString();
+      if (e.response == null) return 'Unable to reach the server. Check your connection and try again.';
+    }
+    return fallback;
+  }
+
+  Future<void> _sendCode({bool resend = false}) async {
+    final email = _emailCtrl.text.trim();
+    if (!AppValidators.isValidEmail(email)) {
+      setState(() => _error = 'Enter the email address on your membership.');
       return;
     }
     setState(() {
       _loading = true;
-      _error = '';
+      _error = null;
+      _notice = null;
     });
     try {
-      final res = await ApiService().post(
-        '/auth/forgot-password',
-        data: {'email': _emailCtrl.text.trim()},
-      );
+      final res = await ApiService().post('/auth/forgot-password', data: {'email': email});
       if (!mounted) return;
       if (res.statusCode == 200) {
-        setState(() => _sent = true);
+        setState(() {
+          _step = _Step.setPassword;
+          _notice = resend ? 'We sent a new code.' : null;
+        });
       } else {
-        setState(
-          () => _error =
-              res.data['message'] ??
-              "We couldn't find an account with that email.",
-        );
+        final d = res.data;
+        setState(() => _error = (d is Map ? d['message']?.toString() : null) ??
+            'We could not send a code. Please try again.');
       }
-    } catch (_) {
+    } catch (e) {
+      if (mounted) setState(() => _error = _messageFrom(e, 'We could not send a code. Please try again.'));
+    }
+    if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _setPassword() async {
+    final code = _codeCtrl.text.trim();
+    if (!_codeFromLink && !RegExp(r'^\d{8}$').hasMatch(code)) {
+      setState(() => _error = 'Enter the 8-digit code from the email.');
+      return;
+    }
+    final pwError = AppValidators.newPasswordError(_pwCtrl.text, _cpwCtrl.text);
+    if (pwError != null) {
+      setState(() => _error = pwError);
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+      _notice = null;
+    });
+    try {
+      final res = await ApiService().post('/auth/reset-password', data: {
+        'email': _emailCtrl.text.trim(),
+        'code': code,
+        'new_password': _pwCtrl.text,
+      });
       if (!mounted) return;
-      setState(() => _error = 'Connection failed. Please check your network.');
+      if (res.statusCode == 200) {
+        setState(() => _step = _Step.done);
+      } else {
+        final d = res.data;
+        setState(() => _error = (d is Map ? d['message']?.toString() : null) ??
+            'We could not change your password. Please try again.');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = _messageFrom(e, 'We could not change your password. Please try again.'));
+      }
     }
     if (mounted) setState(() => _loading = false);
   }
 
   @override
-  void dispose() {
-    _emailCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    Provider.of<ThemeService>(context);
-    final size = MediaQuery.of(context).size;
-    final isDesktop = size.width > 1050;
-    final isTablet = size.width > 700 && size.width <= 1050;
-
-    return Scaffold(
-      backgroundColor: _kCream,
-      body: isDesktop
-          ? _buildThreeColumnLayout()
-          : (isTablet ? _buildTwoColumnLayout() : _buildMobileLayout()),
+    return AuthScaffold(
+      onBack: _loading
+          ? null
+          : () {
+              if (_step == _Step.setPassword && !_codeFromLink) {
+                setState(() {
+                  _step = _Step.request;
+                  _error = null;
+                  _notice = null;
+                });
+              } else {
+                context.go('/login');
+              }
+            },
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: switch (_step) {
+          _Step.request => _request(),
+          _Step.setPassword => _setPasswordForm(),
+          _Step.done => _done(),
+        },
+      ),
     );
   }
 
-  Widget _buildThreeColumnLayout() => Row(
-    children: [
-      Expanded(flex: 35, child: _buildBrandPanel()),
-      Expanded(flex: 35, child: _buildInfoPanel()),
-      Expanded(flex: 30, child: _buildFormPanel(padding: 40, showLogo: false)),
-    ],
-  );
+  List<Widget> _messages() => [
+        if (_error != null) ...[AuthNote(message: _error!), const SizedBox(height: CubagSpace.md)],
+        if (_notice != null) ...[
+          AuthNote(message: _notice!, success: true),
+          const SizedBox(height: CubagSpace.md),
+        ],
+      ];
 
-  Widget _buildTwoColumnLayout() => Row(
-    children: [
-      Expanded(flex: 45, child: _buildBrandPanel()),
-      Expanded(flex: 55, child: _buildFormPanel(padding: 50, showLogo: false)),
-    ],
-  );
+  Widget _request() {
+    return Column(
+      key: const ValueKey('request'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text('Reset your password', style: CubagType.title),
+        const SizedBox(height: CubagSpace.xxs),
+        const Text(
+          'Enter the email on your membership and we\'ll send you an 8-digit code.',
+          style: CubagType.small,
+        ),
+        const SizedBox(height: CubagSpace.lg),
+        ..._messages(),
+        const AuthFieldLabel('Email address'),
+        TextFormField(
+          controller: _emailCtrl,
+          enabled: !_loading,
+          keyboardType: TextInputType.emailAddress,
+          autofillHints: const [AutofillHints.email],
+          autocorrect: false,
+          textInputAction: TextInputAction.send,
+          onFieldSubmitted: (_) => _sendCode(),
+          style: CubagType.body.copyWith(color: CubagColors.ink),
+          decoration: const InputDecoration(hintText: 'name@company.com'),
+        ),
+        const SizedBox(height: CubagSpace.xl),
+        FilledButton(
+          onPressed: _loading ? null : _sendCode,
+          child: Text(_loading ? 'Sending…' : 'Send code'),
+        ),
+        const SizedBox(height: CubagSpace.sm),
+        TextButton(
+          onPressed: _loading ? null : () => context.go('/login'),
+          child: const Text('Back to sign in'),
+        ),
+      ],
+    );
+  }
 
-  Widget _buildMobileLayout() => SafeArea(
-    child: Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: Container(
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              color: _kWhite,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: _kBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(6),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
+  Widget _setPasswordForm() {
+    final email = _emailCtrl.text.trim();
+    return AutofillGroup(
+      key: const ValueKey('set'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(_codeFromLink ? 'Choose a new password' : 'Check your email', style: CubagType.title),
+          const SizedBox(height: CubagSpace.xxs),
+          Text(
+            _codeFromLink
+                ? 'For $email. Use at least 8 characters.'
+                : 'If there\'s an account for $email, we\'ve sent an 8-digit code. It expires in 1 hour.',
+            style: CubagType.small,
+          ),
+          const SizedBox(height: CubagSpace.lg),
+          ..._messages(),
+          if (!_codeFromLink) ...[
+            const AuthFieldLabel('Code'),
+            TextFormField(
+              controller: _codeCtrl,
+              enabled: !_loading,
+              keyboardType: TextInputType.number,
+              autofillHints: const [AutofillHints.oneTimeCode],
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(8),
+              ],
+              textInputAction: TextInputAction.next,
+              onFieldSubmitted: (_) => _pwFocus.requestFocus(),
+              style: CubagType.figure.copyWith(fontSize: 20, letterSpacing: 4),
+              decoration: const InputDecoration(hintText: '8-digit code'),
+            ),
+            const SizedBox(height: CubagSpace.md),
+          ],
+          const AuthFieldLabel('New password'),
+          PasswordField(
+            controller: _pwCtrl,
+            focusNode: _pwFocus,
+            enabled: !_loading,
+            hint: 'At least 8 characters',
+            autofillHints: const [AutofillHints.newPassword],
+            action: TextInputAction.next,
+            onSubmitted: (_) => _cpwFocus.requestFocus(),
+          ),
+          const SizedBox(height: CubagSpace.md),
+          const AuthFieldLabel('Confirm new password'),
+          PasswordField(
+            controller: _cpwCtrl,
+            focusNode: _cpwFocus,
+            enabled: !_loading,
+            autofillHints: const [AutofillHints.newPassword],
+            onSubmitted: (_) => _setPassword(),
+          ),
+          const SizedBox(height: CubagSpace.xl),
+          FilledButton(
+            onPressed: _loading ? null : _setPassword,
+            child: Text(_loading ? 'Saving…' : 'Set new password'),
+          ),
+          if (!_codeFromLink) ...[
+            const SizedBox(height: CubagSpace.sm),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('No code?', style: CubagType.small),
+                TextButton(
+                  onPressed: _loading ? null : () => _sendCode(resend: true),
+                  child: const Text('Send a new one'),
                 ),
               ],
             ),
-            child: _buildFormContent(showLogo: true),
-          ),
-        ),
-      ),
-    ),
-  );
-
-  Widget _buildBrandPanel() => Container(
-    decoration: const BoxDecoration(
-      color: Color(0xFF1E140F),
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFF2B1B14),
-          Color(0xFF160D09),
+          ],
         ],
       ),
-    ),
-    child: Stack(
-      children: [
-        Positioned(
-          right: -30,
-          bottom: -30,
-          child: Icon(
-            Icons.directions_boat_rounded,
-            size: 260,
-            color: Colors.white.withAlpha(8),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 44, vertical: 48),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const AppLogo(size: 48, borderRadius: 12),
-              const SizedBox(height: 28),
-              Text(
-                'CUBAG',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 44,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -1.2,
-                  height: 1.05,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                width: 44,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: _kOrange,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                'Customs Brokers Association of Ghana',
-                style: TextStyle(
-                  color: const Color(0xFFF8F4F0),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Connecting customs clearance, freight forwarding, and international trade professionals across Ghana.',
-                style: TextStyle(
-                  color: const Color(0xFFC8ADA0),
-                  fontSize: 15,
-                  height: 1.6,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
+    );
+  }
 
-  Widget _buildInfoPanel() => Container(
-    decoration: BoxDecoration(
-      color: _kCream,
-      border: Border(right: BorderSide(color: _kBorder, width: 1)),
-    ),
-    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 48),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Security Center',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: _kText,
-            letterSpacing: -0.4,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Ensure your member account remains secure and authorized.',
-          style: TextStyle(color: _kMuted, fontSize: 14.5),
-        ),
-        const SizedBox(height: 32),
-        _infoCard(
-          icon: Icons.verified_user_outlined,
-          title: 'Authorized Retrieval',
-          desc:
-              'Password recovery is restricted to verified member accounts with registered credentials.',
-        ),
-        const SizedBox(height: 18),
-        _infoCard(
-          icon: Icons.lock_reset_outlined,
-          title: 'Secure Reset Links',
-          desc:
-              'We use temporary, encrypted single-use tokens sent to your inbox to protect against unauthorized access.',
-        ),
-        const SizedBox(height: 18),
-        _infoCard(
-          icon: Icons.contact_support_outlined,
-          title: 'Need Assistance?',
-          desc:
-              'If you no longer have access to your registered contact info, please contact the CUBAG Secretariat.',
-        ),
-      ],
-    ),
-  );
-
-  Widget _infoCard({
-    required IconData icon,
-    required String title,
-    required String desc,
-  }) => Container(
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: _kWhite,
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: _kBorder),
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _done() {
+    return Column(
+      key: const ValueKey('done'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: _kBrown.withAlpha(18),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: _kBrown, size: 20),
+          width: 56,
+          height: 56,
+          decoration: const BoxDecoration(color: CubagColors.validTint, shape: BoxShape.circle),
+          child: const Icon(Icons.check_rounded, color: CubagColors.valid, size: 30),
         ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: _kText,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                desc,
-                style: TextStyle(
-                  color: _kMuted,
-                  fontSize: 13.5,
-                  height: 1.45,
-                ),
-              ),
-            ],
-          ),
+        const SizedBox(height: CubagSpace.lg),
+        const Text('Password changed', style: CubagType.title),
+        const SizedBox(height: CubagSpace.xxs),
+        const Text(
+          'Sign in with your new password. For your security, other devices '
+          'signed in to your account have been signed out.',
+          style: CubagType.body,
         ),
-      ],
-    ),
-  );
-
-  Widget _buildFormPanel({double padding = 60, required bool showLogo}) =>
-      Container(
-        color: _kWhite,
-        child: Center(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(padding),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: _buildFormContent(showLogo: showLogo),
-            ),
-          ),
+        const SizedBox(height: CubagSpace.xl),
+        FilledButton(
+          onPressed: () => context.go('/login'),
+          child: const Text('Sign in'),
         ),
-      );
-
-  Widget _buildFormContent({required bool showLogo}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (showLogo) ...[
-                const AppLogo(size: 60, borderRadius: 14, showShadow: true),
-                const SizedBox(height: 20),
-              ],
-              Text(
-                'Reset Password',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w900,
-                  color: _kText,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Enter your email and we'll send you a link to reset your password.",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: _kMuted, fontSize: 17, height: 1.4),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 32),
-
-        if (_sent) ...[
-          Center(
-            child: Column(
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: _kOrange.withAlpha(25),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.mark_email_read_outlined,
-                    color: _kBrown,
-                    size: 36,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Check your Inbox',
-                  style: TextStyle(
-                    color: _kText,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 22,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'If an account exists for ${_emailCtrl.text.trim()}, you will receive a password reset link shortly.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: _kMuted, fontSize: 16, height: 1.5),
-                ),
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: () => context.go('/login'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _kOrange,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'Back to Login',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ] else ...[
-          if (_error.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.only(bottom: 24),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFfef2f2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFfee2e2)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    color: Color(0xFFef4444),
-                    size: 18,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _error,
-                      style: const TextStyle(
-                        color: Color(0xFFb91c1c),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          _inputLabel('Recovery Email'),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _emailCtrl,
-            keyboardType: TextInputType.emailAddress,
-            style: TextStyle(
-              color: _kText,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-            decoration: _inputDecoration(
-              hint: 'name@agency.com',
-              icon: Icons.mail_outline,
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: _loading ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kOrange,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 0,
-              ),
-              child: _loading
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2.5,
-                      ),
-                    )
-                  : const Text(
-                      'Send Reset Link',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          Center(
-            child: GestureDetector(
-              onTap: () => context.go('/login'),
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: "Remember your password? ",
-                      style: TextStyle(
-                        color: _kMuted,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    TextSpan(
-                      text: 'Sign In',
-                      style: TextStyle(
-                        color: AppColors.accentOrangeText,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 17,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
       ],
     );
   }
-
-  Widget _inputLabel(String text) => Text(
-    text,
-    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: _kText),
-  );
-
-  InputDecoration _inputDecoration({
-    required String hint,
-    required IconData icon,
-    Widget? suffix,
-  }) => InputDecoration(
-    hintText: hint,
-    prefixIcon: Icon(icon, color: _kBrown, size: 20),
-    suffixIcon: suffix,
-    filled: true,
-    fillColor: _kWhite,
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: _kBorder, width: 1.5),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: _kOrange, width: 2),
-    ),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-    hintStyle: TextStyle(color: _kMuted.withAlpha(180)),
-  );
 }
