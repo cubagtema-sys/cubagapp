@@ -69,6 +69,11 @@ class MobileMenuPage extends StatelessWidget {
             Icons.chat_rounded,
             '/admin/messages',
           ),
+          _MenuItem(
+            'Reported Messages',
+            Icons.flag_rounded,
+            '/admin/message-reports',
+          ),
         ]),
         _buildSection(context, 'FINANCIALS & RECORDS', [
           _MenuItem(
@@ -171,7 +176,10 @@ class MobileMenuPage extends StatelessWidget {
             '/admin/complaints',
           ),
         ],
-        'messaging': [_MenuItem('Messaging', Icons.chat_rounded, '/admin/messages')],
+        'messaging': [
+          _MenuItem('Messaging', Icons.chat_rounded, '/admin/messages'),
+          _MenuItem('Reported Messages', Icons.flag_rounded, '/admin/message-reports'),
+        ],
         'notifications': [
           _MenuItem(
             'Notifications',

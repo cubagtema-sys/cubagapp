@@ -71,6 +71,7 @@ import '../pages/admin_surveys_page.dart';
 import '../pages/admin_tasks_page.dart';
 import '../pages/admin_tickets_page.dart';
 import '../pages/admin_complaints_page.dart';
+import '../pages/admin_message_reports_page.dart';
 import '../pages/admin_sub_admins_page.dart';
 import '../pages/admin_compliance_page.dart';
 import '../utils/app_colors.dart';
@@ -837,6 +838,11 @@ final GoRouter appRouter = GoRouter(
                   initialUserCompany: s.uri.queryParameters['company'],
                 ),
               ),
+            ),
+            GoRoute(
+              path: '/admin/message-reports',
+              pageBuilder: (c, s) =>
+                  const NoTransitionPage(child: AdminMessageReportsPage()),
             ),
             GoRoute(
               path: '/admin/messaging',

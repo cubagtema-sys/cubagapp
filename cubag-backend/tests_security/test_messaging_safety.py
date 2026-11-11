@@ -53,3 +53,21 @@ def test_admin_report_queue_permissions(client, auth):
     assert client.get(f'{API}/messages/admin/reports', headers=auth(10)).status_code == 403
     assert client.get(f'{API}/messages/admin/reports', headers=auth(2)).status_code == 403
     assert client.get(f'{API}/messages/admin/reports', headers=auth(1)).status_code == 200
+
+
+def test_resolving_a_report_needs_messaging_permission(client, auth, db):
+    url = f'{API}/messages/admin/reports/5'
+    assert client.put(url, headers=auth(10), json={'status': 'resolved'}).status_code == 403
+    assert client.put(url, headers=auth(2), json={'status': 'resolved'}).status_code == 403
+
+
+def test_admin_report_status_changes(client, auth, db):
+    url = f'{API}/messages/admin/reports/5'
+    assert client.put(url, headers=auth(1), json={'status': 'deleted'}).status_code == 400
+    assert client.put(url, headers=auth(1), json={'status': 'resolved'}).status_code == 404
+    db.on(r'UPDATE message_reports SET status', [{'id': 5}])
+    for status in ('resolved', 'dismissed', 'open'):
+        r = client.put(url, headers=auth(1), json={'status': status})
+        assert r.status_code == 200 and r.get_json()['status'] == status
+    sql, params = db.executed(r'UPDATE message_reports SET status')[-1]
+    assert params[0] == 'open' and str(params[1]) == '1' and params[2] == 5

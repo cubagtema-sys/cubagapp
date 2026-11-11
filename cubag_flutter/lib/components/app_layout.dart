@@ -2101,6 +2101,11 @@ class _AppLayoutState extends State<AppLayout> {
             Icons.chat_rounded,
             '/admin/messages',
           ),
+          _NavItemData(
+            'Reported Messages',
+            Icons.flag_rounded,
+            '/admin/message-reports',
+          ),
         ]),
         _buildSection(context, 'FINANCIALS & RECORDS', currentRoute, [
           _NavItemData(
@@ -2214,6 +2219,11 @@ class _AppLayoutState extends State<AppLayout> {
         ],
         'messaging': [
           _NavItemData('Messaging', Icons.chat_rounded, '/admin/messages'),
+          _NavItemData(
+            'Reported Messages',
+            Icons.flag_rounded,
+            '/admin/message-reports',
+          ),
         ],
         'notifications': [
           _NavItemData(
