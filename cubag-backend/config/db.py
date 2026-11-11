@@ -1091,6 +1091,20 @@ def init_db():
             from config.admin_mfa import DDL as _MFA_DDL, INDEX_DDL as _MFA_INDEX_DDL
             cursor.execute(_MFA_DDL)
             cursor.execute(_MFA_INDEX_DDL)
+            # DB-03: indexes matching the exact expressions used by sign-in,
+            # one-time codes and bill lookups (a plain index on email or
+            # license_number is not used by LOWER(...) comparisons).
+            for _ddl in (
+                "CREATE INDEX IF NOT EXISTS idx_members_lower_email ON members (LOWER(email))",
+                "CREATE INDEX IF NOT EXISTS idx_members_phone_digits ON members (regexp_replace(phone, '[^0-9]', '', 'g'))",
+                "CREATE INDEX IF NOT EXISTS idx_members_lower_agency_code ON members (LOWER(agency_code))",
+                "CREATE INDEX IF NOT EXISTS idx_members_lower_license_number ON members (LOWER(license_number))",
+                "CREATE INDEX IF NOT EXISTS idx_otp_codes_lower_email ON otp_codes (LOWER(email), type)",
+                "CREATE INDEX IF NOT EXISTS idx_compliance_apps_member_type ON compliance_applications (member_id, type, id DESC)",
+                "CREATE INDEX IF NOT EXISTS idx_compliance_apps_payment_ref ON compliance_applications (payment_ref) WHERE payment_ref IS NOT NULL",
+                "CREATE INDEX IF NOT EXISTS idx_payments_member_created ON payments (member_id, created_at DESC)",
+            ):
+                cursor.execute(_ddl)
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_platform_settings_key ON platform_settings(config_key)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_announcements_created_at ON announcements(created_at DESC) WHERE deleted_at IS NULL")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_license_history_member_id ON license_history(member_id, archived_at DESC)")
