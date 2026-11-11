@@ -3,10 +3,11 @@ import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../components/shimmer_loader.dart';
 import '../services/api_service.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10B981);
-const _kRed = Color(0xFFEF4444);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
+const _kRed = CubagColors.lapsed;
 
 class AdminPaymentSettingsPage extends StatefulWidget {
   const AdminPaymentSettingsPage({super.key});
@@ -129,8 +130,8 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final inputBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0);
-    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final inputBg = isDark ? CubagColors.ink : const Color(0xFFFAF6F0);
+    final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
     final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
@@ -460,7 +461,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      'PRIMARY',
+                      'Primary',
                       style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w900,
@@ -577,7 +578,6 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
             fontSize: 14,
             fontWeight: FontWeight.w800,
             color: const Color(0xFF5F6B7E),
-            letterSpacing: 0.5,
           ),
         ),
         const SizedBox(height: 6),

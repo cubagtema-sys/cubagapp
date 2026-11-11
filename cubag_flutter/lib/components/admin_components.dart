@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
+import '../design/cubag_design.dart';
 
 // ── Shared Admin Design System Palette (Editorial Stone & Ink) ───────────────
-const Color kAdminOrange = Color(0xFFFF5000); // Primary Accent Orange
+const Color kAdminOrange = CubagColors.action; // Primary Accent Orange
 const Color kAdminBrown = Color(0xFF6B3E26); // Primary Brand Brown
 const Color kAdminDarkBrown = Color(0xFF3E2418); // Deep Background / Dark Text
 const Color kAdminInk = Color(0xFF1F1612); // Deep Espresso Ink
 const Color kAdminPaperLight = Color(0xFFFBF8F3); // Warm Ivory Paper
 const Color kAdminPaperDark = Color(0xFF22140E); // Dark Paper Tile
 const Color kAdminGroundLight = Color(0xFFF4EFEA); // Stone Ground
-const Color kAdminGroundDark = Color(0xFF1A0F0A); // Dark Ground
-const Color kAdminBorderLight = Color(0xFFE8DED6); // Warm Stone Border
+const Color kAdminGroundDark = CubagColors.ink; // Dark Ground
+const Color kAdminBorderLight = CubagColors.line; // Warm Stone Border
 const Color kAdminBorderDark = Color(0xFF3D261C); // Warm Dark Border
-const Color kAdminGreen = Color(0xFF10B981); // Emerald Active / Approved
+const Color kAdminGreen = CubagColors.valid; // Emerald Active / Approved
 const Color kAdminBlue = Color(0xFF2563EB); // Information Blue
 const Color kAdminPurple = Color(0xFF8B5CF6); // Electoral / Compliance Purple
-const Color kAdminAmber = Color(0xFFF59E0B); // Pending / Attention Amber
-const Color kAdminRed = Color(0xFFEF4444); // Suspended / Delinquent Red
-const Color kAdminBorder = Color(0xFFE8DED6); // Default Subtle Border
+const Color kAdminAmber = CubagColors.due; // Pending / Attention Amber
+const Color kAdminRed = CubagColors.lapsed; // Suspended / Delinquent Red
+const Color kAdminBorder = CubagColors.line; // Default Subtle Border
 
 /// Standardized top header section across all CUBAG Admin pages
 class AdminHeader extends StatelessWidget {

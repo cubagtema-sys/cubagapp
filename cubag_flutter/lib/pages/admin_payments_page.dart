@@ -8,11 +8,12 @@ import '../services/api_service.dart';
 import '../components/fetch_error_view.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10b981);
-const _kAmber = Color(0xFFf59e0b);
-const _kRed = Color(0xFFef4444);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
+const _kAmber = CubagColors.due;
+const _kRed = CubagColors.lapsed;
 const _kBlue = Color(0xFF3b82f6);
 const _kCardBg = Color(0xFF281710);
 
@@ -220,7 +221,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     final fullUrl = _resolveReceiptUrl(receiptUrl);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? _kCardBg : Colors.white;
-    final textColor = isDark ? const Color(0xFFf8fafc) : const Color(0xFF1A0F0A);
+    final textColor = isDark ? CubagColors.sand : CubagColors.ink;
 
     showDialog(
       context: context,
@@ -262,7 +263,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                     '$memberName · GH₵ ${amount.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 13,
-                      color: const Color(0xFF64748b),
+                      color: CubagColors.muted,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -286,7 +287,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                 decoration: BoxDecoration(
                   color: Colors.black.withAlpha(8),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFcbd5e1)),
+                  border: Border.all(color: CubagColors.lineStrong),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(14),
@@ -317,7 +318,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                               Text(
                                 'Unable to load receipt image directly.\nClick "Open in new tab" above.',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 13, color: const Color(0xFF64748b)),
+                                style: TextStyle(fontSize: 13, color: CubagColors.muted),
                               ),
                             ],
                           ),
@@ -384,11 +385,11 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? _kCardBg : Colors.white;
     final textColor = isDark
-        ? const Color(0xFFf8fafc)
-        : const Color(0xFF1A0F0A);
+        ? CubagColors.sand
+        : CubagColors.ink;
     final subTextColor = isDark
         ? const Color(0xFF5F6B7E)
-        : const Color(0xFF475569);
+        : CubagColors.inkSoft;
     final hasReceipt = receiptUrl != null && receiptUrl.isNotEmpty && receiptUrl != 'null';
 
     showDialog(
@@ -456,12 +457,12 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
-                                  color: const Color(0xFF1A0F0A),
+                                  color: CubagColors.ink,
                                 ),
                               ),
                               Text(
                                 'Click to inspect full deposit receipt image',
-                                style: TextStyle(fontSize: 12, color: const Color(0xFF64748b)),
+                                style: TextStyle(fontSize: 12, color: CubagColors.muted),
                               ),
                             ],
                           ),
@@ -534,17 +535,17 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? _kCardBg : Colors.white;
     final textColor = isDark
-        ? const Color(0xFFf8fafc)
-        : const Color(0xFF1A0F0A);
+        ? CubagColors.sand
+        : CubagColors.ink;
     final borderColor = isDark
         ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
+        : CubagColors.line;
     final subTextColor = isDark
         ? const Color(0xFF5F6B7E)
-        : const Color(0xFF64748b);
+        : CubagColors.muted;
     final inputBg = isDark
-        ? const Color(0xFF1A0F0A).withAlpha(120)
-        : const Color(0xFFf8fafc);
+        ? CubagColors.ink.withAlpha(120)
+        : CubagColors.sand;
 
     final paymentMethod = (tx['payment_method'] ?? 'momo').toString();
     final isBank = paymentMethod.toLowerCase() == 'bank' || paymentMethod.toLowerCase() == 'bank_transfer';
@@ -605,7 +606,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'AMOUNT CHARGED',
+                            'Amount charged',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
@@ -744,12 +745,12 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
-                                    color: const Color(0xFF1A0F0A),
+                                    color: CubagColors.ink,
                                   ),
                                 ),
                                 Text(
                                   'Click to preview high-resolution receipt',
-                                  style: TextStyle(fontSize: 12, color: const Color(0xFF64748b)),
+                                  style: TextStyle(fontSize: 12, color: CubagColors.muted),
                                 ),
                               ],
                             ),
@@ -878,20 +879,20 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
         'label': 'SETTLED REVENUE',
         'value': revFormatted,
         'badge': 'FY 2026 Audit',
-        'badgeColor': const Color(0xFF10b981),
+        'badgeColor': CubagColors.valid,
       },
       {
         'label': 'PENDING APPROVALS',
         'value': pendingCount,
         'badge': pCountInt > 0 ? 'Slip Verification' : 'Queue Cleared',
-        'badgeColor': pCountInt > 0 ? kAdminOrange : const Color(0xFF10b981),
+        'badgeColor': pCountInt > 0 ? kAdminOrange : CubagColors.valid,
       },
       {
         'label': 'FAILED / REJECTED',
         'value': failedCount,
         'badge': fCountInt > 0 ? 'Action Required' : 'Zero Failed',
         'badgeColor':
-            fCountInt > 0 ? const Color(0xFFEF4444) : const Color(0xFF10b981),
+            fCountInt > 0 ? CubagColors.lapsed : CubagColors.valid,
       },
     ];
 
@@ -962,7 +963,6 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: subInk,
-                  letterSpacing: 0.5,
                 ),
               ),
               Container(
@@ -978,7 +978,6 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                     fontSize: 9.5,
                     fontWeight: FontWeight.w800,
                     color: badgeColor,
-                    letterSpacing: 0.4,
                   ),
                 ),
               ),
@@ -1168,7 +1167,6 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                             fontWeight: FontWeight.w800,
                             fontSize: 14,
                             color: subTextColor,
-                            letterSpacing: 0.5,
                           ),
                           dataTextStyle: TextStyle(
                             fontSize: 15,
@@ -1179,14 +1177,14 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                           dataRowMinHeight: 64,
                           dataRowMaxHeight: 76,
                           columns: const [
-                            DataColumn(label: Text('TRANSACTION REF')),
-                            DataColumn(label: Text('MEMBER / COMPANY')),
-                            DataColumn(label: Text('CHANNEL / METHOD')),
-                            DataColumn(label: Text('AMOUNT (GHS)')),
-                            DataColumn(label: Text('DESCRIPTION / PURPOSE')),
-                            DataColumn(label: Text('DATE')),
-                            DataColumn(label: Text('STATUS')),
-                            DataColumn(label: Text('ACTIONS')),
+                            DataColumn(label: Text('Transaction ref')),
+                            DataColumn(label: Text('Member / company')),
+                            DataColumn(label: Text('Channel / method')),
+                            DataColumn(label: Text('Amount (GHS)')),
+                            DataColumn(label: Text('Description / purpose')),
+                            DataColumn(label: Text('Date')),
+                            DataColumn(label: Text('Status')),
+                            DataColumn(label: Text('Actions')),
                           ],
                           rows: _transactions.map((tx) {
                             final status =
@@ -1355,10 +1353,10 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                               vertical: 4,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFF10b981).withAlpha(20),
+                                              color: CubagColors.valid.withAlpha(20),
                                               borderRadius: BorderRadius.circular(6),
                                               border: Border.all(
-                                                color: const Color(0xFF10b981).withAlpha(80),
+                                                color: CubagColors.valid.withAlpha(80),
                                               ),
                                             ),
                                             child: Row(
@@ -2039,10 +2037,10 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? _kCardBg : Colors.white;
-    final textColor = isDark ? const Color(0xFFf8fafc) : const Color(0xFF1A0F0A);
-    final subTextColor = isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748b);
-    final borderColor = isDark ? const Color(0xFF4D2D20) : const Color(0xFFe2e8f0);
-    final inputBg = isDark ? const Color(0xFF1A0F0A).withAlpha(120) : const Color(0xFFf8fafc);
+    final textColor = isDark ? CubagColors.sand : CubagColors.ink;
+    final subTextColor = isDark ? const Color(0xFF5F6B7E) : CubagColors.muted;
+    final borderColor = isDark ? const Color(0xFF4D2D20) : CubagColors.line;
+    final inputBg = isDark ? CubagColors.ink.withAlpha(120) : CubagColors.sand;
 
     final appBill = _selectedMember != null
         ? (double.tryParse(_selectedMember!['app_bill_amount']?.toString() ?? '') ??
@@ -2150,11 +2148,10 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
 
                       // ── Member Selection Section ─────────────────────────────
                       Text(
-                        '1. SELECT MEMBER / CUSTOMER',
+                        '1. Select member / customer',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
                           color: subTextColor,
                         ),
                       ),
@@ -2359,7 +2356,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                             border: Border.all(color: _kOrange.withAlpha(80)),
                                           ),
                                           child: Text(
-                                            'CORPORATE',
+                                            'Corporate',
                                             style: TextStyle(
                                               fontSize: 10,
                                               fontWeight: FontWeight.bold,
@@ -2479,11 +2476,10 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
 
                       // ── Payment Details Section ──────────────────────────────
                       Text(
-                        '2. PAYMENT SPECIFICATIONS',
+                        '2. Payment specifications',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
                           color: subTextColor,
                         ),
                       ),
@@ -2538,7 +2534,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                       border: Border.all(color: _kGreen.withAlpha(80)),
                                     ),
                                     child: Text(
-                                      'PAID ✓',
+                                      'Paid ✓',
                                       style: TextStyle(
                                         fontSize: 9.5,
                                         fontWeight: FontWeight.bold,
@@ -2916,7 +2912,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E140E) : const Color(0xFFF8F5F2),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6)),
+        border: Border.all(color: isDark ? const Color(0xFF3D261C) : CubagColors.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2926,11 +2922,10 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
               Icon(Icons.shield_outlined, size: 14, color: subTextColor),
               const SizedBox(width: 6),
               Text(
-                'MEMBER SETTLEMENT STATUS',
+                'Member settlement status',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
                   color: subTextColor,
                 ),
               ),

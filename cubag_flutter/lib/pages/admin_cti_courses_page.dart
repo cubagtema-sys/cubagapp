@@ -6,13 +6,14 @@ import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10B981);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
 const _kBlue = Color(0xFF3B82F6);
 const _kIndigo = Color(0xFF6366F1);
-const _kRed = Color(0xFFEF4444);
-const _kSlate = Color(0xFF64748B);
+const _kRed = CubagColors.lapsed;
+const _kSlate = CubagColors.muted;
 
 class AdminCtiCoursesPage extends StatefulWidget {
   const AdminCtiCoursesPage({super.key});
@@ -251,7 +252,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final borderColor = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final borderColor = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textColor = isDark ? Colors.white : const Color(0xFF1F1612);
     final subTextColor = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
@@ -271,7 +272,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
             actions: [
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: isDark ? Colors.white : const Color(0xFF334155),
+                  foregroundColor: isDark ? Colors.white : CubagColors.inkSoft,
                   side: BorderSide(color: borderColor),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -474,7 +475,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                       hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
                       prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
                       filled: true,
-                      fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                      fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
                       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
                       contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
@@ -721,7 +722,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                           hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
                           prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
                           filled: true,
-                          fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                          fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
                           contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
@@ -841,7 +842,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                         color: _kGreen.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text('PAID & ENROLLED', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: _kGreen)),
+                      child: Text('Paid & enrolled', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: _kGreen)),
                     ),
                   ],
                 ),
@@ -895,7 +896,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                           hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
                           prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
                           filled: true,
-                          fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                          fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
                           contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
@@ -966,7 +967,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                             duration: const Duration(milliseconds: 150),
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
-                              color: isSel ? _kIndigo : (isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF1F5F9)),
+                              color: isSel ? _kIndigo : (isDark ? CubagColors.ink : CubagColors.sand),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(color: isSel ? _kIndigo : borderColor),
                             ),
@@ -975,7 +976,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                               style: TextStyle(
                                 fontSize: 11.5,
                                 fontWeight: isSel ? FontWeight.bold : FontWeight.w600,
-                                color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF334155)),
+                                color: isSel ? Colors.white : (isDark ? Colors.white70 : CubagColors.inkSoft),
                               ),
                             ),
                           ),
@@ -1067,7 +1068,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                                   color: _kIndigo.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: Text('GUEST', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: _kIndigo)),
+                                child: Text('Guest', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: _kIndigo)),
                               ),
                             ],
                           ),
@@ -1165,7 +1166,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: isSelected ? _kOrange : (isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF1F5F9)),
+          color: isSelected ? _kOrange : (isDark ? CubagColors.ink : CubagColors.sand),
           borderRadius: BorderRadius.circular(6),
           border: Border.all(color: isSelected ? _kOrange : borderColor),
         ),
@@ -1174,7 +1175,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
           style: TextStyle(
             fontSize: 11.5,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-            color: isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF334155)),
+            color: isSelected ? Colors.white : (isDark ? Colors.white70 : CubagColors.inkSoft),
           ),
         ),
       ),
@@ -1184,10 +1185,10 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
   void _showCourseEnrollmentsDialog(dynamic course) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dialogBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
     final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
-    final fieldBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0);
+    final fieldBg = isDark ? CubagColors.ink : const Color(0xFFFAF6F0);
 
     final courseTitle = course['title'] ?? 'CTI Course';
     final courseEnrollments = _getEnrollmentsForCourse(course);

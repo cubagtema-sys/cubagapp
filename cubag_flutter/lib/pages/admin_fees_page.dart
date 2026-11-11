@@ -7,10 +7,11 @@ import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
 import '../utils/session_storage.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10B981);
-const _kRed = Color(0xFFEF4444);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
+const _kRed = CubagColors.lapsed;
 const _kBrown = Color(0xFF6B3E26);
 const _kPurple = Color(0xFF7C3AED);
 const _kBlue = Color(0xFF0284C7);
@@ -111,7 +112,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
           final isDark = Theme.of(context).brightness == Brightness.dark;
           final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
           final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
-          final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+          final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
 
           void applyPresetBank(String bank, String acc) {
             setDlgState(() {
@@ -163,7 +164,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       const Divider(height: 1),
                       const SizedBox(height: 14),
 
-                      Text('TARIFF SECTION *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
+                      Text('Tariff section *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       Wrap(
                         spacing: 8,
@@ -224,7 +225,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       ),
                       const SizedBox(height: 14),
 
-                      Text('TARIFF PURPOSE / LABEL *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
+                      Text('Tariff purpose / label *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       TextField(
                         controller: nameCtrl,
@@ -233,7 +234,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                           hintText: 'e.g. Subscription fee (small companies)',
                           hintStyle: TextStyle(fontSize: 14, color: const Color(0xFF5F6B7E)),
                           filled: true,
-                          fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                          fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -242,7 +243,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       const SizedBox(height: 14),
 
                       // SETTLEMENT BANK & PRESET BUTTONS
-                      Text('WHITSUN PAY SETTLEMENT DESTINATION *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
+                      Text('Whitsun pay settlement destination *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       Wrap(
                         spacing: 6,
@@ -280,7 +281,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                               decoration: InputDecoration(
                                 labelText: 'Bank Name',
                                 filled: true,
-                                fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                                fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
                                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -295,7 +296,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                               decoration: InputDecoration(
                                 labelText: 'Account Number',
                                 filled: true,
-                                fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                                fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
                                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -313,7 +314,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('AMOUNT (GHS) *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
+                                Text('Amount (GHS) *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                                 const SizedBox(height: 6),
                                 TextField(
                                   controller: amountCtrl,
@@ -323,7 +324,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                                     prefixText: 'GHS ',
                                     prefixStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.accentOrangeText),
                                     filled: true,
-                                    fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                                    fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
                                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -337,12 +338,12 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('TARGET SCALE *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
+                                Text('Target scale *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                                 const SizedBox(height: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
                                   decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                                    color: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(color: border),
                                   ),
@@ -378,12 +379,12 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('BILLING UNIT', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
+                                Text('Billing unit', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                                 const SizedBox(height: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
                                   decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                                    color: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(color: border),
                                   ),
@@ -413,12 +414,12 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('FREQUENCY', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
+                                Text('Frequency', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                                 const SizedBox(height: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
                                   decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                                    color: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(color: border),
                                   ),
@@ -445,7 +446,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       ),
                       const SizedBox(height: 14),
 
-                      Text('DESCRIPTION / NOTES', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
+                      Text('Description / notes', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       TextField(
                         controller: descCtrl,
@@ -455,7 +456,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                           hintText: 'e.g. Mandatory statutory fee settled to Zenith Bank account',
                           hintStyle: TextStyle(fontSize: 13, color: const Color(0xFF5F6B7E)),
                           filled: true,
-                          fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                          fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -610,9 +611,9 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0);
+    final bg = isDark ? CubagColors.ink : const Color(0xFFFAF6F0);
     final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
     final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
@@ -801,7 +802,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
 
             // ── CATEGORY KPI CARDS ───────────────────────────────────────────
             Text(
-              'FEE SCHEDULE SECTIONS',
+              'Fee schedule sections',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.8),
             ),
             const SizedBox(height: 10),
@@ -982,7 +983,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                           child: Container(
                             height: 38,
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF1F5F9),
+                              color: isDark ? CubagColors.ink : CubagColors.sand,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(color: border),
                             ),
@@ -1090,7 +1091,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10)),
-                    child: Text('ACTIVE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white)),
+                    child: Text('Active', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white)),
                   ),
               ],
             ),
@@ -1108,7 +1109,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
               subtitle,
               style: TextStyle(
                 fontSize: 12,
-                color: isSelected ? (isDark ? Colors.white70 : const Color(0xFF475569)) : textMuted,
+                color: isSelected ? (isDark ? Colors.white70 : CubagColors.inkSoft) : textMuted,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -1264,7 +1265,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF1F5F9),
+                  color: isDark ? CubagColors.ink : CubagColors.sand,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: border),
                 ),
@@ -1350,12 +1351,12 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                 headingRowColor: WidgetStateProperty.all(isDark ? const Color(0xFF22140E) : const Color(0xFFFAF6F0)),
                 headingTextStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.5),
                 columns: const [
-                  DataColumn(label: Text('SCALE / SECTION')),
-                  DataColumn(label: Text('TARIFF PURPOSE / LABEL')),
-                  DataColumn(label: Text('WHITSUN SETTLEMENT ACCOUNT')),
-                  DataColumn(label: Text('AMOUNT (GHS)')),
-                  DataColumn(label: Text('UNIT / FREQ')),
-                  DataColumn(label: Text('ACTIONS')),
+                  DataColumn(label: Text('Scale / section')),
+                  DataColumn(label: Text('Tariff purpose / label')),
+                  DataColumn(label: Text('Whitsun settlement account')),
+                  DataColumn(label: Text('Amount (GHS)')),
+                  DataColumn(label: Text('Unit / freq')),
+                  DataColumn(label: Text('Actions')),
                 ],
                 rows: items.map((item) {
                   final originalIndex = _fees.indexOf(item);

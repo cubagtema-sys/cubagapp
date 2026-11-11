@@ -7,11 +7,12 @@ import '../components/fetch_error_view.dart';
 import 'admin_qr_scanner_page.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10b981);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
 const _kBlue = Color(0xFF3b82f6);
-const _kRed = Color(0xFFef4444);
+const _kRed = CubagColors.lapsed;
 const _kCardBg = Color(0xFF22140E);
 
 class AdminEventsPage extends StatefulWidget {
@@ -91,11 +92,11 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
         builder: (context, setDlgState) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
           final inputBg = isDark
-              ? const Color(0xFF1A0F0A)
+              ? CubagColors.ink
               : const Color(0xFFFAF6F0);
           final borderCol = isDark
               ? const Color(0xFF3D261C)
-              : const Color(0xFFE8DED6);
+              : CubagColors.line;
 
           return AlertDialog(
             shape: RoundedRectangleBorder(
@@ -489,9 +490,9 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
     final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
     final borderCol = isDark
         ? const Color(0xFF3D261C)
-        : const Color(0xFFE8DED6);
+        : CubagColors.line;
     final headerBg = isDark
-        ? const Color(0xFF1A0F0A)
+        ? CubagColors.ink
         : const Color(0xFFFAF6F0);
     final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
     final subTextCol = isDark
@@ -685,7 +686,6 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                             fontWeight: FontWeight.w800,
                             fontSize: 16,
                             color: subTextCol,
-                            letterSpacing: 0.5,
                           ),
                           dataTextStyle: TextStyle(
                             fontSize: 17,
@@ -696,12 +696,12 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                           dataRowMinHeight: 64,
                           dataRowMaxHeight: 76,
                           columns: const [
-                            DataColumn(label: Text('EVENT / TITLE')),
-                            DataColumn(label: Text('DATE & TIME')),
-                            DataColumn(label: Text('VENUE / LOCATION')),
-                            DataColumn(label: Text('ATTENDEES')),
-                            DataColumn(label: Text('STATUS')),
-                            DataColumn(label: Text('ACTIONS')),
+                            DataColumn(label: Text('Event / title')),
+                            DataColumn(label: Text('Date & time')),
+                            DataColumn(label: Text('Venue / location')),
+                            DataColumn(label: Text('Attendees')),
+                            DataColumn(label: Text('Status')),
+                            DataColumn(label: Text('Actions')),
                           ],
                           rows: _filteredEvents.map((ev) {
                             final title =

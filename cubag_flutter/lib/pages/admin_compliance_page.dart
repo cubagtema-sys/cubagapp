@@ -12,13 +12,14 @@ import '../components/cors_image_widget.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
+import '../design/cubag_design.dart';
 
 // ── Design tokens ────────────────────────────────────────────────────────────
-const _kPrimary = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10b981);
-const _kAmber = Color(0xFFf59e0b);
-const _kRed = Color(0xFFef4444);
-const _kDarkBg = Color(0xFF1A0F0A);
+const _kPrimary = CubagColors.action;
+const _kGreen = CubagColors.valid;
+const _kAmber = CubagColors.due;
+const _kRed = CubagColors.lapsed;
+const _kDarkBg = CubagColors.ink;
 const _kCardDark = Color(0xFF22140E);
 const _kBorderDark = Color(0xFF3D261C);
 const _kTextDark = Color(0xFF1F1612);
@@ -36,7 +37,7 @@ Color _statusColor(String? s) {
     case 'payment_submitted':
       return _kAmber;
     case 'partially_paid':
-      return const Color(0xFFF59E0B);
+      return CubagColors.due;
     case 'under_review':
       return _kPrimary;
     case 'submitted':
@@ -254,7 +255,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
           color: isSel ? activeColor.withAlpha(isDark ? 40 : 25) : (isDark ? _kCardDark : Colors.white),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSel ? activeColor : (isDark ? _kBorderDark : const Color(0xFFE8DED6)),
+            color: isSel ? activeColor : (isDark ? _kBorderDark : CubagColors.line),
             width: isSel ? 1.5 : 1,
           ),
         ),
@@ -298,7 +299,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? _kDarkBg : const Color(0xFFFAF6F0);
     final cardBg = isDark ? _kCardDark : const Color(0xFFFBF8F3);
-    final borderColor = isDark ? _kBorderDark : const Color(0xFFE8DED6);
+    final borderColor = isDark ? _kBorderDark : CubagColors.line;
     final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
     final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
@@ -515,41 +516,40 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                                         decoration: BoxDecoration(
-                                          color: isDark ? const Color(0xFF1F120B) : const Color(0xFFF1F5F9),
+                                          color: isDark ? const Color(0xFF1F120B) : CubagColors.sand,
                                           border: Border(bottom: BorderSide(color: borderColor)),
                                         ),
                                         child: Row(
                                           children: [
                                             SizedBox(
                                               width: 100,
-                                              child: Text('REF ID', style: _tableHeaderStyle(textMuted)),
+                                              child: Text('Ref ID', style: _tableHeaderStyle(textMuted)),
                                             ),
                                             Expanded(
                                               flex: 3,
-                                              child: Text('APPLICANT & FIRM', style: _tableHeaderStyle(textMuted)),
+                                              child: Text('Applicant & firm', style: _tableHeaderStyle(textMuted)),
                                             ),
                                             Expanded(
                                               flex: 2,
-                                              child: Text('CATEGORY', style: _tableHeaderStyle(textMuted)),
+                                              child: Text('Category', style: _tableHeaderStyle(textMuted)),
                                             ),
                                             SizedBox(
                                               width: 170,
-                                              child: Text('RENEWAL DOCS', style: _tableHeaderStyle(textMuted)),
+                                              child: Text('Renewal docs', style: _tableHeaderStyle(textMuted)),
                                             ),
                                             SizedBox(
                                               width: 140,
-                                              child: Center(child: Text('PAYMENT', style: _tableHeaderStyle(textMuted))),
+                                              child: Center(child: Text('Payment', style: _tableHeaderStyle(textMuted))),
                                             ),
                                             const SizedBox(
                                               width: 100,
                                               child: Align(
                                                 alignment: Alignment.centerRight,
                                                 child: Text(
-                                                  'ACTION',
+                                                  'Action',
                                                   style: TextStyle(
                                                     fontSize: 12.5,
                                                     fontWeight: FontWeight.w800,
-                                                    letterSpacing: 0.6,
                                                     color: Color(0xFF5F6B7E),
                                                   ),
                                                 ),
@@ -594,7 +594,6 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
     return TextStyle(
       fontSize: 12.5,
       fontWeight: FontWeight.w700,
-      letterSpacing: 0.6,
       color: textMuted,
     );
   }
@@ -713,7 +712,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        'CORPORATE',
+                        'Corporate',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -760,7 +759,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                           borderRadius: BorderRadius.circular(3),
                           child: LinearProgressIndicator(
                             value: (uploaded / totalDocs.toDouble()).clamp(0.0, 1.0),
-                            backgroundColor: isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0),
+                            backgroundColor: isDark ? const Color(0xFF4D2D20) : CubagColors.line,
                             color: approved == totalDocs
                                 ? _kGreen
                                 : (uploaded >= (totalDocs / 2) ? _kPrimary : _kAmber),
@@ -812,7 +811,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                   child: ElevatedButton(
                     onPressed: () => _openDetail(app),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isDark ? const Color(0xFF4D2D20) : const Color(0xFFF1F5F9),
+                      backgroundColor: isDark ? const Color(0xFF4D2D20) : CubagColors.sand,
                       foregroundColor: textCol,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -999,7 +998,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                 borderRadius: BorderRadius.circular(3),
                 child: LinearProgressIndicator(
                   value: (uploaded / totalDocs.toDouble()).clamp(0.0, 1.0),
-                  backgroundColor: isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0),
+                  backgroundColor: isDark ? const Color(0xFF4D2D20) : CubagColors.line,
                   color: approved == totalDocs ? _kGreen : _kPrimary,
                   minHeight: 4,
                 ),
@@ -1487,7 +1486,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
       decoration: BoxDecoration(
         color: isDark ? _kCardDark : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? _kBorderDark : const Color(0xFFE2E8F0)),
+        border: Border.all(color: isDark ? _kBorderDark : CubagColors.line),
       ),
       child: Row(
         children: [
@@ -1503,9 +1502,9 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF4D2D20) : const Color(0xFFF1F5F9),
+                color: isDark ? const Color(0xFF4D2D20) : CubagColors.sand,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: isDark ? _kBorderDark : const Color(0xFFE2E8F0)),
+                border: Border.all(color: isDark ? _kBorderDark : CubagColors.line),
               ),
               child: Icon(
                 Icons.arrow_back_ios_new_rounded,
@@ -1543,7 +1542,6 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: statusColor,
-                          letterSpacing: 0.4,
                         ),
                       ),
                     ),
@@ -1553,7 +1551,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                   typeLabel,
                   style: TextStyle(
                     fontSize: 12.5,
-                    color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                    color: isDark ? Colors.white60 : CubagColors.muted,
                   ),
                 ),
               ],
@@ -1702,7 +1700,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                       'Direct bank wire / branch deposit submitted by applicant',
                       style: TextStyle(
                         fontSize: 12.5,
-                        color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                        color: isDark ? Colors.white60 : CubagColors.muted,
                       ),
                     ),
                   ],
@@ -1766,10 +1764,10 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isDark ? _kBorderDark : const Color(0xFFE2E8F0),
+                            color: isDark ? _kBorderDark : CubagColors.line,
                             width: 1.5,
                           ),
-                          color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                          color: isDark ? CubagColors.ink : CubagColors.sand,
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: Stack(
@@ -1845,7 +1843,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                               'Total Amount Deposited',
                               style: TextStyle(
                                 fontSize: 12.5,
-                                color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                                color: isDark ? Colors.white60 : CubagColors.muted,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -1961,7 +1959,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                color: isDark ? Colors.white60 : CubagColors.muted,
               ),
             ),
           ),
@@ -1989,7 +1987,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
       decoration: BoxDecoration(
         color: isDark ? _kCardDark : Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: isDark ? _kBorderDark : const Color(0xFFE2E8F0)),
+        border: Border.all(color: isDark ? _kBorderDark : CubagColors.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2010,7 +2008,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                  color: isDark ? CubagColors.ink : CubagColors.sand,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -2018,7 +2016,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white70 : const Color(0xFF475569),
+                    color: isDark ? Colors.white70 : CubagColors.inkSoft,
                   ),
                 ),
               ),
@@ -2066,7 +2064,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
       decoration: BoxDecoration(
         color: isDark ? _kCardDark : Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: isDark ? _kBorderDark : const Color(0xFFE2E8F0)),
+        border: Border.all(color: isDark ? _kBorderDark : CubagColors.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2090,7 +2088,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
             'Configure the fee breakdown and payment deadline for this member renewal.',
             style: TextStyle(
               fontSize: 12.5,
-              color: isDark ? Colors.white60 : const Color(0xFF64748B),
+              color: isDark ? Colors.white60 : CubagColors.muted,
             ),
           ),
           const SizedBox(height: 12),
@@ -2174,7 +2172,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white70 : const Color(0xFF475569),
+                      color: isDark ? Colors.white70 : CubagColors.inkSoft,
                     ),
                   ),
                   InkWell(
@@ -2225,9 +2223,9 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+              color: isDark ? CubagColors.ink : CubagColors.sand,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: isDark ? _kBorderDark : const Color(0xFFE2E8F0)),
+              border: Border.all(color: isDark ? _kBorderDark : CubagColors.line),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2252,7 +2250,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                             'Allow member to pay bill in installments with balance tracking',
                             style: TextStyle(
                               fontSize: 11.5,
-                              color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                              color: isDark ? Colors.white60 : CubagColors.muted,
                             ),
                           ),
                         ],
@@ -2330,7 +2328,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
       decoration: BoxDecoration(
         color: isDark ? _kCardDark : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? _kBorderDark : const Color(0xFFE2E8F0)),
+        border: Border.all(color: isDark ? _kBorderDark : CubagColors.line),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
@@ -2369,7 +2367,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                       'Summary of bill settlement and received installments',
                       style: TextStyle(
                         fontSize: 12.5,
-                        color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                        color: isDark ? Colors.white60 : CubagColors.muted,
                       ),
                     ),
                   ],
@@ -2378,7 +2376,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: (balanceDue <= 0.01 && totalBilled > 0 ? _kGreen : const Color(0xFFF59E0B)).withValues(alpha: 0.12),
+                  color: (balanceDue <= 0.01 && totalBilled > 0 ? _kGreen : CubagColors.due).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -2386,7 +2384,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: balanceDue <= 0.01 && totalBilled > 0 ? _kGreen : const Color(0xFFF59E0B),
+                    color: balanceDue <= 0.01 && totalBilled > 0 ? _kGreen : CubagColors.due,
                   ),
                 ),
               ),
@@ -2401,13 +2399,13 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                    color: isDark ? CubagColors.ink : CubagColors.sand,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('TOTAL BILLED', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Colors.grey)),
+                      Text('Total billed', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Colors.grey)),
                       const SizedBox(height: 2),
                       Text('GHS ${totalBilled.toStringAsFixed(2)}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : _kTextDark)),
                     ],
@@ -2425,7 +2423,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('TOTAL PAID', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: _kGreen)),
+                      Text('Total paid', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: _kGreen)),
                       const SizedBox(height: 2),
                       Text('GHS ${totalPaid.toStringAsFixed(2)}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _kGreen)),
                     ],
@@ -2437,15 +2435,15 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: (balanceDue > 0 ? const Color(0xFFF59E0B) : _kGreen).withValues(alpha: 0.08),
+                    color: (balanceDue > 0 ? CubagColors.due : _kGreen).withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('BALANCE DUE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: balanceDue > 0 ? const Color(0xFFF59E0B) : _kGreen)),
+                      Text('Balance due', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: balanceDue > 0 ? CubagColors.due : _kGreen)),
                       const SizedBox(height: 2),
-                      Text('GHS ${balanceDue.toStringAsFixed(2)}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: balanceDue > 0 ? const Color(0xFFF59E0B) : _kGreen)),
+                      Text('GHS ${balanceDue.toStringAsFixed(2)}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: balanceDue > 0 ? CubagColors.due : _kGreen)),
                     ],
                   ),
                 ),
@@ -2460,7 +2458,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
-              backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              backgroundColor: isDark ? CubagColors.inkSoft : CubagColors.line,
               valueColor: AlwaysStoppedAnimation<Color>(progress >= 1.0 ? _kGreen : _kPrimary),
             ),
           ),
@@ -2498,9 +2496,9 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                  color: isDark ? CubagColors.ink : CubagColors.sand,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: isDark ? _kBorderDark : const Color(0xFFE2E8F0)),
+                  border: Border.all(color: isDark ? _kBorderDark : CubagColors.line),
                 ),
                 child: Row(
                   children: [
@@ -2540,7 +2538,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                           const SizedBox(height: 2),
                           Text(
                             '$pMethod • $pDate • Ref: $pRef',
-                            style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : const Color(0xFF64748B)),
+                            style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : CubagColors.muted),
                           ),
                         ],
                       ),
@@ -2579,7 +2577,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
       decoration: BoxDecoration(
         color: isDark ? _kCardDark : Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: isDark ? _kBorderDark : const Color(0xFFE2E8F0)),
+        border: Border.all(color: isDark ? _kBorderDark : CubagColors.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2780,7 +2778,7 @@ class _MemberInfoCard extends StatelessWidget {
       paymentStatusCol = const Color(0xFF5F6B7E);
     }
     final cardBg = isDark ? _kCardDark : const Color(0xFFFBF8F3);
-    final borderColor = isDark ? _kBorderDark : const Color(0xFFE8DED6);
+    final borderColor = isDark ? _kBorderDark : CubagColors.line;
     final fieldBg = isDark ? _kDarkBg : const Color(0xFFFAF6F0);
     final textColor = isDark ? Colors.white : _kTextDark;
     final mutedText = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
@@ -2966,7 +2964,6 @@ class _MemberInfoCard extends StatelessWidget {
                     fontSize: 9.5,
                     fontWeight: FontWeight.w700,
                     color: mutedText,
-                    letterSpacing: 0.4,
                   ),
                 ),
                 Text(
@@ -3089,12 +3086,12 @@ class _AdminDocRowState extends State<_AdminDocRow> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: widget.isDark ? const Color(0xFF1E1410) : const Color(0xFFF8FAFC),
+        color: widget.isDark ? const Color(0xFF1E1410) : CubagColors.sand,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: uploaded
               ? sColor.withValues(alpha: 0.25)
-              : (widget.isDark ? _kBorderDark : const Color(0xFFE2E8F0)),
+              : (widget.isDark ? _kBorderDark : CubagColors.line),
         ),
       ),
       child: Column(
@@ -3195,7 +3192,7 @@ class _AdminDocRowState extends State<_AdminDocRow> {
                 Expanded(
                   child: Text(
                     'File: $fileName',
-                    style: TextStyle(fontSize: 12, color: widget.isDark ? Colors.white60 : const Color(0xFF64748B)),
+                    style: TextStyle(fontSize: 12, color: widget.isDark ? Colors.white60 : CubagColors.muted),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -3257,7 +3254,7 @@ class _AdminDocRowState extends State<_AdminDocRow> {
                 decoration: BoxDecoration(
                   color: widget.isDark ? _kDarkBg : Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: widget.isDark ? _kBorderDark : const Color(0xFFCBD5E1)),
+                  border: Border.all(color: widget.isDark ? _kBorderDark : CubagColors.lineStrong),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(7),

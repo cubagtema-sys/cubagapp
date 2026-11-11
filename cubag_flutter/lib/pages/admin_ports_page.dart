@@ -4,9 +4,10 @@ import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10b981);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
 const _kCardBg = Color(0xFF22140E);
 
 class AdminPortsPage extends StatefulWidget {
@@ -246,9 +247,9 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
     final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
     final borderCol = isDark
         ? const Color(0xFF3D261C)
-        : const Color(0xFFE8DED6);
+        : CubagColors.line;
     final headerBg = isDark
-        ? const Color(0xFF1A0F0A)
+        ? CubagColors.ink
         : const Color(0xFFFAF6F0);
     final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
     final subTextCol = isDark
@@ -427,7 +428,6 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
                             fontWeight: FontWeight.w800,
                             fontSize: 16,
                             color: subTextCol,
-                            letterSpacing: 0.5,
                           ),
                           dataTextStyle: TextStyle(
                             fontSize: 17,
@@ -438,10 +438,10 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
                           dataRowMinHeight: 62,
                           dataRowMaxHeight: 74,
                           columns: const [
-                            DataColumn(label: Text('PORT / TERMINAL NAME')),
-                            DataColumn(label: Text('PORT CODE')),
-                            DataColumn(label: Text('OPERATIONAL STATUS')),
-                            DataColumn(label: Text('ACTIONS')),
+                            DataColumn(label: Text('Port / terminal name')),
+                            DataColumn(label: Text('Port code')),
+                            DataColumn(label: Text('Operational status')),
+                            DataColumn(label: Text('Actions')),
                           ],
                           rows: displayPorts.map((p) {
                             final name =
@@ -499,7 +499,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
                                           ? const Color(
                                               0xFF1A0F0A,
                                             ).withAlpha(150)
-                                          : const Color(0xFFf1f5f9),
+                                          : CubagColors.sand,
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(color: borderCol),
                                     ),

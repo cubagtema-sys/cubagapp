@@ -12,6 +12,7 @@ import '../services/socket_service.dart';
 import '../components/fetch_error_view.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
+import '../design/cubag_design.dart';
 part 'admin_members/admin_members_widgets.dart';
 
 class StandingTier {
@@ -38,21 +39,21 @@ class StandingTier {
     } else if (stars >= 3.5) {
       return StandingTier(
         label: 'Good Standing',
-        color: const Color(0xFF10B981), // Emerald Green
+        color: CubagColors.valid, // Emerald Green
         icon: Icons.verified_user,
         badgeText: 'ACTIVE MEMBER',
       );
     } else if (stars >= 2.0) {
       return StandingTier(
         label: 'Warning / Probationary',
-        color: const Color(0xFFF59E0B), // Amber
+        color: CubagColors.due, // Amber
         icon: Icons.warning_amber,
         badgeText: 'PROBATIONARY',
       );
     } else {
       return StandingTier(
         label: 'Suspended / Delinquent',
-        color: const Color(0xFFEF4444), // Red
+        color: CubagColors.lapsed, // Red
         icon: Icons.block,
         badgeText: 'SUSPENDED',
       );
@@ -85,22 +86,22 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
   final _statusStyle = {
     'active': {
       'bg': const Color(0x1910b981),
-      'color': const Color(0xFF10b981),
+      'color': CubagColors.valid,
       'label': 'Active',
     },
     'pending': {
       'bg': const Color(0x19f59e0b),
-      'color': const Color(0xFFf59e0b),
+      'color': CubagColors.due,
       'label': 'Pending',
     },
     'inactive': {
       'bg': const Color(0x1964748b),
-      'color': const Color(0xFF64748b),
+      'color': CubagColors.muted,
       'label': 'Inactive',
     },
     'suspended': {
       'bg': const Color(0x19ef4444),
-      'color': const Color(0xFFef4444),
+      'color': CubagColors.lapsed,
       'label': 'Suspended',
     },
   };
@@ -528,7 +529,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                               prefixIcon: const Icon(
                                 Icons.filter_alt_outlined,
                                 size: 16,
-                                color: Color(0xFF64748b),
+                                color: CubagColors.muted,
                               ),
                               items: [
                                 DropdownItem(value: 'all', label: 'All ($total)'),
@@ -559,7 +560,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                               prefixIcon: const Icon(
                                 Icons.sort,
                                 size: 16,
-                                color: Color(0xFF64748b),
+                                color: CubagColors.muted,
                               ),
                               items: const [
                                 DropdownItem(value: 'name', label: 'Name (A-Z)'),
@@ -681,7 +682,6 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                                       fontSize: 22,
                                       fontWeight: FontWeight.w800,
                                       color: textColor,
-                                      letterSpacing: 0.5,
                                     ),
                                   ),
                                   IconButton(
@@ -828,7 +828,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isDark
-                ? const Color(0xFF1A0F0A)
+                ? CubagColors.ink
                 : Colors.grey.withValues(alpha: 0.03),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: borderColor),
@@ -837,12 +837,11 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'STANDING & COMPLIANCE',
+                'Standing & compliance',
                 style: TextStyle(
                   fontSize: 14,
                   color: subTextColor,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 1,
                 ),
               ),
               const SizedBox(height: 14),
@@ -975,7 +974,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isDark
-                ? const Color(0xFF1A0F0A)
+                ? CubagColors.ink
                 : Colors.grey.withValues(alpha: 0.03),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: borderColor),
@@ -984,12 +983,11 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'HISTORICAL COMPLIANCE TREND',
+                'Historical compliance trend',
                 style: TextStyle(
                   fontSize: 14,
                   color: subTextColor,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 1,
                 ),
               ),
               const SizedBox(height: 16),
@@ -1017,7 +1015,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isDark
-                ? const Color(0xFF1A0F0A)
+                ? CubagColors.ink
                 : Colors.grey.withValues(alpha: 0.03),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: borderColor),
@@ -1087,7 +1085,6 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     fontSize: 14,
                     color: subTextColor,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -1138,7 +1135,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isDark
-                ? const Color(0xFF1A0F0A)
+                ? CubagColors.ink
                 : Colors.grey.withValues(alpha: 0.03),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: borderColor),
@@ -1168,7 +1165,6 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                         fontSize: 12,
                         color: ss['color'] as Color,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
                       ),
                     ),
                   ),
@@ -1306,20 +1302,20 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
         'label': 'ACTIVE STANDING',
         'value': '$active',
         'badge': 'In Good Standing',
-        'badgeColor': const Color(0xFF10b981),
+        'badgeColor': CubagColors.valid,
       },
       {
         'label': 'PENDING VETTING',
         'value': '$pending',
         'badge': pending > 0 ? 'Requires Audit' : 'Queue Clear',
-        'badgeColor': pending > 0 ? kAdminOrange : const Color(0xFF10b981),
+        'badgeColor': pending > 0 ? kAdminOrange : CubagColors.valid,
       },
       {
         'label': 'SUSPENDED',
         'value': '$suspended',
         'badge': suspended > 0 ? 'Sanctioned' : 'Zero Infractions',
         'badgeColor':
-            suspended > 0 ? const Color(0xFFEF4444) : const Color(0xFF10b981),
+            suspended > 0 ? CubagColors.lapsed : CubagColors.valid,
       },
     ];
 
@@ -1390,7 +1386,6 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: subInk,
-                  letterSpacing: 0.5,
                 ),
               ),
               Container(
@@ -1406,7 +1401,6 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     fontSize: 9.5,
                     fontWeight: FontWeight.w800,
                     color: badgeColor,
-                    letterSpacing: 0.4,
                   ),
                 ),
               ),
@@ -1541,7 +1535,6 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           fontSize: 15,
           fontWeight: FontWeight.w800,
           color: textColor.withValues(alpha: 0.7),
-          letterSpacing: 0.8,
         ),
       ),
     );
@@ -1570,7 +1563,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
       decoration: BoxDecoration(
         color: index.isEven
             ? cardBg
-            : (isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8F4F0)),
+            : (isDark ? CubagColors.ink : CubagColors.sand),
         border: isLast
             ? null
             : Border(
@@ -1774,7 +1767,6 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                           fontSize: 11,
                           color: ss['color'] as Color,
                           fontWeight: FontWeight.w800,
-                          letterSpacing: 0.4,
                         ),
                       ),
                     ),
@@ -1806,7 +1798,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                             ),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF10b981),
+                            backgroundColor: CubagColors.valid,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
@@ -1892,12 +1884,11 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'COMPLIANCE BREAKDOWN MATH',
+          'Compliance breakdown math',
           style: TextStyle(
             fontSize: 14,
             color: subTextColor,
             fontWeight: FontWeight.w800,
-            letterSpacing: 1,
           ),
         ),
         const SizedBox(height: 12),
@@ -1919,7 +1910,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
 
         _breakdownTile(
           icon: Icons.payments_outlined,
-          color: const Color(0xFF10B981),
+          color: CubagColors.valid,
           title: 'Financial Compliance',
           scoreText: '$financialScore / 30 pts',
           details: [
@@ -1947,7 +1938,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
 
         _breakdownTile(
           icon: Icons.admin_panel_settings_outlined,
-          color: const Color(0xFFF59E0B),
+          color: CubagColors.due,
           title: 'Admin Trust Score',
           scoreText: '$adminScore / 10 pts',
           details: ['• Derived directly from the manual review slider above.'],
@@ -2062,10 +2053,10 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A0F0A) : Colors.grey.withValues(alpha: 0.03),
+        color: isDark ? CubagColors.ink : Colors.grey.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isPaid ? const Color(0xFF10B981).withValues(alpha: 0.4) : const Color(0xFFFF5000).withValues(alpha: 0.4),
+          color: isPaid ? CubagColors.valid.withValues(alpha: 0.4) : CubagColors.action.withValues(alpha: 0.4),
         ),
       ),
       child: Column(
@@ -2076,12 +2067,12 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: (isPaid ? const Color(0xFF10B981) : const Color(0xFFFF5000)).withValues(alpha: 0.12),
+                  color: (isPaid ? CubagColors.valid : CubagColors.action).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   Icons.receipt_long_rounded,
-                  color: isPaid ? const Color(0xFF10B981) : const Color(0xFFFF5000),
+                  color: isPaid ? CubagColors.valid : CubagColors.action,
                   size: 20,
                 ),
               ),
@@ -2091,12 +2082,11 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'ATTACHED BANK DEPOSIT SLIP',
+                      'Attached bank deposit slip',
                       style: TextStyle(
                         fontSize: 13.5,
                         color: subTextColor,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
                       ),
                     ),
                     Text(
@@ -2112,10 +2102,10 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: (isPaid ? const Color(0xFF10B981) : const Color(0xFFF59E0B)).withValues(alpha: 0.12),
+                  color: (isPaid ? CubagColors.valid : CubagColors.due).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: (isPaid ? const Color(0xFF10B981) : const Color(0xFFF59E0B)).withValues(alpha: 0.3),
+                    color: (isPaid ? CubagColors.valid : CubagColors.due).withValues(alpha: 0.3),
                   ),
                 ),
                 child: Text(
@@ -2123,7 +2113,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
-                    color: isPaid ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                    color: isPaid ? CubagColors.valid : CubagColors.due,
                   ),
                 ),
               ),
@@ -2145,7 +2135,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: borderColor),
-                      color: isDark ? const Color(0xFF281710) : const Color(0xFFF8FAFC),
+                      color: isDark ? const Color(0xFF281710) : CubagColors.sand,
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: Stack(
@@ -2174,7 +2164,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     color: primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.account_balance_rounded, color: Color(0xFFFF5000), size: 26),
+                  child: const Icon(Icons.account_balance_rounded, color: CubagColors.action, size: 26),
                 ),
               const SizedBox(width: 14),
               Expanded(
@@ -2187,7 +2177,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: isPaid ? const Color(0xFF10B981) : primary,
+                          color: isPaid ? CubagColors.valid : primary,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -2233,7 +2223,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   icon: const Icon(Icons.check_circle_rounded, size: 14),
                   label: const Text('Verify & Confirm Payment'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF10B981),
+                    backgroundColor: CubagColors.valid,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     minimumSize: Size.zero,
@@ -2285,7 +2275,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: CubagColors.valid, foregroundColor: Colors.white),
             child: const Text('Confirm'),
           ),
         ],
@@ -2297,7 +2287,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
       if (!mounted) return;
       if (res.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Payment confirmed successfully!'), backgroundColor: Color(0xFF10B981)),
+          const SnackBar(content: Text('Payment confirmed successfully!'), backgroundColor: CubagColors.valid),
         );
         if (_selected != null) {
           setState(() {
@@ -2329,7 +2319,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.account_balance_rounded, color: Color(0xFFFF5000), size: 22),
+                  const Icon(Icons.account_balance_rounded, color: CubagColors.action, size: 22),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -2351,7 +2341,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   child: CachedNetworkImage(
                     imageUrl: fullUrl,
                     fit: BoxFit.contain,
-                    placeholder: (_, _) => const Center(child: CircularProgressIndicator(color: Color(0xFFFF5000))),
+                    placeholder: (_, _) => const Center(child: CircularProgressIndicator(color: CubagColors.action)),
                     errorWidget: (_, _, _) => const Center(child: Text('Failed to load deposit slip image.')),
                   ),
                 ),

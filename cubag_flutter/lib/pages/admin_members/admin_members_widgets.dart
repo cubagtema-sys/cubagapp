@@ -74,7 +74,6 @@ class _KPICardState extends State<_KPICard> {
                         color: isDark
                             ? const Color(0xFF9E8F84)
                             : const Color(0xFF7A6B60),
-                        letterSpacing: 0.6,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

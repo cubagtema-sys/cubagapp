@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:go_router/go_router.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
+const _kOrange = CubagColors.action;
 
 class AdminQrScannerPage extends StatefulWidget {
   final Function(String memberId) onScan;

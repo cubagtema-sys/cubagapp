@@ -9,6 +9,7 @@ import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -253,9 +254,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
     final borderColor = isDark
         ? const Color(0xFF4D2D20)
-        : const Color(0xFFE8DED6);
-    final textColor = isDark ? Colors.white : const Color(0xFF2B211D);
-    final subTextColor = isDark ? Colors.white70 : const Color(0xFF6F625B);
+        : CubagColors.line;
+    final textColor = isDark ? Colors.white : CubagColors.ink;
+    final subTextColor = isDark ? Colors.white70 : CubagColors.muted;
 
     final pendingMembers = _rawMembers
         .where((m) {
@@ -357,7 +358,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Widget _buildQuickNavStrip(BuildContext context, bool isDark) {
-    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final cardBg = isDark ? const Color(0xFF22140E) : Colors.white;
     final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
 
@@ -365,9 +366,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       {'title': 'Members Directory', 'route': '/admin/members', 'icon': Icons.people_alt_rounded, 'color': const Color(0xFF2563EB)},
       {'title': 'Registration Vetting', 'route': '/admin/documents', 'icon': Icons.folder_copy_rounded, 'color': kAdminOrange},
       {'title': 'Document Rules', 'route': '/admin/document-rules', 'icon': Icons.rule_folder_rounded, 'color': const Color(0xFF6366F1)},
-      {'title': 'Compliance Renewal', 'route': '/admin/compliance', 'icon': Icons.verified_user_rounded, 'color': const Color(0xFF10B981)},
+      {'title': 'Compliance Renewal', 'route': '/admin/compliance', 'icon': Icons.verified_user_rounded, 'color': CubagColors.valid},
       {'title': 'Broadcast Notices', 'route': '/admin/announcements', 'icon': Icons.campaign_rounded, 'color': const Color(0xFF8B5CF6)},
-      {'title': 'Audit & Ledger', 'route': '/admin/audit-log', 'icon': Icons.security_rounded, 'color': const Color(0xFF64748B)},
+      {'title': 'Audit & Ledger', 'route': '/admin/audit-log', 'icon': Icons.security_rounded, 'color': CubagColors.muted},
     ];
 
     return Container(
@@ -387,11 +388,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 Icon(Icons.bolt_rounded, size: 18, color: kAdminOrange),
                 const SizedBox(width: 6),
                 Text(
-                  'QUICK ACTIONS',
+                  'Quick actions',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 0.6,
                     color: isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55),
                   ),
                 ),
@@ -453,7 +453,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     bool isDark,
   ) {
     final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
     final subInk = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
@@ -472,7 +472,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         'label': 'PENDING VETTING',
         'value': '$totalPending',
         'badge': totalPending > 0 ? 'Action Required' : 'Queue Clear',
-        'badgeColor': totalPending > 0 ? kAdminOrange : const Color(0xFF10b981),
+        'badgeColor': totalPending > 0 ? kAdminOrange : CubagColors.valid,
         'onTap': () => setState(() => _activeWorkspaceIndex = 0),
       },
       {
@@ -486,7 +486,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         'label': 'SETTLED REVENUE',
         'value': revenueLabel,
         'badge': 'FY 2026 Settled',
-        'badgeColor': const Color(0xFF10b981),
+        'badgeColor': CubagColors.valid,
         'onTap': () => context.go('/admin/payments'),
       },
       {
@@ -569,7 +569,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: subInk,
-                    letterSpacing: 0.5,
                   ),
                 ),
                 Container(
@@ -608,7 +607,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Widget _buildWorkspaceTabs(BuildContext context, bool isDark, int pendingCount) {
-    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
     final subInk = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
@@ -618,14 +617,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         'label': 'Applications & Vetting Queue',
         'icon': Icons.pending_actions_rounded,
         'badge': '$pendingCount',
-        'badgeColor': pendingCount > 0 ? kAdminOrange : const Color(0xFF10b981),
+        'badgeColor': pendingCount > 0 ? kAdminOrange : CubagColors.valid,
       },
       {
         'index': 1,
         'label': 'Maritime Port & Forex Feeds',
         'icon': Icons.anchor_rounded,
         'badge': 'LIVE',
-        'badgeColor': const Color(0xFF10b981),
+        'badgeColor': CubagColors.valid,
       },
       {
         'index': 2,
@@ -671,7 +670,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final idx = t['index'] as int;
     final isSelected = _activeWorkspaceIndex == idx;
     final badgeColor = t['badgeColor'] as Color;
-    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final activeBg = isDark ? const Color(0xFF2A170F) : Colors.white;
 
     return InkWell(
@@ -796,7 +795,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   Widget _buildCounterPaymentActionCard(BuildContext context, bool isDark) {
     final cardBg = isDark ? const Color(0xFF1B2E24) : const Color(0xFFE8F5E9);
-    final borderCol = const Color(0xFF10b981).withAlpha(isDark ? 90 : 120);
+    final borderCol = CubagColors.valid.withAlpha(isDark ? 90 : 120);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -813,12 +812,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10b981).withAlpha(35),
+                  color: CubagColors.valid.withAlpha(35),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
                   Icons.point_of_sale_rounded,
-                  color: Color(0xFF10b981),
+                  color: CubagColors.valid,
                   size: 22,
                 ),
               ),
@@ -840,7 +839,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       'Walk-in payments: Cash, Cheque, POS card, Direct wire',
                       style: TextStyle(
                         fontSize: 12,
-                        color: isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748b),
+                        color: isDark ? const Color(0xFF5F6B7E) : CubagColors.muted,
                       ),
                     ),
                   ],
@@ -853,7 +852,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             width: double.infinity,
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF10b981),
+                backgroundColor: CubagColors.valid,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -877,7 +876,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   Widget _buildPortOperationalDeskCard(BuildContext context, bool isDark) {
     final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
 
     return Container(
@@ -899,12 +898,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     Icon(Icons.anchor_rounded, size: 16, color: kAdminOrange),
                     const SizedBox(width: 8),
                     Text(
-                      'PORT OPERATIONS DESK',
+                      'Port operations desk',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                         color: textInk,
-                        letterSpacing: 0.6,
                       ),
                     ),
                   ],
@@ -912,16 +910,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF10b981).withAlpha(20),
+                    color: CubagColors.valid.withAlpha(20),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    'LIVE STATUS',
+                    'Live status',
                     style: TextStyle(
                       fontSize: 9.5,
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFF10b981),
-                      letterSpacing: 0.4,
+                      color: CubagColors.valid,
                     ),
                   ),
                 ),
@@ -933,11 +930,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             padding: const EdgeInsets.all(12),
             child: Column(
               children: [
-                _buildPortStatusRow('Tema Port (MPS Terminal 3)', 'Operational', 'Berth Normal', const Color(0xFF10b981), isDark),
+                _buildPortStatusRow('Tema Port (MPS Terminal 3)', 'Operational', 'Berth Normal', CubagColors.valid, isDark),
                 const SizedBox(height: 8),
-                _buildPortStatusRow('Takoradi Maritime Terminal', 'Operational', 'Clearance Active', const Color(0xFF10b981), isDark),
+                _buildPortStatusRow('Takoradi Maritime Terminal', 'Operational', 'Clearance Active', CubagColors.valid, isDark),
                 const SizedBox(height: 8),
-                _buildPortStatusRow('Kotoka Cargo Village (KIA)', 'Operational', 'Air Waybills Active', const Color(0xFF10b981), isDark),
+                _buildPortStatusRow('Kotoka Cargo Village (KIA)', 'Operational', 'Air Waybills Active', CubagColors.valid, isDark),
                 const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
@@ -967,7 +964,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Widget _buildPortStatusRow(String name, String status, String note, Color color, bool isDark) {
-    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
     final subInk = isDark ? const Color(0xFF9E8F84) : const Color(0xFF6B5E55);
 
@@ -1034,7 +1031,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   Widget _buildForexDeskCard(BuildContext context, bool isDark) {
     final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
 
     return Container(
@@ -1056,12 +1053,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     Icon(Icons.currency_exchange_rounded, size: 16, color: const Color(0xFF6B3E26)),
                     const SizedBox(width: 8),
                     Text(
-                      'OFFICIAL CUSTOMS FX RATES',
+                      'Official customs fx rates',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                         color: textInk,
-                        letterSpacing: 0.6,
                       ),
                     ),
                   ],
@@ -1069,16 +1065,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF10b981).withAlpha(20),
+                    color: CubagColors.valid.withAlpha(20),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    'INDICATIVE',
+                    'Indicative',
                     style: TextStyle(
                       fontSize: 9.5,
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFF10b981),
-                      letterSpacing: 0.4,
+                      color: CubagColors.valid,
                     ),
                   ),
                 ),
@@ -1126,7 +1121,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Widget _buildFxRateRow(String symbol, String pair, String rate, bool isDark) {
-    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
 
     return Container(
@@ -1189,21 +1184,21 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFef4444).withValues(alpha: isDark ? 0.15 : 0.08),
+        color: CubagColors.lapsed.withValues(alpha: isDark ? 0.15 : 0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFFef4444).withValues(alpha: 0.3),
+          color: CubagColors.lapsed.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: Color(0xFFef4444)),
+          const Icon(Icons.warning_amber_rounded, color: CubagColors.lapsed),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               _error!,
               style: TextStyle(
-                color: const Color(0xFFef4444),
+                color: CubagColors.lapsed,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -1211,7 +1206,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ),
           IconButton(
             tooltip: 'Refresh',
-            icon: const Icon(Icons.refresh, color: Color(0xFFef4444), size: 18),
+            icon: const Icon(Icons.refresh, color: CubagColors.lapsed, size: 18),
             onPressed: _fetchData,
           ),
         ],
@@ -1230,8 +1225,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final headerBg = isDark
-        ? const Color(0xFF1A0F0A).withAlpha(150)
-        : const Color(0xFFF8F4F0);
+        ? CubagColors.ink.withAlpha(150)
+        : CubagColors.sand;
 
     return Container(
       width: double.infinity,
@@ -1385,7 +1380,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           fontWeight: FontWeight.w800,
                           fontSize: 12.5,
                           color: subTextColor,
-                          letterSpacing: 0.6,
                         ),
                         dataTextStyle: TextStyle(
                           fontSize: 14,
@@ -1396,11 +1390,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         dataRowMinHeight: 64,
                         dataRowMaxHeight: 76,
                         columns: const [
-                          DataColumn(label: Text('APPLICANT / MEMBER')),
-                          DataColumn(label: Text('CATEGORY')),
-                          DataColumn(label: Text('PAYMENT')),
-                          DataColumn(label: Text('DATE')),
-                          DataColumn(label: Text('ACTIONS')),
+                          DataColumn(label: Text('Applicant / member')),
+                          DataColumn(label: Text('Category')),
+                          DataColumn(label: Text('Payment')),
+                          DataColumn(label: Text('Date')),
+                          DataColumn(label: Text('Actions')),
                         ],
                         rows: pendingMembers.take(8).map((m) {
                           final name =
@@ -1425,9 +1419,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           if (typeLower.contains('corp')) {
                             badgeColor = const Color(0xFF3B82F6); // Blue
                           } else if (typeLower.contains('assoc')) {
-                            badgeColor = const Color(0xFF10B981); // Green
+                            badgeColor = CubagColors.valid; // Green
                           } else if (typeLower.contains('licen')) {
-                            badgeColor = const Color(0xFFFF5000); // Orange
+                            badgeColor = CubagColors.action; // Orange
                           }
 
                           return DataRow(
@@ -1503,7 +1497,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                       fontSize: 11.5,
                                       fontWeight: FontWeight.w800,
                                       color: badgeColor,
-                                      letterSpacing: 0.4,
                                     ),
                                   ),
                                 ),
@@ -1764,7 +1757,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('🎉 Member $name has been approved & activated!'),
-              backgroundColor: const Color(0xFF10b981),
+              backgroundColor: CubagColors.valid,
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -1976,7 +1969,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                   children: [
                     const Icon(
                       Icons.verified_user_rounded,
-                      color: Color(0xFF10b981),
+                      color: CubagColors.valid,
                       size: 24,
                     ),
                     const SizedBox(width: 10),
@@ -2020,9 +2013,9 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFf8fafc),
+                        color: CubagColors.sand,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFe2e8f0)),
+                        border: Border.all(color: CubagColors.line),
                       ),
                       child: Column(
                         children: [
@@ -2411,7 +2404,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF10b981),
+                        backgroundColor: CubagColors.valid,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,

@@ -8,8 +8,9 @@ import '../services/api_service.dart';
 import '../components/cors_image_widget.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
+const _kOrange = CubagColors.action;
 
 const _feedSources = [
   {
@@ -177,7 +178,7 @@ class _State extends State<AdminIntelligencePage> {
                 ),
               ],
             ),
-            backgroundColor: const Color(0xFF10b981),
+            backgroundColor: CubagColors.valid,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
@@ -193,7 +194,7 @@ class _State extends State<AdminIntelligencePage> {
               'Failed to update currency rates: $e',
               style: TextStyle(color: Colors.white, fontSize: 13),
             ),
-            backgroundColor: const Color(0xFFef4444),
+            backgroundColor: CubagColors.lapsed,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -301,7 +302,7 @@ class _State extends State<AdminIntelligencePage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final borderColor = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final borderColor = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textColor = isDark ? Colors.white : const Color(0xFF1F1612);
     final subTextColor = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
@@ -325,7 +326,7 @@ class _State extends State<AdminIntelligencePage> {
                     actions: [
                       OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: isDark ? Colors.white : const Color(0xFF334155),
+                          foregroundColor: isDark ? Colors.white : CubagColors.inkSoft,
                           side: BorderSide(color: borderColor),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -404,7 +405,7 @@ class _State extends State<AdminIntelligencePage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1A0F0A).withValues(alpha: 0.5) : const Color(0xFFF8FAFC),
+            color: isDark ? CubagColors.ink.withValues(alpha: 0.5) : CubagColors.sand,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: borderColor),
           ),
@@ -413,7 +414,7 @@ class _State extends State<AdminIntelligencePage> {
               Container(
                 width: 7,
                 height: 7,
-                decoration: const BoxDecoration(color: Color(0xFF10B981), shape: BoxShape.circle),
+                decoration: const BoxDecoration(color: CubagColors.valid, shape: BoxShape.circle),
               ),
               const SizedBox(width: 8),
               Text(
@@ -421,7 +422,7 @@ class _State extends State<AdminIntelligencePage> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white70 : const Color(0xFF475569),
+                  color: isDark ? Colors.white70 : CubagColors.inkSoft,
                 ),
               ),
               const SizedBox(width: 10),
@@ -604,7 +605,7 @@ class _State extends State<AdminIntelligencePage> {
           style: TextStyle(
             fontSize: 11,
             fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-            color: isSel ? (isDark ? Colors.white : activeCol) : (isDark ? Colors.white70 : const Color(0xFF475569)),
+            color: isSel ? (isDark ? Colors.white : activeCol) : (isDark ? Colors.white70 : CubagColors.inkSoft),
           ),
         ),
       ),
@@ -650,7 +651,7 @@ class _State extends State<AdminIntelligencePage> {
                       placeholder: Container(
                         width: 76,
                         height: 76,
-                        color: isDark ? const Color(0xFF381F15) : const Color(0xFFF1F5F9),
+                        color: isDark ? const Color(0xFF381F15) : CubagColors.sand,
                         child: const Center(
                           child: SizedBox(
                             width: 14,
@@ -662,14 +663,14 @@ class _State extends State<AdminIntelligencePage> {
                       errorWidget: Container(
                         width: 76,
                         height: 76,
-                        color: isDark ? const Color(0xFF381F15) : const Color(0xFFF1F5F9),
+                        color: isDark ? const Color(0xFF381F15) : CubagColors.sand,
                         child: Icon(Icons.newspaper_rounded, color: subTextColor.withValues(alpha: 0.5), size: 20),
                       ),
                     )
                   : Container(
                       width: 76,
                       height: 76,
-                      color: isDark ? const Color(0xFF381F15) : const Color(0xFFF1F5F9),
+                      color: isDark ? const Color(0xFF381F15) : CubagColors.sand,
                       child: Center(
                         child: Icon(Icons.article_outlined, color: a.sourceColor.withValues(alpha: 0.7), size: 24),
                       ),
@@ -794,10 +795,10 @@ class _State extends State<AdminIntelligencePage> {
               Container(
                 padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                  color: CubagColors.valid.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.calculate_rounded, color: Color(0xFF10B981), size: 18),
+                child: const Icon(Icons.calculate_rounded, color: CubagColors.valid, size: 18),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -825,7 +826,7 @@ class _State extends State<AdminIntelligencePage> {
                     labelText: 'Invoice / CIF Value',
                     labelStyle: TextStyle(fontSize: 12, color: subTextColor),
                     filled: true,
-                    fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                    fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -841,7 +842,7 @@ class _State extends State<AdminIntelligencePage> {
                     labelText: 'Currency',
                     labelStyle: TextStyle(fontSize: 12, color: subTextColor),
                     filled: true,
-                    fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                    fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -864,9 +865,9 @@ class _State extends State<AdminIntelligencePage> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withValues(alpha: 0.08),
+              color: CubagColors.valid.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.25)),
+              border: Border.all(color: CubagColors.valid.withValues(alpha: 0.25)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -874,18 +875,18 @@ class _State extends State<AdminIntelligencePage> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('ESTIMATED CUSTOMS VALUE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF10B981), letterSpacing: 0.5)),
+                    Text('Estimated customs value', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: CubagColors.valid, letterSpacing: 0.5)),
                     const SizedBox(height: 2),
                     SelectableText(
                       'GH₵ ${converted.toStringAsFixed(2)}',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isDark ? Colors.white : CubagColors.ink),
                     ),
                     Text('@ GHS $rateStr / $_calcCurrency', style: TextStyle(fontSize: 11, color: subTextColor)),
                   ],
                 ),
                 IconButton(
                   icon: const Icon(Icons.copy_rounded, size: 16),
-                  color: const Color(0xFF10B981),
+                  color: CubagColors.valid,
                   tooltip: 'Copy converted amount',
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: 'GH₵ ${converted.toStringAsFixed(2)}'));
@@ -1070,7 +1071,7 @@ class _State extends State<AdminIntelligencePage> {
                       'EUR',
                       'Euro',
                       _eurCtrl,
-                      const Color(0xFF10b981),
+                      CubagColors.valid,
                       isDark,
                     ),
                     _buildCurrencyInput(
@@ -1086,7 +1087,7 @@ class _State extends State<AdminIntelligencePage> {
                       'CNY',
                       'Chinese Yuan',
                       _cnyCtrl,
-                      const Color(0xFFf59e0b),
+                      CubagColors.due,
                       isDark,
                     ),
                   ],
@@ -1149,8 +1150,8 @@ class _State extends State<AdminIntelligencePage> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: isDark
-            ? const Color(0xFF1A0F0A).withValues(alpha: 0.5)
-            : const Color(0xFFf8fafc),
+            ? CubagColors.ink.withValues(alpha: 0.5)
+            : CubagColors.sand,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: color.withValues(alpha: 0.25),
@@ -1193,7 +1194,7 @@ class _State extends State<AdminIntelligencePage> {
                 'GHS',
                 style: TextStyle(
                   fontSize: 11,
-                  color: isDark ? Colors.white54 : const Color(0xFF64748b),
+                  color: isDark ? Colors.white54 : CubagColors.muted,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1208,7 +1209,7 @@ class _State extends State<AdminIntelligencePage> {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14.5,
-                color: isDark ? Colors.white : const Color(0xFF1A0F0A),
+                color: isDark ? Colors.white : CubagColors.ink,
               ),
               decoration: InputDecoration(
                 isDense: true,
@@ -1224,7 +1225,7 @@ class _State extends State<AdminIntelligencePage> {
                   borderSide: BorderSide(
                     color: isDark
                         ? const Color(0xFF3D261C)
-                        : const Color(0xFFE8DED6),
+                        : CubagColors.line,
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
@@ -1232,7 +1233,7 @@ class _State extends State<AdminIntelligencePage> {
                   borderSide: BorderSide(
                     color: isDark
                         ? const Color(0xFF3D261C)
-                        : const Color(0xFFE8DED6),
+                        : CubagColors.line,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(

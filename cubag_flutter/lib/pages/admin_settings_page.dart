@@ -4,11 +4,12 @@ import '../components/admin_components.dart';
 import '../utils/session_storage.dart';
 import '../services/api_service.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10b981);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
 const _kBlue = Color(0xFF3b82f6);
-const _kRed = Color(0xFFef4444);
+const _kRed = CubagColors.lapsed;
 const _kCardBg = Color(0xFF22140E);
 
 class AdminSettingsPage extends StatefulWidget {
@@ -255,13 +256,13 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
     final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
     final borderCol = isDark
         ? const Color(0xFF3D261C)
-        : const Color(0xFFE8DED6);
+        : CubagColors.line;
     final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
     final subTextCol = isDark
         ? const Color(0xFFB0A298)
         : const Color(0xFF6B5E55);
     final inputBg = isDark
-        ? const Color(0xFF1A0F0A)
+        ? CubagColors.ink
         : const Color(0xFFFAF6F0);
 
     return AppLayout(
@@ -303,7 +304,6 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                             color: AppColors.accentOrangeText,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            letterSpacing: 0.5,
                           ),
                         ),
                       ],

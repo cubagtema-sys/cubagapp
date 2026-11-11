@@ -7,9 +7,10 @@ import '../components/fetch_error_view.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10b981);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
 
 class AdminTasksPage extends StatefulWidget {
   const AdminTasksPage({super.key});
@@ -619,7 +620,7 @@ class _State extends State<AdminTasksPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'MEMBER NOTE',
+                          'Member note',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
@@ -718,7 +719,7 @@ class _State extends State<AdminTasksPage> {
 
   InputDecoration _deco({String? hint}) => InputDecoration(
     hintText: hint,
-    hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF64748b)),
+    hintStyle: const TextStyle(fontSize: 13, color: CubagColors.muted),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),

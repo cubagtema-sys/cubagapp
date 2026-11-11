@@ -7,11 +7,12 @@ import '../components/skeleton_loader.dart';
 import '../services/api_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/file_download.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10B981);
-const _kRed = Color(0xFFEF4444);
-const _kAmber = Color(0xFFD97706);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
+const _kRed = CubagColors.lapsed;
+const _kAmber = CubagColors.due;
 const _kBrown = Color(0xFF6B3E26);
 
 class AdminAnalyticsPage extends StatefulWidget {
@@ -397,7 +398,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
   }
 
   void _showExportDialog(bool isDark, Color cardBg, Color textPrimary, Color textMuted) {
-    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -759,10 +760,10 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
     final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
-    final innerBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0);
+    final innerBg = isDark ? CubagColors.ink : const Color(0xFFFAF6F0);
 
     return AppLayout(
       title: 'Platform Analytics',
@@ -786,14 +787,14 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                       children: [
                         const Icon(
                           Icons.warning_amber_rounded,
-                          color: Color(0xFFef4444),
+                          color: CubagColors.lapsed,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                           _error!,
                           style: TextStyle(
-                            color: const Color(0xFFef4444),
+                            color: CubagColors.lapsed,
                             fontSize: 17,
                             fontWeight: FontWeight.w600,
                           ),
@@ -803,7 +804,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                           tooltip: 'Refresh',
                           icon: const Icon(
                             Icons.refresh,
-                            color: Color(0xFFef4444),
+                            color: CubagColors.lapsed,
                             size: 18,
                           ),
                           onPressed: _fetchData,
@@ -1261,7 +1262,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                               ),
                             if (totalRev <= 1.0 && renewalAmt == 0 && newMemAmt == 0 && courseAmt == 0 && otherAmt == 0)
                               Expanded(
-                                child: Container(color: isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6)),
+                                child: Container(color: isDark ? const Color(0xFF3D261C) : CubagColors.line),
                               ),
                           ],
                         ),
@@ -1450,12 +1451,12 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                             style: TextStyle(
                               fontSize: 15.5,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                              color: isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                              color: isSelected ? Colors.white : (isDark ? Colors.white70 : CubagColors.inkSoft),
                             ),
                           ),
                           selected: isSelected,
                           selectedColor: _kOrange,
-                          backgroundColor: isDark ? const Color(0xFF4D2D20) : const Color(0xFFF1F5F9),
+                          backgroundColor: isDark ? const Color(0xFF4D2D20) : CubagColors.sand,
                           onSelected: (selected) {
                             if (selected) {
                               setState(() => _financialStreamFilter = filter);
@@ -2236,12 +2237,11 @@ class _CustomRingChartState extends State<_CustomRingChart> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'TOTAL',
+                      'Total',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: widget.textMuted,
-                        letterSpacing: 0.5,
                       ),
                     ),
                     Text(

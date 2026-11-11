@@ -5,11 +5,12 @@ import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10B981);
-const _kRed = Color(0xFFEF4444);
-const _kAmber = Color(0xFFF59E0B);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
+const _kRed = CubagColors.lapsed;
+const _kAmber = CubagColors.due;
 const _kBlue = Color(0xFF3B82F6);
 const _kIndigo = Color(0xFF6366F1);
 const _kPurple = Color(0xFF8B5CF6);
@@ -205,7 +206,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
         builder: (ctx, setDialogState) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
           final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-          final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+          final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
           final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
           final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
@@ -254,7 +255,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                     const SizedBox(height: 14),
 
                     Text(
-                      'CATEGORY',
+                      'Category',
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5),
                     ),
                     const SizedBox(height: 6),
@@ -270,7 +271,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
-                              color: sel ? color.withAlpha(25) : (isDark ? const Color(0xFF4D2D20) : const Color(0xFFF1F5F9)),
+                              color: sel ? color.withAlpha(25) : (isDark ? const Color(0xFF4D2D20) : CubagColors.sand),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(color: sel ? color : border, width: sel ? 1.5 : 1),
                             ),
@@ -296,7 +297,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                     const SizedBox(height: 14),
 
                     Text(
-                      'TITLE / SUBJECT',
+                      'Title / subject',
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5),
                     ),
                     const SizedBox(height: 6),
@@ -308,7 +309,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                         hintStyle: TextStyle(fontSize: 13, color: textMuted),
                         isDense: true,
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                        fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange)),
@@ -318,7 +319,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                     const SizedBox(height: 14),
 
                     Text(
-                      'MESSAGE CONTENT',
+                      'Message content',
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5),
                     ),
                     const SizedBox(height: 6),
@@ -331,7 +332,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                         hintStyle: TextStyle(fontSize: 13, color: textMuted),
                         isDense: true,
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                        fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange)),
@@ -414,7 +415,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
         builder: (ctx, setDialogState) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
           final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-          final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+          final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
           final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
           final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
@@ -451,7 +452,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                     const Divider(height: 1),
                     const SizedBox(height: 14),
 
-                    Text('CATEGORY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5)),
+                    Text('Category', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5)),
                     const SizedBox(height: 6),
                     Wrap(
                       spacing: 6,
@@ -462,7 +463,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                           label: Text(c, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: sel ? Colors.white : textCol)),
                           selected: sel,
                           selectedColor: _kOrange,
-                          backgroundColor: isDark ? const Color(0xFF4D2D20) : const Color(0xFFF1F5F9),
+                          backgroundColor: isDark ? const Color(0xFF4D2D20) : CubagColors.sand,
                           onSelected: (val) {
                             if (val) setDialogState(() => editCategory = c);
                           },
@@ -471,7 +472,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                     ),
                     const SizedBox(height: 14),
 
-                    Text('TITLE / SUBJECT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5)),
+                    Text('Title / subject', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5)),
                     const SizedBox(height: 6),
                     TextField(
                       controller: titleEditCtrl,
@@ -479,14 +480,14 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                       decoration: InputDecoration(
                         isDense: true,
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                        fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       ),
                     ),
                     const SizedBox(height: 14),
 
-                    Text('MESSAGE CONTENT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5)),
+                    Text('Message content', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5)),
                     const SizedBox(height: 6),
                     TextField(
                       controller: bodyEditCtrl,
@@ -495,7 +496,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                       decoration: InputDecoration(
                         isDense: true,
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                        fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                         contentPadding: const EdgeInsets.all(12),
                       ),
@@ -589,9 +590,9 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0);
+    final bg = isDark ? CubagColors.ink : const Color(0xFFFAF6F0);
     final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
     final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
@@ -735,7 +736,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                         child: Container(
                           height: 38,
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF1F5F9),
+                            color: isDark ? CubagColors.ink : CubagColors.sand,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: border),
                           ),
@@ -962,20 +963,20 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSel ? _kOrange : (isDark ? const Color(0xFF4D2D20) : const Color(0xFFF1F5F9)),
+          color: isSel ? _kOrange : (isDark ? const Color(0xFF4D2D20) : CubagColors.sand),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569))),
+            Icon(icon, size: 14, color: isSel ? Colors.white : (isDark ? Colors.white70 : CubagColors.inkSoft)),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
-                color: isSel ? Colors.white : (isDark ? Colors.white : const Color(0xFF334155)),
+                color: isSel ? Colors.white : (isDark ? Colors.white : CubagColors.inkSoft),
               ),
             ),
             const SizedBox(width: 6),
@@ -990,7 +991,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                  color: isSel ? Colors.white : (isDark ? Colors.white70 : CubagColors.inkSoft),
                 ),
               ),
             ),
@@ -1014,7 +1015,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
           color: isSel ? color.withAlpha(isDark ? 40 : 25) : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
-            color: isSel ? color : (isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6)),
+            color: isSel ? color : (isDark ? const Color(0xFF3D261C) : CubagColors.line),
             width: isSel ? 1.5 : 1,
           ),
         ),
@@ -1023,7 +1024,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
-            color: isSel ? color : (isDark ? Colors.white70 : const Color(0xFF475569)),
+            color: isSel ? color : (isDark ? Colors.white70 : CubagColors.inkSoft),
           ),
         ),
       ),
@@ -1175,7 +1176,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
           SelectableText(
             body,
             maxLines: isExpanded ? 50 : 4,
-            style: TextStyle(fontSize: 13, color: isDark ? const Color(0xFFD1D5DB) : const Color(0xFF475569), height: 1.4),
+            style: TextStyle(fontSize: 13, color: isDark ? const Color(0xFFD1D5DB) : CubagColors.inkSoft, height: 1.4),
           ),
 
           if (body.length > 160) ...[

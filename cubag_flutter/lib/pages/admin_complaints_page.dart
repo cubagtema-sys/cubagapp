@@ -6,14 +6,15 @@ import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
 const _kBrown = Color(0xFF6B3E26);
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10B981);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
 const _kBlue = Color(0xFF3B82F6);
 const _kPurple = Color(0xFF8B5CF6);
-const _kRed = Color(0xFFEF4444);
-const _kSlate = Color(0xFF64748B);
+const _kRed = CubagColors.lapsed;
+const _kSlate = CubagColors.muted;
 
 class AdminComplaintsPage extends StatefulWidget {
   const AdminComplaintsPage({super.key});
@@ -160,8 +161,8 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
   void _openUpdateDialog(Map<String, dynamic> item) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dialogBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final fieldBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0);
-    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final fieldBg = isDark ? CubagColors.ink : const Color(0xFFFAF6F0);
+    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textColor = isDark ? Colors.white : const Color(0xFF1F1612);
     final subTextColor = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
@@ -356,8 +357,8 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
   void _openViewDetailsDialog(Map<String, dynamic> item) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dialogBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final fieldBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0);
-    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final fieldBg = isDark ? CubagColors.ink : const Color(0xFFFAF6F0);
+    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textColor = isDark ? Colors.white : const Color(0xFF1F1612);
     final subTextColor = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
@@ -500,12 +501,12 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                 const SizedBox(height: 14),
 
                 // Subject & Description
-                Text('SUBJECT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: subTextColor, letterSpacing: 0.5)),
+                Text('Subject', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: subTextColor, letterSpacing: 0.5)),
                 const SizedBox(height: 4),
                 SelectableText(item['subject']?.toString() ?? 'No Subject', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textColor)),
                 const SizedBox(height: 8),
 
-                Text('DETAILS / GRIEVANCE DESCRIPTION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: subTextColor, letterSpacing: 0.5)),
+                Text('Details / grievance description', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: subTextColor, letterSpacing: 0.5)),
                 const SizedBox(height: 4),
                 Container(
                   width: double.infinity,
@@ -521,7 +522,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                   const SizedBox(height: 6),
                 ],
                 if (resolutionNotes.isNotEmpty) ...[
-                  Text('OFFICIAL RESOLUTION DIRECTIVES', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: _kGreen, letterSpacing: 0.5)),
+                  Text('Official resolution directives', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: _kGreen, letterSpacing: 0.5)),
                   const SizedBox(height: 4),
                   Container(
                     width: double.infinity,
@@ -563,7 +564,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final borderColor = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final borderColor = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textColor = isDark ? Colors.white : const Color(0xFF1F1612);
     final subTextColor = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
@@ -632,7 +633,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                                   hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
                                   prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
                                   filled: true,
-                                  fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                                  fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
                                   enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
                                   focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange, width: 1.2)),
@@ -740,12 +741,12 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                                 headingTextStyle: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: subTextColor),
                                 dataTextStyle: TextStyle(fontSize: 13, color: textColor),
                                 columns: const [
-                                  DataColumn(label: Text('TRACKING ID')),
-                                  DataColumn(label: Text('COMPLAINANT')),
-                                  DataColumn(label: Text('SUBJECT & STATION')),
-                                  DataColumn(label: Text('STATUS')),
-                                  DataColumn(label: Text('PRIORITY')),
-                                  DataColumn(label: Text('ACTIONS')),
+                                  DataColumn(label: Text('Tracking ID')),
+                                  DataColumn(label: Text('Complainant')),
+                                  DataColumn(label: Text('Subject & station')),
+                                  DataColumn(label: Text('Status')),
+                                  DataColumn(label: Text('Priority')),
+                                  DataColumn(label: Text('Actions')),
                                 ],
                                 rows: complaints.map((item) {
                                   final id = item['complaint_id']?.toString() ?? '';
@@ -855,7 +856,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                                             ElevatedButton(
                                               onPressed: () => _openViewDetailsDialog(item),
                                               style: ElevatedButton.styleFrom(
-                                                backgroundColor: isDark ? const Color(0xFF4D2D20) : const Color(0xFFF1F5F9),
+                                                backgroundColor: isDark ? const Color(0xFF4D2D20) : CubagColors.sand,
                                                 foregroundColor: textColor,
                                                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                                                 minimumSize: Size.zero,

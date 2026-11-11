@@ -4,11 +4,12 @@ import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../components/fetch_error_view.dart';
 import '../components/shimmer_loader.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10b981);
-const _kRed = Color(0xFFef4444);
-const _kAmber = Color(0xFFf59e0b);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
+const _kRed = CubagColors.lapsed;
+const _kAmber = CubagColors.due;
 
 const _durationPresets = [
   {'label': '1 Month', 'months': 1},
@@ -450,7 +451,7 @@ class _State extends State<AdminLicenseRenewalPage> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Text(
-                        'PENDING',
+                        'Pending',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,

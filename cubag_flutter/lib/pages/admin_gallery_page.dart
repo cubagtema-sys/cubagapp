@@ -7,9 +7,10 @@ import '../components/admin_components.dart';
 import '../components/cors_image_widget.dart';
 import '../services/api_service.dart';
 import '../utils/app_logger.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10b981);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
 const _kCardBg = Color(0xFF22140E);
 
 class AdminGalleryPage extends StatefulWidget {
@@ -220,7 +221,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                               height: 240,
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1A0F0A),
+                                color: CubagColors.ink,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(color: Colors.white12),
                               ),
@@ -273,7 +274,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
                               height: 240,
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1A0F0A),
+                                color: CubagColors.ink,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(color: Colors.white12),
                               ),
@@ -594,7 +595,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
     final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
     final borderCol = isDark
         ? const Color(0xFF3D261C)
-        : const Color(0xFFE8DED6);
+        : CubagColors.line;
 
     final total = _items.length;
     final active = _items.where((i) => i['is_active'] == true).length;

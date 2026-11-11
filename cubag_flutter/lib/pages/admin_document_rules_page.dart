@@ -4,11 +4,12 @@ import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10B981);
-const _kRed = Color(0xFFEF4444);
-const _kAmber = Color(0xFFF59E0B);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
+const _kRed = CubagColors.lapsed;
+const _kAmber = CubagColors.due;
 const _kIndigo = Color(0xFF6366F1);
 
 class AdminDocumentRulesPage extends StatefulWidget {
@@ -148,14 +149,14 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
             'Delete Document Rule',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : const Color(0xFF0F172A),
+              color: isDark ? Colors.white : CubagColors.ink,
             ),
           ),
           content: Text(
             'Are you sure you want to delete "${req['label']}"? Existing submitted applications will not lose their files.',
             style: TextStyle(
               fontSize: 13.5,
-              color: isDark ? Colors.white70 : const Color(0xFF475569),
+              color: isDark ? Colors.white70 : CubagColors.inkSoft,
             ),
           ),
           actions: [
@@ -294,13 +295,13 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC);
+    final bg = isDark ? CubagColors.ink : CubagColors.sand;
     final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
     final borderColor = isDark
         ? const Color(0xFF4D2D20)
-        : const Color(0xFFE2E8F0);
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748B);
+        : CubagColors.line;
+    final textPrimary = isDark ? Colors.white : CubagColors.ink;
+    final textMuted = isDark ? const Color(0xFF5F6B7E) : CubagColors.muted;
 
     final currentRules = _currentRules;
     final totalRules = currentRules.length;
@@ -355,7 +356,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                   const SizedBox(width: 8),
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: isDark ? Colors.white : const Color(0xFF1E293B),
+                      foregroundColor: isDark ? Colors.white : CubagColors.ink,
                       side: BorderSide(color: borderColor, width: 1.0),
                       backgroundColor: cardBg,
                       padding: const EdgeInsets.symmetric(
@@ -401,8 +402,8 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                           padding: const EdgeInsets.all(3),
                           decoration: BoxDecoration(
                             color: isDark
-                                ? const Color(0xFF1A0F0A)
-                                : const Color(0xFFF1F5F9),
+                                ? CubagColors.ink
+                                : CubagColors.sand,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: borderColor),
                           ),
@@ -432,8 +433,8 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                               height: 38,
                             decoration: BoxDecoration(
                               color: isDark
-                                  ? const Color(0xFF1A0F0A)
-                                  : const Color(0xFFF8FAFC),
+                                  ? CubagColors.ink
+                                  : CubagColors.sand,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(color: borderColor),
                             ),
@@ -545,7 +546,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                 decoration: BoxDecoration(
                   color: isDark
                       ? const Color(0xFF4D2D20)
-                      : const Color(0xFFF1F5F9),
+                      : CubagColors.sand,
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(12),
                   ),
@@ -555,26 +556,26 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                   children: [
                     SizedBox(
                       width: 50,
-                      child: Text('ORDER', style: _headerColStyle(textMuted)),
+                      child: Text('Order', style: _headerColStyle(textMuted)),
                     ),
                     Expanded(
                       flex: 4,
                       child: Text(
-                        'DOCUMENT NAME',
+                        'Document name',
                         style: _headerColStyle(textMuted),
                       ),
                     ),
                     Expanded(
                       flex: 4,
                       child: Text(
-                        'INSTRUCTIONS & SCOPE',
+                        'Instructions & scope',
                         style: _headerColStyle(textMuted),
                       ),
                     ),
                     SizedBox(
                       width: 110,
                       child: Text(
-                        'MANDATORY',
+                        'Mandatory',
                         style: _headerColStyle(textMuted),
                         textAlign: TextAlign.center,
                       ),
@@ -582,7 +583,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                     SizedBox(
                       width: 90,
                       child: Text(
-                        'STATUS',
+                        'Status',
                         style: _headerColStyle(textMuted),
                         textAlign: TextAlign.center,
                       ),
@@ -590,7 +591,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                     SizedBox(
                       width: 110,
                       child: Text(
-                        'ACTIONS',
+                        'Actions',
                         style: _headerColStyle(textMuted),
                         textAlign: TextAlign.end,
                       ),
@@ -722,7 +723,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
             Icon(
               icon,
               size: 14,
-              color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF64748B)),
+              color: isSel ? Colors.white : (isDark ? Colors.white70 : CubagColors.muted),
             ),
             const SizedBox(width: 6),
             Text(
@@ -730,7 +731,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
-                color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                color: isSel ? Colors.white : (isDark ? Colors.white70 : CubagColors.inkSoft),
               ),
             ),
             const SizedBox(width: 6),
@@ -745,7 +746,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                 style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: FontWeight.bold,
-                  color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                  color: isSel ? Colors.white : (isDark ? Colors.white70 : CubagColors.inkSoft),
                 ),
               ),
             ),
@@ -778,7 +779,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
             '$label: ',
             style: TextStyle(
               fontSize: 11,
-              color: isDark ? Colors.white70 : const Color(0xFF475569),
+              color: isDark ? Colors.white70 : CubagColors.inkSoft,
             ),
           ),
           Text(
@@ -821,7 +822,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF4D2D20) : const Color(0xFFF1F5F9),
+                color: isDark ? const Color(0xFF4D2D20) : CubagColors.sand,
                 shape: BoxShape.circle,
                 border: Border.all(color: borderColor),
               ),
@@ -999,7 +1000,6 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
       fontSize: 10.5,
       fontWeight: FontWeight.w800,
       color: color,
-      letterSpacing: 0.6,
     );
   }
 }
@@ -1121,9 +1121,9 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF281710) : Colors.white;
-    final inputBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC);
-    final borderColor = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
-    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final inputBg = isDark ? CubagColors.ink : CubagColors.sand;
+    final borderColor = isDark ? const Color(0xFF4D2D20) : CubagColors.line;
+    final textColor = isDark ? Colors.white : CubagColors.ink;
     final isEdit = widget.existing != null;
 
     return Dialog(
@@ -1186,7 +1186,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'MEMBERSHIP CATEGORY',
+                          'Membership category',
                           style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w800,
@@ -1227,7 +1227,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'APPLICATION SCOPE',
+                          'Application scope',
                           style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w800,
@@ -1281,7 +1281,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'DOCUMENT TITLE / NAME *',
+                          'Document title / name *',
                           style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w800,
@@ -1318,7 +1318,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'ORDER',
+                          'Order',
                           style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w800,
@@ -1355,7 +1355,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
 
               // Description
               Text(
-                'INSTRUCTIONS / GUIDELINES FOR APPLICANT',
+                'Instructions / guidelines for applicant',
                 style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w800,

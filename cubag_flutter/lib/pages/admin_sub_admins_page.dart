@@ -5,12 +5,13 @@ import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../utils/app_logger.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10b981);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
 const _kBlue = Color(0xFF3b82f6);
-const _kRed = Color(0xFFef4444);
-const _kAmber = Color(0xFFf59e0b);
+const _kRed = CubagColors.lapsed;
+const _kAmber = CubagColors.due;
 const _kPurple = Color(0xFF8b5cf6);
 const _kIndigo = Color(0xFF6366f1);
 const _kCardBg = Color(0xFF22140E);
@@ -399,16 +400,16 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
     final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
     final borderCol = isDark
         ? const Color(0xFF3D261C)
-        : const Color(0xFFE8DED6);
+        : CubagColors.line;
     final headerBg = isDark
-        ? const Color(0xFF1A0F0A)
+        ? CubagColors.ink
         : const Color(0xFFFAF6F0);
     final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
     final subTextCol = isDark
         ? const Color(0xFFB0A298)
         : const Color(0xFF6B5E55);
     final inputBg = isDark
-        ? const Color(0xFF1A0F0A)
+        ? CubagColors.ink
         : const Color(0xFFFAF6F0);
 
     // Only full admins and super admins may access this page
@@ -527,8 +528,8 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF1A0F0A).withAlpha(150)
-                    : const Color(0xFFf8fafc),
+                    ? CubagColors.ink.withAlpha(150)
+                    : CubagColors.sand,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: borderCol),
               ),
@@ -641,7 +642,6 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                             fontWeight: FontWeight.w800,
                             fontSize: 14,
                             color: subTextCol,
-                            letterSpacing: 0.5,
                           ),
                           dataTextStyle: TextStyle(
                             fontSize: 15,
@@ -652,13 +652,13 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                           dataRowMinHeight: 64,
                           dataRowMaxHeight: 76,
                           columns: const [
-                            DataColumn(label: Text('SUB-ADMIN OFFICER')),
-                            DataColumn(label: Text('ROLE TEMPLATE')),
+                            DataColumn(label: Text('Sub-admin officer')),
+                            DataColumn(label: Text('Role template')),
                             DataColumn(
-                              label: Text('MODULE SCOPE / PERMISSIONS'),
+                              label: Text('Module scope / permissions'),
                             ),
-                            DataColumn(label: Text('STATUS')),
-                            DataColumn(label: Text('ACTIONS')),
+                            DataColumn(label: Text('Status')),
+                            DataColumn(label: Text('Actions')),
                           ],
                           rows: displaySubAdmins.map((sa) {
                             final name = sa['name']?.toString() ?? 'Sub-Admin';
@@ -1375,7 +1375,7 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
         : const Color(0xFF6B5E55);
     final borderCol = isDark
         ? const Color(0xFF3D261C)
-        : const Color(0xFFE8DED6);
+        : CubagColors.line;
     final name = widget.subAdmin['name']?.toString() ?? 'Sub-Admin';
     final email = widget.subAdmin['email']?.toString() ?? '';
 
@@ -1592,8 +1592,8 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
                               color: isGranted
                                   ? _kOrange.withAlpha(20)
                                   : (isDark
-                                        ? const Color(0xFF1A0F0A).withAlpha(120)
-                                        : const Color(0xFFf8fafc)),
+                                        ? CubagColors.ink.withAlpha(120)
+                                        : CubagColors.sand),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: isGranted
@@ -1635,7 +1635,7 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
                                           color: isGranted
                                               ? (isDark
                                                     ? Colors.white
-                                                    : const Color(0xFF1A0F0A))
+                                                    : CubagColors.ink)
                                               : subTextCol,
                                         ),
                                         maxLines: 1,

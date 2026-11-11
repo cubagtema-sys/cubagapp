@@ -3,11 +3,12 @@ import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../utils/app_logger.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10b981);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
 const _kBlue = Color(0xFF3b82f6);
-const _kRed = Color(0xFFef4444);
+const _kRed = CubagColors.lapsed;
 const _kPurple = Color(0xFF8b5cf6);
 const _kCardBg = Color(0xFF22140E);
 
@@ -280,7 +281,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
         final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
         final borderCol = isDark
             ? const Color(0xFF3D261C)
-            : const Color(0xFFE8DED6);
+            : CubagColors.line;
         final textCol = isDark
             ? Colors.white
             : const Color(0xFF1F1612);
@@ -288,8 +289,8 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
             ? const Color(0xFFB0A298)
             : const Color(0xFF6B5E55);
         final inputBg = isDark
-            ? const Color(0xFF1A0F0A).withAlpha(120)
-            : const Color(0xFFf8fafc);
+            ? CubagColors.ink.withAlpha(120)
+            : CubagColors.sand;
 
         final actor = log['admin_name'] ?? log['actor_name'] ?? 'Admin';
         final role = (log['admin_role'] ?? log['actor_role'] ?? 'admin').toString();
@@ -454,9 +455,9 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
     final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
     final borderCol = isDark
         ? const Color(0xFF3D261C)
-        : const Color(0xFFE8DED6);
+        : CubagColors.line;
     final headerBg = isDark
-        ? const Color(0xFF1A0F0A)
+        ? CubagColors.ink
         : const Color(0xFFFAF6F0);
     final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
     final subTextCol = isDark
@@ -801,7 +802,6 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                             fontWeight: FontWeight.w700,
                             fontSize: 12,
                             color: subTextCol,
-                            letterSpacing: 0.5,
                           ),
                           dataTextStyle: TextStyle(fontSize: 13, color: textCol),
                           columnSpacing: 20,
@@ -809,13 +809,13 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                           dataRowMinHeight: 56,
                           dataRowMaxHeight: 64,
                           columns: const [
-                            DataColumn(label: Text('TIMESTAMP')),
-                            DataColumn(label: Text('ACTOR / ADMIN')),
-                            DataColumn(label: Text('ACTION')),
-                            DataColumn(label: Text('TARGET TYPE')),
-                            DataColumn(label: Text('SUBJECT / DETAILS')),
-                            DataColumn(label: Text('IP ADDRESS')),
-                            DataColumn(label: Text('DETAILS')),
+                            DataColumn(label: Text('Timestamp')),
+                            DataColumn(label: Text('Actor / admin')),
+                            DataColumn(label: Text('Action')),
+                            DataColumn(label: Text('Target type')),
+                            DataColumn(label: Text('Subject / details')),
+                            DataColumn(label: Text('Ip address')),
+                            DataColumn(label: Text('Details')),
                           ],
                           rows: displayLogs.map((log) {
                             final actor = (log['admin_name'] ?? log['actor_name'] ?? 'Admin').toString();

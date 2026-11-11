@@ -12,14 +12,15 @@ import '../components/fetch_error_view.dart';
 import '../components/shimmer_loader.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 part 'admin_surveys/admin_surveys_widgets.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10b981);
-const _kRed = Color(0xFFef4444);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
+const _kRed = CubagColors.lapsed;
 const _kPurple = Color(0xFF8b5cf6);
 const _kBlue = Color(0xFF3b82f6);
-const _kAmber = Color(0xFFf59e0b);
+const _kAmber = CubagColors.due;
 const _kIndigo = Color(0xFF6366F1);
 
 class AdminSurveysPage extends StatefulWidget {
@@ -503,7 +504,7 @@ class _State extends State<AdminSurveysPage>
     final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
     final borderColor = isDark
         ? const Color(0xFF3D261C)
-        : const Color(0xFFE8DED6);
+        : CubagColors.line;
     final textColor = isDark
         ? Colors.white
         : const Color(0xFF1F1612);
@@ -511,7 +512,7 @@ class _State extends State<AdminSurveysPage>
         ? const Color(0xFFB0A298)
         : const Color(0xFF6B5E55);
     final inputBg = isDark
-        ? const Color(0xFF1A0F0A)
+        ? CubagColors.ink
         : const Color(0xFFFAF6F0);
 
     if (_viewingResults != null) {
@@ -541,7 +542,7 @@ class _State extends State<AdminSurveysPage>
               actions: [
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: isDark ? Colors.white : const Color(0xFF1E293B),
+                    foregroundColor: isDark ? Colors.white : CubagColors.ink,
                     side: BorderSide(color: borderColor, width: 1.2),
                     backgroundColor: cardBg,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
@@ -939,7 +940,6 @@ class _State extends State<AdminSurveysPage>
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                     color: color,
-                    letterSpacing: 0.8,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1751,7 +1751,6 @@ class _State extends State<AdminSurveysPage>
               fontSize: 12,
               fontWeight: FontWeight.w800,
               color: color.withValues(alpha: 0.8),
-              letterSpacing: 0.5,
             ),
           ),
         ],

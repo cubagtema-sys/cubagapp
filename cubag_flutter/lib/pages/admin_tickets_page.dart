@@ -7,14 +7,15 @@ import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10B981);
-const _kAmber = Color(0xFFF59E0B);
-const _kRed = Color(0xFFEF4444);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
+const _kAmber = CubagColors.due;
+const _kRed = CubagColors.lapsed;
 const _kBlue = Color(0xFF3B82F6);
 const _kIndigo = Color(0xFF6366F1);
-const _kSlate = Color(0xFF64748B);
+const _kSlate = CubagColors.muted;
 
 class AdminTicketsPage extends StatefulWidget {
   const AdminTicketsPage({super.key});
@@ -273,7 +274,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
     final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
@@ -293,7 +294,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                 actions: [
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: isDark ? Colors.white : const Color(0xFF334155),
+                      foregroundColor: isDark ? Colors.white : CubagColors.inkSoft,
                       side: BorderSide(color: border),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -465,7 +466,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                         hintStyle: TextStyle(fontSize: 12.5, color: textMuted),
                         prefixIcon: Icon(Icons.search_rounded, size: 16, color: textMuted),
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                        fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange, width: 1.2)),
@@ -563,11 +564,11 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                       ),
                       columns: const [
                         DataColumn(label: Text('ID')),
-                        DataColumn(label: Text('MEMBER & COMPANY')),
-                        DataColumn(label: Text('SUBJECT & PREVIEW')),
-                        DataColumn(label: Text('STATUS')),
-                        DataColumn(label: Text('DATE')),
-                        DataColumn(label: Text('ACTION')),
+                        DataColumn(label: Text('Member & company')),
+                        DataColumn(label: Text('Subject & preview')),
+                        DataColumn(label: Text('Status')),
+                        DataColumn(label: Text('Date')),
+                        DataColumn(label: Text('Action')),
                       ],
                       rows: tickets.map((t) {
                         final map = Map<String, dynamic>.from(t as Map);
@@ -813,7 +814,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
           color: isSel ? color.withValues(alpha: isDark ? 0.25 : 0.12) : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
-            color: isSel ? color : (isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6)),
+            color: isSel ? color : (isDark ? const Color(0xFF3D261C) : CubagColors.line),
           ),
         ),
         child: Text(
@@ -821,7 +822,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-            color: isSel ? color : (isDark ? Colors.white70 : const Color(0xFF475569)),
+            color: isSel ? color : (isDark ? Colors.white70 : CubagColors.inkSoft),
           ),
         ),
       ),
@@ -918,10 +919,10 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                       dropdownColor: cardBg,
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: statusCol),
                       items: const [
-                        DropdownMenuItem(value: 'open', child: Text('OPEN')),
-                        DropdownMenuItem(value: 'pending', child: Text('IN PROGRESS')),
-                        DropdownMenuItem(value: 'resolved', child: Text('RESOLVED')),
-                        DropdownMenuItem(value: 'archived', child: Text('ARCHIVED')),
+                        DropdownMenuItem(value: 'open', child: Text('Open')),
+                        DropdownMenuItem(value: 'pending', child: Text('In progress')),
+                        DropdownMenuItem(value: 'resolved', child: Text('Resolved')),
+                        DropdownMenuItem(value: 'archived', child: Text('Archived')),
                       ],
                       onChanged: (val) {
                         if (val != null) _updateTicketStatus(id, val);
@@ -937,7 +938,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
           // Member Info Strip
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            color: isDark ? const Color(0xFF1A0F0A).withValues(alpha: 0.5) : const Color(0xFFFAF6F0),
+            color: isDark ? CubagColors.ink.withValues(alpha: 0.5) : const Color(0xFFFAF6F0),
             child: Row(
               children: [
                 Text('From: ', style: TextStyle(fontSize: 12, color: textMuted)),
@@ -999,7 +1000,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
 
                 // Reply Composer
                 Text(
-                  'REPLY TO MEMBER',
+                  'Reply to member',
                   style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5),
                 ),
                 const SizedBox(height: 6),
@@ -1011,7 +1012,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                     hintText: 'Type administrative response or instructions...',
                     hintStyle: TextStyle(fontSize: 12.5, color: textMuted),
                     filled: true,
-                    fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                    fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
                     focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange, width: 1.2)),
@@ -1077,8 +1078,8 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
     required Color textMuted,
   }) {
     final bubbleBg = isAdmin
-        ? (isDark ? const Color(0xFF4D2D20) : const Color(0xFFFFF7ED))
-        : (isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0));
+        ? (isDark ? const Color(0xFF4D2D20) : CubagColors.actionTint)
+        : (isDark ? CubagColors.ink : const Color(0xFFFAF6F0));
     final bubbleBorder = isAdmin ? _kOrange.withValues(alpha: 0.4) : border;
 
     return Container(

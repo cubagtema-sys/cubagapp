@@ -9,17 +9,18 @@ import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 import '../components/doc_preview_stub.dart'
     if (dart.library.html) '../components/doc_preview_web.dart'
     as doc_preview;
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10B981);
-const _kRed = Color(0xFFEF4444);
-const _kAmber = Color(0xFFF59E0B);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
+const _kRed = CubagColors.lapsed;
+const _kAmber = CubagColors.due;
 const _kBlue = Color(0xFF3B82F6);
 const _kIndigo = Color(0xFF6366F1);
-const _kSlate = Color(0xFF1E293B);
+const _kSlate = CubagColors.ink;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. APPLICATION DOSSIERS DIRECTORY (LIST PAGE)
@@ -172,7 +173,6 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
     return TextStyle(
       fontSize: 15,
       fontWeight: FontWeight.w700,
-      letterSpacing: 0.6,
       color: textMuted,
     );
   }
@@ -189,7 +189,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
           color: isSel ? activeColor.withAlpha(isDark ? 40 : 25) : (isDark ? const Color(0xFF22140E) : Colors.white),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSel ? activeColor : (isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6)),
+            color: isSel ? activeColor : (isDark ? const Color(0xFF3D261C) : CubagColors.line),
             width: isSel ? 1.5 : 1,
           ),
         ),
@@ -231,9 +231,9 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0);
+    final bg = isDark ? CubagColors.ink : const Color(0xFFFAF6F0);
     final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final borderColor = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final borderColor = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
     final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
@@ -479,7 +479,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                                         decoration: BoxDecoration(
-                                          color: isDark ? const Color(0xFF1F120B) : const Color(0xFFF1F5F9),
+                                          color: isDark ? const Color(0xFF1F120B) : CubagColors.sand,
                                           border: Border(bottom: BorderSide(color: borderColor)),
                                         ),
                                         child: Row(
@@ -490,30 +490,29 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                                             ),
                                             Expanded(
                                               flex: 3,
-                                              child: Text('APPLICANT & FIRM', style: _headerColStyle(textMuted)),
+                                              child: Text('Applicant & firm', style: _headerColStyle(textMuted)),
                                             ),
                                             Expanded(
                                               flex: 2,
-                                              child: Text('TYPE & PORT', style: _headerColStyle(textMuted)),
+                                              child: Text('Type & port', style: _headerColStyle(textMuted)),
                                             ),
                                             SizedBox(
                                               width: 180,
-                                              child: Text('STATUTORY DOCS', style: _headerColStyle(textMuted)),
+                                              child: Text('Statutory docs', style: _headerColStyle(textMuted)),
                                             ),
                                             SizedBox(
                                               width: 140,
-                                              child: Center(child: Text('STATUS', style: _headerColStyle(textMuted))),
+                                              child: Center(child: Text('Status', style: _headerColStyle(textMuted))),
                                             ),
                                             const SizedBox(
                                               width: 100,
                                               child: Align(
                                                 alignment: Alignment.centerRight,
                                                 child: Text(
-                                                  'ACTION',
+                                                  'Action',
                                                   style: TextStyle(
                                                     fontSize: 12.5,
                                                     fontWeight: FontWeight.w800,
-                                                    letterSpacing: 0.6,
                                                     color: Color(0xFF5F6B7E),
                                                   ),
                                                 ),
@@ -788,7 +787,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                               borderRadius: BorderRadius.circular(3),
                               child: LinearProgressIndicator(
                                 value: (uploaded / totalExpected.toDouble()).clamp(0.0, 1.0),
-                                backgroundColor: isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0),
+                                backgroundColor: isDark ? const Color(0xFF4D2D20) : CubagColors.line,
                                 color: uploaded >= totalExpected
                                     ? _kGreen
                                     : (uploaded >= (totalExpected / 2) ? _kOrange : _kRed),
@@ -840,7 +839,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isDark ? const Color(0xFF4D2D20) : const Color(0xFFF1F5F9),
+                      backgroundColor: isDark ? const Color(0xFF4D2D20) : CubagColors.sand,
                       foregroundColor: textCol,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1044,7 +1043,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                 borderRadius: BorderRadius.circular(3),
                 child: LinearProgressIndicator(
                   value: (uploaded / totalExpected.toDouble()).clamp(0.0, 1.0),
-                  backgroundColor: isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0),
+                  backgroundColor: isDark ? const Color(0xFF4D2D20) : CubagColors.line,
                   color: uploaded >= totalExpected ? _kGreen : (uploaded >= (totalExpected / 2) ? _kOrange : _kRed),
                   minHeight: 4,
                 ),
@@ -1396,8 +1395,8 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0);
-    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final bg = isDark ? CubagColors.ink : const Color(0xFFFAF6F0);
+    final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
     final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
     final textMuted = isDark
@@ -1508,7 +1507,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                   decoration: BoxDecoration(
                                     color: isDark
                                         ? const Color(0xFF4D2D20)
-                                        : const Color(0xFFF1F5F9),
+                                        : CubagColors.sand,
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(color: border),
                                   ),
@@ -1655,12 +1654,11 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'FEE STATUS',
+                                      'Fee status',
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w800,
                                         color: hasPaid ? _kGreen : _kAmber,
-                                        letterSpacing: 0.4,
                                       ),
                                     ),
                                     Text(
@@ -1790,7 +1788,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF4D2D20) : const Color(0xFFF1F5F9),
+        color: isDark ? const Color(0xFF4D2D20) : CubagColors.sand,
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: border),
       ),
@@ -1808,7 +1806,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: isDark ? Colors.white70 : const Color(0xFF64748B),
+              color: isDark ? Colors.white70 : CubagColors.muted,
             ),
           ),
           const SizedBox(width: 5),
@@ -1817,7 +1815,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : const Color(0xFF0F172A),
+              color: isDark ? Colors.white : CubagColors.ink,
             ),
           ),
         ],

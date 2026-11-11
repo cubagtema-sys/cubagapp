@@ -140,7 +140,7 @@ class _AppLayoutState extends State<AppLayout> {
       backgroundColor: isThemeDark
           ? Theme.of(context).scaffoldBackgroundColor
           : (isDesktop
-              ? const Color(0xFFF8F4F0)
+              ? CubagColors.sand
               : (widget.background ?? CubagColors.sand)),
       floatingActionButton: widget.floatingActionButton,
       appBar: isDesktop
@@ -278,13 +278,13 @@ class _AppLayoutState extends State<AppLayout> {
     final targetRoute = (role == 'admin' || role == 'sub_admin' || role == 'super_admin')
         ? '/admin/notifications'
         : '/notifications';
-    final iconColor = isDark ? Colors.white : const Color(0xFF64748b);
+    final iconColor = isDark ? Colors.white : CubagColors.muted;
     final isThemeDark = Theme.of(context).brightness == Brightness.dark;
     final dropdownBg = isThemeDark ? const Color(0xFF281710) : Colors.white;
-    final textColor = isThemeDark ? Colors.white : const Color(0xFF1A0F0A);
+    final textColor = isThemeDark ? Colors.white : CubagColors.ink;
     final borderThemeColor = isThemeDark
         ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
+        : CubagColors.line;
 
     return Consumer<NotificationService>(
       builder: (context, notificationService, _) {
@@ -324,10 +324,10 @@ class _AppLayoutState extends State<AppLayout> {
                               vertical: 1.5,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFef4444),
+                              color: CubagColors.lapsed,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: isDark ? const Color(0xFF1A0F0A) : Colors.white,
+                                color: isDark ? CubagColors.ink : Colors.white,
                                 width: 1.5,
                               ),
                             ),
@@ -399,10 +399,10 @@ class _AppLayoutState extends State<AppLayout> {
                         vertical: 1.5,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFef4444),
+                        color: CubagColors.lapsed,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: isDark ? const Color(0xFF1A0F0A) : Colors.white,
+                          color: isDark ? CubagColors.ink : Colors.white,
                           width: 1.5,
                         ),
                         boxShadow: const [
@@ -508,7 +508,7 @@ class _AppLayoutState extends State<AppLayout> {
                                 child: Text(
                                   '$unreadCount New',
                                   style: TextStyle(
-                                    color: const Color(0xFFef4444),
+                                    color: CubagColors.lapsed,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -535,7 +535,7 @@ class _AppLayoutState extends State<AppLayout> {
                                       fontSize: 14,
                                       color: isThemeDark
                                           ? Colors.white70
-                                          : const Color(0xFF64748b),
+                                          : CubagColors.muted,
                                     ),
                                   ),
                                 ),
@@ -578,7 +578,7 @@ class _AppLayoutState extends State<AppLayout> {
                                               shape: BoxShape.circle,
                                               color: isRead
                                                   ? Colors.transparent
-                                                  : const Color(0xFFFF5000),
+                                                  : CubagColors.action,
                                             ),
                                           ),
                                           Expanded(
@@ -647,7 +647,7 @@ class _AppLayoutState extends State<AppLayout> {
                                 const Icon(
                                   Icons.arrow_forward_rounded,
                                   size: 15,
-                                  color: Color(0xFFFF5000),
+                                  color: CubagColors.action,
                                 ),
                               ],
                             ),
@@ -674,14 +674,14 @@ class _AppLayoutState extends State<AppLayout> {
   }) {
     final photoUrl = ApiService.resolveImageUrl(authService.userPhotoUrl);
     final primary = Theme.of(context).primaryColor;
-    final borderColor = isDark ? Colors.white30 : const Color(0xFFe2e8f0);
+    final borderColor = isDark ? Colors.white30 : CubagColors.line;
     final isThemeDark = Theme.of(context).brightness == Brightness.dark;
     final dropdownBg = isThemeDark ? const Color(0xFF281710) : Colors.white;
-    final textColor = isThemeDark ? Colors.white : const Color(0xFF1A0F0A);
-    final subTextColor = isThemeDark ? Colors.white70 : const Color(0xFF64748b);
+    final textColor = isThemeDark ? Colors.white : CubagColors.ink;
+    final subTextColor = isThemeDark ? Colors.white70 : CubagColors.muted;
     final borderThemeColor = isThemeDark
         ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
+        : CubagColors.line;
 
     if (isSmall) {
       return Semantics(button: true, label: 'Account menu', child: InkWell(
@@ -714,7 +714,7 @@ class _AppLayoutState extends State<AppLayout> {
                           placeholder: (context, url) => Container(
                             color: isThemeDark
                                 ? const Color(0xFF3E2418)
-                                : const Color(0xFFf1f5f9),
+                                : CubagColors.sand,
                             child: Icon(
                               Icons.person_rounded,
                               color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
@@ -724,7 +724,7 @@ class _AppLayoutState extends State<AppLayout> {
                           errorWidget: (context, url, error) => Container(
                             color: isThemeDark
                                 ? const Color(0xFF3E2418)
-                                : const Color(0xFFf1f5f9),
+                                : CubagColors.sand,
                             child: Icon(
                               Icons.person_rounded,
                               color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
@@ -735,7 +735,7 @@ class _AppLayoutState extends State<AppLayout> {
                       : Container(
                           color: isThemeDark
                               ? const Color(0xFF3E2418)
-                              : const Color(0xFFf1f5f9),
+                              : CubagColors.sand,
                           child: Icon(
                             Icons.person_rounded,
                             color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
@@ -771,7 +771,7 @@ class _AppLayoutState extends State<AppLayout> {
                     placeholder: (context, url) => Container(
                       color: isThemeDark
                           ? const Color(0xFF3E2418)
-                          : const Color(0xFFf1f5f9),
+                          : CubagColors.sand,
                       child: Icon(
                         Icons.person_rounded,
                         color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
@@ -781,7 +781,7 @@ class _AppLayoutState extends State<AppLayout> {
                     errorWidget: (context, url, error) => Container(
                       color: isThemeDark
                           ? const Color(0xFF3E2418)
-                          : const Color(0xFFf1f5f9),
+                          : CubagColors.sand,
                       child: Icon(
                         Icons.person_rounded,
                         color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
@@ -792,7 +792,7 @@ class _AppLayoutState extends State<AppLayout> {
                 : Container(
                     color: isThemeDark
                         ? const Color(0xFF3E2418)
-                        : const Color(0xFFf1f5f9),
+                        : CubagColors.sand,
                     child: Icon(
                       Icons.person_rounded,
                       color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
@@ -877,7 +877,7 @@ class _AppLayoutState extends State<AppLayout> {
                                   (authService.userRole ?? 'Member').toUpperCase()),
                           style: TextStyle(
                             fontSize: 13,
-                            color: isPending ? const Color(0xFFFF5000) : subTextColor,
+                            color: isPending ? CubagColors.action : subTextColor,
                             fontWeight: isPending ? FontWeight.w600 : FontWeight.normal,
                           ),
                           maxLines: 1,
@@ -907,13 +907,13 @@ class _AppLayoutState extends State<AppLayout> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFF5000).withValues(alpha: 0.08),
+                        color: CubagColors.action.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
                         Icons.assignment_turned_in_rounded,
                         size: 18,
-                        color: Color(0xFFFF5000),
+                        color: CubagColors.action,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1024,13 +1024,13 @@ class _AppLayoutState extends State<AppLayout> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFef4444).withValues(alpha: 0.08),
+                      color: CubagColors.lapsed.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
                       Icons.logout_rounded,
                       size: 18,
-                      color: Color(0xFFef4444),
+                      color: CubagColors.lapsed,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1039,7 +1039,7 @@ class _AppLayoutState extends State<AppLayout> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16.5,
-                      color: const Color(0xFFef4444),
+                      color: CubagColors.lapsed,
                     ),
                   ),
                 ],
@@ -1076,10 +1076,10 @@ class _AppLayoutState extends State<AppLayout> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF5000).withAlpha(18),
+                color: CubagColors.action.withAlpha(18),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, size: 20, color: const Color(0xFFFF5000)),
+              child: Icon(icon, size: 20, color: CubagColors.action),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -1120,9 +1120,9 @@ class _AppLayoutState extends State<AppLayout> {
   }) {
     final isThemeDark = Theme.of(context).brightness == Brightness.dark || isDark;
     final bg = isThemeDark ? const Color(0xFF23140D) : Colors.white;
-    final textColor = isThemeDark ? Colors.white : const Color(0xFF1A0F0A);
-    final subTextColor = isThemeDark ? Colors.white70 : const Color(0xFF64748B);
-    final borderCol = isThemeDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
+    final textColor = isThemeDark ? Colors.white : CubagColors.ink;
+    final subTextColor = isThemeDark ? Colors.white70 : CubagColors.muted;
+    final borderCol = isThemeDark ? const Color(0xFF4D2D20) : CubagColors.line;
     final unreadCount = notificationService.unreadCount;
     final recent = notificationService.recentNotifications;
 
@@ -1148,7 +1148,7 @@ class _AppLayoutState extends State<AppLayout> {
                     width: 38,
                     height: 4.5,
                     decoration: BoxDecoration(
-                      color: isThemeDark ? Colors.white24 : const Color(0xFFCBD5E1),
+                      color: isThemeDark ? Colors.white24 : CubagColors.lineStrong,
                       borderRadius: BorderRadius.circular(3),
                     ),
                   ),
@@ -1160,12 +1160,12 @@ class _AppLayoutState extends State<AppLayout> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF5000).withAlpha(20),
+                          color: CubagColors.action.withAlpha(20),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
                           Icons.notifications_active_outlined,
-                          color: Color(0xFFFF5000),
+                          color: CubagColors.action,
                           size: 20,
                         ),
                       ),
@@ -1186,7 +1186,7 @@ class _AppLayoutState extends State<AppLayout> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEF4444).withAlpha(25),
+                                  color: CubagColors.lapsed.withAlpha(25),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
@@ -1194,7 +1194,7 @@ class _AppLayoutState extends State<AppLayout> {
                                   style: TextStyle(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w800,
-                                    color: const Color(0xFFEF4444),
+                                    color: CubagColors.lapsed,
                                   ),
                                 ),
                               ),
@@ -1272,7 +1272,7 @@ class _AppLayoutState extends State<AppLayout> {
                                       margin: const EdgeInsets.only(top: 6, right: 12),
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: isRead ? Colors.transparent : const Color(0xFFFF5000),
+                                        color: isRead ? Colors.transparent : CubagColors.action,
                                       ),
                                     ),
                                     Expanded(
@@ -1318,7 +1318,7 @@ class _AppLayoutState extends State<AppLayout> {
                     height: 48,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF5000),
+                        backgroundColor: CubagColors.action,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
@@ -1354,10 +1354,10 @@ class _AppLayoutState extends State<AppLayout> {
     final isThemeDark = Theme.of(context).brightness == Brightness.dark || isDark;
     final bg = isThemeDark ? const Color(0xFF23140D) : Colors.white;
     final cardBg = isThemeDark ? const Color(0xFF2D1B13) : const Color(0xFFF9F6F2);
-    final textColor = isThemeDark ? Colors.white : const Color(0xFF1A0F0A);
-    final subTextColor = isThemeDark ? Colors.white70 : const Color(0xFF64748B);
-    final borderCol = isThemeDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
-    final primary = const Color(0xFFFF5000);
+    final textColor = isThemeDark ? Colors.white : CubagColors.ink;
+    final subTextColor = isThemeDark ? Colors.white70 : CubagColors.muted;
+    final borderCol = isThemeDark ? const Color(0xFF4D2D20) : CubagColors.line;
+    final primary = CubagColors.action;
 
     final isMember = authService.userRole == 'member';
     final status = (authService.membershipStatus.isNotEmpty && authService.membershipStatus != 'none')
@@ -1386,7 +1386,7 @@ class _AppLayoutState extends State<AppLayout> {
                     width: 38,
                     height: 4.5,
                     decoration: BoxDecoration(
-                      color: isThemeDark ? Colors.white24 : const Color(0xFFCBD5E1),
+                      color: isThemeDark ? Colors.white24 : CubagColors.lineStrong,
                       borderRadius: BorderRadius.circular(3),
                     ),
                   ),
@@ -1452,7 +1452,7 @@ class _AppLayoutState extends State<AppLayout> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: (isPending ? const Color(0xFFFF5000) : const Color(0xFF10B981)).withAlpha(20),
+                                color: (isPending ? CubagColors.action : CubagColors.valid).withAlpha(20),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -1460,7 +1460,7 @@ class _AppLayoutState extends State<AppLayout> {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  color: isPending ? const Color(0xFFFF5000) : const Color(0xFF10B981),
+                                  color: isPending ? CubagColors.action : CubagColors.valid,
                                 ),
                               ),
                             ),
@@ -1530,8 +1530,8 @@ class _AppLayoutState extends State<AppLayout> {
                   height: 48,
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFEF4444),
-                      side: const BorderSide(color: Color(0xFFEF4444), width: 1.2),
+                      foregroundColor: CubagColors.lapsed,
+                      side: const BorderSide(color: CubagColors.lapsed, width: 1.2),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () async {
@@ -1567,13 +1567,13 @@ class _AppLayoutState extends State<AppLayout> {
     final headerBg = isThemeDark ? const Color(0xFF281710) : Colors.white;
     final borderThemeColor = isThemeDark
         ? const Color(0xFF4D2D20)
-        : const Color(0xFFf1f5f9);
+        : CubagColors.sand;
     final textColor = isThemeDark
         ? const Color(0xFFFFF8F3)
-        : const Color(0xFF1A0F0A);
+        : CubagColors.ink;
     final iconColor = isThemeDark
         ? const Color(0xFFC8ADA0)
-        : const Color(0xFF64748b);
+        : CubagColors.muted;
     final topPadding = MediaQuery.of(context).padding.top;
     final rightPadding = MediaQuery.of(context).padding.right;
 
@@ -1787,13 +1787,13 @@ class _AppLayoutState extends State<AppLayout> {
   Widget _buildSidebar(BuildContext context, String? role) {
     final authService = Provider.of<AuthService>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sidebarBg = isDark ? const Color(0xFF1A0F0A) : Colors.white;
+    final sidebarBg = isDark ? CubagColors.ink : Colors.white;
     final borderThemeColor = isDark
         ? const Color(0xFF4D2D20)
-        : const Color(0xFFE8DED6);
+        : CubagColors.line;
     final textColor = isDark
         ? const Color(0xFFFFF8F3)
-        : const Color(0xFF2B211D);
+        : CubagColors.ink;
     final topPadding = MediaQuery.of(context).padding.top;
     final leftPadding = MediaQuery.of(context).padding.left;
 
@@ -1861,7 +1861,6 @@ class _AppLayoutState extends State<AppLayout> {
                                   color: textColor,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.5,
                                 ),
                               ),
                               _buildRoleBadge(context, role),
@@ -1894,8 +1893,8 @@ class _AppLayoutState extends State<AppLayout> {
       badgeBg = isDark ? const Color(0xFF004d40) : const Color(0xFFe0f2f1);
       badgeText = isDark ? const Color(0xFF4db6ac) : const Color(0xFF004d40);
     } else {
-      badgeBg = isDark ? const Color(0xFF4D2D20) : const Color(0xFFf1f5f9);
-      badgeText = isDark ? const Color(0xFFcbd5e1) : const Color(0xFF475569);
+      badgeBg = isDark ? const Color(0xFF4D2D20) : CubagColors.sand;
+      badgeText = isDark ? CubagColors.lineStrong : CubagColors.inkSoft;
     }
 
     return UnconstrainedBox(
@@ -1924,9 +1923,9 @@ class _AppLayoutState extends State<AppLayout> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final borderThemeColor = isDark
         ? const Color(0xFF4D2D20)
-        : const Color(0xFFf1f5f9);
-    final textColor = isDark ? Colors.white : const Color(0xFF1A0F0A);
-    final subTextColor = isDark ? Colors.white70 : const Color(0xFF64748b);
+        : CubagColors.sand;
+    final textColor = isDark ? Colors.white : CubagColors.ink;
+    final subTextColor = isDark ? Colors.white70 : CubagColors.muted;
     final photoUrl = ApiService.resolveImageUrl(authService.userPhotoUrl);
     final primary = Theme.of(context).primaryColor;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
@@ -1967,7 +1966,7 @@ class _AppLayoutState extends State<AppLayout> {
                                 placeholder: (context, url) => Container(
                                   color: isDark
                                       ? const Color(0xFF3E2418)
-                                      : const Color(0xFFf1f5f9),
+                                      : CubagColors.sand,
                                   child: Icon(
                                     Icons.person_rounded,
                                     color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
@@ -1977,7 +1976,7 @@ class _AppLayoutState extends State<AppLayout> {
                                 errorWidget: (context, url, error) => Container(
                                   color: isDark
                                       ? const Color(0xFF3E2418)
-                                      : const Color(0xFFf1f5f9),
+                                      : CubagColors.sand,
                                   child: Icon(
                                     Icons.person_rounded,
                                     color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
@@ -1988,7 +1987,7 @@ class _AppLayoutState extends State<AppLayout> {
                             : Container(
                                 color: isDark
                                     ? const Color(0xFF3E2418)
-                                    : const Color(0xFFf1f5f9),
+                                    : CubagColors.sand,
                                 child: Icon(
                                   Icons.person_rounded,
                                   color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
@@ -2006,7 +2005,7 @@ class _AppLayoutState extends State<AppLayout> {
               decoration: BoxDecoration(
                 color: isDark
                     ? const Color(0xFF281710)
-                    : const Color(0xFFf8fafc),
+                    : CubagColors.sand,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: borderThemeColor),
               ),
@@ -2073,7 +2072,7 @@ class _AppLayoutState extends State<AppLayout> {
                       icon: const Icon(
                         Icons.logout_rounded,
                         size: 16,
-                        color: Color(0xFFef4444),
+                        color: CubagColors.lapsed,
                       ),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -2103,7 +2102,7 @@ class _AppLayoutState extends State<AppLayout> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dividerColor = isDark
         ? const Color(0xFF4D2D20)
-        : const Color(0xFFf1f5f9);
+        : CubagColors.sand;
 
     List<Widget> sections = [];
     if (isAdmin) {
@@ -2504,7 +2503,7 @@ class _AppLayoutState extends State<AppLayout> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dividerColor = isDark
         ? const Color(0xFF4D2D20)
-        : const Color(0xFFf1f5f9);
+        : CubagColors.sand;
 
     if (_isSidebarCollapsed) {
       return Column(
@@ -2535,7 +2534,6 @@ class _AppLayoutState extends State<AppLayout> {
               fontSize: 11,
               fontWeight: FontWeight.w800,
               color: headerColor,
-              letterSpacing: 1.1,
             ),
           ),
         ),
@@ -2565,7 +2563,7 @@ class _AppLayoutState extends State<AppLayout> {
   }) {
     final active =
         current == route || (route != '/' && current.startsWith(route));
-    const orangeCTA = Color(0xFFFF5000);
+    const orangeCTA = CubagColors.action;
     const primaryBrown = Color(0xFF6B3E26);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -2575,14 +2573,14 @@ class _AppLayoutState extends State<AppLayout> {
     final hoverBg = isDark
         ? Colors.white.withValues(alpha: 0.04)
         : Colors.black.withValues(alpha: 0.03);
-    final activeIconColor = isDark ? const Color(0xFFFF5000) : primaryBrown;
+    final activeIconColor = isDark ? CubagColors.action : primaryBrown;
     final inactiveIconColor = isDark
         ? const Color(0xFF5F6B7E)
-        : const Color(0xFF6F625B);
+        : CubagColors.muted;
     final activeTextColor = isDark ? Colors.white : primaryBrown;
     final inactiveTextColor = isDark
-        ? const Color(0xFFcbd5e1)
-        : const Color(0xFF2B211D);
+        ? CubagColors.lineStrong
+        : CubagColors.ink;
 
     final tileContent = Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),

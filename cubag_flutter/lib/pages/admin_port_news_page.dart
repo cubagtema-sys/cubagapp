@@ -5,12 +5,13 @@ import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10B981);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
 const _kBlue = Color(0xFF3B82F6);
-const _kRed = Color(0xFFEF4444);
-const _kSlate = Color(0xFF64748B);
+const _kRed = CubagColors.lapsed;
+const _kSlate = CubagColors.muted;
 
 class AdminPortNewsPage extends StatefulWidget {
   const AdminPortNewsPage({super.key});
@@ -319,7 +320,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textColor = isDark ? Colors.white : const Color(0xFF1F1612);
     final subTextColor = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
@@ -347,7 +348,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                     actions: [
                       OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: isDark ? Colors.white : const Color(0xFF334155),
+                          foregroundColor: isDark ? Colors.white : CubagColors.inkSoft,
                           side: BorderSide(color: borderCol),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -399,7 +400,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                                 hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
                                 prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
                                 filled: true,
-                                fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+                                fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderCol)),
                                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderCol)),
                                 focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange, width: 1.2)),
@@ -553,7 +554,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF1F5F9),
+                              color: isDark ? CubagColors.ink : CubagColors.sand,
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(color: borderCol),
                             ),
@@ -600,7 +601,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
+              color: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: borderCol.withValues(alpha: 0.7)),
             ),
@@ -609,7 +610,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
               style: TextStyle(
                 fontSize: 13,
                 height: 1.45,
-                color: isDark ? Colors.white70 : const Color(0xFF334155),
+                color: isDark ? Colors.white70 : CubagColors.inkSoft,
               ),
             ),
           ),

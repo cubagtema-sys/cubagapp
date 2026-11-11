@@ -3,6 +3,7 @@ import '../services/api_service.dart';
 import '../components/app_layout.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
+import '../design/cubag_design.dart';
 
 class AdminEventAttendeesPage extends StatefulWidget {
   final int eventId;
@@ -76,16 +77,16 @@ class _AdminEventAttendeesPageState extends State<AdminEventAttendeesPage> {
     final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
     final borderColor = isDark
         ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
+        : CubagColors.line;
     final textColor = isDark
-        ? const Color(0xFFf8fafc)
-        : const Color(0xFF1A0F0A);
+        ? CubagColors.sand
+        : CubagColors.ink;
     final subTextColor = isDark
         ? const Color(0xFF5F6B7E)
-        : const Color(0xFF475569);
+        : CubagColors.inkSoft;
     final inputBg = isDark
-        ? const Color(0xFF1A0F0A).withValues(alpha: 0.4)
-        : const Color(0xFFf8fafc);
+        ? CubagColors.ink.withValues(alpha: 0.4)
+        : CubagColors.sand;
     final primary = Theme.of(context).primaryColor;
 
     List<dynamic> filtered = _allMembers.where((m) {
@@ -129,7 +130,7 @@ class _AdminEventAttendeesPageState extends State<AdminEventAttendeesPage> {
                   'Checked In',
                   'attended',
                   attendedCount,
-                  const Color(0xFF10b981),
+                  CubagColors.valid,
                   isDark,
                 ),
                 const SizedBox(width: 8),
@@ -137,7 +138,7 @@ class _AdminEventAttendeesPageState extends State<AdminEventAttendeesPage> {
                   'Absent',
                   'absent',
                   absentCount,
-                  const Color(0xFFef4444),
+                  CubagColors.lapsed,
                   isDark,
                 ),
               ],
@@ -244,7 +245,7 @@ class _AdminEventAttendeesPageState extends State<AdminEventAttendeesPage> {
                               initial,
                               style: TextStyle(
                                 color: isAttended
-                                    ? const Color(0xFF10b981)
+                                    ? CubagColors.valid
                                     : subTextColor,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -293,14 +294,14 @@ class _AdminEventAttendeesPageState extends State<AdminEventAttendeesPage> {
                                     children: [
                                       const Icon(
                                         Icons.check_circle_rounded,
-                                        color: Color(0xFF10b981),
+                                        color: CubagColors.valid,
                                         size: 14,
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
                                         'Checked In',
                                         style: TextStyle(
-                                          color: const Color(0xFF10b981),
+                                          color: CubagColors.valid,
                                           fontSize: 15,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -366,7 +367,7 @@ class _AdminEventAttendeesPageState extends State<AdminEventAttendeesPage> {
     final isSelected = _filter == value;
     final borderColor = isDark
         ? const Color(0xFF4D2D20)
-        : const Color(0xFFe2e8f0);
+        : CubagColors.line;
     return Expanded(
       child: InkWell(
         onTap: () => setState(() => _filter = value),
