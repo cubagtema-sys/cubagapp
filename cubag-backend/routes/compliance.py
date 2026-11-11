@@ -715,60 +715,10 @@ def get_application(app_id):
 @compliance_bp.route('/applications/<int:app_id>/sign-upload', methods=['POST'])
 @jwt_required()
 def sign_upload(app_id):
-    """Get a Supabase-signed upload URL for a compliance document."""
-    member_id = get_jwt_identity()
-    data = request.get_json() or {}
-    requirement = data.get('requirement', '').strip()
-    ext         = data.get('ext', 'pdf').strip().lower()
-    size        = int(data.get('size', 0))
-    label       = data.get('label', '').strip()
-
-    conn = get_db()
-    try:
-        with conn.cursor() as cursor:
-            _ensure_tables(cursor)
-            cursor.execute(
-                "SELECT type, status FROM compliance_applications WHERE id = %s AND member_id = %s",
-                (app_id, member_id)
-            )
-            app = cursor.fetchone()
-            if not app:
-                return jsonify({'message': 'Application not found'}), 404
-            # Allow upload in draft AND revision_requested statuses (FIX #1)
-            if app['status'] not in ('draft', 'revision_requested'):
-                return jsonify({'message': 'Application is not editable in its current state'}), 400
-            valid_keys = [r['key'] for r in _reqs_for_type(app['type'])]
-            if requirement not in valid_keys:
-                return jsonify({'message': 'Invalid requirement key for this application type'}), 400
-    except Exception as e:
-        return jsonify({'message': str(e)}), 500
-    finally:
-        conn.close()
-
-    if ext not in ALLOWED_EXT:
-        return jsonify({'message': 'Only PDF, PNG, JPG, JPEG allowed'}), 400
-    if size > MAX_MB * 1024 * 1024:
-        return jsonify({'message': f'File too large. Max {MAX_MB}MB.'}), 413
-    # NOTE: sign-upload is only used when Supabase is available.
-    # When Supabase is unreachable, clients should use the direct /upload endpoint instead.
-    from file_storage import supabase_available
-    if not supabase_available():
-        # Tell the client to fall back to direct multipart upload
-        return jsonify({
-            'fallback': True,
-            'message': 'Cloud storage unavailable. Use direct /upload endpoint.',
-        }), 200
-
-    safe_name  = f"compliance/{member_id}/{app_id}/{requirement}_{uuid.uuid4().hex}.{ext}"
-    public_url = f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{safe_name}"
-    upload_url = f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{safe_name}"
-
-    return jsonify({
-        'upload_url':   upload_url,
-        'public_url':   public_url,
-        'safe_name':    safe_name,
-        'supabase_key': SUPABASE_KEY,
-    }), 200
+    """WITHDRAWN (security): returned the Supabase service-role key to the
+    caller. Use POST /compliance/applications/<id>/upload."""
+    return jsonify({'message': 'This upload method has been withdrawn. Upload the file with the regular upload endpoint.', 'fallback': True,
+                    'use': f'/api/v1/compliance/applications/{app_id}/upload'}), 410
 
 
 def _notify_admins_doc_updated(cursor, app_id, member_id, label, is_replacement=False):
@@ -805,6 +755,9 @@ def _notify_admins_doc_updated(cursor, app_id, member_id, label, is_replacement=
         logger.warning(f"[Compliance] Failed notifying admins of doc update: {e}")
 
 
+_UPLOAD_EDITABLE_STATUSES = ('draft', 'revision_requested', 'rejected', 'under_review', 'submitted')
+
+
 @compliance_bp.route('/applications/<int:app_id>/upload', methods=['POST'])
 @jwt_required()
 def upload_compliance_document(app_id):
@@ -828,6 +781,27 @@ def upload_compliance_document(app_id):
     file.seek(0)
     if size_bytes > 15 * 1024 * 1024:
         return jsonify({'message': 'File too large. Max 15MB.'}), 413
+
+    # BUG-13: confirm the application belongs to the caller and is editable
+    # BEFORE anything is written to storage (non-owners used to leave orphan files).
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            _ensure_tables(cursor)
+            cursor.execute(
+                "SELECT type, status FROM compliance_applications WHERE id = %s AND member_id = %s",
+                (app_id, member_id)
+            )
+            app = cursor.fetchone()
+    except Exception:
+        logger.exception('[Compliance] upload ownership check failed')
+        return jsonify({'message': 'Could not upload the document. Please try again.'}), 500
+    finally:
+        conn.close()
+    if not app:
+        return jsonify({'message': 'Application not found'}), 404
+    if app['status'] not in _UPLOAD_EDITABLE_STATUSES:
+        return jsonify({'message': 'Application is not editable in its current state'}), 400
 
     file_bytes = file.read()
     content_type = file.content_type or ('application/pdf' if ext == 'pdf' else 'image/jpeg')
@@ -862,15 +836,16 @@ def upload_compliance_document(app_id):
     conn = get_db()
     try:
         with conn.cursor() as cursor:
-            _ensure_tables(cursor)
+            # Re-check inside the write transaction (status may have changed
+            # while the file was being stored).
             cursor.execute(
-                "SELECT type, status FROM compliance_applications WHERE id = %s AND member_id = %s",
+                "SELECT type, status FROM compliance_applications WHERE id = %s AND member_id = %s FOR UPDATE",
                 (app_id, member_id)
             )
             app = cursor.fetchone()
             if not app:
                 return jsonify({'message': 'Application not found'}), 404
-            if app['status'] not in ('draft', 'revision_requested', 'rejected', 'under_review', 'submitted'):
+            if app['status'] not in _UPLOAD_EDITABLE_STATUSES:
                 return jsonify({'message': 'Application is not editable in its current state'}), 400
 
             if not label:
@@ -914,68 +889,10 @@ def upload_compliance_document(app_id):
 @compliance_bp.route('/applications/<int:app_id>/confirm-upload', methods=['POST'])
 @jwt_required()
 def confirm_upload(app_id):
-    """Called after a successful Supabase direct upload; saves the DB record."""
-    member_id   = get_jwt_identity()
-    data        = request.get_json() or {}
-    requirement = data.get('requirement', '').strip()
-    label       = data.get('label', '').strip()
-    public_url  = data.get('public_url', '').strip()
-    filename    = data.get('filename', '').strip()
-    size        = int(data.get('size', 0))
-
-    if not requirement or not public_url:
-        return jsonify({'message': 'Missing requirement or public_url'}), 400
-
-    conn = get_db()
-    try:
-        with conn.cursor() as cursor:
-            _ensure_tables(cursor)
-            cursor.execute(
-                "SELECT type, status FROM compliance_applications WHERE id = %s AND member_id = %s",
-                (app_id, member_id)
-            )
-            app = cursor.fetchone()
-            if not app:
-                return jsonify({'message': 'Application not found'}), 404
-            if app['status'] not in ('draft', 'revision_requested', 'rejected', 'under_review', 'submitted'):
-                return jsonify({'message': 'Application is not editable in its current state'}), 400
-
-            if not label:
-                label = next(
-                    (r['label'] for r in _reqs_for_type(app['type']) if r['key'] == requirement),
-                    requirement
-                )
-
-            cursor.execute(
-                "SELECT id FROM compliance_documents WHERE application_id = %s AND requirement = %s",
-                (app_id, requirement)
-            )
-            existing = cursor.fetchone()
-            is_replacement = existing is not None
-            if existing:
-                cursor.execute("""
-                    UPDATE compliance_documents
-                    SET file_url = %s, file_name = %s, file_size = %s,
-                        status = 'pending', admin_note = NULL, uploaded_at = NOW(),
-                        auto_filled = FALSE, source_uploaded_at = NULL
-                    WHERE id = %s
-                """, (public_url, filename, size, existing['id']))
-            else:
-                cursor.execute("""
-                    INSERT INTO compliance_documents
-                        (application_id, requirement, label, file_url, file_name, file_size, status)
-                    VALUES (%s, %s, %s, %s, %s, %s, 'pending')
-                """, (app_id, requirement, label, public_url, filename, size))
-
-            _notify_admins_doc_updated(cursor, app_id, member_id, label, is_replacement=is_replacement)
-            conn.commit()
-
-        return jsonify({'message': 'Document saved'}), 200
-    except Exception as e:
-        logger.exception('[Compliance] confirm_upload error')
-        return jsonify({'message': str(e)}), 500
-    finally:
-        conn.close()
+    """WITHDRAWN with /sign-upload: recorded any client-supplied URL as a
+    compliance document."""
+    return jsonify({'message': 'This upload method has been withdrawn. Upload the file with the regular upload endpoint.',
+                    'use': f'/api/v1/compliance/applications/{app_id}/upload'}), 410
 
 
 @compliance_bp.route('/applications/<int:app_id>/submit', methods=['POST'])

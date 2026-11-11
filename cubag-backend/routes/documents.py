@@ -421,115 +421,19 @@ def upload_document():
 @documents_bp.route('/sign-upload', methods=['POST'])
 @jwt_required()
 def sign_upload():
-    """
-    Returns a signed Supabase URL so Flutter can upload directly to Supabase
-    without routing file bytes through Flask. Much faster — one less network hop.
-    """
-    member_id   = get_jwt_identity()
-    data        = request.get_json() or {}
-    requirement = data.get('requirement', '').strip()
-    label       = data.get('label', '').strip()
-    filename    = data.get('filename', 'document').strip()
-    ext         = data.get('ext', 'pdf').strip().lower()
-    size        = int(data.get('size', 0))
-
-    if not requirement:
-        return jsonify({'message': 'Requirement key is required'}), 400
-    if ext not in ALLOWED_EXTENSIONS:
-        return jsonify({'message': 'Only PDF, PNG, JPG, JPEG files are accepted'}), 400
-    if size > MAX_SIZE_MB * 1024 * 1024:
-        return jsonify({'message': f'File too large. Max {MAX_SIZE_MB}MB.'}), 413
-    if not SUPABASE_URL or not SUPABASE_KEY:
-        return jsonify({'message': 'Cloud storage not configured on server.'}), 500
-
-    if not label:
-        label = requirement.replace('_', ' ').title()
-
-    safe_name  = f"member_docs/{member_id}/{requirement}_{uuid.uuid4().hex}.{ext}"
-
-    # Supabase signed upload URL (token valid for 60 s — enough for direct upload)
-    sign_url = f"{SUPABASE_URL}/storage/v1/object/sign/{SUPABASE_BUCKET}/{safe_name}"
-    headers  = {
-        "apikey":        SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}",
-        "Content-Type":  "application/json",
-    }
-    try:
-        resp = requests.post(sign_url, json={"expiresIn": 120}, headers=headers, timeout=10)
-        if resp.status_code not in (200, 201):
-            # Fall back: just return the regular object URL so Flutter can PUT directly
-            upload_url = f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{safe_name}"
-        else:
-            signed = resp.json()
-            token  = signed.get('token') or signed.get('signedURL', '')
-            # Build upload URL from token
-            upload_url = (
-                f"{SUPABASE_URL}/storage/v1/object/sign/{SUPABASE_BUCKET}/{safe_name}"
-                if not token else
-                f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{safe_name}"
-            )
-    except Exception:
-        # Fallback: unauthenticated PUT to object URL (still requires service key header from client)
-        upload_url = f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{safe_name}"
-
-    public_url = f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{safe_name}"
-    return jsonify({
-        'upload_url': upload_url,
-        'public_url': public_url,
-        'safe_name':  safe_name,
-        'supabase_key': SUPABASE_KEY,   # client needs this to auth the PUT
-    }), 200
+    """WITHDRAWN (security). This endpoint used to return the Supabase
+    service-role key to any signed-in member, which grants unrestricted access
+    to the whole database and storage. The app does not use it; documents are
+    uploaded through POST /documents/upload instead."""
+    return jsonify({'message': 'This upload method has been withdrawn. Upload the file with the regular upload endpoint.', 'use': '/api/v1/documents/upload'}), 410
 
 
 @documents_bp.route('/confirm-upload', methods=['POST'])
 @jwt_required()
 def confirm_upload():
-    """
-    Called by Flutter after a successful direct upload to Supabase.
-    Saves the DB record so admin can see the uploaded document.
-    """
-    member_id   = get_jwt_identity()
-    data        = request.get_json() or {}
-    requirement = data.get('requirement', '').strip()
-    label       = data.get('label', '').strip()
-    public_url  = data.get('public_url', '').strip()
-    filename    = data.get('filename', '').strip()
-    size        = int(data.get('size', 0))
-
-    if not requirement or not public_url:
-        return jsonify({'message': 'Missing requirement or public_url'}), 400
-    if not label:
-        label = requirement.replace('_', ' ').title()
-
-    conn = get_db()
-    try:
-        with conn.cursor() as cursor:
-            _ensure_table(cursor)
-            cursor.execute(
-                "SELECT id FROM member_documents WHERE member_id = %s AND requirement = %s",
-                (member_id, requirement)
-            )
-            existing = cursor.fetchone()
-            if existing:
-                cursor.execute("""
-                    UPDATE member_documents
-                    SET file_url = %s, file_name = %s, file_size = %s,
-                        status = 'pending', admin_note = NULL, uploaded_at = NOW()
-                    WHERE id = %s
-                """, (public_url, filename, size, existing['id']))
-            else:
-                cursor.execute("""
-                    INSERT INTO member_documents
-                        (member_id, requirement, label, file_url, file_name, file_size, status)
-                    VALUES (%s, %s, %s, %s, %s, %s, 'pending')
-                """, (member_id, requirement, label, public_url, filename, size))
-            conn.commit()
-        return jsonify({'message': 'Document record saved'}), 200
-    except Exception as e:
-        logger.exception('[Documents] confirm_upload DB error')
-        return jsonify({'message': str(e)}), 500
-    finally:
-        conn.close()
+    """WITHDRAWN with /sign-upload: it recorded any client-supplied URL as the
+    member's document (including another member's file or an outside link)."""
+    return jsonify({'message': 'This upload method has been withdrawn. Upload the file with the regular upload endpoint.', 'use': '/api/v1/documents/upload'}), 410
 
 
 @documents_bp.route('/submit-application', methods=['POST'])
