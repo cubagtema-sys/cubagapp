@@ -371,7 +371,25 @@ class _LoginPageState extends State<LoginPage> {
     } catch (_) {}
 
     // 2. Perform authentication with backend
-    final error = await authService.login(identifier, password);
+    var error = await authService.login(identifier, password);
+
+    // SEC-12: administrators confirm with an emailed code.
+    if (error == AuthService.mfaRequired) {
+      if (!mounted) return;
+      final verified = await _askAdminCode(authService);
+      if (!verified) {
+        if (mounted) {
+          setState(() {
+            _loading = false;
+            _error = authService.mfaPrompt.isEmpty
+                ? 'Your sign-in code has expired. Please sign in again.'
+                : null;
+          });
+        }
+        return;
+      }
+      error = null;
+    }
 
     // 3. Keep me signed in seamlessly handles Face ID / Touch ID enrollment
     if (error == null) {
@@ -421,6 +439,88 @@ class _LoginPageState extends State<LoginPage> {
         }
       }
     }
+  }
+
+  /// SEC-12: ask for the emailed admin sign-in code. True once signed in.
+  Future<bool> _askAdminCode(AuthService authService) async {
+    final codeCtrl = TextEditingController();
+    String? dialogError;
+    bool busy = false;
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialog) {
+          Future<void> submit() async {
+            if (busy) return;
+            final code = codeCtrl.text.trim();
+            if (!RegExp(r'^\d{6}$').hasMatch(code)) {
+              setDialog(() => dialogError = 'Enter the 6-digit code.');
+              return;
+            }
+            setDialog(() {
+              busy = true;
+              dialogError = null;
+            });
+            final err = await authService.completeAdminMfa(code);
+            if (!ctx.mounted) return;
+            if (err == null) {
+              Navigator.of(ctx).pop(true);
+            } else if (authService.mfaPrompt.isEmpty) {
+              // Challenge expired or burnt: back to the password step.
+              Navigator.of(ctx).pop(false);
+            } else {
+              setDialog(() {
+                busy = false;
+                dialogError = err;
+              });
+            }
+          }
+
+          return AlertDialog(
+            title: const Text('Admin sign-in code'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(authService.mfaPrompt),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: codeCtrl,
+                  autofocus: true,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  autofillHints: const [AutofillHints.oneTimeCode],
+                  decoration: InputDecoration(
+                    labelText: '6-digit code',
+                    errorText: dialogError,
+                  ),
+                  onSubmitted: (_) => submit(),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: busy ? null : () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: busy ? null : submit,
+                child: busy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Verify'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    codeCtrl.dispose();
+    return ok == true;
   }
 
   @override

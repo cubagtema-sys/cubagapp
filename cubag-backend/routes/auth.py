@@ -5,6 +5,7 @@ import logging
 import resend
 
 from flask import Blueprint, request, jsonify, make_response
+from config import admin_mfa
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import cross_origin
@@ -700,9 +701,66 @@ def login():
                 return jsonify({'message': 'Invalid credentials'}), 401
             clear_otp_failures('login', _login_key)
 
+            if admin_mfa.applies_to(member):
+                return _start_admin_mfa(cursor, conn, member)
             return _complete_login(cursor, member)
     except Exception as e:
         logger.error(f'[login] {e}')
+        return jsonify({'message': 'An unexpected error occurred. Please try again.'}), 500
+    finally:
+        conn.close()
+
+
+def _start_admin_mfa(cursor, conn, member):
+    """SEC-12: password was right; email a one-time code instead of a token."""
+    # Suspended / deleted / unverified accounts get the normal refusal, and
+    # no code is sent.
+    status = str(member.get('status') or 'active').lower()
+    if status in ('deleted', 'suspended', 'inactive') or not member.get('email_verified', False):
+        return _complete_login(cursor, member)
+    credential, code = admin_mfa.start(cursor, member['id'])
+    sent = _send_email(
+        member['email'],
+        'Your CUBAG admin sign-in code',
+        f'Your CUBAG admin sign-in code is {code}. It expires in '
+        f'{admin_mfa.CODE_TTL_MINUTES} minutes.\n\n'
+        'If you did not just sign in, change your password now and tell the Secretariat.',
+    )
+    if not sent:
+        conn.rollback()
+        return jsonify({'message': 'We could not send your sign-in code. Please try again shortly.'}), 503
+    conn.commit()
+    return jsonify({
+        'mfa_required': True,
+        'mfa_token': credential,
+        'email_hint': admin_mfa.mask_email(member['email']),
+        'expires_in': admin_mfa.CODE_TTL_MINUTES * 60,
+        'message': f"Enter the 6-digit code we sent to {admin_mfa.mask_email(member['email'])}.",
+    }), 202
+
+
+@auth_bp.route('/login/mfa', methods=['POST'])
+@rate_limit('login_mfa', max_requests=12, window_seconds=300)
+def login_mfa():
+    """SEC-12: second step of administrator sign-in."""
+    data = request.get_json(silent=True) or {}
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            member_id, reason = admin_mfa.verify(cursor, data.get('mfa_token'), data.get('code'))
+            conn.commit()  # persist attempt counts / burnt challenge
+            if member_id is None:
+                logger.warning(f'[login-mfa] refused reason={reason}')
+                if reason == 'wrong_code':
+                    return jsonify({'message': 'That code is not correct.', 'error_code': 'MFA_CODE_WRONG'}), 400
+                return jsonify({'message': admin_mfa.INVALID_MESSAGE, 'error_code': 'MFA_EXPIRED'}), 401
+            cursor.execute("SELECT * FROM members WHERE id = %s", (member_id,))
+            member = cursor.fetchone()
+            if not member or (member.get('role') or 'member') not in admin_mfa.ADMIN_ROLES:
+                return jsonify({'message': admin_mfa.INVALID_MESSAGE, 'error_code': 'MFA_EXPIRED'}), 401
+            return _complete_login(cursor, member)
+    except Exception as e:
+        logger.error(f'[login-mfa] {e}')
         return jsonify({'message': 'An unexpected error occurred. Please try again.'}), 500
     finally:
         conn.close()

@@ -353,6 +353,63 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Returned by [login] when the account is an administrator and the server
+  /// has emailed a sign-in code (SEC-12). Call [completeAdminMfa] next.
+  static const String mfaRequired = '__ADMIN_MFA_REQUIRED__';
+  String? _mfaToken;
+  String _mfaPrompt = '';
+
+  /// What to tell the admin, e.g. "Enter the 6-digit code we sent to c***@x".
+  String get mfaPrompt => _mfaPrompt;
+
+  /// SEC-12: second step of administrator sign-in.
+  /// Returns null on success, otherwise a message for the user. When the
+  /// challenge is no longer usable, [mfaPrompt] is cleared and the user must
+  /// sign in with their password again.
+  Future<String?> completeAdminMfa(String code) async {
+    final challenge = _mfaToken;
+    if (challenge == null) {
+      return 'Your sign-in code has expired. Please sign in again.';
+    }
+    try {
+      final response = await _apiService.post(
+        '/auth/login/mfa',
+        data: {'mfa_token': challenge, 'code': code.trim()},
+      );
+      final data = response.data;
+      if (response.statusCode == 200 && data is Map) {
+        _mfaToken = null;
+        _mfaPrompt = '';
+        final user = Map<String, dynamic>.from(data['user'] as Map? ?? {});
+        await setAuthSession(
+          token: data['token'].toString(),
+          user: user,
+          permissions: List<String>.from(
+            user['permissions'] ?? data['permissions'] ?? [],
+          ),
+        );
+        return null;
+      }
+      return _mfaError(response.statusCode, data);
+    } catch (e) {
+      if (e is DioException && e.response != null) {
+        return _mfaError(e.response!.statusCode, e.response!.data);
+      }
+      return 'Unable to verify the code. Please check your connection and try again.';
+    }
+  }
+
+  String _mfaError(int? status, Object? data) {
+    final msg = (data is Map && data['message'] != null)
+        ? data['message'].toString()
+        : 'Unable to verify the code. Please try again.';
+    if (status == 401) {
+      _mfaToken = null;
+      _mfaPrompt = '';
+    }
+    return msg;
+  }
+
   Future<String?> login(String email, String password) async {
     try {
       final cleanIdentifier = email.trim().contains('@')
@@ -362,6 +419,15 @@ class AuthService extends ChangeNotifier {
         '/auth/login',
         data: {'identifier': cleanIdentifier, 'password': password},
       );
+
+      if (response.statusCode == 202 &&
+          response.data is Map &&
+          response.data['mfa_required'] == true) {
+        _mfaToken = response.data['mfa_token']?.toString();
+        _mfaPrompt = response.data['message']?.toString() ??
+            'Enter the 6-digit code we emailed you.';
+        return mfaRequired;
+      }
 
       if (response.statusCode == 200) {
         final data = response.data;
