@@ -174,7 +174,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
     if (!isFreeCourse) {
       final feeParam = Uri.encodeComponent('CTI Course: $title');
       final amtParam = cleanFeeNum.toStringAsFixed(2);
-      context.push('/payments?fee=$feeParam&amount=$amtParam&redirect=/cti-courses').then((_) {
+      context.push('/payments?fee=$feeParam&amount=$amtParam&course_id=$courseId&redirect=/cti-courses').then((_) {
         if (mounted) {
           _fetchCourses();
           _fetchMyEnrollments();
@@ -364,6 +364,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                                   final payRes = await _api.post('payments', data: {
                                     'amount': cleanFeeNum,
                                     'description': 'CTI Course: $title',
+                                    'fee_key': 'course:$courseId',
                                     'method': paymentMethod,
                                     'network': detectedNetwork.isNotEmpty ? detectedNetwork : 'MTN',
                                     'phone': phone.trim(),

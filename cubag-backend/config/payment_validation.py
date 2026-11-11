@@ -421,3 +421,124 @@ def validate_member_payment_amount(
         return None, 'Could not verify this fee against the official schedule. Please contact the Secretariat.'
 
     return client_amount, None
+
+
+# ─── Pay by fee key (SEC-20) ─────────────────────────────────────────────────
+#
+# The app sends `fee_key` instead of relying on a free-text description:
+#   'registration'  member's registration fee (by member type)
+#   'package'       member's new-membership package
+#   'renewal'       annual renewal (priced from the member's renewal bill)
+#   'course:<id>'   a CTI course
+#   any other key   an active fee_schedules row (= the `id` of an item in the
+#                   app's fee list, settings/cubag_fees_v2; admin/fees keeps
+#                   both in step)
+# The server derives the amount and an official description from the key.
+# Only renewals may be paid in installments, and only against the renewal
+# bill: registration and package fees gate access to the app, so they are
+# always paid in full.
+
+MEMBERSHIP_FEE_KINDS = ('registration', 'package', 'renewal')
+
+
+def is_renewal_description(description):
+    return _is_renewal_description((description or '').lower())
+
+
+def fee_kind(fee_key):
+    key = (fee_key or '').strip()
+    if key in MEMBERSHIP_FEE_KINDS:
+        return key
+    if key.startswith('course:'):
+        return 'course'
+    return 'fee' if key else None
+
+
+def resolve_fee_key(cursor, member_id, fee_key):
+    """Returns ({'key','kind','amount','description', 'course_id'?}, None) or (None, error)."""
+    key = str(fee_key or '').strip()
+    kind = fee_kind(key)
+    unknown = (None, 'This fee is not on the official schedule. Please refresh and try again.')
+    if not kind or len(key) > 100:
+        return unknown
+    if kind == 'registration':
+        amount, desc = _member_registration_fee(cursor, member_id), 'Registration Fee'
+    elif kind == 'package':
+        amount, desc = _member_package_fee(cursor, member_id), 'New Membership Dues'
+    elif kind == 'renewal':
+        amount, desc = _renewal_expected_amount(cursor, member_id), 'Annual Renewal Dues'
+    elif kind == 'course':
+        cid = key.split(':', 1)[1]
+        if not cid.isdigit():
+            return unknown
+        cursor.execute(
+            "SELECT id, title, fee FROM cti_courses WHERE id = %s AND deleted_at IS NULL AND is_active = TRUE",
+            (int(cid),),
+        )
+        row = cursor.fetchone()
+        if not row or row.get('fee') is None:
+            return unknown
+        return {'key': key, 'kind': kind, 'amount': _to_float(row['fee']),
+                'description': f"CTI Course: {row['title']}", 'course_id': row['id']}, None
+    else:
+        cursor.execute(
+            "SELECT key, name, amount FROM fee_schedules WHERE key = %s AND is_active = TRUE LIMIT 1",
+            (key,),
+        )
+        row = cursor.fetchone()
+        if not row or row.get('amount') is None:
+            return unknown
+        amount, desc = _to_float(row['amount']), (row.get('name') or key)
+    if amount is None or amount <= 0:
+        return None, 'This fee is not configured yet. Please contact the Secretariat.'
+    return {'key': key, 'kind': kind, 'amount': float(amount), 'description': desc}, None
+
+
+def price_fee_key_payment(cursor, member_id, fee_key, client_amount, is_installment):
+    """Server-side pricing for a payment identified by fee key.
+
+    Returns (plan, None) or (None, error). plan has: amount, description,
+    fee_key, kind, is_installment, comp_app_id (renewal bill) and course_id.
+    """
+    if fee_kind(fee_key) == 'renewal':
+        # Renewals are priced and accounted for on the member's renewal bill.
+        bill_id = _open_renewal_bill_id(cursor, member_id)
+        if bill_id:
+            amount, err = validate_member_payment_amount(
+                cursor, member_id, 'Annual Renewal Dues', client_amount, bill_id, bool(is_installment))
+            if err:
+                return None, err
+            return {'fee_key': 'renewal', 'kind': 'renewal', 'description': 'Annual Renewal Dues',
+                    'comp_app_id': bill_id, 'course_id': None, 'amount': amount,
+                    'is_installment': bool(is_installment)}, None
+
+    fee, err = resolve_fee_key(cursor, member_id, fee_key)
+    if err:
+        return None, err
+    plan = {'fee_key': fee['key'], 'kind': fee['kind'], 'description': fee['description'],
+            'comp_app_id': None, 'course_id': fee.get('course_id'), 'is_installment': False}
+
+    if is_installment:
+        return None, INSTALLMENT_NEEDS_BILL
+    plan['amount'] = fee['amount']
+    return plan, None
+
+
+def payment_kind(fee_key, description):
+    """What a completed payment unlocks: 'registration', 'package', 'renewal',
+    'course' or 'fee' (nothing). Uses the fee key when the payment has one;
+    otherwise classifies the description (older app versions, counter payments)."""
+    if fee_key:
+        return fee_kind(fee_key)
+    d = (description or '').lower()
+    if _is_renewal_description(d):
+        return 'renewal'
+    if any(k in d for k in ('registration', 'reg form', 'application')):
+        return 'registration'
+    if any(k in d for k in ('new member', 'entrance', 'package', 'membership dues',
+                            'clearing & forwarding only', 'consolidation only',
+                            'licentiate membership', 'associate membership')):
+        return 'package'
+    if any(k in d for k in ('cti', 'course', 'training', 'enrol')):
+        return 'course'
+    return 'fee'

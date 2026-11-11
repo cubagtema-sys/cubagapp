@@ -226,6 +226,41 @@ class _PaymentsPageState extends State<PaymentsPage>
     super.dispose();
   }
 
+  int? _courseId;
+
+  /// SEC-20: the official fee this payment is for. The server prices it from
+  /// this key (the amount field is only used for renewal installments).
+  /// Null for 'Other' / miscellaneous payments.
+  String? get _feeKey {
+    // A specific bill already fixes the price; the server prices it from the bill.
+    if (_complianceAppId != null) return null;
+    final r = _reason.toLowerCase().trim();
+    if (r.isEmpty || _reason == 'Other' || r == 'association payment') return null;
+    if (r.contains('cti') || r.contains('course')) {
+      return _courseId != null ? 'course:$_courseId' : null;
+    }
+    if (r.contains('renewal') || r.contains('annual dues')) return 'renewal';
+    if (r.contains('registration') ||
+        r.contains('reg form') ||
+        r.contains('application fee')) {
+      return 'registration';
+    }
+    if (r.contains('new member') ||
+        r.contains('package') ||
+        r.contains('entrance') ||
+        r.contains('membership dues')) {
+      return 'package';
+    }
+    for (final f in _fees) {
+      if (f is Map &&
+          (f['label'] ?? f['name'] ?? '').toString() == _reason &&
+          (f['id']?.toString() ?? '').isNotEmpty) {
+        return f['id'].toString();
+      }
+    }
+    return null;
+  }
+
   /// SEC-20: the server accepts installments only against a bill (an explicit
   /// compliance bill, or the member's open renewal bill). Registration,
   /// package and course fees must be paid in full.
@@ -331,6 +366,7 @@ class _PaymentsPageState extends State<PaymentsPage>
           final queryMinAmt = state.uri.queryParameters['min_amount'];
           final queryMaxAmt = state.uri.queryParameters['max_amount'];
           final queryAppId = state.uri.queryParameters['app_id'];
+          _courseId = int.tryParse(state.uri.queryParameters['course_id'] ?? '') ?? _courseId;
 
           if (queryAppId != null && queryAppId.isNotEmpty) {
             _complianceAppId = int.tryParse(queryAppId) ?? _complianceAppId;
@@ -522,6 +558,7 @@ class _PaymentsPageState extends State<PaymentsPage>
       final requestData = {
         'amount': amt,
         'description': effectiveReason,
+        'fee_key': _feeKey,
         'method': 'momo',
         'network': _momoNetwork,
         'phone': _momoPhone,

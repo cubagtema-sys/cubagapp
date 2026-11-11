@@ -429,8 +429,9 @@ def create_payment():
     method      = data.get('method', 'momo')
     network     = data.get('network', 'MTN')
     phone       = data.get('phone', '')
+    fee_key     = (data.get('fee_key') or '').strip() or None
 
-    if not amount or not description:
+    if not amount or not (description or fee_key):
         return jsonify({'message': 'Amount and description are required'}), 400
 
     if method == 'momo' and not phone:
@@ -452,11 +453,24 @@ def create_payment():
             if not member:
                 return jsonify({'message': 'Member not found'}), 404
 
+            # SEC-20: pay by fee key. The server prices the fee and writes the
+            # official description; the client's amount only matters for
+            # installments, bounded by what is still owed.
+            fee_plan = None
+            if fee_key:
+                from config.payment_validation import price_fee_key_payment
+                fee_plan, plan_err = price_fee_key_payment(
+                    cursor, member_id, fee_key, amount, bool(data.get('is_installment', False)))
+                if plan_err:
+                    return jsonify({'message': plan_err}), 400
+                description = fee_plan['description']
+
             # Approved CTI policy: no in-app payment for online/hybrid courses on iOS.
             from config.course_payment_policy import course_payment_block
             _meta = data.get('meta') if isinstance(data.get('meta'), dict) else {}
             _blocked = course_payment_block(
-                cursor, course_id=_meta.get('course_id') or data.get('course_id'),
+                cursor,
+                course_id=(fee_plan or {}).get('course_id') or _meta.get('course_id') or data.get('course_id'),
                 description=description, meta=_meta,
             )
             if _blocked:
@@ -470,13 +484,19 @@ def create_payment():
             is_installment = bool(data.get('is_installment', False))
             installment_number = int(data.get('installment_number', 1))
 
-            server_amount, amount_err = validate_member_payment_amount(
-                cursor, member_id, description, amount, comp_app_id, is_installment, installment_number
-            )
-            if amount_err:
-                return jsonify({'message': amount_err}), 400
-            if server_amount is not None:
-                amount = float(server_amount)
+            if fee_plan:
+                amount = float(fee_plan['amount'])
+                is_installment = fee_plan['is_installment']
+                comp_app_id = fee_plan['comp_app_id']
+                fee_key = fee_plan['fee_key']
+            else:
+                server_amount, amount_err = validate_member_payment_amount(
+                    cursor, member_id, description, amount, comp_app_id, is_installment, installment_number
+                )
+                if amount_err:
+                    return jsonify({'message': amount_err}), 400
+                if server_amount is not None:
+                    amount = float(server_amount)
 
             if not comp_app_id and (is_renewal_payment or is_installment):
                 cursor.execute("""
@@ -613,9 +633,10 @@ def create_payment():
             if existing_pending:
                 payment_id = existing_pending['id']
                 cursor.execute("""
-                    UPDATE payments SET amount = %s, payment_ref = %s, application_id = %s, is_installment = %s, installment_number = %s, created_at = NOW()
+                    UPDATE payments SET amount = %s, payment_ref = %s, application_id = %s, is_installment = %s, installment_number = %s,
+                           fee_key = %s, created_at = NOW()
                     WHERE id = %s
-                """, (amount, payment_ref, comp_app_id, is_installment, installment_number, payment_id))
+                """, (amount, payment_ref, comp_app_id, is_installment, installment_number, fee_key, payment_id))
             else:
                 # Check for a stale 'failed' record for the same description and reset it
                 cursor.execute("""
@@ -627,9 +648,10 @@ def create_payment():
                 if stale_failed:
                     payment_id = stale_failed['id']
                     cursor.execute("""
-                        UPDATE payments SET status = 'pending', amount = %s, payment_ref = %s, application_id = %s, is_installment = %s, installment_number = %s, created_at = NOW()
+                        UPDATE payments SET status = 'pending', amount = %s, payment_ref = %s, application_id = %s, is_installment = %s, installment_number = %s,
+                               fee_key = %s, created_at = NOW()
                         WHERE id = %s
-                    """, (amount, payment_ref, comp_app_id, is_installment, installment_number, payment_id))
+                    """, (amount, payment_ref, comp_app_id, is_installment, installment_number, fee_key, payment_id))
                     logger.info(f"[Payments] Reset stale failed payment {payment_id} to pending for member {member_id}")
                 else:
                     # Check for duplicate payments before creating new record (skip for installments)
@@ -646,10 +668,10 @@ def create_payment():
                     
                     # Initialize New Record
                     cursor.execute("""
-                        INSERT INTO payments (member_id, amount, description, status, payment_ref, application_id, is_installment, installment_number)
-                        VALUES (%s, %s, %s, 'pending', %s, %s, %s, %s)
+                        INSERT INTO payments (member_id, amount, description, status, payment_ref, application_id, is_installment, installment_number, fee_key)
+                        VALUES (%s, %s, %s, 'pending', %s, %s, %s, %s, %s)
                         RETURNING id
-                    """, (member_id, amount, description, payment_ref, comp_app_id, is_installment, installment_number))
+                    """, (member_id, amount, description, payment_ref, comp_app_id, is_installment, installment_number, fee_key))
                     payment_id = cursor.fetchone()['id']
 
             desc_lower = description.lower() if description else ''
@@ -1159,7 +1181,7 @@ def _mark_payment_as_paid(payment_id, force=False):
             # so a concurrent webhook + verify-code poll (or a duplicate/replayed
             # webhook) serializes here: the second caller then sees status='paid'
             # and returns early instead of extending the license twice.
-            cursor.execute("SELECT status, member_id, description, amount, payment_ref, application_id, is_installment FROM payments WHERE id = %s FOR UPDATE", (payment_id,))
+            cursor.execute("SELECT status, member_id, description, amount, payment_ref, application_id, is_installment, fee_key FROM payments WHERE id = %s FOR UPDATE", (payment_id,))
             p = cursor.fetchone()
             if not p:
                 return
@@ -1181,9 +1203,14 @@ def _mark_payment_as_paid(payment_id, force=False):
                 "UPDATE payments SET status = 'paid', paid_at = NOW() WHERE id = %s",
                 (payment_id,)
             )
-            # Set registration_fee_paid flag if payment description indicates registration/entrance/package
+            # What this payment unlocks is decided once, by fee key or (older
+            # clients) description. A plain fee or 'Other' payment unlocks nothing.
+            from config.payment_validation import payment_kind
+            kind = payment_kind(p.get('fee_key'), description)
+
+            # Set registration_fee_paid flag for registration / package payments
             desc_lower = description.lower()
-            if any(k in desc_lower for k in ('registration', 'new member', 'entrance', 'package', 'clearing & forwarding', 'consolidation', 'application')):
+            if kind in ('registration', 'package'):
                 try:
                     cursor.execute(
                         "UPDATE members SET registration_fee_paid = TRUE, application_fee_paid = TRUE WHERE id = %s",
@@ -1222,7 +1249,9 @@ def _mark_payment_as_paid(payment_id, force=False):
             if not license_number or str(license_number).lower() in ('pending', 'none', 'n/a', ''):
                 license_number = f"CUBAG-LIC-{now.year}-{member_id:04d}"
 
-            is_renewal_payment = any(k in desc_lower for k in ('renewal', 'annual dues', 'dues', 'annual renewal', 'license renewal')) and 'new' not in desc_lower and 'package' not in desc_lower and 'entrance' not in desc_lower and 'registration' not in desc_lower
+            # (The old rule excluded any description containing 'new', which
+            # 're-new-al' always does, so 'Annual Renewal Dues' never matched.)
+            is_renewal_payment = kind == 'renewal'
             target_app_id = p.get('application_id')
             app_row = None
             if target_app_id:
@@ -1343,9 +1372,8 @@ def _mark_payment_as_paid(payment_id, force=False):
                     VALUES (%s, %s, %s, %s, %s)
                 """, (member_id, license_number, start_date, new_expiry_date, '1 Year (Cumulative Renewal)'))
                 license_issued = True
-            else:
-                is_pkg_desc = any(k in desc_lower for k in ('package', 'entrance', 'new member dues', 'membership dues', 'dues', 'clearing & forwarding only', 'consolidation only')) and 'registration' not in desc_lower and 'application' not in desc_lower
-                if is_pkg_desc:
+            elif kind in ('package', 'registration'):
+                if kind == 'package':
                     cursor.execute("""
                         UPDATE members 
                         SET package_fee_paid = TRUE,
@@ -1432,27 +1460,35 @@ def _mark_payment_as_paid(payment_id, force=False):
 
             # ── CTI Course Enrollment Confirmation ──
             try:
-                if 'cti' in desc_lower or 'course' in desc_lower:
-                    cursor.execute("""
-                        SELECT id, title, start_date FROM cti_courses
-                        WHERE deleted_at IS NULL AND is_active = TRUE
-                        ORDER BY id ASC
-                    """)
-                    all_c = cursor.fetchall()
+                if kind == 'course':
+                    fk = p.get('fee_key') or ''
+                    if fk.startswith('course:'):
+                        # Paid by course id: enrol in exactly that course.
+                        cursor.execute(
+                            "SELECT id, title, start_date FROM cti_courses WHERE id = %s",
+                            (int(fk.split(':', 1)[1]),),
+                        )
+                        all_c = [r for r in [cursor.fetchone()] if r]
+                    else:
+                        cursor.execute("""
+                            SELECT id, title, start_date FROM cti_courses
+                            WHERE deleted_at IS NULL AND is_active = TRUE
+                            ORDER BY id ASC
+                        """)
+                        all_c = cursor.fetchall()
                     matched_cid = None
                     matched_title = None
                     matched_start = None
                     for c_item in all_c:
-                        if c_item['title'].lower() in desc_lower or str(c_item['id']) in desc_lower:
+                        if fk.startswith('course:') or c_item['title'].lower() in desc_lower:
                             matched_cid = c_item['id']
                             matched_title = c_item['title']
                             matched_start = c_item['start_date']
                             break
-
-                    if not matched_cid and all_c:
-                        matched_cid = all_c[0]['id']
-                        matched_title = all_c[0]['title']
-                        matched_start = all_c[0]['start_date']
+                    # No guessing: an unmatched description used to enrol the
+                    # member in whichever course happened to be first.
+                    if not matched_cid:
+                        logger.warning(f"[CTI] Payment {payment_id} matched no course; not enrolling")
 
                     if matched_cid:
                         cursor.execute("""

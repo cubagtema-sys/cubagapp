@@ -307,6 +307,8 @@ def init_db():
             # Ensure payment_ref and bank transfer columns exist on databases
             cursor.execute("""
                 ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_ref VARCHAR(255);
+                -- SEC-20: which official fee a payment is for (pay by fee key).
+                ALTER TABLE payments ADD COLUMN IF NOT EXISTS fee_key VARCHAR(100);
                 ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50) DEFAULT 'momo';
                 ALTER TABLE payments ADD COLUMN IF NOT EXISTS receipt_url TEXT;
                 ALTER TABLE payments ADD COLUMN IF NOT EXISTS bank_name VARCHAR(100);
