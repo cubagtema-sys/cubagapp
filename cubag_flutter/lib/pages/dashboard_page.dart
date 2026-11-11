@@ -655,97 +655,156 @@ class _DashboardPageState extends State<DashboardPage> {
           : RefreshIndicator(
               onRefresh: _refreshFromNetwork,
               color: CubagColors.action,
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(
-                  CubagSpace.lg, CubagSpace.lg, CubagSpace.lg, CubagSpace.xxxl,
-                ),
-                children: [
-                  Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 640),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            '${greetingFor(DateTime.now())}, $firstName',
-                            style: CubagType.display,
-                          ),
-                          const SizedBox(height: CubagSpace.lg),
-                          LicenceCard(
-                            name: fullName,
-                            company: _user['company']?.toString(),
-                            licenceNumber: _licenceNumber(),
-                            expiry: expiry,
-                            status: status,
-                            onOpen: () => context.go('/profile'),
-                            onAction: status.actionRoute == null
-                                ? null
-                                : () => context.go(status.actionRoute!),
-                          ),
-                          const SizedBox(height: CubagSpace.xxl),
-                          HomeSectionHeader(
-                            'To do',
-                            linkLabel: pending.length > 3 ? 'See all ${pending.length}' : null,
-                            onLink: () => context.go('/tasks'),
-                          ),
-                          HomeGroup(
-                            children: _loadingTasks && pending.isEmpty
-                                ? [const QuietRow(icon: Icons.hourglass_empty_rounded, text: 'Loading your tasks…')]
-                                : pending.isEmpty
-                                    ? [const QuietRow(icon: Icons.check_circle_rounded, text: 'You\'re all caught up.')]
-                                    : [for (final t in pending.take(3)) _taskRow(t)],
-                          ),
-                          const SizedBox(height: CubagSpace.xxl),
-                          const HomeSectionHeader('Services'),
-                          ShortcutGrid(
-                            items: const [
-                              Shortcut(Icons.payments_outlined, 'Pay dues', '/payments'),
-                              Shortcut(Icons.receipt_long_outlined, 'Statement', '/payment-history'),
-                              Shortcut(Icons.school_outlined, 'CTI courses', '/courses'),
-                              Shortcut(Icons.groups_outlined, 'Member network', '/networking'),
-                              Shortcut(Icons.how_to_vote_outlined, 'Polls', '/surveys'),
-                              Shortcut(Icons.support_agent_outlined, 'Support', '/engagement'),
-                            ],
-                            onOpen: (r) => context.go(r),
-                          ),
-                          if (activeSurveys > 0) ...[
-                            const SizedBox(height: CubagSpace.xl),
-                            HomeGroup(
-                              children: [
-                                TaskRow(
-                                  title: activeSurveys == 1
-                                      ? '1 poll is open for your vote'
-                                      : '$activeSurveys polls are open for your vote',
-                                  onTap: () => context.go('/surveys'),
-                                ),
-                              ],
+              child: LayoutBuilder(
+                builder: (context, box) {
+                  final twoColumns = box.maxWidth >= 860;
+                  final greeting = Text(
+                    '${greetingFor(DateTime.now())}, $firstName',
+                    style: CubagType.display,
+                  );
+                  final licence = LicenceCard(
+                    name: fullName,
+                    company: _user['company']?.toString(),
+                    licenceNumber: _licenceNumber(),
+                    expiry: expiry,
+                    status: status,
+                    onOpen: () => context.go('/profile'),
+                    onAction: status.actionRoute == null
+                        ? null
+                        : () => context.go(status.actionRoute!),
+                  );
+                  final todo = Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      HomeSectionHeader(
+                        'To do',
+                        linkLabel: pending.length > 3 ? 'See all ${pending.length}' : null,
+                        onLink: () => context.go('/tasks'),
+                      ),
+                      HomeGroup(
+                        children: _loadingTasks && pending.isEmpty
+                            ? [const QuietRow(icon: Icons.hourglass_empty_rounded, text: 'Loading your tasks…')]
+                            : pending.isEmpty
+                                ? [const QuietRow(icon: Icons.check_circle_rounded, text: 'You\'re all caught up.')]
+                                : [for (final t in pending.take(3)) _taskRow(t)],
+                      ),
+                    ],
+                  );
+                  final services = Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const HomeSectionHeader('Services'),
+                      ShortcutGrid(
+                        items: const [
+                          Shortcut(Icons.payments_outlined, 'Pay dues', '/payments'),
+                          Shortcut(Icons.receipt_long_outlined, 'Statement', '/payment-history'),
+                          Shortcut(Icons.school_outlined, 'CTI courses', '/courses'),
+                          Shortcut(Icons.groups_outlined, 'Member network', '/networking'),
+                          Shortcut(Icons.how_to_vote_outlined, 'Polls', '/surveys'),
+                          Shortcut(Icons.support_agent_outlined, 'Support', '/engagement'),
+                        ],
+                        onOpen: (r) => context.go(r),
+                      ),
+                    ],
+                  );
+                  final polls = activeSurveys > 0
+                      ? HomeGroup(
+                          children: [
+                            TaskRow(
+                              title: activeSurveys == 1
+                                  ? '1 poll is open for your vote'
+                                  : '$activeSurveys polls are open for your vote',
+                              onTap: () => context.go('/surveys'),
                             ),
                           ],
-                          const SizedBox(height: CubagSpace.xxl),
-                          HomeSectionHeader(
-                            'Exchange rates',
-                            linkLabel: 'More',
-                            onLink: () => context.go('/live-data'),
-                          ),
-                          if (_forexIsSample)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: CubagSpace.xs),
-                              child: Text(ForexSnapshot.sampleNotice, style: CubagType.small),
-                            ),
-                          HomeGroup(
-                            children: const [
-                              ('USD', 'US dollar'),
-                              ('EUR', 'Euro'),
-                              ('GBP', 'British pound'),
-                              ('CNY', 'Chinese yuan'),
-                            ].map((c) => RateRow(code: c.$1, name: c.$2, value: _forex[c.$1] ?? '—')).toList(),
-                          ),
-                        ],
+                        )
+                      : null;
+                  final rates = Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      HomeSectionHeader(
+                        'Exchange rates',
+                        linkLabel: 'More',
+                        onLink: () => context.go('/live-data'),
                       ),
+                      if (_forexIsSample)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: CubagSpace.xs),
+                          child: Text(ForexSnapshot.sampleNotice, style: CubagType.small),
+                        ),
+                      HomeGroup(
+                        children: const [
+                          ('USD', 'US dollar'),
+                          ('EUR', 'Euro'),
+                          ('GBP', 'British pound'),
+                          ('CNY', 'Chinese yuan'),
+                        ].map((c) => RateRow(code: c.$1, name: c.$2, value: _forex[c.$1] ?? '—')).toList(),
+                      ),
+                    ],
+                  );
+                  const gap = SizedBox(height: CubagSpace.xxl);
+
+                  final body = twoColumns
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 11,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [greeting, const SizedBox(height: CubagSpace.lg), licence, gap, services],
+                              ),
+                            ),
+                            const SizedBox(width: CubagSpace.xxl),
+                            Expanded(
+                              flex: 9,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  const SizedBox(height: 52), // aligns with the card's top
+                                  todo,
+                                  if (polls != null) ...[const SizedBox(height: CubagSpace.lg), polls],
+                                  gap,
+                                  rates,
+                                ],
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            greeting,
+                            const SizedBox(height: CubagSpace.lg),
+                            licence,
+                            gap,
+                            todo,
+                            gap,
+                            services,
+                            if (polls != null) ...[const SizedBox(height: CubagSpace.xl), polls],
+                            gap,
+                            rates,
+                          ],
+                        );
+
+                  return ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(
+                      twoColumns ? CubagSpace.xxl : CubagSpace.lg,
+                      CubagSpace.lg,
+                      twoColumns ? CubagSpace.xxl : CubagSpace.lg,
+                      CubagSpace.xxxl,
                     ),
-                  ),
-                ],
+                    children: [
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: twoColumns ? 1100 : 640),
+                          child: body,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
     );

@@ -125,7 +125,12 @@ class _AppLayoutState extends State<AppLayout> {
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
     final size = MediaQuery.of(context).size;
-    final isDesktop = size.width > 800;
+    final role = authService.userRole;
+    final isAdminRole = role == 'admin' || role == 'sub_admin' || role == 'super_admin';
+    // The desktop shell (sidebar) is the admin web portal. Members on tablets
+    // and wide windows keep the member app's header with a navigation rail.
+    final isDesktop = size.width > 800 && isAdminRole;
+    final isTablet = size.width >= 800 && !isAdminRole;
     final isSmall = size.width < 600;
     final isNarrow = size.width < 380;
     final currentRoute = GoRouterState.of(context).matchedLocation;
@@ -181,12 +186,13 @@ class _AppLayoutState extends State<AppLayout> {
                 SizedBox(width: (isNarrow ? 6 : 12) + MediaQuery.of(context).padding.right),
               ],
             ),
-      bottomNavigationBar: isDesktop
+      bottomNavigationBar: (isDesktop || isTablet)
           ? null
           : _buildBottomNav(context, authService.userRole, currentRoute),
       body: Row(
         children: [
           if (isDesktop) _buildSidebar(context, authService.userRole),
+          if (isTablet) ..._buildMemberRail(context, currentRoute, size.width),
           Expanded(
             child: isDesktop
                 ? MouseRegion(
@@ -1636,6 +1642,63 @@ class _AppLayoutState extends State<AppLayout> {
         ],
       ),
     );
+  }
+
+  /// Members on tablets / wide windows: the bottom bar's four destinations
+  /// as a navigation rail (labels beside icons on very wide screens).
+  List<Widget> _buildMemberRail(BuildContext context, String currentRoute, double width) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final status = authService.membershipStatus.toLowerCase().trim();
+    if (status != 'active' && status != 'approved') return const [];
+    var index = 0;
+    if (currentRoute.startsWith('/networking')) {
+      index = 1;
+    } else if (currentRoute.startsWith('/compliance') || currentRoute.startsWith('/payments')) {
+      index = 2;
+    } else if (currentRoute == '/menu') {
+      index = 3;
+    }
+    const routes = ['/dashboard', '/networking', '/compliance', '/menu'];
+    final extended = width >= 1200;
+    return [
+      NavigationRail(
+        selectedIndex: index,
+        extended: extended,
+        minExtendedWidth: 220,
+        backgroundColor: CubagColors.paper,
+        indicatorColor: CubagColors.actionTint,
+        labelType: extended ? NavigationRailLabelType.none : NavigationRailLabelType.all,
+        selectedIconTheme: const IconThemeData(color: CubagColors.action),
+        unselectedIconTheme: const IconThemeData(color: CubagColors.muted),
+        selectedLabelTextStyle: CubagType.label,
+        unselectedLabelTextStyle: CubagType.small,
+        groupAlignment: -0.9,
+        onDestinationSelected: (i) => context.go(routes[i]),
+        destinations: const [
+          NavigationRailDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded),
+            label: Text('Home'),
+          ),
+          NavigationRailDestination(
+            icon: Icon(Icons.groups_outlined),
+            selectedIcon: Icon(Icons.groups_rounded),
+            label: Text('Network'),
+          ),
+          NavigationRailDestination(
+            icon: Icon(Icons.verified_user_outlined),
+            selectedIcon: Icon(Icons.verified_user_rounded),
+            label: Text('Compliance'),
+          ),
+          NavigationRailDestination(
+            icon: Icon(Icons.menu_rounded),
+            selectedIcon: Icon(Icons.menu_open_rounded),
+            label: Text('Menu'),
+          ),
+        ],
+      ),
+      const VerticalDivider(width: 1, thickness: 1, color: CubagColors.line),
+    ];
   }
 
   Widget _buildBottomNav(

@@ -15,9 +15,13 @@ class AuthScaffold extends StatelessWidget {
 
   const AuthScaffold({super.key, required this.child, this.onBack});
 
+  /// Laptops, desktop browsers (admins sign in here) and iPads in landscape.
+  static const wideBreakpoint = 900.0;
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
+    if (size.width >= wideBreakpoint) return _wide(context, size);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -65,6 +69,122 @@ class AuthScaffold extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+extension on AuthScaffold {
+  /// Two halves: the association on cocoa, the form on white.
+  Widget _wide(BuildContext context, Size size) {
+    return Scaffold(
+      backgroundColor: CubagColors.paper,
+      body: Row(
+        children: [
+          Expanded(
+            flex: 5,
+            child: ColoredBox(
+              color: CubagColors.cocoa,
+              child: Stack(
+                children: [
+                  Positioned(
+                    right: -140,
+                    bottom: -120,
+                    child: IgnorePointer(
+                      child: Container(
+                        width: 460,
+                        height: 460,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: CubagColors.seal.withAlpha(40),
+                            width: 48,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(CubagSpace.xxxl + 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: CubagColors.paper,
+                            ),
+                            padding: const EdgeInsets.all(4),
+                            child: const AppLogo(size: 104, borderRadius: 52, showShadow: false),
+                          ),
+                          const SizedBox(height: CubagSpace.xxl),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 460),
+                            child: Text(
+                              'Customs Brokers Association of Ghana',
+                              style: CubagType.display.copyWith(
+                                color: CubagColors.onCocoa,
+                                fontSize: 40,
+                                height: 46 / 40,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: CubagSpace.sm),
+                          Text(
+                            'Honesty and Efficiency',
+                            style: CubagType.body.copyWith(color: CubagColors.onCocoaMuted),
+                          ),
+                          const SizedBox(height: CubagSpace.xxl),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 420),
+                            child: Text(
+                              'Licences, dues, compliance documents and member '
+                              'services for licensed customs brokers, in one place.',
+                              style: CubagType.body.copyWith(color: CubagColors.onCocoa),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 6,
+            child: SafeArea(
+              child: Stack(
+                children: [
+                  Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: CubagSpace.xxxl,
+                        vertical: CubagSpace.xxxl,
+                      ),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
+                        child: child,
+                      ),
+                    ),
+                  ),
+                  if (onBack != null)
+                    Positioned(
+                      left: CubagSpace.md,
+                      top: CubagSpace.md,
+                      child: IconButton(
+                        tooltip: 'Back',
+                        onPressed: onBack,
+                        icon: const Icon(Icons.arrow_back_rounded),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -6,31 +6,10 @@ import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/theme_service.dart';
-import '../components/app_logo.dart';
 import '../core/router.dart';
 import '../utils/validators.dart';
-import '../utils/app_colors.dart';
-
-// Balanced CUBAG Dynamic Palette
-bool get _isDark => ThemeService.instance.isDark;
-Color get _kBrown => const Color(0xFF6B3E26); // Primary Brown
-Color get _kOrange => const Color(0xFFFF5000); // Primary Orange CTA
-Color get _kDarkBrown => const Color(0xFF3E2418); // Deep Dark Contrast
-Color get _kCream => _isDark
-    ? const Color(0xFF281710)
-    : const Color(0xFFF8F4F0); // Warm Velvet Chocolate / Light Cream
-Color get _kWhite => _isDark
-    ? const Color(0xFF1A0F0A)
-    : const Color(0xFFFFFFFF); // Chocolate Card / White Surfaces
-Color get _kText => _isDark
-    ? const Color(0xFFFFF8F3)
-    : const Color(0xFF2B211D); // Warm Ivory / Deep Body Text
-Color get _kMuted => _isDark
-    ? const Color(0xFFC8ADA0)
-    : const Color(0xFF6F625B); // Cocoa Tan / Muted Text
-Color get _kBorder => _isDark
-    ? const Color(0xFF4D2D20)
-    : const Color(0xFFE8DED6); // Bronze / Warm Border
+import '../components/auth_scaffold.dart';
+import '../design/cubag_design.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -43,8 +22,6 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _loading = false;
   String _error = '';
 
-  bool _showPw = false;
-  bool _showConfirm = false;
 
   List<dynamic> _portsList = [];
 
@@ -102,13 +79,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (isCorporate) {
       if (_form['companyScale'] == null || _form['companyScale']!.isEmpty) {
-        _err(
-          'Please select your Company Classification (SME or Large Corporate) to proceed.',
-        );
+        _err('Choose your company size.');
         return;
       }
       if (_form['feeCategory'] == null || _form['feeCategory']!.isEmpty) {
-        _err('Please select your Operational Category to proceed.');
+        _err('Choose what your company is licensed to do.');
         return;
       }
     }
@@ -118,7 +93,7 @@ class _RegisterPageState extends State<RegisterPage> {
         phone.isEmpty) {
       _err(
         isCorporate
-            ? 'Please enter your company name, email address, and phone number.'
+            ? 'Enter your company name, email address and phone number.'
             : 'Please provide your full name, email address, and phone number.',
       );
       return;
@@ -152,7 +127,7 @@ class _RegisterPageState extends State<RegisterPage> {
     final isCorporate = _form['memberType'] == 'Corporate';
     if (isCorporate) {
       if (_nameCtrl.text.trim().isEmpty) {
-        _err('Please enter contact person name.');
+        _err('Enter the contact person\'s name.');
         return;
       }
       if (!AppValidators.isValidName(_nameCtrl.text.trim())) {
@@ -167,14 +142,14 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     if (_locationCtrl.text.trim().isEmpty) {
-      _err('Please enter your physical office location / address.');
+      _err('Enter your office address.');
       return;
     }
 
     final digi = _digitalAddressCtrl.text.trim();
     final cleanDigi = digi.replaceAll('-', '').trim();
     if (digi.isEmpty) {
-      _err('Please enter your Ghana Digital Address (GhanaPostGPS).');
+      _err('Enter your Ghana digital address (GhanaPostGPS).');
       return;
     }
     if (cleanDigi.length < 6 || cleanDigi.length > 10) {
@@ -184,7 +159,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     final cleanTin = _tinCtrl.text.trim().toUpperCase();
     if (cleanTin.isEmpty) {
-      _err('Please enter your Taxpayer Identification Number (TIN).');
+      _err('Enter your company TIN.');
       return;
     }
     if (cleanTin.length > 11) {
@@ -193,7 +168,7 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     if (_selectedDistricts.isEmpty) {
-      _err('Please select at least one operational District.');
+      _err('Choose at least one district.');
       return;
     }
 
@@ -354,1531 +329,433 @@ class _RegisterPageState extends State<RegisterPage> {
     _otpCtrl.dispose();
     _pwCtrl.dispose();
     _cpwCtrl.dispose();
+    _locationCtrl.dispose();
+    _digitalAddressCtrl.dispose();
+    _tinCtrl.dispose();
     super.dispose();
+  }
+
+  // ── Steps ───────────────────────────────────────────────────────────────
+  static const _stepNames = ['Your company', 'Company details', 'Verify email', 'Create password'];
+
+  static const _scales = [
+    ('sme', 'SME', 'Registered customs clearing and logistics enterprise.'),
+    ('large_corporate', 'Large corporate', 'Corporate enterprise operating across registered locations.'),
+  ];
+
+  static const _categories = [
+    ('cf_only', 'Clearing and forwarding',
+        'Customs clearance, port declarations and freight forwarding.'),
+    ('consolidation', 'Consolidation',
+        'Cargo grouping, LCL consolidation and de-consolidation, warehousing.'),
+    ('cf_consolidation', 'Consolidation, clearing and forwarding',
+        'The full scope: consolidation, forwarding and customs clearance.'),
+  ];
+
+  static const _fallbackDistricts = [
+    'Accra International Airport', 'Aflao Border Port', 'Elubo Border Port',
+    'Paga Border Port', 'Takoradi Port', 'Tema Port',
+  ];
+
+  Future<void> _resendOtp() async {
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
+    try {
+      await ApiService().post(
+        '/auth/send-otp',
+        data: {'email': _emailCtrl.text.trim().toLowerCase()},
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('We sent a new code.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) _err('We could not send a new code. Please try again.');
+    }
+    if (mounted) setState(() => _loading = false);
+  }
+
+  void _back() {
+    if (_loading) return;
+    if (_step > 1) {
+      setState(() {
+        _step -= 1;
+        _error = '';
+      });
+    } else {
+      context.go('/login');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     Provider.of<ThemeService>(context);
-    final size = MediaQuery.of(context).size;
-    final isWide = size.width > 700;
-
-    final overlayStyle = SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: _isDark ? Brightness.light : Brightness.dark,
-      statusBarBrightness: _isDark ? Brightness.dark : Brightness.light,
-      systemNavigationBarColor: _kCream,
-      systemNavigationBarIconBrightness: _isDark ? Brightness.light : Brightness.dark,
-    );
-
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: overlayStyle,
-      child: Scaffold(
-        backgroundColor: _kCream,
-        body: isWide ? _buildTwoColumnLayout() : _buildMobileLayout(),
-      ),
-    );
-  }
-
-  Widget _buildTwoColumnLayout() => Row(
-    children: [
-      Expanded(flex: 45, child: _buildBrandPanel()),
-      Expanded(flex: 55, child: _buildFormPanel(padding: 50, showLogo: false)),
-    ],
-  );
-
-  Widget _buildMobileLayout() => SafeArea(
-    child: Center(
-      child: SingleChildScrollView(
-        physics: const ClampingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-            decoration: BoxDecoration(
-              color: _kWhite,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _kBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(6),
-                  blurRadius: 16,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+    return AuthScaffold(
+      onBack: _back,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text('Apply for membership', style: CubagType.title),
+          const SizedBox(height: CubagSpace.xxs),
+          Text('Step $_step of 4: ${_stepNames[_step - 1]}', style: CubagType.small),
+          const SizedBox(height: CubagSpace.sm),
+          _StepBar(step: _step, total: 4),
+          const SizedBox(height: CubagSpace.lg),
+          if (_error.isNotEmpty) ...[
+            AuthNote(message: _error),
+            const SizedBox(height: CubagSpace.md),
+          ],
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: KeyedSubtree(
+              key: ValueKey(_step),
+              child: switch (_step) {
+                1 => _stepCompany(),
+                2 => _stepDetails(),
+                3 => _stepVerify(),
+                _ => _stepPassword(),
+              },
             ),
-            child: _buildFormContent(showLogo: true, isMobile: true),
           ),
-        ),
-      ),
-    ),
-  );
-
-  Widget _buildBrandPanel() => Container(
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          const Color(0xFF2B211D),
-          _kBrown,
-          _kDarkBrown,
-        ],
-      ),
-    ),
-    child: Stack(
-      children: [
-        Positioned(
-          right: -40,
-          bottom: -30,
-          child: Icon(
-            Icons.directions_boat_rounded,
-            size: 260,
-            color: Colors.white.withAlpha(8),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 44, vertical: 48),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: CubagSpace.xl),
+          const Divider(),
+          const SizedBox(height: CubagSpace.sm),
+          Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const AppLogo(size: 48, borderRadius: 12),
-              const SizedBox(height: 28),
-              Text(
-                'CUBAG',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 44,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -1.2,
-                  height: 1.05,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                width: 44,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: _kOrange,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                'Customs Brokers Association of Ghana',
-                style: TextStyle(
-                  color: const Color(0xFFF8F4F0),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'The official gateway for licensed customs clearing and logistics firms in Ghana.',
-                style: TextStyle(
-                  color: const Color(0xFFC8ADA0),
-                  fontSize: 15,
-                  height: 1.6,
-                ),
-              ),
-              const SizedBox(height: 32),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(10),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white.withAlpha(16)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ACCREDITED CORPORATE MEMBERSHIP',
-                      style: TextStyle(
-                        color: AppColors.accentOrangeText,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'ICUMS access, port pass endorsement, legal counsel, and continuous professional CTI training.',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
+              const Text('Already a member?', style: CubagType.small),
+              TextButton(
+                onPressed: _loading ? null : () => context.go('/login'),
+                child: const Text('Sign in'),
               ),
             ],
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 
-  Widget _buildFormPanel({double padding = 60, required bool showLogo}) =>
-      Container(
-        color: _kWhite,
-        child: Center(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(padding),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: _buildFormContent(showLogo: showLogo),
-            ),
-          ),
+  Widget _gap() => const SizedBox(height: CubagSpace.md);
+
+  Widget _input(
+    String label,
+    TextEditingController c, {
+    String? hint,
+    String? helper,
+    TextInputType? type,
+    List<TextInputFormatter>? formatters,
+    TextCapitalization caps = TextCapitalization.none,
+    Iterable<String>? autofill,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AuthFieldLabel(label),
+        TextFormField(
+          controller: c,
+          enabled: !_loading,
+          keyboardType: type,
+          inputFormatters: formatters,
+          textCapitalization: caps,
+          autofillHints: autofill,
+          textInputAction: TextInputAction.next,
+          style: CubagType.body.copyWith(color: CubagColors.ink),
+          decoration: InputDecoration(hintText: hint, helperText: helper, helperMaxLines: 3),
         ),
+        _gap(),
+      ],
+    );
+  }
+
+  Widget _primary(String label, VoidCallback onPressed) => FilledButton(
+        onPressed: _loading ? null : onPressed,
+        child: _loading
+            ? const SizedBox(
+                width: 20, height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2.2, color: CubagColors.muted),
+              )
+            : Text(label),
       );
 
-  Widget _buildFormContent({required bool showLogo, bool isMobile = false}) {
-    final stepLabels = ['Identity', 'Professional', 'Verify', 'Security'];
+  Widget _stepCompany() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (showLogo) ...[
-                AppLogo(
-                  size: isMobile ? 38 : 48,
-                  borderRadius: isMobile ? 10 : 12,
-                  showShadow: true,
-                ),
-                SizedBox(height: isMobile ? 8 : 16),
-              ],
-              Text(
-                [
-                  'Join CUBAG',
-                  'Professional Profile',
-                  'Verify Identity',
-                  'Secure Account',
-                ][_step - 1],
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: isMobile ? 23 : 32,
-                  fontWeight: FontWeight.w900,
-                  color: _kText,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              SizedBox(height: isMobile ? 2 : 8),
-              Text(
-                [
-                  'Provide contact information to register.',
-                  'Tell us about your logistics agency.',
-                  'Enter verification code sent to your email.',
-                  'Choose a secure password for your account.',
-                ][_step - 1],
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: _kMuted,
-                  fontSize: isMobile ? 13.5 : 17,
-                  height: 1.3,
-                ),
-              ),
-            ],
+        const Text('Company size', style: CubagType.label),
+        const SizedBox(height: CubagSpace.xs),
+        for (final (v, title, desc) in _scales)
+          _ChoiceTile(
+            title: title,
+            description: desc,
+            selected: _form['companyScale'] == v,
+            onTap: _loading ? null : () => setState(() => _form['companyScale'] = v),
           ),
-        ),
-        SizedBox(height: _compact ? 14 : 28),
-
-        // Step Progress Indicator
-        if (isMobile) ...[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Step $_step of 4',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12.5,
-                  color: _kMuted,
-                ),
-              ),
-              Text(
-                stepLabels[_step - 1],
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12.5,
-                  color: AppColors.accentOrangeText,
-                ),
-              ),
-            ],
+        const SizedBox(height: CubagSpace.md),
+        const Text('What your company is licensed to do', style: CubagType.label),
+        const SizedBox(height: CubagSpace.xs),
+        for (final (v, title, desc) in _categories)
+          _ChoiceTile(
+            title: title,
+            description: desc,
+            selected: _form['feeCategory'] == v,
+            onTap: _loading ? null : () => setState(() => _form['feeCategory'] = v),
           ),
-          const SizedBox(height: 5),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: _step / 4.0,
-              minHeight: 4,
-              backgroundColor: _kBorder,
-              valueColor: AlwaysStoppedAnimation<Color>(_kOrange),
-            ),
-          ),
-        ] else ...[
-          SizedBox(
-            height: 60,
-            child: Row(
-              children: List.generate(4, (i) {
-                final n = i + 1;
-                final done = _step > n;
-                final active = _step == n;
-
-                return Expanded(
-                  child: Column(
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Divider(
-                              thickness: 2,
-                              color: i == 0
-                                  ? Colors.transparent
-                                  : (_step > i ? _kBrown : _kBorder),
-                            ),
-                          ),
-                          Container(
-                            width: 26,
-                            height: 26,
-                            decoration: BoxDecoration(
-                              color: done
-                                  ? _kBrown
-                                  : (active ? _kOrange : _kBorder),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: done
-                                  ? const Icon(
-                                      Icons.check,
-                                      color: Colors.white,
-                                      size: 14,
-                                    )
-                                  : Text(
-                                      '$n',
-                                      style: TextStyle(
-                                        color: done || active
-                                            ? Colors.white
-                                            : _kMuted,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Divider(
-                              thickness: 2,
-                              color: i == 3
-                                  ? Colors.transparent
-                                  : (_step > n ? _kBrown : _kBorder),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          stepLabels[i],
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: done
-                                ? _kBrown
-                                : (active ? _kOrange : _kMuted),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ),
-          ),
-        ],
-        SizedBox(height: _compact ? 14 : 28),
-
-        if (_error.isNotEmpty)
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 24),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFfef2f2),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFfee2e2)),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  color: Color(0xFFef4444),
-                  size: 18,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _error,
-                    style: const TextStyle(
-                      color: Color(0xFFb91c1c),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-        if (_step == 1) _buildStep1(),
-        if (_step == 2) _buildStep2(),
-        if (_step == 3) _buildStep3(),
-        if (_step == 4) _buildStep4(),
-
-        SizedBox(height: _compact ? 12 : 24),
-        Center(
-          child: GestureDetector(
-            onTap: () => context.go('/login'),
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: "Already have an account? ",
-                    style: TextStyle(
-                      color: _kMuted,
-                      fontSize: _compact ? 14 : 17,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  TextSpan(
-                    text: 'Sign In',
-                    style: TextStyle(
-                      color: AppColors.accentOrangeText,
-                      fontWeight: FontWeight.w800,
-                      fontSize: _compact ? 14 : 17,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  bool get _compact => MediaQuery.sizeOf(context).width <= 700;
-
-  Widget _inputLabel(String text) => Text(
-    text,
-    style: TextStyle(
-      fontWeight: FontWeight.w700,
-      fontSize: _compact ? 13 : 16,
-      color: _kText,
-    ),
-  );
-
-  InputDecoration _inputDecoration({
-    required String hint,
-    required IconData icon,
-    Widget? suffix,
-  }) => InputDecoration(
-    hintText: hint,
-    prefixIcon: Icon(icon, color: _kBrown, size: _compact ? 18 : 20),
-    suffixIcon: suffix,
-    filled: true,
-    fillColor: _kWhite,
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(_compact ? 12 : 14),
-      borderSide: BorderSide(color: _kBorder, width: _compact ? 1.2 : 1.5),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(_compact ? 12 : 14),
-      borderSide: BorderSide(color: _kOrange, width: _compact ? 1.8 : 2),
-    ),
-    contentPadding: EdgeInsets.symmetric(
-      horizontal: _compact ? 14 : 16,
-      vertical: _compact ? 11 : 18,
-    ),
-    hintStyle: TextStyle(
-      color: _kMuted.withAlpha(180),
-      fontSize: _compact ? 13.5 : null,
-    ),
-  );
-
-  Widget _field(
-    String label,
-    TextEditingController ctrl, {
-    TextInputType type = TextInputType.text,
-    String? hint,
-    IconData? icon,
-    List<TextInputFormatter>? formatters,
-    TextCapitalization textCapitalization = TextCapitalization.none,
-  }) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _inputLabel(label),
-      SizedBox(height: _compact ? 4 : 8),
-      TextFormField(
-        controller: ctrl,
-        keyboardType: type,
-        inputFormatters: formatters,
-        textCapitalization: textCapitalization,
-        style: TextStyle(
-          color: _kText,
-          fontSize: _compact ? 14.5 : 16,
-          fontWeight: FontWeight.w600,
-        ),
-        decoration: _inputDecoration(
-          hint: hint ?? '',
-          icon: icon ?? Icons.text_fields,
-        ),
-      ),
-      SizedBox(height: _compact ? 10 : 18),
-    ],
-  );
-
-  Widget _buildStep1() {
-    final isCorporate = _form['memberType'] == 'Corporate';
-
-    return Column(
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _inputLabel('Membership Type'),
-            SizedBox(height: _compact ? 6 : 10),
-            _buildMemberTypeCards(),
-            SizedBox(height: _compact ? 10 : 18),
-          ],
-        ),
-        if (isCorporate) ...[
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _inputLabel('Company Classification *'),
-              const SizedBox(height: 4),
-              Text(
-                'Select your company classification scale:',
-                style: TextStyle(fontSize: 14, color: _kMuted),
-              ),
-              const SizedBox(height: 8),
-              _buildCompanyClassificationDropdown(),
-              SizedBox(height: _compact ? 10 : 16),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _inputLabel('Operational Category *'),
-              const SizedBox(height: 4),
-              Text(
-                'Select the licensed logistics scope for your company:',
-                style: TextStyle(fontSize: 14, color: _kMuted),
-              ),
-              const SizedBox(height: 8),
-              _buildCompanyCategoryDropdown(),
-              SizedBox(height: _compact ? 10 : 18),
-            ],
-          ),
-          _field(
-            'Company / Agency Name',
-            _companyCtrl,
+        const SizedBox(height: CubagSpace.md),
+        _input('Company or agency name', _companyCtrl,
             hint: 'e.g. Global Logistics Ghana Ltd',
-            icon: Icons.business_outlined,
-          ),
-        ] else
-          _field(
-            'Full Name',
-            _nameCtrl,
-            hint: 'e.g. John Mensah',
-            icon: Icons.person_outline,
+            caps: TextCapitalization.words,
+            autofill: const [AutofillHints.organizationName]),
+        _input('Email address', _emailCtrl,
+            hint: 'name@company.com',
+            type: TextInputType.emailAddress,
+            autofill: const [AutofillHints.email]),
+        _input('Phone number', _phoneCtrl,
+            hint: '024 412 3456',
+            type: TextInputType.phone,
+            autofill: const [AutofillHints.telephoneNumber],
             formatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
-            ],
-            textCapitalization: TextCapitalization.words,
-          ),
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(10),
+            ]),
+        const SizedBox(height: CubagSpace.xs),
+        _primary('Continue', _step1Next),
+      ],
+    );
+  }
 
-        _field(
-          'Email Address',
-          _emailCtrl,
-          type: TextInputType.emailAddress,
-          hint: 'e.g. john@agency.com',
-          icon: Icons.email_outlined,
-        ),
-        _field(
-          'Phone Number',
-          _phoneCtrl,
-          type: TextInputType.number,
-          hint: 'e.g. 0244123456',
-          icon: Icons.phone_outlined,
-          formatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(10),
+  Widget _stepDetails() {
+    final districts = (_portsList.isNotEmpty
+            ? _portsList.map((p) => p['name'].toString()).toList()
+            : List<String>.from(_fallbackDistricts))
+      ..sort();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _input('Contact person', _nameCtrl,
+            hint: 'e.g. John Mensah, Managing Director',
+            caps: TextCapitalization.words,
+            autofill: const [AutofillHints.name],
+            formatters: [FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s\-'.]"))]),
+        _input('Office address', _locationCtrl,
+            hint: 'e.g. Suite 4, Community 1, Tema',
+            autofill: const [AutofillHints.fullStreetAddress]),
+        _input('Ghana digital address', _digitalAddressCtrl,
+            hint: 'e.g. GA-183-9023',
+            caps: TextCapitalization.characters,
+            formatters: [GhanaDigitalAddressFormatter()]),
+        _input('Company TIN', _tinCtrl,
+            hint: 'e.g. C0012345678',
+            caps: TextCapitalization.characters,
+            formatters: [
+              LengthLimitingTextInputFormatter(11),
+              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
+            ]),
+        _input('CUBAG membership number (optional)', _agcCtrl,
+            hint: 'e.g. CUBAG-0123',
+            helper: 'New applicants can leave this blank. The Secretariat assigns one on approval.'),
+        const Text('Districts you operate in', style: CubagType.label),
+        const SizedBox(height: CubagSpace.xxs),
+        const Text('District clearance fees apply for each district you choose.', style: CubagType.small),
+        const SizedBox(height: CubagSpace.sm),
+        Wrap(
+          spacing: CubagSpace.xs,
+          runSpacing: CubagSpace.xs,
+          children: [
+            for (final d in districts)
+              FilterChip(
+                label: Text(d),
+                selected: _selectedDistricts.contains(d),
+                showCheckmark: true,
+                checkmarkColor: CubagColors.actionPressed,
+                onSelected: _loading
+                    ? null
+                    : (on) => setState(() {
+                          if (on) {
+                            if (!_selectedDistricts.contains(d)) _selectedDistricts.add(d);
+                          } else if (_selectedDistricts.length > 1) {
+                            _selectedDistricts.remove(d);
+                          }
+                          _form['portOfOperation'] = _selectedDistricts.join(', ');
+                        }),
+              ),
           ],
         ),
-        SizedBox(height: _compact ? 8 : 12),
-        SizedBox(
-          width: double.infinity,
-          height: _compact ? 46 : 56,
-          child: ElevatedButton(
-            onPressed: _step1Next,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _kOrange,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 0,
+        const SizedBox(height: CubagSpace.xl),
+        _primary('Send verification code', _step2Next),
+      ],
+    );
+  }
+
+  Widget _stepVerify() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'We sent a 6-digit code to ${_emailCtrl.text.trim()}. Enter it to confirm your email.',
+          style: CubagType.body,
+        ),
+        const SizedBox(height: CubagSpace.lg),
+        const AuthFieldLabel('Code'),
+        TextFormField(
+          controller: _otpCtrl,
+          enabled: !_loading,
+          keyboardType: TextInputType.number,
+          autofillHints: const [AutofillHints.oneTimeCode],
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(6),
+          ],
+          onFieldSubmitted: (_) => _verifyOtp(),
+          style: CubagType.figure.copyWith(fontSize: 20, letterSpacing: 6),
+          decoration: const InputDecoration(hintText: '6-digit code'),
+        ),
+        const SizedBox(height: CubagSpace.xl),
+        _primary('Verify email', _verifyOtp),
+        const SizedBox(height: CubagSpace.xs),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('No code?', style: CubagType.small),
+            TextButton(
+              onPressed: _loading ? null : _resendOtp,
+              child: const Text('Send a new one'),
             ),
-            child: const Text(
-              'Next Step',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
-            ),
-          ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildMemberTypeCards() {
-    const types = [
-      {
-        'value': 'Corporate',
-        'label': 'Corporate Membership',
-        'icon': Icons.business_outlined,
-        'desc': 'Registered corporate agency / customs clearance & logistics firm',
-      },
-    ];
-
-    return Column(
-      children: types.map((t) {
-        final selected = _form['memberType'] == t['value'];
-        return GestureDetector(
-          onTap: () =>
-              setState(() => _form['memberType'] = t['value'] as String),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
-            width: double.infinity,
-            margin: EdgeInsets.only(bottom: _compact ? 8 : 12),
-            padding: EdgeInsets.symmetric(
-              horizontal: _compact ? 12 : 16,
-              vertical: _compact ? 9 : 16,
-            ),
-            decoration: BoxDecoration(
-              color: selected ? _kCream : _kWhite,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: selected ? _kOrange : _kBorder,
-                width: selected ? 2 : 1.5,
-              ),
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: _kOrange.withAlpha(20),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(_compact ? 6 : 8),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? _kOrange.withAlpha(25)
-                        : _kBorder.withAlpha(60),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    t['icon'] as IconData,
-                    color: selected ? _kBrown : _kMuted,
-                    size: _compact ? 18 : 22,
-                  ),
-                ),
-                SizedBox(width: _compact ? 10 : 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        t['label'] as String,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: _compact ? 14 : 16,
-                          color: selected ? _kBrown : _kText,
-                        ),
-                      ),
-                      SizedBox(height: _compact ? 1 : 4),
-                      Text(
-                        t['desc'] as String,
-                        style: TextStyle(fontSize: _compact ? 12 : 14, color: _kMuted),
-                      ),
-                    ],
-                  ),
-                ),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: selected ? _kOrange : Colors.transparent,
-                    border: Border.all(
-                      color: selected ? _kOrange : _kBorder,
-                      width: 2,
-                    ),
-                  ),
-                  child: selected
-                      ? const Icon(Icons.check, size: 14, color: Colors.white)
-                      : null,
-                ),
-              ],
-            ),
+  Widget _stepPassword() {
+    return AutofillGroup(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text('You\'ll use this with your email to sign in.', style: CubagType.body),
+          const SizedBox(height: CubagSpace.lg),
+          const AuthFieldLabel('Password'),
+          PasswordField(
+            controller: _pwCtrl,
+            enabled: !_loading,
+            hint: 'At least 8 characters',
+            autofillHints: const [AutofillHints.newPassword],
+            action: TextInputAction.next,
           ),
-        );
-      }).toList(),
+          _gap(),
+          const AuthFieldLabel('Confirm password'),
+          PasswordField(
+            controller: _cpwCtrl,
+            enabled: !_loading,
+            autofillHints: const [AutofillHints.newPassword],
+            onSubmitted: (_) => _register(),
+          ),
+          const SizedBox(height: CubagSpace.sm),
+          const Text(
+            'After you create your account, you\'ll upload your company documents '
+            'and pay the registration fee. The Secretariat then reviews your application.',
+            style: CubagType.small,
+          ),
+          const SizedBox(height: CubagSpace.xl),
+          _primary('Create account', _register),
+        ],
+      ),
     );
   }
+}
 
-  Widget _buildCompanyClassificationDropdown() {
-    const scales = [
-      {
-        'value': 'sme',
-        'label': 'SME',
-        'short': 'SME',
-        'desc': 'Registered customs clearing and logistics enterprise.',
-        'icon': Icons.storefront_rounded,
-      },
-      {
-        'value': 'large_corporate',
-        'label': 'Large Corporate',
-        'short': 'Large Corporate',
-        'desc':
-            'Corporate enterprise operating across registered locations.',
-        'icon': Icons.corporate_fare_rounded,
-      },
-    ];
+/// A selectable option with a short explanation (radio semantics).
+class _ChoiceTile extends StatelessWidget {
+  final String title;
+  final String description;
+  final bool selected;
+  final VoidCallback? onTap;
+  const _ChoiceTile({
+    required this.title,
+    required this.description,
+    required this.selected,
+    this.onTap,
+  });
 
-    final currentScale = _form['companyScale'];
-    final selectedScale = currentScale != null
-        ? scales.firstWhere(
-            (s) => s['value'] == currentScale,
-            orElse: () => scales.first,
-          )
-        : null;
-
-    final isSelected = selectedScale != null;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          decoration: BoxDecoration(
-            color: _kWhite,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isSelected ? _kOrange : _kBorder,
-              width: isSelected ? 1.8 : 1.5,
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: CubagSpace.xs),
+      child: Semantics(
+        selected: selected,
+        inMutuallyExclusiveGroup: true,
+        button: true,
+        child: Material(
+          color: selected ? CubagColors.actionTint : CubagColors.paper,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(CubagRadius.control),
+            side: BorderSide(
+              color: selected ? CubagColors.action : CubagColors.lineStrong,
+              width: selected ? 1.5 : 1,
             ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: _kOrange.withAlpha(15),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                : null,
           ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: currentScale,
-              isExpanded: true,
-              hint: Row(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(CubagRadius.control),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(CubagSpace.sm),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(
-                    Icons.domain_verification_rounded,
-                    color: _kMuted.withAlpha(180),
-                    size: 20,
+                    selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                    color: selected ? CubagColors.action : CubagColors.muted,
+                    size: 22,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: CubagSpace.sm),
                   Expanded(
-                    child: Text(
-                      '-- Select Company Classification (Required) --',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: _kMuted.withAlpha(180),
-                      ),
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title, style: CubagType.bodyStrong),
+                        const SizedBox(height: 2),
+                        Text(description, style: CubagType.small),
+                      ],
                     ),
                   ),
                 ],
               ),
-              icon: Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: isSelected ? _kOrange : _kBrown,
-                size: 24,
-              ),
-              dropdownColor: _kWhite,
-              borderRadius: BorderRadius.circular(16),
-              items: scales.map((s) {
-                final isSel = s['value'] == currentScale;
-                return DropdownMenuItem<String>(
-                  value: s['value'] as String,
-                  child: Row(
-                    children: [
-                      Icon(
-                        s['icon'] as IconData,
-                        color: isSel ? _kOrange : _kBrown,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Text(
-                              s['short'] as String,
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: isSel
-                                    ? FontWeight.w800
-                                    : FontWeight.w600,
-                                color: isSel ? _kOrange : _kText,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (val) {
-                if (val != null) setState(() => _form['companyScale'] = val);
-              },
             ),
           ),
         ),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? (_isDark
-                      ? const Color(0xFF1A0F0A).withAlpha(150)
-                      : const Color(0xFFF8F4F0))
-                : (_isDark
-                      ? const Color(0xFF1A0F0A).withAlpha(80)
-                      : const Color(0xFFF8F4F0)),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected
-                  ? _kOrange.withAlpha(60)
-                  : _kBorder.withAlpha(100),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                isSelected
-                    ? Icons.info_outline_rounded
-                    : Icons.touch_app_outlined,
-                color: isSelected ? _kOrange : _kMuted,
-                size: 16,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  isSelected
-                      ? (selectedScale['desc'] as String)
-                      : 'Please select your company classification: SME or Large Corporate.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: _kMuted,
-                    height: 1.4,
-                    fontStyle: isSelected ? FontStyle.italic : FontStyle.normal,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
+}
 
-  Widget _buildCompanyCategoryDropdown() {
-    const categories = [
-      {
-        'value': 'cf_only',
-        'label': 'CLEARING & FORWARDING',
-        'desc':
-            'Dedicated customs clearance, port declarations, and freight forwarding operations.',
-        'icon': Icons.local_shipping_rounded,
-      },
-      {
-        'value': 'consolidation',
-        'label': 'CONSOLIDATION',
-        'desc':
-            'Cargo grouping, groupage management, LCL consolidation, de-consolidation, and warehousing.',
-        'icon': Icons.inventory_2_rounded,
-      },
-      {
-        'value': 'cf_consolidation',
-        'label': 'CONSOLIDATION, CLEARING & FORWARDING',
-        'desc':
-            'Comprehensive full-spectrum logistics: cargo consolidation, forwarding & customs clearance.',
-        'icon': Icons.hub_rounded,
-      },
-    ];
+/// Where the applicant is in the four steps.
+class _StepBar extends StatelessWidget {
+  final int step;
+  final int total;
+  const _StepBar({required this.step, required this.total});
 
-    final currentVal = _form['feeCategory'];
-    final selectedCategory = currentVal != null
-        ? categories.firstWhere(
-            (c) => c['value'] == currentVal,
-            orElse: () => categories.first,
-          )
-        : null;
-
-    final isSelected = selectedCategory != null;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          decoration: BoxDecoration(
-            color: _kWhite,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isSelected ? _kOrange : _kBorder,
-              width: isSelected ? 1.8 : 1.5,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: _kOrange.withAlpha(15),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                : null,
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: currentVal,
-              isExpanded: true,
-              hint: Text(
-                '-- Select Operational Category (Required) --',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: _kMuted.withAlpha(180),
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-              icon: Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: isSelected ? _kOrange : _kBrown,
-                size: 24,
-              ),
-              dropdownColor: _kWhite,
-              borderRadius: BorderRadius.circular(16),
-              selectedItemBuilder: (BuildContext context) {
-                return categories.map<Widget>((cat) {
-                  return Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      cat['label'] as String,
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.accentOrangeText,
-                        height: 1.2,
-                      ),
-                      maxLines: 2,
-                      softWrap: true,
-                    ),
-                  );
-                }).toList();
-              },
-              items: categories.map((cat) {
-                final isSel = cat['value'] == currentVal;
-                return DropdownMenuItem<String>(
-                  value: cat['value'] as String,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Text(
-                      cat['label'] as String,
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: isSel
-                            ? FontWeight.w800
-                            : FontWeight.w600,
-                        color: isSel ? _kOrange : _kText,
-                        height: 1.25,
-                      ),
-                      maxLines: 2,
-                      softWrap: true,
-                    ),
-                  ),
-                );
-              }).toList(),
-              onChanged: (val) {
-                if (val != null) setState(() => _form['feeCategory'] = val);
-              },
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? (_isDark
-                      ? const Color(0xFF1A0F0A).withAlpha(150)
-                      : const Color(0xFFF8F4F0))
-                : (_isDark
-                      ? const Color(0xFF1A0F0A).withAlpha(80)
-                      : const Color(0xFFF8F4F0)),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected
-                  ? _kOrange.withAlpha(60)
-                  : _kBorder.withAlpha(100),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                isSelected
-                    ? Icons.info_outline_rounded
-                    : Icons.touch_app_outlined,
-                color: isSelected ? _kOrange : _kMuted,
-                size: 16,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  isSelected
-                      ? (selectedCategory['desc'] as String)
-                      : 'Please choose your primary licensed operational scope (Clearing & Forwarding, Consolidation, or Combined).',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: _kMuted,
-                    height: 1.4,
-                    fontStyle: isSelected ? FontStyle.italic : FontStyle.normal,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDistrictSelector() {
-    final availableDistricts = _portsList.isNotEmpty
-        ? _portsList.map((p) => p['name'].toString()).toList()
-        : [
-            'Accra International Airport',
-            'Aflao Border Port',
-            'Elubo Border Port',
-            'Paga Border Port',
-            'Takoradi Port',
-            'Tema Port',
-          ];
-    availableDistricts.sort();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: _isDark
-                ? const Color(0xFF1E130D)
-                : const Color(0xFFFBF8F4),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _kOrange.withAlpha(50)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.location_on_outlined, color: _kOrange, size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Select one or multiple districts where your company operates. District clearance tariffs will apply per registered district (${_selectedDistricts.length} selected):',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: _kMuted,
-                    height: 1.35,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: availableDistricts.map((district) {
-            final isSelected = _selectedDistricts.contains(district);
-            return FilterChip(
-              avatar: isSelected
-                  ? const Icon(Icons.check_circle_rounded, size: 17, color: Colors.white)
-                  : const Icon(Icons.radio_button_unchecked_rounded, size: 17, color: Color(0xFF5F6B7E)),
-              label: Text(
-                district,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                  color: isSelected ? Colors.white : _kText,
-                ),
-              ),
-              selected: isSelected,
-              selectedColor: _kOrange,
-              backgroundColor: _isDark ? const Color(0xFF241610) : const Color(0xFFF3ECE4),
-              showCheckmark: false,
-              side: BorderSide(
-                color: isSelected ? _kOrange : _kBorder,
-                width: isSelected ? 1.5 : 1.0,
-              ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-              onSelected: (bool selected) {
-                setState(() {
-                  if (selected) {
-                    if (!_selectedDistricts.contains(district)) {
-                      _selectedDistricts.add(district);
-                    }
-                  } else {
-                    if (_selectedDistricts.length > 1) {
-                      _selectedDistricts.remove(district);
-                    } else {
-                      _err('You must select at least 1 operational District.');
-                    }
-                  }
-                  _form['portOfOperation'] = _selectedDistricts.join(', ');
-                });
-              },
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStep2() {
-    final isCorporate = _form['memberType'] == 'Corporate';
-
-    return Column(
-      children: [
-        if (isCorporate)
-          _field(
-            'Contact Person / Authorized Representative',
-            _nameCtrl,
-            hint: 'e.g. John Mensah (Managing Director)',
-            icon: Icons.person_outline,
-            formatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
-            ],
-            textCapitalization: TextCapitalization.words,
-          )
-        else
-          _field(
-            'Agency or Company Name (Optional)',
-            _companyCtrl,
-            hint: 'e.g. Global Logistics Ltd',
-            icon: Icons.business_outlined,
-          ),
-        Container(
-          margin: const EdgeInsets.only(bottom: 24),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _kOrange.withAlpha(15),
-            border: Border.all(color: _kOrange.withAlpha(40)),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.info_outline, color: _kBrown, size: 16),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Note for New Applicants:',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: _kBrown,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "If you don't have these details yet, leave them blank. CUBAG will assign them upon approval.",
-                style: TextStyle(fontSize: 14, color: _kText, height: 1.4),
-              ),
-            ],
-          ),
-        ),
-        _field(
-          'Membership ID / Number (Optional)',
-          _agcCtrl,
-          hint: 'e.g. CUBAG-0123',
-          icon: Icons.badge_outlined,
-        ),
-        _field(
-          'Physical Location / Office Address',
-          _locationCtrl,
-          hint: 'e.g. Suite 4, Community 1, Tema',
-          icon: Icons.location_on_outlined,
-        ),
-        _field(
-          'Ghana Digital Address (GhanaPostGPS)',
-          _digitalAddressCtrl,
-          hint: 'e.g. GA-1834-9023',
-          icon: Icons.pin_drop_outlined,
-          formatters: [GhanaDigitalAddressFormatter()],
-          textCapitalization: TextCapitalization.characters,
-        ),
-        _field(
-          'Company / Taxpayer TIN',
-          _tinCtrl,
-          hint: 'e.g. C0012345678',
-          icon: Icons.subtitles_outlined,
-          formatters: [
-            LengthLimitingTextInputFormatter(11),
-            FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
-          ],
-          textCapitalization: TextCapitalization.characters,
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _inputLabel('District(s) of Operation *'),
-            SizedBox(height: _compact ? 6 : 10),
-            _buildDistrictSelector(),
-            SizedBox(height: _compact ? 10 : 18),
-          ],
-        ),
-        SizedBox(height: _compact ? 8 : 12),
-        Row(
-          children: [
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Step $step of $total',
+      child: Row(
+        children: [
+          for (var i = 1; i <= total; i++) ...[
+            if (i > 1) const SizedBox(width: 6),
             Expanded(
-              child: OutlinedButton(
-                onPressed: () => setState(() => _step = 1),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: _kBrown,
-                  side: BorderSide(color: _kBrown, width: 1.5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  minimumSize: Size(0, _compact ? 46 : 56),
+              child: Container(
+                height: 4,
+                decoration: BoxDecoration(
+                  color: i <= step ? CubagColors.action : CubagColors.line,
+                  borderRadius: BorderRadius.circular(999),
                 ),
-                child: Text(
-                  'Back',
-                  style: TextStyle(
-                    color: _kBrown,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 2,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _step2Next,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kOrange,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  minimumSize: Size(0, _compact ? 46 : 56),
-                  elevation: 0,
-                ),
-                child: _loading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Text(
-                        'Verify Email',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 18,
-                        ),
-                      ),
               ),
             ),
           ],
-        ),
-      ],
+        ],
+      ),
     );
   }
-
-  Widget _buildStep3() => Column(
-    children: [
-      Center(
-        child: Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: _kOrange.withAlpha(20),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(Icons.mark_email_read, color: _kBrown, size: 36),
-        ),
-      ),
-      SizedBox(height: _compact ? 12 : 24),
-      Text(
-        'Check your inbox for a 6-digit verification code.',
-        textAlign: TextAlign.center,
-        style: TextStyle(color: _kMuted, fontSize: 17),
-      ),
-      SizedBox(height: _compact ? 14 : 32),
-      TextFormField(
-        controller: _otpCtrl,
-        keyboardType: TextInputType.number,
-        maxLength: 6,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 12,
-          color: _kText,
-        ),
-        decoration: InputDecoration(
-          hintText: '000000',
-          counterText: '',
-          filled: true,
-          fillColor: _kWhite,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: _kBorder, width: 1.5),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: _kOrange, width: 2),
-          ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 18),
-        ),
-      ),
-      const SizedBox(height: 36),
-      Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: () => setState(() => _step = 2),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: _kBrown,
-                side: BorderSide(color: _kBrown, width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                minimumSize: Size(0, _compact ? 46 : 56),
-              ),
-              child: Text(
-                'Back',
-                style: TextStyle(
-                  color: _kBrown,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 2,
-            child: ElevatedButton(
-              onPressed: _loading ? null : _verifyOtp,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kOrange,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                minimumSize: Size(0, _compact ? 46 : 56),
-                elevation: 0,
-              ),
-              child: _loading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Text(
-                      'Verify Code',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                      ),
-                    ),
-            ),
-          ),
-        ],
-      ),
-    ],
-  );
-
-  Widget _buildStep4() => Column(
-    children: [
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _inputLabel('Create Password'),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _pwCtrl,
-            obscureText: !_showPw,
-            style: TextStyle(
-              color: _kText,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-            decoration: _inputDecoration(
-              hint: 'At least 8 characters',
-              icon: Icons.lock_outline,
-              suffix: IconButton(
-                tooltip: 'Show or hide password',
-                icon: Icon(
-                  _showPw
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  color: _kMuted,
-                  size: 20,
-                ),
-                onPressed: () => setState(() => _showPw = !_showPw),
-              ),
-            ),
-          ),
-          SizedBox(height: _compact ? 12 : 20),
-          _inputLabel('Confirm Password'),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _cpwCtrl,
-            obscureText: !_showConfirm,
-            style: TextStyle(
-              color: _kText,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-            decoration: _inputDecoration(
-              hint: 'Repeat password',
-              icon: Icons.lock_outline,
-              suffix: IconButton(
-                tooltip: 'Show or hide password',
-                icon: Icon(
-                  _showConfirm
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  color: _kMuted,
-                  size: 20,
-                ),
-                onPressed: () => setState(() => _showConfirm = !_showConfirm),
-              ),
-            ),
-          ),
-        ],
-      ),
-      SizedBox(height: _compact ? 14 : 32),
-      Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: () => setState(() => _step = 3),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: _kBrown,
-                side: BorderSide(color: _kBrown, width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                minimumSize: Size(0, _compact ? 46 : 56),
-              ),
-              child: Text(
-                'Back',
-                style: TextStyle(
-                  color: _kBrown,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 2,
-            child: ElevatedButton(
-              onPressed: _loading ? null : _register,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kOrange,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                minimumSize: Size(0, _compact ? 46 : 56),
-                elevation: 0,
-              ),
-              child: _loading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Text(
-                      'Complete',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 18,
-                      ),
-                    ),
-            ),
-          ),
-        ],
-      ),
-    ],
-  );
 }
