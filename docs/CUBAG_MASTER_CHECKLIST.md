@@ -83,7 +83,7 @@ Real-PostgreSQL results and the device test sheet are in `CUBAG_VERIFICATION_LOG
 | [~] | P0 | IOS-10 | Remove `fetch` and `processing` background modes | `Info.plist` | no upload warnings |
 | [x] | P0 | IOS-11 / AND-08 | Expose member badge QR scanning in `VerifyMemberPage` & `PublicDirectoryPage`; update `NSCameraUsageDescription` to match exact in-app credential verification feature | `verify_member_page.dart`, `public_directory_page.dart`, `Info.plist` | reachable camera scan flow; unit + build passes |
 | [x] | P0 | IOS-08 / AND-04 | Public store legal web pages: Privacy Policy (`/privacy`), Terms of Service (`/terms`), and Web Account Deletion Request Portal (`/delete-account`, `POST /delete-account`) satisfying Apple 5.1.1(v) and Google Play account deletion policy | `routes/public_pages.py`, `server.py`, `config/db.py` | 8 security tests + 2 real-PG tests pass |
-| [~] | P0 | IOS-05 / AND-05 | Messaging: report message/user, block user, admin moderation queue (or restrict to Secretariat) | `messaging_page.dart`, `routes/messages.py` | blocked user can't message |
+| [~] | P0 | IOS-05 / AND-05 | Messaging: report message/user, block user, admin moderation queue (or restrict to Secretariat) — admin screen `/admin/message-reports` added `602d86f` | `messaging_page.dart`, `routes/messages.py` | blocked user can't message |
 | [~] | P0 | IOS-07 | Implement the CTI online-course payment decision on iOS | `cti_courses_page.dart`, `guest_service_request_page.dart` | iOS build has no MoMo pay for online courses (if chosen) |
 | [~] | P1 | SEC-13 | Stop writing `cubag_token` to SharedPreferences; delete legacy copy | `session_storage_stub.dart` | prefs file has no token |
 | [x] | P1 | SEC-14 | Biometric: store a revocable device token instead of the password — backend done and tested (fake-DB 28, real PostgreSQL 24); app client implemented, compiled, and verified live on physical device | `biometric_service_native.dart`, `auth.py` | password not in keychain |
@@ -117,7 +117,7 @@ Real-PostgreSQL results and the device test sheet are in `CUBAG_VERIFICATION_LOG
 |---|---|---|---|---|
 | [!] | P1 | BUG-06 | Un-ignore `.github/`, pin Flutter/Python versions matching real builds, make CI green | CI runs on PR |
 | [~] | P1 | INC-09 | Backend tests for every SEC fix (authorisation matrix: anon/member/sub-admin(no perm)/sub-admin(perm)/admin) against a disposable Postgres — `tests_pg/` added (21 pass on local PostgreSQL 16); not the full matrix, not in CI | tests pass in CI |
-| [ ] | P1 | INC-09 | Flutter: router redirect tests (exist), login/registration widget tests, API error-mapping tests | tests pass in CI |
+| [~] | P1 | INC-09 | Flutter: router redirect tests (exist), sign-in error mapping (10), email/password validation (16), report card widget (6), a11y source lint (2) — `882caab`, `602d86f`, `2576d39`. Still missing: full login/registration screen widget tests (pages import web-only code) | tests pass in CI |
 | [ ] | P1 | — | Manual smoke test on 4–5 devices: register → OTP → documents → pay → approval → dashboard → renew → message → delete account | test log signed off |
 | [x] | P1 | BUG-09 / PERF-07 | Move rating recalculation off read paths — `compute_member_rating()` on GET; saved by daily job/sign-in/write events; licence backfill moved to daily job (`c9f90e4`) | `GET /members/<id>`, `/auth/me`, `/members/license-history` leave all tables unchanged (real PG) |
 | [x] | P2 | BUG-13 | Ownership check before storing compliance uploads; re-checked under row lock (`df9b3e0`) | non-owner upload leaves no file (fake + real PG) |
@@ -131,7 +131,7 @@ Real-PostgreSQL results and the device test sheet are in `CUBAG_VERIFICATION_LOG
 | Status | Pri | ID | Task | Test |
 |---|---|---|---|---|
 | [!] | P1 | DB-01 | Export current schema → versioned migrations; remove runtime DDL from request handlers — fresh DB now initialises (41 tables) but `complaints` and `cti_course_enrollments` have no DDL in the repo; needs a schema-only dump of production | fresh DB builds from migrations |
-| [ ] | P1 | DB-03 | Index review from Supabase query stats; add `LOWER(email)` and normalised phone | p95 of login/payments < 300 ms |
+| [x] | P1 | DB-03 | Expression indexes for sign-in (LOWER email, digits-only phone, LOWER agency code / licence no.), OTP codes, renewal-bill and payment lookups — `aee23d8`; EXPLAIN-verified on PG 18 with 20k members. Revisit with Supabase query stats after launch | p95 of login/payments < 300 ms |
 | [ ] | P1 | DB-05 | Use the Supabase pooler; pool max ≈ 10–12 | no connection-limit errors under load test |
 | [ ] | P1 | DB-07 | Delete the unused deployment config; prune CSP/allow-lists | — |
 | [ ] | P2 | DB-04 | Member status enum/check constraint + single helper | — |
