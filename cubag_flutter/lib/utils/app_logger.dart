@@ -1,18 +1,16 @@
 import 'package:flutter/foundation.dart';
 
+import '../services/crash_reporting.dart';
+
 /// Centralized application logger.
 ///
 /// Usage:
 ///   } catch (e, st) { AppLogger.error('PageName._fetch', e, st); }
 ///
 /// In debug mode  → prints to console.
-/// In release mode → forwards to Sentry (when SENTRY_DSN is configured).
+/// In release mode → recorded as a non-fatal Crashlytics report, scrubbed of
+/// tokens, e-mail addresses and phone/account numbers (BUG-04).
 class AppLogger {
-  static const String _sentryDsn = String.fromEnvironment(
-    'SENTRY_DSN',
-    defaultValue: '',
-  );
-
   /// Log an error with optional stack trace.
   static void error(String context, dynamic error, [StackTrace? stackTrace]) {
     if (kDebugMode) {
@@ -21,8 +19,7 @@ class AppLogger {
         debugPrint(stackTrace.toString());
       }
     } else {
-      // In release builds, try Sentry if available.
-      _sendToSentry(context, error, stackTrace);
+      CrashReporting.recordNonFatal(context, error ?? 'null', stackTrace);
     }
   }
 
@@ -38,19 +35,5 @@ class AppLogger {
     if (kDebugMode) {
       debugPrint('[INFO]  [$context] $message');
     }
-  }
-
-  /// Attempt to forward the error to Sentry SDK.
-  /// No-ops if sentry_flutter is not yet integrated.
-  static void _sendToSentry(
-    String context,
-    dynamic error,
-    StackTrace? stackTrace,
-  ) {
-    if (_sentryDsn.isEmpty) return;
-    // When sentry_flutter is added, uncomment:
-    // Sentry.captureException(error,
-    //     stackTrace: stackTrace,
-    //     hint: Hint.withMap({'context': context}));
   }
 }

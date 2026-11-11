@@ -41,6 +41,9 @@ dependencies:
   local_auth: ^3.0.1
   firebase_core: ^4.9.0
   firebase_messaging: ^16.2.2
+  # BUG-04 crash reporting. 5.2.3 is the newest release compatible with the
+  # locked firebase_core 4.10.0 (5.2.4+ require firebase_core >= 4.11).
+  firebase_crashlytics: 5.2.3
   url_launcher: ^6.3.1
   http: ^1.2.2
   file_picker: ^11.0.3

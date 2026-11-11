@@ -11,6 +11,7 @@ import 'services/notification_service.dart';
 import 'services/theme_service.dart';
 import 'services/api_service.dart';
 import 'services/push_notification_service.dart';
+import 'services/crash_reporting.dart';
 import 'utils/session_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -45,14 +46,9 @@ void main() async {
     );
   }
 
-  // Intercept uncaught async errors
-  PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('Intercepted uncaught async error: $error');
-    return true;
-  };
-  FlutterError.onError = (details) {
-    debugPrint('FlutterError caught: ${details.exception}');
-  };
+  // BUG-04: uncaught errors go to Crashlytics (buffered until Firebase starts).
+  PlatformDispatcher.instance.onError = CrashReporting.recordUncaught;
+  FlutterError.onError = CrashReporting.recordFlutterError;
 
   // Allow GoogleFonts runtime fetching non-blockingly in the background.
   GoogleFonts.config.allowRuntimeFetching = true;
@@ -135,6 +131,7 @@ Future<void> _initFirebase() async {
   if (kIsWeb) return;
   try {
     await Firebase.initializeApp();
+    await CrashReporting.init();
     await PushNotificationService().initialize();
   } catch (e) {
     // Silent fail in production
