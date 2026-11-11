@@ -8,6 +8,16 @@ You pasted the real `cubag-backend/.env` file (with live `DB_PASSWORD`, `DATABAS
 
 ## Session 4 status (11 Nov 2026, ~10:30 PST) — read this first
 
+**Update (~11:00 PST, commit `527066d`, verification run 6 all green: analyze 0, Flutter 99/99, backend 207/207, both builds):**
+- **Pay by fee key** done. The app sends `fee_key` (`registration`, `package`, `renewal`, `course:<id>`, or a fee-list `id`, which equals `fee_schedules.key`). The server sets the amount and description. Payments against a specific bill send no key. Older app versions keep the description checks.
+- **Installment policy (owner decision):** only renewals can be paid in parts, on the renewal bill. Registration and package fees must be paid in full because they gate app access.
+- **Fixed in `_mark_payment_as_paid`:**
+  - Every completed payment that wasn't a renewal or package (including "Other", ID card, courses) set `registration_fee_paid` and a licence number. Only registration and package payments do now.
+  - Renewal rule bug fixed ("renewal" contains "new").
+  - Course payments enrol in the paid course only. Previously an unmatched description enrolled the member in the first course.
+- **Behaviour change to tell the Secretariat:** a member who paid "Other"/misc expecting it to count as registration will no longer be marked registered. Check any manual payments recorded that way.
+
+
 Run on the owner's Mac. Verification run 4 (`run_20261111_094503`, HEAD `f144138`) and run 5 (`run_20261111_102311`, HEAD `67c062c`): analyze 0 issues, `flutter test` 99/99, Android debug + iOS release builds pass, merged manifest targetSdk 36, backend fake-DB 170/170. Release AAB still stops at the signing guard (expected). Run 5's `pub get` failed only on a DNS blip to pub.dev; packages were cached and every later step passed. `pubspec.lock` did not change, so nothing to commit. `tests_pg` not re-run: local PostgreSQL wasn't running.
 
 | Commit | Item | Notes |
@@ -19,7 +29,6 @@ Run on the owner's Mac. Verification run 4 (`run_20261111_094503`, HEAD `f144138
 Owner notes:
 - **Before deploying SEC-12, confirm server email works** (Resend/SMTP), or admins can't sign in. Fix the sender domain at the same time (SEC-09).
 - SEC-20 behaviour change: registration, package and course fees can no longer be paid in parts; only Secretariat-issued bills and renewal bills can. Tell the Secretariat.
-- Pre-existing bug found, **not fixed**: in `_mark_payment_as_paid`, `is_renewal_payment` requires `'new' not in description`, but "renewal" contains "new", so it is only true for descriptions like "Annual Dues". Renewals usually go through the bill path instead, so impact is limited. Needs a careful fix and test.
 - `routes/auth.py` fee-status flags (`has_pkg_payment` etc.) still count any paid payment by keyword. That's safe now that partial non-bill payments are refused, but should move to totals when pay-by-fee-id is done.
 - Device rows to add: admin code dialog (web), sample forex badge, installment toggle hidden for registration/package.
 

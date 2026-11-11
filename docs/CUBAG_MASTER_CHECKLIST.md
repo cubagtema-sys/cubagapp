@@ -58,7 +58,7 @@ Real-PostgreSQL results and the device test sheet are in `CUBAG_VERIFICATION_LOG
 | [~] | P1 | SEC-15 | Email change requires OTP to the new address; notify the old one | `routes/auth.py:1318` | change without OTP → 400 |
 | [x] | P1 | SEC-17 | Trust only the active platform's client-IP header; per-account login failure counter | `config/rate_limit.py`, `auth.py` | spoofed header doesn't reset limit |
 | [x] | P1 | SEC-18 | Replace `str(e)` responses with generic messages + correlation ID (≈50 sites + global handler) | `routes/*.py`, `server.py:791` | forced error shows no internals |
-| [~] | P1 | SEC-20 | Pay by `bill_id`/`fee_id` (server-derived amount); reject unmatched descriptions — exploit closed `36ed0b4` (installments only on bills; unlocking keywords must match a fee; 27 tests). Still open: client sends description, not fee id (app fee list `cubag_fees_v2` ≠ server `fee_schedules`) | `routes/payments.py`, `config/payment_validation.py` | tampered amount rejected |
+| [x] | P1 | SEC-20 | Pay by fee key (server-derived amount); reject unmatched descriptions — `36ed0b4` + `527066d`: app sends `fee_key`, server prices it; only renewals may be paid in installments (on the renewal bill); completed payments unlock only what they paid for; renewal 'new' bug fixed | `routes/payments.py`, `config/payment_validation.py` | 64 tests |
 | [!] | P1 | SEC-09 | Send email from a CUBAG domain with SPF/DKIM/DMARC | env + DNS | mail-tester score ≥ 9 |
 | [~] | P2 | SEC-21 | Set Content-Type from extension; magic-byte check | `file_storage.py`, upload routes | `.png` containing HTML rejected |
 | [ ] | P2 | SEC-22 | Restrict CORS/Socket.IO origins to real web origins | `server.py:201`, `socket_instance.py` | foreign origin blocked (web) |
