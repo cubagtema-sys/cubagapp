@@ -267,7 +267,7 @@ class _LoginPageState extends State<LoginPage> {
     if (kIsWeb) return;
     final available = await _bioService.isBiometricAvailable();
     final enabled = await _bioService.isBiometricEnabled();
-    final creds = await _bioService.getSavedCredentials();
+    final hasCredential = await _bioService.hasCredential();
     // If the user just explicitly logged out, do not auto-prompt Face ID and
     // sign them straight back in. They can still tap the biometric button.
     final suppressAuto = AuthService.suppressAutoBiometric;
@@ -276,7 +276,7 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {
         _bioAvailable = available;
       });
-      if (!suppressAuto && available && enabled && creds != null) {
+      if (!suppressAuto && available && enabled && hasCredential) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && !_loading) {
             _handleBiometricLogin();
@@ -287,11 +287,10 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleBiometricLogin() async {
-    final creds = await _bioService.getSavedCredentials();
-    if (creds == null) {
+    if (!await _bioService.hasCredential()) {
       if (mounted) {
         setState(
-          () => _error = 'Please sign in with your email and password once to save for Face ID / Touch ID.',
+          () => _error = 'Please sign in with your email and password once to set up Face ID / Touch ID.',
         );
       }
       return;
@@ -306,8 +305,8 @@ class _LoginPageState extends State<LoginPage> {
       _error = null;
     });
     final authService = Provider.of<AuthService>(context, listen: false);
-    final identifier = creds['email']!;
-    final error = await authService.login(identifier, creds['password']!);
+    // SEC-14: uses this device's revocable credential, never a stored password.
+    final error = await authService.loginWithBiometricCredential();
 
     if (error != null) {
       if (mounted) {
@@ -379,13 +378,14 @@ class _LoginPageState extends State<LoginPage> {
       if (!kIsWeb && _bioAvailable) {
         try {
           if (_rememberMe) {
-            await _bioService.saveCredentials(identifier, password);
-            await _bioService.setBiometricEnabled(true);
-            debugPrint('[Login] Seamlessly enrolled Face ID / Biometrics via Keep Me Signed In for $identifier');
+            // SEC-14: the server issues a revocable credential for this device.
+            // The password is sent once to prove identity and is not stored.
+            final enrolError = await _bioService.enroll(password);
+            if (enrolError != null) {
+              debugPrint('[Login] Biometric sign-in not enabled: $enrolError');
+            }
           } else {
-            await _bioService.setBiometricEnabled(false);
-            await _bioService.clearCredentials();
-            debugPrint('[Login] Deactivated biometrics as Keep Me Signed In was unchecked');
+            await _bioService.disable();
           }
         } catch (e) {
           debugPrint('[Login] Biometric setup error: $e');

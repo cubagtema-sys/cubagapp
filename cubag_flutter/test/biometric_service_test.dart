@@ -1,67 +1,72 @@
+import 'dart:math';
+
+import 'package:cubag_flutter/utils/biometric_credential.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Unit tests for biometric preferences management.
-/// Tests SharedPreferences operations directly to avoid the dart:html
-/// import chain through the full app.
-
+/// SEC-14: logic of the biometric device credential that can be tested
+/// without the secure-storage / local_auth plugins.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Biometric Preferences', () {
+  group('Biometric preference flag', () {
     test('biometric is disabled by default', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getBool('biometric_enabled') ?? false, isFalse);
     });
+  });
 
-    test('setBiometricEnabled persists true', () async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('biometric_enabled', true);
-      expect(prefs.getBool('biometric_enabled'), isTrue);
+  group('Device id', () {
+    test('generated ids are valid, 32 hex characters and differ', () {
+      final a = BiometricCredential.generateDeviceId();
+      final b = BiometricCredential.generateDeviceId();
+      expect(a, matches(RegExp(r'^[0-9a-f]{32}$')));
+      expect(BiometricCredential.isValidDeviceId(a), isTrue);
+      expect(a, isNot(equals(b)));
     });
 
-    test('setBiometricEnabled persists false', () async {
-      SharedPreferences.setMockInitialValues({'biometric_enabled': true});
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('biometric_enabled', false);
-      expect(prefs.getBool('biometric_enabled'), isFalse);
+    test('generation is driven by the supplied random source', () {
+      expect(
+        BiometricCredential.generateDeviceId(Random(1)),
+        equals(BiometricCredential.generateDeviceId(Random(1))),
+      );
     });
 
-    test('saveCredentials stores email and password', () async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
+    test('rejects malformed ids', () {
+      for (final bad in [null, '', 'short', 'has spaces in it......', 'x' * 65, 'abc/def/ghi/jkl/mno']) {
+        expect(BiometricCredential.isValidDeviceId(bad), isFalse, reason: '$bad');
+      }
+    });
+  });
 
-      await prefs.setString('bio_email', 'test@cubag.org');
-      await prefs.setString('bio_password', 'secret123');
-
-      expect(prefs.getString('bio_email'), equals('test@cubag.org'));
-      expect(prefs.getString('bio_password'), equals('secret123'));
+  group('Server refusal handling', () {
+    test('only the dedicated error code invalidates the local credential', () {
+      expect(
+        BiometricCredential.isInvalidated(401, {'error_code': 'BIOMETRIC_TOKEN_INVALID'}),
+        isTrue,
+      );
     });
 
-    test('getSavedCredentials returns null when nothing saved', () async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('bio_email'), isNull);
-      expect(prefs.getString('bio_password'), isNull);
+    test('suspension, server errors and plain 401s keep the credential', () {
+      expect(BiometricCredential.isInvalidated(403, {'message': 'suspended'}), isFalse);
+      expect(BiometricCredential.isInvalidated(500, {'error_code': 'BIOMETRIC_TOKEN_INVALID'}), isFalse);
+      expect(BiometricCredential.isInvalidated(401, {'message': 'Invalid credentials'}), isFalse);
+      expect(BiometricCredential.isInvalidated(401, 'BIOMETRIC_TOKEN_INVALID'), isFalse);
+      expect(BiometricCredential.isInvalidated(null, null), isFalse);
+      expect(BiometricCredential.isInvalidated(429, {'message': 'slow down'}), isFalse);
+    });
+  });
+
+  group('Credential shape', () {
+    test('accepts <id>.<secret>', () {
+      expect(BiometricCredential.looksLikeCredential('12.${'a' * 43}'), isTrue);
     });
 
-    test('clearCredentials removes everything', () async {
-      SharedPreferences.setMockInitialValues({
-        'bio_email': 'x@y.com',
-        'bio_password': 'pw',
-        'biometric_enabled': true,
-      });
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('bio_email');
-      await prefs.remove('bio_password');
-      await prefs.remove('biometric_enabled');
-
-      expect(prefs.getString('bio_email'), isNull);
-      expect(prefs.getString('bio_password'), isNull);
-      expect(prefs.getBool('biometric_enabled'), isNull);
+    test('rejects anything that could be a password or junk', () {
+      for (final bad in [null, '', 'MyPassword123!', '.${'a' * 43}', 'x.${'a' * 43}', '12.short', '12']) {
+        expect(BiometricCredential.looksLikeCredential(bad), isFalse, reason: '$bad');
+      }
     });
   });
 }

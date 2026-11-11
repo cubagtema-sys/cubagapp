@@ -3,6 +3,8 @@ import 'package:dio/dio.dart';
 import '../utils/session_storage.dart';
 import 'api_service.dart';
 import 'cache_service.dart';
+import 'biometric_service.dart';
+import '../utils/biometric_credential.dart';
 import 'socket_service.dart';
 import 'push_notification_service.dart';
 import '../utils/app_logger.dart';
@@ -424,6 +426,54 @@ class AuthService extends ChangeNotifier {
         return 'Unable to reach the server. Please check your internet connection and try again.';
       }
       return 'Unable to sign in. Please check your credentials and try again.';
+    }
+  }
+
+  /// SEC-14: sign in with this device's biometric credential (after the local
+  /// Face ID / fingerprint check has passed). The password is never involved.
+  /// Returns null on success, otherwise a message for the user.
+  Future<String?> loginWithBiometricCredential() async {
+    final bio = BiometricService();
+    final cred = await bio.credential();
+    if (cred == null) {
+      return 'Please sign in with your password once to set up biometric sign-in.';
+    }
+    try {
+      final response = await _apiService.post(
+        '/auth/biometric/login',
+        data: {'device_id': cred.deviceId, 'biometric_token': cred.token},
+      );
+      final data = response.data;
+      if (response.statusCode == 200 && data is Map) {
+        // The server replaces the credential on every use: store the new one
+        // before anything else so it is never lost.
+        final rotated = data['biometric_token']?.toString();
+        if (rotated != null) await bio.storeRotated(rotated);
+        final user = Map<String, dynamic>.from(data['user'] as Map? ?? {});
+        final perms = List<String>.from(
+          user['permissions'] ?? data['permissions'] ?? [],
+        );
+        await setAuthSession(
+          token: data['token'].toString(),
+          user: user,
+          permissions: perms,
+        );
+        return null;
+      }
+      if (BiometricCredential.isInvalidated(response.statusCode, data)) {
+        await bio.clearLocal();
+        return 'Biometric sign-in has expired on this device. Please sign in with your password.';
+      }
+      if (data is Map && data['message'] != null) {
+        return data['message'].toString();
+      }
+      return 'Unable to sign in. Please sign in with your password.';
+    } catch (e) {
+      final err = e.toString().toLowerCase();
+      if (err.contains('timeout') || err.contains('connect') || err.contains('socket')) {
+        return 'Unable to reach the server. Please check your internet connection and try again.';
+      }
+      return 'Unable to sign in. Please try again.';
     }
   }
 

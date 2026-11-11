@@ -6,8 +6,12 @@ Future<bool> isBiometricAvailable() => Future.value(false);
 
 Future<bool> authenticate({required String reason}) => Future.value(false);
 
-Future<void> saveCredentials(String email, String password) => Future.value();
+Future<String> getOrCreateDeviceId() => Future.value('');
 
-Future<Map<String, String>?> getSavedCredentials() => Future.value(null);
+Future<void> saveToken(String token) => Future.value();
 
-Future<void> clearCredentials() => Future.value();
+Future<String?> readToken() => Future.value(null);
+
+Future<void> clearToken() => Future.value();
+
+Future<bool> purgeLegacyPassword() => Future.value(false);

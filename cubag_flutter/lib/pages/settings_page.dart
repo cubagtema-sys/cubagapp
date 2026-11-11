@@ -48,6 +48,47 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  Future<String?> _askPasswordForBiometrics() async {
+    final ctrl = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm your password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter your password to turn on biometric sign-in for this device. '
+              'Your password is not stored on the device.',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              obscureText: true,
+              autofocus: true,
+              autocorrect: false,
+              enableSuggestions: false,
+              decoration: const InputDecoration(labelText: 'Password'),
+              onSubmitted: (v) => Navigator.of(ctx).pop(v),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(ctrl.text),
+            child: const Text('Turn on'),
+          ),
+        ],
+      ),
+    );
+    return result;
+  }
+
   Future<void> _changePassword() async {
     if (_newCtrl.text != _confirmCtrl.text) {
       setState(() => _message = 'Passwords do not match');
@@ -71,6 +112,15 @@ class _SettingsPageState extends State<SettingsPage> {
         final newToken = res.data is Map ? res.data['token'] : null;
         if (newToken is String && newToken.isNotEmpty) {
           await SessionStorage.instance.setString('cubag_token', newToken);
+        }
+        // SEC-14: a password change revokes every biometric device credential.
+        // Re-enrol this device with the new password so Face ID keeps working.
+        if (!kIsWeb && _biometricEnabled) {
+          final enrolError = await BiometricService().enroll(_newCtrl.text);
+          if (enrolError != null) {
+            await BiometricService().clearLocal();
+            if (mounted) setState(() => _biometricEnabled = false);
+          }
         }
         if (!mounted) return;
         setState(() {
@@ -201,6 +251,8 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       final res = await ApiService().delete('/auth/delete-account');
       if (res.statusCode == 200 || res.statusCode == 204) {
+        // The server has revoked this account's device credentials; forget ours.
+        await BiometricService().clearLocal();
         await AuthService().logout();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -378,9 +430,22 @@ class _SettingsPageState extends State<SettingsPage> {
                       final verified = await BiometricService().authenticate(
                         reason: 'Verify identity to enable biometric sign-in',
                       );
-                      if (!verified) return;
+                      if (!verified || !mounted) return;
+                      // SEC-14: enabling needs the account password once; the
+                      // server then issues a credential for this device only.
+                      final password = await _askPasswordForBiometrics();
+                      if (password == null || password.isEmpty) return;
+                      final error = await BiometricService().enroll(password);
+                      if (!mounted) return;
+                      if (error != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(error)),
+                        );
+                        return;
+                      }
+                    } else {
+                      await BiometricService().disable();
                     }
-                    await BiometricService().setBiometricEnabled(v);
                     if (mounted) setState(() => _biometricEnabled = v);
                   },
                 ),
