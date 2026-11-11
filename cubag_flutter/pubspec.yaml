@@ -154,11 +154,10 @@ flutter_launcher_icons:
   min_sdk_android: 21
 
 flutter_native_splash:
-  color: "#ffffff"
-  image: "assets/images/logo.jpeg"
+  # Plain cocoa, matching the in-app splash (the seal fades in there).
+  color: "#5C3421"
   android: true
   ios: true
   web: false
   android_12:
-    image: "assets/images/logo.jpeg"
-    color: "#ffffff"
+    color: "#5C3421"
