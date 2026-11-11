@@ -2,7 +2,6 @@ import 'dart:async' show unawaited;
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../components/app_layout.dart';
@@ -14,17 +13,13 @@ import '../services/theme_service.dart';
 import '../utils/session_storage.dart';
 import '../utils/intelligence_data.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
+import '../components/home/licence_card.dart';
+import '../components/home/licence_status.dart';
+import '../components/home/home_sections.dart';
 
-// Balanced CUBAG Brand Palette & Editorial Tokens
-bool get _isDark => ThemeService.instance.isDark;
 const _kBrown = Color(0xFF6B3E26); // Primary Brown
 const _kOrange = Color(0xFFFF5000); // Primary Orange CTA
-const _kGreen = Color(0xFF10B981); // Emerald Green
-Color get _kCardBg => _isDark ? const Color(0xFF1E130D) : const Color(0xFFFFFFFF);
-Color get _kSurfaceRaised => _isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
-Color get _kBorder => _isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
-Color get _kText => _isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
-Color get _kMuted => _isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B);
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -38,7 +33,6 @@ class _DashboardPageState extends State<DashboardPage> {
   // The UI renders immediately from SessionStorage; API calls refresh in background.
   bool _loading = true;
   bool _loadingTasks = true;
-  bool _loadingSurveys = false;
   List<dynamic> _tasks = [];
   List<dynamic> _surveys = [];
   Map<String, String> _forex = {
@@ -86,7 +80,6 @@ class _DashboardPageState extends State<DashboardPage> {
     final cachedSurveys = ApiService.getCachedSync('/surveys');
     if (cachedSurveys != null) {
       _surveys = ApiService.ensureList(cachedSurveys);
-      _loadingSurveys = false;
     }
     final cachedForex =
         ForexSnapshot.fromIntelligence(ApiService.getCachedSync('intelligence'));
@@ -280,13 +273,6 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
-  String _formatDate(String? str) {
-    if (str == null) return '—';
-    final d = DateTime.tryParse(str);
-    if (d == null) return '—';
-    return '${d.day} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.month - 1]} ${d.year}';
-  }
-
   Future<void> _fetchTasks() async {
     await ApiService().fetchDataWithCache('/tasks', (
       data,
@@ -409,7 +395,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               ),
                               child: Text(
                                 'OFFICIAL BILL ISSUED',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w900,
                                   color: AppColors.accentOrangeText,
@@ -420,7 +406,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             const SizedBox(height: 4),
                             Text(
                               'Annual Renewal Dues Ready',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: textColor,
@@ -447,7 +433,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   const SizedBox(height: 16),
                   Text(
                     'Your annual statutory compliance documents have been vetted and approved. The CUBAG secretariat has calculated and issued your official annual renewal bill.',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 14,
                       color: subTextColor,
                       height: 1.4,
@@ -470,7 +456,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           children: [
                             Text(
                               'Total Amount Due:',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: textColor,
@@ -478,7 +464,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                             Text(
                               'GHS $amtStr',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w900,
                                 color: AppColors.accentOrangeText,
@@ -493,7 +479,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             const SizedBox(width: 6),
                             Text(
                               'Payment Deadline: $deadline',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 color: isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309),
@@ -516,14 +502,14 @@ class _DashboardPageState extends State<DashboardPage> {
                                   Expanded(
                                     child: Text(
                                       label,
-                                      style: GoogleFonts.inter(fontSize: 12.5, color: subTextColor),
+                                      style: TextStyle(fontSize: 12.5, color: subTextColor),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   Text(
                                     'GHS $itemAmt',
-                                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: textColor),
+                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textColor),
                                   ),
                                 ],
                               ),
@@ -557,7 +543,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       icon: const Icon(Icons.payment_rounded, size: 18),
                       label: Text(
                         'Pay Renewal Dues (GHS $amtStr)',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 15.5,
                           fontWeight: FontWeight.bold,
                         ),
@@ -582,7 +568,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       },
                       child: Text(
                         'View Full Details in Compliance',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
@@ -601,9 +587,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
 
   Future<void> _fetchSurveys() async {
-    if (_surveys.isEmpty) {
-      setState(() => _loadingSurveys = true);
-    }
     await ApiService().fetchDataWithCache('/surveys', (
       data,
       isCached, {
@@ -612,11 +595,9 @@ class _DashboardPageState extends State<DashboardPage> {
       if (mounted && data != null) {
         setState(() {
           _surveys = ApiService.ensureList(data);
-          _loadingSurveys = false;
         });
       }
     });
-    if (mounted) setState(() => _loadingSurveys = false);
   }
 
   bool _isSurveyActive(dynamic s) {
@@ -648,1621 +629,168 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
-  Widget _buildWelcomeBanner(
-    String firstName,
-    String role,
-    List<dynamic> pending,
-    Color primary,
-    bool isMobile,
-  ) {
-    final rawExpiry = _user['license_expiry_date']?.toString();
-    final expiry =
-        (rawExpiry == null ||
-            rawExpiry == 'None' ||
-            rawExpiry == 'null' ||
-            rawExpiry.isEmpty)
-        ? null
-        : rawExpiry;
-    final daysLeft = expiry != null
-        ? DateTime.tryParse(expiry)?.difference(DateTime.now()).inDays
-        : null;
-    final bool isPkgPaid = _user['package_fee_paid'] == true;
-    final bool isPackagePending = !isPkgPaid &&
-        (role != 'admin' && role != 'sub_admin' && role != 'super_admin');
-    final bool isGoodStanding = isPkgPaid &&
-        (_user['is_good_standing'] == true ||
-            _user['good_standing'] == true ||
-            _user['status'] == 'active' ||
-            _user['status'] == 'approved');
-    final memNo = isGoodStanding
-        ? (_user['membership_number']?.toString().trim().isNotEmpty == true &&
-                !_user['membership_number'].toString().toLowerCase().contains('pending')
-            ? _user['membership_number'].toString().trim()
-            : (_user['license_number']?.toString().trim().isNotEmpty == true &&
-                    !_user['license_number'].toString().toLowerCase().contains('pending')
-                ? _user['license_number'].toString().trim()
-                : (_user['id'] != null ? 'CUBAG-${_user['id'].toString().padLeft(4, '0')}' : '')))
-        : 'PENDING SETTLEMENT';
-
-    String statusText;
-    String statusBadge;
-    Color statusBadgeBg;
-    Color statusBadgeInk;
-    String btnLabel;
-    IconData btnIcon;
-    VoidCallback btnAction;
-
-    if (isPackagePending) {
-      statusBadge = 'PACKAGE SETTLEMENT REQUIRED';
-      statusBadgeBg = const Color(0xFFFEF3C7);
-      statusBadgeInk = const Color(0xFF92400E);
-      statusText = 'Registration fee settled. Finalize membership entrance package to activate voting & good standing.';
-      if (!_loadingTasks && pending.isNotEmpty) {
-        btnLabel = 'View Tasks (${pending.length})';
-        btnIcon = Icons.assignment_turned_in_outlined;
-        btnAction = () => context.go('/tasks');
-      } else {
-        btnLabel = 'Pay Package Fee';
-        btnIcon = Icons.payment_rounded;
-        btnAction = () => context.go('/payments?fee=Membership%20Entrance%20Package');
-      }
-    } else if (daysLeft != null && daysLeft < 0) {
-      statusBadge = 'MEMBERSHIP EXPIRED';
-      statusBadgeBg = const Color(0xFFFEE2E2);
-      statusBadgeInk = const Color(0xFF991B1B);
-      statusText = 'Annual membership expired on ${_formatDate(expiry)}. Submit renewal documents for compliance verification.';
-      btnLabel = 'Submit Renewal (Step 1)';
-      btnIcon = Icons.warning_amber_rounded;
-      btnAction = () => context.go('/compliance');
-    } else if (daysLeft != null && daysLeft <= 30) {
-      statusBadge = 'EXPIRES IN $daysLeft DAYS';
-      statusBadgeBg = const Color(0xFFFEE2E2);
-      statusBadgeInk = const Color(0xFF991B1B);
-      statusText = 'Urgent: $daysLeft days remaining until membership expires on ${_formatDate(expiry)}. Submit renewal now.';
-      btnLabel = 'Submit Renewal (Step 1)';
-      btnIcon = Icons.autorenew_rounded;
-      btnAction = () => context.go('/compliance');
-    } else if (daysLeft != null && daysLeft <= 90) {
-      statusBadge = 'RENEWAL WINDOW OPEN';
-      statusBadgeBg = const Color(0xFFFEF3C7);
-      statusBadgeInk = const Color(0xFF92400E);
-      statusText = 'Annual membership renewal window is open. Expiring on ${_formatDate(expiry)} ($daysLeft days remaining).';
-      btnLabel = 'Renew Membership';
-      btnIcon = Icons.autorenew_rounded;
-      btnAction = () => context.go('/compliance');
-    } else {
-      statusBadge = 'ACTIVE IN GOOD STANDING';
-      statusBadgeBg = const Color(0xFFDCFCE7);
-      statusBadgeInk = const Color(0xFF166534);
-      statusText = 'Verified Member & Freight Forwarder';
-      if (!_loadingTasks && pending.isNotEmpty) {
-        btnLabel = 'View Tasks (${pending.length})';
-        btnIcon = Icons.assignment_turned_in_outlined;
-        btnAction = () => context.go('/tasks');
-      } else {
-        btnLabel = 'Member Profile';
-        btnIcon = Icons.badge_outlined;
-        btnAction = () => context.go('/profile');
-      }
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(isMobile ? 18 : 24),
-      decoration: BoxDecoration(
-        color: _kCardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kBorder, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(_isDark ? 30 : 6),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: _kBrown,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  firstName.isNotEmpty ? firstName[0].toUpperCase() : 'M',
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Welcome back,',
-                      style: GoogleFonts.inter(
-                        color: _kMuted,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            firstName,
-                            style: GoogleFonts.inter(
-                              color: _kText,
-                              fontSize: isMobile ? 20 : 24,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.4,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (role.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: _kBrown.withAlpha(20),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: _kBrown.withAlpha(40), width: 0.8),
-                            ),
-                            child: Text(
-                              role.toUpperCase(),
-                              style: GoogleFonts.inter(
-                                color: _kBrown,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.6,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                          decoration: BoxDecoration(
-                            color: statusBadgeBg,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            statusBadge,
-                            style: GoogleFonts.inter(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: statusBadgeInk,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                        if (memNo.isNotEmpty)
-                          Text(
-                            'ID: $memNo',
-                            style: GoogleFonts.inter(
-                              fontFeatures: const [FontFeature.tabularFigures()],
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: _kMuted,
-                            ),
-                          ),
-                        if (expiry != null)
-                          Text(
-                            '• Valid until ${_formatDate(expiry)}',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: _kMuted,
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      statusText,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: _kMuted,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (!isMobile) ...[
-                const SizedBox(width: 16),
-                ElevatedButton.icon(
-                  onPressed: btnAction,
-                  icon: Icon(btnIcon, size: 15),
-                  label: Text(btnLabel),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _kOrange,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    textStyle: GoogleFonts.inter(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13.5,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          if (isMobile) ...[
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: btnAction,
-                icon: Icon(btnIcon, size: 15),
-                label: Text(btnLabel),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kOrange,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  textStyle: GoogleFonts.inter(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13.5,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildKpiLedgerGrid(List<dynamic> pending, bool isMobile) {
-    final bool isPkgPaid = _user['package_fee_paid'] == true;
-    final bool isGoodStanding = isPkgPaid &&
-        (_user['is_good_standing'] == true ||
-            _user['good_standing'] == true ||
-            _user['status'] == 'active' ||
-            _user['status'] == 'approved');
-    final activeSurveys = _surveys.where(_isSurveyActive).length;
-
-    final items = [
-      {
-        'title': 'ROLL STATUS',
-        'value': isGoodStanding ? 'Good Standing' : 'Pending',
-        'sub': isGoodStanding ? 'Secretariat Verified' : 'Dues Required',
-        'color': isGoodStanding ? _kGreen : _kOrange,
-        'icon': isGoodStanding ? Icons.verified_user_outlined : Icons.shield_outlined,
-        'isStatus': true,
-        'isGood': isGoodStanding,
-        'action': () => context.go('/profile'),
-      },
-      {
-        'title': 'PRIORITY TASKS',
-        'value': '${pending.length}',
-        'sub': pending.isEmpty ? 'All tasks complete' : '${pending.length} pending items',
-        'color': pending.isEmpty ? _kMuted : _kOrange,
-        'icon': Icons.task_alt_outlined,
-        'isStatus': false,
-        'isGood': pending.isEmpty,
-        'action': () => context.go('/tasks'),
-      },
-      {
-        'title': _forexIsSample ? 'USD/GHS (SAMPLE)' : 'OFFICIAL USD/GHS',
-        'value': _forex['USD'] != null && _forex['USD'] != '—' ? '${_forex['USD']}' : '—',
-        'sub': _forexIsSample ? 'Sample, not official' : 'Bank of Ghana Indicative',
-        'color': _kBrown,
-        'icon': Icons.currency_exchange_rounded,
-        'isStatus': false,
-        'isGood': true,
-        'action': () => context.go('/live-data'),
-      },
-      {
-        'title': 'ACTIVE BALLOTS',
-        'value': '$activeSurveys',
-        'sub': activeSurveys > 0 ? '$activeSurveys polls open' : 'No active votes',
-        'color': activeSurveys > 0 ? const Color(0xFF8B5CF6) : _kMuted,
-        'icon': Icons.how_to_vote_outlined,
-        'isStatus': false,
-        'isGood': true,
-        'action': () => context.go('/surveys'),
-      },
-    ];
-
-    final gridContent = isMobile
-        ? GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 4,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: 1.28,
-            ),
-            itemBuilder: (ctx, i) => _kpiTile(items[i], isMobile: true),
-          )
-        : Row(
-            children: items.map((it) {
-              final isLast = it == items.last;
-              return Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(right: isLast ? 0 : 12),
-                  child: _kpiTile(it, isMobile: false),
-                ),
-              );
-            }).toList(),
-          );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: (isGoodStanding ? _kGreen : _kOrange).withAlpha(24),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Icon(
-                Icons.speed_rounded,
-                size: 14,
-                color: isGoodStanding ? _kGreen : _kOrange,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'MEMBER STATUS & OVERSIGHT',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w800,
-                fontSize: 11.5,
-                letterSpacing: 0.8,
-                color: _kText,
-              ),
-            ),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: isGoodStanding
-                    ? _kGreen.withAlpha(18)
-                    : _kOrange.withAlpha(18),
-                borderRadius: BorderRadius.circular(99),
-                border: Border.all(
-                  color: isGoodStanding
-                      ? _kGreen.withAlpha(45)
-                      : _kOrange.withAlpha(45),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: isGoodStanding ? _kGreen : _kOrange,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    isGoodStanding ? 'Verified Active' : 'Action Needed',
-                    style: GoogleFonts.inter(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      color: isGoodStanding ? _kGreen : _kOrange,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        gridContent,
-      ],
-    );
-  }
-
-  Widget _kpiTile(Map<String, dynamic> item, {bool isMobile = false}) {
-    final isStatus = item['isStatus'] == true;
-    final color = item['color'] as Color? ?? _kText;
-    final isGood = item['isGood'] == true;
-
-    return InkWell(
-      onTap: item['action'] as VoidCallback?,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 12 : 16,
-          vertical: isMobile ? 12 : 14,
-        ),
-        decoration: BoxDecoration(
-          color: _isDark ? const Color(0xFF1C130E) : const Color(0xFFFBF8F5),
-          borderRadius: BorderRadius.circular(10),
-          border: Border(
-            left: BorderSide(
-              color: isStatus
-                  ? (isGood ? _kGreen : _kOrange)
-                  : color,
-              width: 3.5,
-            ),
-            top: BorderSide(
-              color: isStatus && isGood ? _kGreen.withAlpha(60) : _kBorder.withAlpha(130),
-              width: 1,
-            ),
-            right: BorderSide(
-              color: isStatus && isGood ? _kGreen.withAlpha(60) : _kBorder.withAlpha(130),
-              width: 1,
-            ),
-            bottom: BorderSide(
-              color: isStatus && isGood ? _kGreen.withAlpha(60) : _kBorder.withAlpha(130),
-              width: 1,
-            ),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(_isDark ? 20 : 4),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              children: [
-                if (item['icon'] != null) ...[
-                  Icon(item['icon'] as IconData, size: 12, color: color),
-                  const SizedBox(width: 5),
-                ],
-                Expanded(
-                  child: Text(
-                    item['title'] as String,
-                    style: GoogleFonts.inter(
-                      color: _kMuted,
-                      fontSize: isMobile ? 10 : 10.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.7,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (isStatus) ...[
-                    Icon(
-                      isGood ? Icons.verified_rounded : Icons.pending_rounded,
-                      size: isMobile ? 15 : 17,
-                      color: isGood ? _kGreen : _kOrange,
-                    ),
-                    const SizedBox(width: 5),
-                  ],
-                  Text(
-                    item['value'] as String,
-                    style: GoogleFonts.inter(
-                      color: isStatus && isGood ? _kGreen : _kText,
-                      fontSize: isStatus ? (isMobile ? 15.5 : 17) : (isMobile ? 19 : 20),
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: isStatus ? -0.2 : -0.5,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                    maxLines: 1,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              item['sub'] as String,
-              style: GoogleFonts.inter(
-                color: _kMuted,
-                fontSize: isMobile ? 10.5 : 11,
-                fontWeight: FontWeight.w500,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPackageSettlementPromptCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: _kCardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _kOrange, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: _kOrange.withAlpha(_isDark ? 30 : 15),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: _kOrange.withAlpha(25),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Icon(
-                  Icons.receipt_long_rounded,
-                  color: _kOrange,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'MEMBERSHIP ENTRANCE PACKAGE REQUIRED',
-                      style: GoogleFonts.inter(
-                        color: AppColors.accentOrangeText,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    Text(
-                      'Upfront Registration Fee Paid • Settle Entrance Dues',
-                      style: GoogleFonts.inter(
-                        color: _kMuted,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Your upfront registration fee is settled! Please complete your New Membership Dues package to receive your official Membership ID and activate Active Good Standing privileges.',
-            style: GoogleFonts.inter(
-              color: _kText,
-              fontSize: 14,
-              height: 1.45,
-            ),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => context.go('/payments?fee=New%20Membership%20Dues'),
-              icon: const Icon(Icons.payment_rounded, size: 16),
-              label: const Text('Pay New Membership Dues Now'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kOrange,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(0, 44),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                textStyle: GoogleFonts.inter(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14.5,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPriorityTasksSection(List<dynamic> pending, Color primary) {
-    return Container(
-      decoration: BoxDecoration(
-        color: _kCardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _kBorder, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(_isDark ? 20 : 4),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            child: Row(
-              children: [
-                Text(
-                  'PRIORITY TASKS',
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 13,
-                    color: _kText,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-                if (pending.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: _kOrange.withAlpha(20),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '${pending.length}',
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 11,
-                        color: AppColors.accentOrangeText,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ),
-                ],
-                const Spacer(),
-                TextButton(
-                  onPressed: () => context.go('/tasks'),
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    foregroundColor: _kBrown,
-                  ),
-                  child: Text(
-                    'View All →',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12.5,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Divider(height: 1, color: _kBorder),
-          if (_loadingTasks && _tasks.isEmpty)
-            const Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: ShimmerListTile(),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: ShimmerListTile(),
-                ),
-              ],
-            )
-          else if (pending.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.check_circle_outline_rounded,
-                      size: 32,
-                      color: _kGreen,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'All tasks completed',
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: _kText,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Your filings and membership compliance are up to date.',
-                      style: GoogleFonts.inter(
-                        color: _kMuted,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else ...[
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: pending.length,
-              separatorBuilder: (context, i) => Divider(height: 1, color: _kBorder),
-              itemBuilder: (context, i) {
-                final task = pending[i];
-                final bool overdue = task['due_date'] != null &&
-                    DateTime.tryParse(task['due_date'].toString())?.isBefore(DateTime.now()) == true;
-                return InkWell(
-                  onTap: () async {
-                    final router = GoRouter.of(context);
-                    final rawUrl = task['action_url']?.toString().trim();
-                    if (rawUrl != null && rawUrl.isNotEmpty) {
-                      if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
-                        final uri = Uri.tryParse(rawUrl);
-                        if (uri != null && await canLaunchUrl(uri)) {
-                          await launchUrl(uri, mode: LaunchMode.externalApplication);
-                          return;
-                        }
-                      } else if (rawUrl.startsWith('/')) {
-                        if (!mounted) return;
-                        try {
-                          router.go(rawUrl);
-                          return;
-                        } catch (_) {
-                          if (mounted) router.go('/tasks');
-                          return;
-                        }
-                      }
-                    }
-                    if (!mounted) return;
-                    router.go('/tasks');
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: overdue ? const Color(0xFFFEE2E2) : _kSurfaceRaised,
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: overdue ? const Color(0xFFFCA5A5) : _kBorder,
-                            ),
-                          ),
-                          child: Icon(
-                            overdue ? Icons.warning_amber_rounded : Icons.receipt_long_outlined,
-                            color: overdue ? const Color(0xFFDC2626) : _kBrown,
-                            size: 18,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                task['title'] ?? '',
-                                style: GoogleFonts.inter(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14,
-                                  color: _kText,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                overdue
-                                    ? 'Overdue • ${task['due_date']}'
-                                    : 'Due: ${task['due_date'] ?? 'No deadline'}',
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  fontWeight: overdue ? FontWeight.bold : FontWeight.w500,
-                                  color: overdue ? const Color(0xFFDC2626) : _kMuted,
-                                  fontFeatures: const [FontFeature.tabularFigures()],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 13,
-                          color: _kMuted,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildForexSection(ThemeData theme, Color primary) {
-    return Container(
-      decoration: BoxDecoration(
-        color: _kCardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _kBorder, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(_isDark ? 20 : 4),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            child: Row(
-              children: [
-                Text(
-                  _forexIsSample ? 'FOREX RATES' : 'OFFICIAL FOREX RATES',
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 13,
-                    color: _kText,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: _forexIsSample
-                        ? const Color(0xFFFEF3C7)
-                        : _kGreen.withAlpha(20),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    _forexIsSample ? 'SAMPLE' : 'BOG INDICATIVE',
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      color: _forexIsSample ? const Color(0xFF92400E) : _kGreen,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Divider(height: 1, color: _kBorder),
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              children: [
-                if (_forexIsSample) ...[
-                  Text(
-                    ForexSnapshot.sampleNotice,
-                    style: GoogleFonts.inter(fontSize: 12, color: _kMuted),
-                  ),
-                  const SizedBox(height: 10),
-                ],
-                _forexRow('\$', 'USD/GHS', _forex['USD'] ?? '—', 'US Dollar'),
-                const SizedBox(height: 8),
-                _forexRow('€', 'EUR/GHS', _forex['EUR'] ?? '—', 'Euro'),
-                const SizedBox(height: 8),
-                _forexRow('£', 'GBP/GHS', _forex['GBP'] ?? '—', 'British Pound'),
-                const SizedBox(height: 8),
-                _forexRow('¥', 'CNY/GHS', _forex['CNY'] ?? '—', 'Chinese Yuan'),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => context.go('/live-data'),
-                    icon: const Icon(Icons.analytics_outlined, size: 16),
-                    label: Text(
-                      'Trade Intelligence Hub →',
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
-                      side: BorderSide(color: _kBorder, width: 1),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      foregroundColor: _kText,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _forexRow(String symbol, String pair, String rate, String name) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: _kSurfaceRaised,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _kBorder, width: 0.8),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: _kCardBg,
-              borderRadius: BorderRadius.circular(5),
-              border: Border.all(color: _kBorder, width: 0.6),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              symbol,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: _kBrown,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  pair,
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13.5,
-                    color: _kText,
-                  ),
-                ),
-                Text(
-                  name,
-                  style: GoogleFonts.inter(fontSize: 11, color: _kMuted),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            rate,
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w800,
-              fontSize: 16,
-              color: _kText,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActionsGrid(bool isMobile) {
-    final isPkgPaid = _user['package_fee_paid'] == true ||
-        _user['package_fee_paid'] == 1 ||
-        _user['membership_status'] == 'active';
-
-    final actions = [
-      {
-        'icon': Icons.school_outlined,
-        'label': 'CTI Courses',
-        'sub': 'Accredited training cohorts',
-        'route': '/courses',
-        'badge': 'ACCREDITED',
-        'highlight': true,
-      },
-      {
-        'icon': Icons.payments_outlined,
-        'label': 'Pay Dues',
-        'sub': isPkgPaid ? 'Annual renewal dues' : 'Entrance dues package',
-        'route': '/payments',
-        'badge': isPkgPaid ? 'ANNUAL' : 'PACKAGE',
-        'highlight': false,
-      },
-      {
-        'icon': Icons.how_to_vote_outlined,
-        'label': 'Surveys & Polls',
-        'sub': 'Stakeholder ballots',
-        'route': '/surveys',
-        'badge': 'ELECTIONS',
-        'highlight': false,
-      },
-      {
-        'icon': Icons.receipt_long_outlined,
-        'label': 'Statement',
-        'sub': 'Audited payment receipts',
-        'route': '/payment-history',
-        'badge': 'RECEIPTS',
-        'highlight': false,
-      },
-      {
-        'icon': Icons.headset_mic_outlined,
-        'label': 'Support Desk',
-        'sub': 'Inquiries & dispute tickets',
-        'route': '/engagement',
-        'badge': 'HELPDESK',
-        'highlight': false,
-      },
-      {
-        'icon': Icons.badge_outlined,
-        'label': 'Member Network',
-        'sub': 'Accredited clearing roll',
-        'route': '/networking',
-        'badge': 'DIRECTORY',
-        'highlight': false,
-      },
-    ];
-
-    final gridContent = GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: actions.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        childAspectRatio: isMobile ? 1.4 : 1.55,
-      ),
-      itemBuilder: (ctx, i) {
-        final a = actions[i];
-        final isHL = a['highlight'] == true;
-        return InkWell(
-          onTap: () => context.go(a['route'] as String),
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-            decoration: BoxDecoration(
-              color: isHL
-                  ? _kOrange.withAlpha(_isDark ? 28 : 12)
-                  : (_isDark ? const Color(0xFF140D09) : Colors.white),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isHL
-                    ? _kOrange
-                    : _kBorder.withAlpha(_isDark ? 100 : 160),
-                width: isHL ? 1.2 : 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(_isDark ? 22 : 5),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: isHL
-                            ? _kOrange.withAlpha(28)
-                            : _kBrown.withAlpha(16),
-                        borderRadius: BorderRadius.circular(7),
-                      ),
-                      child: Icon(
-                        a['icon'] as IconData,
-                        size: 17,
-                        color: isHL ? _kOrange : _kBrown,
-                      ),
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isHL
-                                ? _kOrange.withAlpha(25)
-                                : _kSurfaceRaised,
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                              color: isHL
-                                  ? _kOrange.withAlpha(80)
-                                  : _kBorder,
-                              width: 0.6,
-                            ),
-                          ),
-                          child: Text(
-                            a['badge'] as String,
-                            style: GoogleFonts.inter(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              color: isHL ? _kOrange : _kMuted,
-                              letterSpacing: 0.4,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 10,
-                          color: isHL
-                              ? _kOrange
-                              : _kMuted.withAlpha(130),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      a['label'] as String,
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: _kText,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      a['sub'] as String,
-                      style: GoogleFonts.inter(
-                        fontSize: 10.5,
-                        color: _kMuted,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: _kOrange.withAlpha(24),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Icon(
-                Icons.bolt_rounded,
-                size: 15,
-                color: _kOrange,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'QUICK ACTIONS & SERVICES',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w800,
-                fontSize: 11.5,
-                letterSpacing: 0.8,
-                color: _kText,
-              ),
-            ),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: _kSurfaceRaised,
-                borderRadius: BorderRadius.circular(99),
-                border: Border.all(color: _kBorder),
-              ),
-              child: Text(
-                '${actions.length} Portals',
-                style: GoogleFonts.inter(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w600,
-                  color: _kMuted,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        gridContent,
-      ],
-    );
-  }
-
-  Widget _buildActiveSurveysSection(Color primary) {
-    final activeSurveys = _surveys.where(_isSurveyActive).toList();
-
-    return Container(
-      decoration: BoxDecoration(
-        color: _kCardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _kBorder, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(_isDark ? 20 : 4),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            child: Row(
-              children: [
-                Text(
-                  'ASSOCIATION POLLS & SURVEYS',
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 13,
-                    color: _kText,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-                if (activeSurveys.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF8B5CF6).withAlpha(20),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '${activeSurveys.length}',
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                        color: const Color(0xFF8B5CF6),
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ),
-                ],
-                const Spacer(),
-                TextButton(
-                  onPressed: () => context.go('/surveys'),
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    foregroundColor: _kBrown,
-                  ),
-                  child: Text(
-                    'View All →',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12.5,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Divider(height: 1, color: _kBorder),
-          if (_loadingSurveys && _surveys.isEmpty)
-            const Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: ShimmerListTile(),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: ShimmerListTile(),
-                ),
-              ],
-            )
-          else if (activeSurveys.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.how_to_vote_outlined,
-                      size: 32,
-                      color: _kMuted,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'No active association polls right now',
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: _kText,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Upcoming elections and surveys will appear here.',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: _kMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else ...[
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: activeSurveys.take(3).length,
-              separatorBuilder: (context, i) => Divider(height: 1, color: _kBorder),
-              itemBuilder: (context, i) {
-                final s = activeSurveys[i];
-                final type = (s['type'] ?? 'Survey').toString().toUpperCase();
-                final title = s['title']?.toString() ?? 'Community Survey';
-                final deadline = s['deadline']?.toString();
-                final hasVoted = s['has_voted'] == true || s['has_responded'] == true;
-
-                return InkWell(
-                  onTap: () => context.go('/surveys'),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: hasVoted
-                                ? _kGreen.withAlpha(20)
-                                : const Color(0xFF8B5CF6).withAlpha(20),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Icon(
-                            hasVoted ? Icons.check_circle_outline_rounded : Icons.how_to_vote_outlined,
-                            color: hasVoted ? _kGreen : const Color(0xFF8B5CF6),
-                            size: 18,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF8B5CF6).withAlpha(20),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      type,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.w800,
-                                        color: const Color(0xFF8B5CF6),
-                                      ),
-                                    ),
-                                  ),
-                                  if (hasVoted) ...[
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                      decoration: BoxDecoration(
-                                        color: _kGreen.withAlpha(20),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        'VOTED',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 9.5,
-                                          fontWeight: FontWeight.w800,
-                                          color: _kGreen,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                  if (deadline != null && deadline.isNotEmpty) ...[
-                                    const Spacer(),
-                                    Text(
-                                      'Closes $deadline',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 11.5,
-                                        color: _kMuted,
-                                        fontFeatures: const [FontFeature.tabularFigures()],
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14,
-                                  color: _kText,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 13,
-                          color: _kMuted,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     Provider.of<ThemeService>(context);
-    final theme = Theme.of(context);
-    final primary = theme.primaryColor;
-    final firstName = (_user['name'] as String? ?? 'Member').split(' ').first;
     final role = _user['role'] as String? ?? '';
+    final isAdmin = role == 'admin' || role == 'sub_admin' || role == 'super_admin';
     final pending = _tasks.where((t) => t['done'] != true).toList();
-    final bool isPkgPaid = _user['package_fee_paid'] == true;
-    final bool isPackagePending = !isPkgPaid &&
-        (role != 'admin' && role != 'sub_admin' && role != 'super_admin');
+    final fullName = (_user['name'] as String? ?? 'Member').trim();
+    final firstName = fullName.split(' ').first;
+    final expiry = parseExpiry(_user['license_expiry_date']);
+    final status = licenceStatus(
+      packagePaid: isAdmin || _user['package_fee_paid'] == true,
+      expiry: expiry,
+      pendingTasks: _loadingTasks ? 0 : pending.length,
+    );
+    final activeSurveys = _surveys.where(_isSurveyActive).length;
 
     return AppLayout(
-      title: 'Dashboard',
+      title: 'Home',
       scrollable: false,
+      background: CubagColors.paper,
+      showMobileTitle: false,
       child: _loading && _tasks.isEmpty
           ? const DashboardSkeleton()
           : RefreshIndicator(
               onRefresh: _refreshFromNetwork,
-              color: _kOrange,
-              child: SingleChildScrollView(
+              color: CubagColors.action,
+              child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1200),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: MediaQuery.sizeOf(context).width < 600 ? 12 : 16,
-                        vertical: MediaQuery.sizeOf(context).width < 600 ? 12 : 16,
-                      ),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final isWide = constraints.maxWidth > 950;
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildWelcomeBanner(
-                                firstName,
-                                role,
-                                pending,
-                                primary,
-                                !isWide,
-                              ),
-                              const SizedBox(height: 14),
-                              _buildKpiLedgerGrid(pending, !isWide),
-                              const SizedBox(height: 22),
-                              if (isPackagePending) ...[
-                                _buildPackageSettlementPromptCard(),
-                                const SizedBox(height: 22),
-                              ],
-                              if (isWide) ...[
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      flex: 62,
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          _buildPriorityTasksSection(pending, primary),
-                                          const SizedBox(height: 20),
-                                          _buildActiveSurveysSection(primary),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 20),
-                                    Expanded(
-                                      flex: 38,
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          _buildQuickActionsGrid(false),
-                                          const SizedBox(height: 20),
-                                          _buildForexSection(theme, primary),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ] else ...[
-                                _buildQuickActionsGrid(true),
-                                const SizedBox(height: 20),
-                                _buildPriorityTasksSection(pending, primary),
-                                const SizedBox(height: 20),
-                                _buildActiveSurveysSection(primary),
-                                const SizedBox(height: 20),
-                                _buildForexSection(theme, primary),
-                              ],
+                padding: const EdgeInsets.fromLTRB(
+                  CubagSpace.lg, CubagSpace.lg, CubagSpace.lg, CubagSpace.xxxl,
+                ),
+                children: [
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 640),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            '${greetingFor(DateTime.now())}, $firstName',
+                            style: CubagType.display,
+                          ),
+                          const SizedBox(height: CubagSpace.lg),
+                          LicenceCard(
+                            name: fullName,
+                            company: _user['company']?.toString(),
+                            licenceNumber: _licenceNumber(),
+                            expiry: expiry,
+                            status: status,
+                            onOpen: () => context.go('/profile'),
+                            onAction: status.actionRoute == null
+                                ? null
+                                : () => context.go(status.actionRoute!),
+                          ),
+                          const SizedBox(height: CubagSpace.xxl),
+                          HomeSectionHeader(
+                            'To do',
+                            linkLabel: pending.length > 3 ? 'See all ${pending.length}' : null,
+                            onLink: () => context.go('/tasks'),
+                          ),
+                          HomeGroup(
+                            children: _loadingTasks && pending.isEmpty
+                                ? [const QuietRow(icon: Icons.hourglass_empty_rounded, text: 'Loading your tasks…')]
+                                : pending.isEmpty
+                                    ? [const QuietRow(icon: Icons.check_circle_rounded, text: 'You\'re all caught up.')]
+                                    : [for (final t in pending.take(3)) _taskRow(t)],
+                          ),
+                          const SizedBox(height: CubagSpace.xxl),
+                          const HomeSectionHeader('Services'),
+                          ShortcutGrid(
+                            items: const [
+                              Shortcut(Icons.payments_outlined, 'Pay dues', '/payments'),
+                              Shortcut(Icons.receipt_long_outlined, 'Statement', '/payment-history'),
+                              Shortcut(Icons.school_outlined, 'CTI courses', '/courses'),
+                              Shortcut(Icons.groups_outlined, 'Member network', '/networking'),
+                              Shortcut(Icons.how_to_vote_outlined, 'Polls', '/surveys'),
+                              Shortcut(Icons.support_agent_outlined, 'Support', '/engagement'),
                             ],
-                          );
-                        },
+                            onOpen: (r) => context.go(r),
+                          ),
+                          if (activeSurveys > 0) ...[
+                            const SizedBox(height: CubagSpace.xl),
+                            HomeGroup(
+                              children: [
+                                TaskRow(
+                                  title: activeSurveys == 1
+                                      ? '1 poll is open for your vote'
+                                      : '$activeSurveys polls are open for your vote',
+                                  onTap: () => context.go('/surveys'),
+                                ),
+                              ],
+                            ),
+                          ],
+                          const SizedBox(height: CubagSpace.xxl),
+                          HomeSectionHeader(
+                            'Exchange rates',
+                            linkLabel: 'More',
+                            onLink: () => context.go('/live-data'),
+                          ),
+                          if (_forexIsSample)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: CubagSpace.xs),
+                              child: Text(ForexSnapshot.sampleNotice, style: CubagType.small),
+                            ),
+                          HomeGroup(
+                            children: const [
+                              ('USD', 'US dollar'),
+                              ('EUR', 'Euro'),
+                              ('GBP', 'British pound'),
+                              ('CNY', 'Chinese yuan'),
+                            ].map((c) => RateRow(code: c.$1, name: c.$2, value: _forex[c.$1] ?? '—')).toList(),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
             ),
     );
+  }
+
+  /// Licence number to show on the card: the issued licence, else the
+  /// membership number; never a "pending" placeholder.
+  String? _licenceNumber() {
+    for (final k in ['license_number', 'membership_number']) {
+      final v = _user[k]?.toString().trim() ?? '';
+      if (v.isNotEmpty && !v.toLowerCase().contains('pending') && v != 'None') return v;
+    }
+    return null;
+  }
+
+  Widget _taskRow(dynamic task) {
+    final due = DateTime.tryParse(task['due_date']?.toString() ?? '');
+    final overdue = due != null && due.isBefore(DateTime.now());
+    return TaskRow(
+      title: task['title']?.toString() ?? 'Task',
+      due: due == null
+          ? null
+          : (overdue ? 'Overdue since ${formatLicenceDate(due)}' : 'Due ${formatLicenceDate(due)}'),
+      overdue: overdue,
+      onTap: () => _openTask(task),
+    );
+  }
+
+  Future<void> _openTask(dynamic task) async {
+    final router = GoRouter.of(context);
+    final rawUrl = task['action_url']?.toString().trim();
+    if (rawUrl != null && rawUrl.isNotEmpty) {
+      if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+        final uri = Uri.tryParse(rawUrl);
+        if (uri != null && await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          return;
+        }
+      } else if (rawUrl.startsWith('/')) {
+        if (!mounted) return;
+        router.go(rawUrl);
+        return;
+      }
+    }
+    if (mounted) router.go('/tasks');
   }
 }
 

@@ -8,11 +8,11 @@ import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../components/admin_search_delegate.dart';
 import '../components/member_search_delegate.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'app_logo.dart';
 import '../utils/app_logger.dart';
 import '../utils/session_storage.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
 class AppLayout extends StatefulWidget {
   final Widget child;
@@ -21,6 +21,15 @@ class AppLayout extends StatefulWidget {
   final bool scrollable;
   final Widget? floatingActionButton;
 
+  /// Mobile screen background. Redesigned screens use white
+  /// (CubagColors.paper); older screens keep the sand tone so their white
+  /// cards still separate from the page.
+  final Color? background;
+
+  /// Mobile header: hide the page title (e.g. Home, where the screen has its
+  /// own greeting).
+  final bool showMobileTitle;
+
   const AppLayout({
     super.key,
     required this.child,
@@ -28,6 +37,8 @@ class AppLayout extends StatefulWidget {
     this.hideSearch = true,
     this.scrollable = true,
     this.floatingActionButton,
+    this.background,
+    this.showMobileTitle = true,
   });
 
   @override
@@ -117,40 +128,42 @@ class _AppLayoutState extends State<AppLayout> {
     final isDesktop = size.width > 800;
     final isSmall = size.width < 600;
     final isNarrow = size.width < 380;
-    final primary = Theme.of(context).primaryColor;
     final currentRoute = GoRouterState.of(context).matchedLocation;
     final isThemeDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: isThemeDark
           ? Theme.of(context).scaffoldBackgroundColor
-          : const Color(0xFFF8F4F0),
+          : (isDesktop
+              ? const Color(0xFFF8F4F0)
+              : (widget.background ?? CubagColors.sand)),
       floatingActionButton: widget.floatingActionButton,
       appBar: isDesktop
           ? null
+          // Mobile header: quiet white bar with a hairline, the seal, and the
+          // page name; the brand colour is saved for each screen's hero.
           : AppBar(
-              backgroundColor: primary,
+              backgroundColor: widget.background ?? CubagColors.sand,
               surfaceTintColor: Colors.transparent,
               elevation: 0,
+              scrolledUnderElevation: 0,
+              shape: const Border(bottom: BorderSide(color: CubagColors.line)),
               centerTitle: false,
-              titleSpacing: isNarrow ? 10 : (isSmall ? 16 : 24),
-              iconTheme: const IconThemeData(color: Colors.white),
+              titleSpacing: isNarrow ? 12 : CubagSpace.lg,
+              iconTheme: const IconThemeData(color: CubagColors.ink),
               title: Row(
                 children: [
-                  const AppLogo(size: 28, borderRadius: 6, showShadow: false),
-                  const SizedBox(width: 8),
+                  const AppLogo(size: 30, borderRadius: 15, showShadow: false),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      widget.title,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: isNarrow ? 18 : (isSmall ? 20 : 22),
-                        letterSpacing: -0.5,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    child: widget.showMobileTitle
+                        ? Text(
+                            widget.title,
+                            style: CubagType.headline,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          )
+                        : const Text('CUBAG', style: CubagType.headline),
                   ),
                 ],
               ),
@@ -159,12 +172,11 @@ class _AppLayoutState extends State<AppLayout> {
                   context,
                   authService.userRole,
                   isSmall,
-                  isDark: true,
                 ),
                 const SizedBox(width: 4),
                 Consumer<AuthService>(
                   builder: (context, auth, _) =>
-                      _buildProfileMenu(context, auth, isSmall, isDark: true),
+                      _buildProfileMenu(context, auth, isSmall),
                 ),
                 SizedBox(width: (isNarrow ? 6 : 12) + MediaQuery.of(context).padding.right),
               ],
@@ -225,38 +237,24 @@ class _AppLayoutState extends State<AppLayout> {
                       ),
                     ),
                   )
+                // Phone body: just the screen on its background. Redesigned
+                // screens (those passing [background]) lay out their own
+                // gutters; older screens keep the 16 px padding they expect.
                 : Container(
-                    color: primary,
-                    child: Container(
-                      width: double.infinity,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFF8F4F0),
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(24),
-                        ),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(24),
-                        ),
-                        child: SelectionArea(
-                          child: widget.scrollable
-                              ? SingleChildScrollView(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: isNarrow ? 10 : 16,
-                                    vertical: isNarrow ? 10 : 16,
-                                  ),
-                                  child: widget.child,
-                                )
-                              : Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: isNarrow ? 10 : 16,
-                                    vertical: isNarrow ? 10 : 16,
-                                  ),
-                                  child: widget.child,
-                                ),
-                        ),
-                      ),
+                    width: double.infinity,
+                    color: widget.background ?? CubagColors.sand,
+                    child: Builder(
+                      builder: (context) {
+                        final pad = widget.background != null
+                            ? EdgeInsets.zero
+                            : EdgeInsets.symmetric(
+                                horizontal: isNarrow ? 10 : 16,
+                                vertical: isNarrow ? 10 : 16,
+                              );
+                        return widget.scrollable
+                            ? SingleChildScrollView(padding: pad, child: widget.child)
+                            : Padding(padding: pad, child: widget.child);
+                      },
                     ),
                   ),
           ),
@@ -334,7 +332,7 @@ class _AppLayoutState extends State<AppLayout> {
                             child: Text(
                               unreadCount > 99 ? '99+' : '$unreadCount',
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 9.5,
                                 fontWeight: FontWeight.w900,
@@ -416,7 +414,7 @@ class _AppLayoutState extends State<AppLayout> {
                       child: Text(
                         unreadCount > 99 ? '99+' : '$unreadCount',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
@@ -483,7 +481,7 @@ class _AppLayoutState extends State<AppLayout> {
                           children: [
                             Text(
                               'Notifications',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                                 color: textColor,
@@ -503,7 +501,7 @@ class _AppLayoutState extends State<AppLayout> {
                                 ),
                                 child: Text(
                                   '$unreadCount New',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     color: const Color(0xFFef4444),
                                     fontSize: 12,
                                     fontWeight: FontWeight.w800,
@@ -527,7 +525,7 @@ class _AppLayoutState extends State<AppLayout> {
                                 child: Center(
                                   child: Text(
                                     'No recent notifications',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 14,
                                       color: isThemeDark
                                           ? Colors.white70
@@ -584,7 +582,7 @@ class _AppLayoutState extends State<AppLayout> {
                                               children: [
                                                 Text(
                                                   n['title']?.toString() ?? '',
-                                                  style: GoogleFonts.inter(
+                                                  style: TextStyle(
                                                     fontWeight: isRead
                                                         ? FontWeight.w600
                                                         : FontWeight.w800,
@@ -598,7 +596,7 @@ class _AppLayoutState extends State<AppLayout> {
                                                 const SizedBox(height: 2),
                                                 Text(
                                                   n['message']?.toString() ?? '',
-                                                  style: GoogleFonts.inter(
+                                                  style: TextStyle(
                                                     fontSize: 13,
                                                     color: isThemeDark
                                                         ? Colors.white70
@@ -633,7 +631,7 @@ class _AppLayoutState extends State<AppLayout> {
                               children: [
                                 Text(
                                   'View All Notifications',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                     color: AppColors.accentOrangeText,
@@ -857,7 +855,7 @@ class _AppLayoutState extends State<AppLayout> {
                       children: [
                         Text(
                           authService.userName ?? 'Member',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16.5,
                             color: textColor,
@@ -871,7 +869,7 @@ class _AppLayoutState extends State<AppLayout> {
                               ? 'APPLICANT (ONBOARDING)'
                               : (authService.userEmail ??
                                   (authService.userRole ?? 'Member').toUpperCase()),
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 13,
                             color: isPending ? const Color(0xFFFF5000) : subTextColor,
                             fontWeight: isPending ? FontWeight.w600 : FontWeight.normal,
@@ -915,7 +913,7 @@ class _AppLayoutState extends State<AppLayout> {
                     const SizedBox(width: 12),
                     Text(
                       'Complete Application',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
                         color: textColor,
@@ -949,7 +947,7 @@ class _AppLayoutState extends State<AppLayout> {
                     const SizedBox(width: 12),
                     Text(
                       'My Profile',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16.5,
                         color: textColor,
@@ -988,7 +986,7 @@ class _AppLayoutState extends State<AppLayout> {
                     const SizedBox(width: 12),
                     Text(
                       'Settings',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16.5,
                         color: textColor,
@@ -1032,7 +1030,7 @@ class _AppLayoutState extends State<AppLayout> {
                   const SizedBox(width: 12),
                   Text(
                     'Sign Out',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16.5,
                       color: const Color(0xFFef4444),
@@ -1084,7 +1082,7 @@ class _AppLayoutState extends State<AppLayout> {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                       color: textColor,
@@ -1093,7 +1091,7 @@ class _AppLayoutState extends State<AppLayout> {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 12.5,
                       color: subTextColor,
                     ),
@@ -1171,7 +1169,7 @@ class _AppLayoutState extends State<AppLayout> {
                           children: [
                             Text(
                               'Notifications',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: textColor,
@@ -1187,7 +1185,7 @@ class _AppLayoutState extends State<AppLayout> {
                                 ),
                                 child: Text(
                                   '$unreadCount New',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w800,
                                     color: const Color(0xFFEF4444),
@@ -1218,7 +1216,7 @@ class _AppLayoutState extends State<AppLayout> {
                                 const SizedBox(height: 12),
                                 Text(
                                   'No new notifications',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,
                                     color: textColor,
@@ -1228,7 +1226,7 @@ class _AppLayoutState extends State<AppLayout> {
                                 Text(
                                   'You will be alerted about billings, approvals, and announcements.',
                                   textAlign: TextAlign.center,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     color: subTextColor,
                                   ),
@@ -1277,7 +1275,7 @@ class _AppLayoutState extends State<AppLayout> {
                                         children: [
                                           Text(
                                             n['title']?.toString() ?? '',
-                                            style: GoogleFonts.inter(
+                                            style: TextStyle(
                                               fontWeight: isRead ? FontWeight.w600 : FontWeight.w800,
                                               fontSize: 14.5,
                                               color: textColor,
@@ -1288,7 +1286,7 @@ class _AppLayoutState extends State<AppLayout> {
                                           const SizedBox(height: 3),
                                           Text(
                                             n['message']?.toString() ?? '',
-                                            style: GoogleFonts.inter(
+                                            style: TextStyle(
                                               fontSize: 13,
                                               color: subTextColor,
                                               height: 1.35,
@@ -1325,7 +1323,7 @@ class _AppLayoutState extends State<AppLayout> {
                       },
                       child: Text(
                         'View All Notifications',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14.5,
                         ),
@@ -1426,7 +1424,7 @@ class _AppLayoutState extends State<AppLayout> {
                           children: [
                             Text(
                               authService.userName ?? 'Member',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 17,
                                 color: textColor,
@@ -1437,7 +1435,7 @@ class _AppLayoutState extends State<AppLayout> {
                             const SizedBox(height: 3),
                             Text(
                               authService.userEmail ?? (authService.userRole ?? 'Member').toUpperCase(),
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 13,
                                 color: subTextColor,
                               ),
@@ -1453,7 +1451,7 @@ class _AppLayoutState extends State<AppLayout> {
                               ),
                               child: Text(
                                 isPending ? 'Applicant (Onboarding)' : 'Active Member',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                   color: isPending ? const Color(0xFFFF5000) : const Color(0xFF10B981),
@@ -1540,7 +1538,7 @@ class _AppLayoutState extends State<AppLayout> {
                     icon: const Icon(Icons.logout_rounded, size: 18),
                     label: Text(
                       'Sign Out',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                       ),
@@ -1605,7 +1603,7 @@ class _AppLayoutState extends State<AppLayout> {
           const SizedBox(width: 8),
           Text(
             widget.title,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               color: textColor,
               fontWeight: FontWeight.w800,
               fontSize: 22,
@@ -1646,8 +1644,6 @@ class _AppLayoutState extends State<AppLayout> {
     String currentRoute,
   ) {
     final isAdmin = role == 'admin' || role == 'sub_admin' || role == 'super_admin';
-    const orangeCTA = Color(0xFFFF5000);
-    const brownNav = Color(0xFF6B3E26);
 
     int currentIndex = 0;
     if (isAdmin) {
@@ -1677,49 +1673,51 @@ class _AppLayoutState extends State<AppLayout> {
       }
     }
 
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      selectedItemColor: orangeCTA,
-      unselectedItemColor: brownNav.withAlpha(160),
-      showUnselectedLabels: true,
-      selectedLabelStyle: const TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: 13,
+    void go(int index) {
+      if (isAdmin) {
+        if (index == 0) context.go('/admin/dashboard');
+        if (index == 1) context.go('/admin/members');
+        if (index == 2) context.go('/admin/payments');
+        if (index == 3) context.go('/menu');
+      } else {
+        if (index == 0) context.go('/dashboard');
+        if (index == 1) context.go('/networking');
+        if (index == 2) context.go('/compliance');
+        if (index == 3) context.go('/menu');
+      }
+    }
+
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: CubagColors.line)),
       ),
-      unselectedLabelStyle: const TextStyle(
-        fontWeight: FontWeight.w500,
-        fontSize: 13,
+      child: NavigationBar(
+        selectedIndex: currentIndex,
+        onDestinationSelected: go,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.groups_outlined),
+            selectedIcon: Icon(Icons.groups_rounded),
+            label: 'Network',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.verified_user_outlined),
+            selectedIcon: Icon(Icons.verified_user_rounded),
+            label: 'Compliance',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.menu_rounded),
+            selectedIcon: Icon(Icons.menu_open_rounded),
+            label: 'Menu',
+          ),
+        ],
       ),
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: Theme.of(context).brightness == Brightness.dark
-          ? const Color(0xFF281710)
-          : Colors.white,
-      elevation: 16,
-      onTap: (index) {
-        if (isAdmin) {
-          if (index == 0) context.go('/admin/dashboard');
-          if (index == 1) context.go('/admin/members');
-          if (index == 2) context.go('/admin/payments');
-          if (index == 3) context.go('/menu');
-        } else {
-          if (index == 0) context.go('/dashboard');
-          if (index == 1) context.go('/networking');
-          if (index == 2) context.go('/compliance');
-          if (index == 3) context.go('/menu');
-        }
-      },
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.group_rounded),
-          label: 'Network',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.verified_user_rounded),
-          label: 'Compliance',
-        ),
-        BottomNavigationBarItem(icon: Icon(Icons.menu_rounded), label: 'Menu'),
-      ],
     );
   }
 
@@ -1796,7 +1794,7 @@ class _AppLayoutState extends State<AppLayout> {
                             children: [
                               Text(
                                 'CUBAG',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   color: textColor,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w900,
@@ -1848,7 +1846,7 @@ class _AppLayoutState extends State<AppLayout> {
         ),
         child: Text(
           displayRole,
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w800,
             color: badgeText,
@@ -1984,7 +1982,7 @@ class _AppLayoutState extends State<AppLayout> {
                       children: [
                         Text(
                           authService.userName ?? 'Member',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                             color: textColor,
@@ -1994,7 +1992,7 @@ class _AppLayoutState extends State<AppLayout> {
                         ),
                         Text(
                           authService.userEmail ?? '',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             fontSize: 12,
                             color: subTextColor,
                           ),
@@ -2470,7 +2468,7 @@ class _AppLayoutState extends State<AppLayout> {
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
           child: Text(
             title,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
               color: headerColor,
@@ -2569,7 +2567,7 @@ class _AppLayoutState extends State<AppLayout> {
                       Expanded(
                         child: Text(
                           title,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             color: active ? activeTextColor : inactiveTextColor,
                             fontWeight: active
                                 ? FontWeight.w800
@@ -2594,7 +2592,7 @@ class _AppLayoutState extends State<AppLayout> {
                           ),
                           child: Text(
                             badge > 99 ? '99+' : badge.toString(),
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               color: Colors.white,
                               fontSize: 11.5,
                               fontWeight: FontWeight.w800,

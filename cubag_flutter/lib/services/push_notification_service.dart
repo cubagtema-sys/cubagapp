@@ -131,6 +131,8 @@ class PushNotificationService {
   /// and synchronizes the FCM token with the backend.
   Future<void> requestPermissionsAndSyncToken() async {
     if (kIsWeb) return;
+    // Design-preview debug runs: no system prompt over the screens under review.
+    if (kDebugMode && const String.fromEnvironment('DESIGN_LOGIN_EMAIL').isNotEmpty) return;
     try {
       // 1. Request Darwin (iOS) notifications permission
       final iosPlugin = _localNotifications

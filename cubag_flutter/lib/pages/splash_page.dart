@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../utils/session_storage.dart';
 import '../services/auth_service.dart';
 import '../services/biometric_service.dart';
@@ -181,6 +180,30 @@ class _SplashPageState extends State<SplashPage>
 
     final token = SessionStorage.instance.getStringSync('cubag_token');
     final bool loggedIn = (token != null && token.isNotEmpty) || auth.isAuthenticated;
+
+    // Design preview (debug builds only, compiled out of release): sign in
+    // with a demo account and/or open a given screen, so screens can be
+    // reviewed on a simulator without typing. Set with --dart-define.
+    if (kDebugMode) {
+      const demoEmail = String.fromEnvironment('DESIGN_LOGIN_EMAIL');
+      const startRoute = String.fromEnvironment('DESIGN_START_ROUTE');
+      if (demoEmail.isNotEmpty && !loggedIn) {
+        final err = await auth.login(
+          demoEmail,
+          const String.fromEnvironment('DESIGN_LOGIN_PASSWORD'),
+        );
+        debugPrint('[DesignPreview] demo sign-in: ${err ?? 'ok'}');
+        if (!mounted) return;
+        if (err == null && startRoute.isEmpty) {
+          _proceedAfterLogin(auth);
+          return;
+        }
+      }
+      if (startRoute.isNotEmpty) {
+        context.go(startRoute);
+        return;
+      }
+    }
 
     if (loggedIn) {
       if (!kIsWeb) {
@@ -489,7 +512,7 @@ class _SplashPageState extends State<SplashPage>
                       opacity: _titleOpacity.value.clamp(0.0, 1.0),
                       child: Text(
                         'C U B A G',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w900,
                           letterSpacing: _titleSpacing.value,
@@ -539,7 +562,7 @@ class _SplashPageState extends State<SplashPage>
                                   const SizedBox(width: 6),
                                   Text(
                                     'CUSTOMS BROKERS ASSOCIATION OF GHANA',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 12.5,
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: 1.2,
@@ -552,7 +575,7 @@ class _SplashPageState extends State<SplashPage>
                             const SizedBox(height: 14),
                             Text(
                               'Advancing Customs Excellence • Facilitating Global Trade',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w400,
                                 color: const Color(0xFF9E8E84),
@@ -591,7 +614,7 @@ class _SplashPageState extends State<SplashPage>
                 const SizedBox(height: 14),
                 Text(
                   'CUBAG PORTAL',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 1.5,
@@ -617,7 +640,7 @@ class _SplashPageState extends State<SplashPage>
                     icon: const Icon(Icons.fingerprint_rounded, size: 24),
                     label: Text(
                       'Unlock with Face ID',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),
@@ -641,7 +664,7 @@ class _SplashPageState extends State<SplashPage>
                     },
                     child: Text(
                       'Sign in with another account',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: Colors.white70,
                         fontSize: 13.5,
                         fontWeight: FontWeight.w500,
