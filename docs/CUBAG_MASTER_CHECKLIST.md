@@ -87,7 +87,7 @@ Real-PostgreSQL results and the device test sheet are in `CUBAG_VERIFICATION_LOG
 | [~] | P1 | SEC-13 | Stop writing `cubag_token` to SharedPreferences; delete legacy copy | `session_storage_stub.dart` | prefs file has no token |
 | [~] | P1 | SEC-14 | Biometric: store a revocable device token instead of the password — backend done and tested (fake-DB 28, real PostgreSQL 24); app code written but **not compiled, not device-tested** | `biometric_service_native.dart`, `auth.py` | password not in keychain |
 | [ ] | P1 | PERF-08 | Encrypt the Hive `api_cache` box, or exclude sensitive endpoints | `api_service.dart`, `main.dart` | box file unreadable |
-| [ ] | P1 | BUG-04 | Add Crashlytics or `sentry_flutter`; route `FlutterError`/`PlatformDispatcher` errors to it | `main.dart` | test crash appears in console |
+| [~] | P1 | BUG-04 | Firebase Crashlytics: uncaught errors + scrubbed AppLogger non-fatals, release-only, not linked to member (`422b79c`) — **not yet built**; owner: enable Crashlytics in console, iOS dSYM phase, store privacy forms | `main.dart`, `crash_reporting.dart` | test crash appears in console |
 | [~] | P1 | BUG-07 | Request notification permission after login with an explainer | `main.dart`, `push_notification_service.dart` | fresh install: no prompt before login |
 | [~] | P1 | IOS-14 | Add app-level `PrivacyInfo.xcprivacy` | `ios/Runner/` | Xcode privacy report clean |
 | [ ] | P1 | AND-07 | Verify 16 KB page-size compatibility; update plugins if needed | build output | Play pre-launch report passes |
@@ -185,20 +185,20 @@ _Recalculated directly from the `[ ]/[~]/[x]/[!]` marker on every row above — 
 |---|---|---|---|---|---|
 | 0 Owner verifications | 13 | 1 | 0 | 0 | 12 |
 | 1 Backend security | 27 | 15 | 5 | 2 | 5 |
-| 2 Mobile & store blockers | 21 | 0 | 13 | 4 | 4 |
+| 2 Mobile & store blockers | 21 | 0 | 14 | 4 | 3 |
 | 3 Compliance & listing | 10 | 2 | 0 | 0 | 8 |
 | 4 Functional & testing | 10 | 5 | 2 | 1 | 2 |
 | 5 DB & ops | 9 | 0 | 0 | 1 | 8 |
 | 6 UI/UX & responsive | 18 | 0 | 0 | 0 | 18 |
 | 7 Cleanup | 8 | 0 | 0 | 0 | 8 |
-| **Total** | **116** | **23** | **20** | **8** | **65** |
+| **Total** | **116** | **23** | **21** | **8** | **64** |
 
 By priority (same rows, split the other way):
 
 | Priority | Rows | Done | In progress | Blocked | Not started |
 |---|---|---|---|---|---|
 | P0 | 42 | 12 | 10 | 4 | 16 |
-| P1 | 39 | 9 | 7 | 4 | 19 |
+| P1 | 39 | 9 | 8 | 4 | 18 |
 | P2 | 24 | 2 | 3 | 0 | 19 |
 | P3 | 11 | 0 | 0 | 0 | 11 |
 

@@ -12,7 +12,13 @@ You pasted the real `cubag-backend/.env` file (with live `DB_PASSWORD`, `DATABAS
 
 - Verification run 3 and the Mac real-PostgreSQL run (45/45, real driver) confirmed SEC-14's app code compiles, passes tests and builds. Device testing (section 9 of the device checklist) is in progress on the owner's iPhone.
 - Bug section, code-fixable items: BUG-09, BUG-13 done; BUG-08 mostly done (remaining items listed in the checklist); plus new BUG-14/15/16, SEC-26, SEC-27 (see `CUBAG_VERIFICATION_LOG.md`).
-- Remaining bug-section items: **BUG-04 crash reporting** (needs owner choice: Firebase Crashlytics or Sentry), BUG-01 (owner: APNs key in Firebase), BUG-03 (owner: keystore), BUG-06 (owner: copy `docs/ci.yml.proposed` to `.github/workflows/ci.yml`), BUG-07 (device check).
+- BUG-04 (Firebase Crashlytics, owner's choice) implemented in `422b79c`, **not yet built**. Owner steps:
+  1. Run `verify_cubag.command` (run 4). It runs `flutter pub get`, which updates `pubspec.lock`; commit that file afterwards.
+  2. Firebase console → project `schb-8cd66` → Crashlytics → enable.
+  3. Xcode → Runner target → Build Phases → + New Run Script Phase (after "Embed Frameworks"): `"${PODS_ROOT}/FirebaseCrashlytics/run"`, input files `${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}` and `${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${PRODUCT_NAME}`, and Build Settings → Debug Information Format = "DWARF with dSYM File" for Release. (I did not edit `project.pbxproj` because it has your uncommitted Xcode changes.)
+  4. Prove it: a release build that throws once (e.g. temporary button) → the crash appears in the console within minutes.
+  5. Store forms: Play Data safety → Crash logs + Diagnostics; App Store → Crash Data (not linked). See `CUBAG_STORE_READINESS.md` §6.
+- Remaining bug-section items: BUG-01 (owner: APNs key in Firebase), BUG-03 (owner: keystore), BUG-06 (owner: copy `docs/ci.yml.proposed` to `.github/workflows/ci.yml`), BUG-07 (device check).
 - Uncommitted iOS changes on disk that are **not mine**: `project.pbxproj` (Xcode format upgrade) and `Runner.entitlements` with `aps-environment` removed. Fine for a free-Apple-ID device install, but **do not commit the entitlements change** — it disables push notifications.
 - Commits: `df9b3e0` key leak + BUG-13 · `c9f90e4` BUG-09/BUG-08 · `67fde84` certificate + lost uploads + /me & profile crashes · docs commit after this.
 - Real-PG suite is now 54 tests; re-run it on the Mac with the real driver:

@@ -19,7 +19,7 @@ Legend — **Type:** `MANDATORY` (always required), `DEPENDS` (required because 
 | 1.5 | 16 KB page-size support (native libs) | MANDATORY (targets Android 15+) | ⚠️ unverified | — | Plugins with native code: `mobile_scanner` (ML Kit), `local_auth`, `flutter_secure_storage`, `printing`, `webview_flutter`. Check APK Analyzer / Play pre-launch report for "16 KB alignment"; update plugins if flagged. |
 | 1.6 | Version numbering | MANDATORY | ✅ `1.0.0+1` | ✅ | Increment the build number for every upload. |
 | 1.7 | Edge-to-edge (Android 15+) | MANDATORY behaviour | ⚠️ | — | Enforced when targeting API 35+. `systemNavigationBarColor` in `main.dart` is ignored there. Test every screen without an AppBar. |
-| 1.8 | Crash-free launch & core flows | MANDATORY | ⚠️ no crash reporting (`main.dart:39-45` swallows errors) | ⚠️ | Add Crashlytics or Sentry; run the core-flow smoke test (roadmap Phase 4) on real devices. |
+| 1.8 | Crash-free launch & core flows | MANDATORY | Crashlytics wired in code (BUG-04, `422b79c`); not yet built or seen in the console | ⚠️ | Run verification 4, enable Crashlytics in Firebase, add iOS dSYM upload phase, force a test crash on a release build; run the core-flow smoke test |
 
 ## 2. App icon, splash and listing assets
 
@@ -97,7 +97,7 @@ Derived from registration (`auth.py:261-330`), profile, documents, payments, mes
 | Complaints (name, email, phone, description) — includes guests | Yes | Grievance handling | Supabase | Optional |
 | Device push token | Yes | Notifications | Firebase Cloud Messaging | Optional |
 | Biometric data | **No** (handled on-device by OS) | — | — | — |
-| Crash/diagnostics | Only if you add Crashlytics/Sentry | Stability | Google/Sentry | — |
+| Crash/diagnostics | Crash logs and diagnostics via Firebase Crashlytics (release builds; not linked to the member; tokens, e-mails and numbers scrubbed) | App stability | Google (Firebase) | Declare: Play Data safety → *App info and performance → Crash logs, Diagnostics* (collected, not shared, not linked); App Store → *Diagnostics → Crash Data* (not linked, not tracking) |
 | Location, contacts, advertising ID | No | — | — | — |
 
 Encryption in transit: **Yes** for the API (HTTPS); Android cleartext disabled; fix iOS ATS (3.8). Deletion: in-app + web link (3.3–3.4).
