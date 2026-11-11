@@ -3,6 +3,7 @@ import '../components/app_layout.dart';
 import '../components/custom_dropdown.dart';
 import '../services/api_service.dart';
 import '../utils/app_logger.dart';
+import '../design/cubag_design.dart';
 
 class EngagementPage extends StatefulWidget {
   const EngagementPage({super.key});
@@ -21,9 +22,9 @@ class _EngagementPageState extends State<EngagementPage> {
   Map<String, dynamic>? _selectedTicket;
 
   static const _kBrown = Color(0xFF6B3E26);
-  static const _kOrange = Color(0xFFFF5000);
-  static const _kGreen = Color(0xFF10B981);
-  static const _kAmber = Color(0xFFF59E0B);
+  static const _kOrange = CubagColors.action;
+  static const _kGreen = CubagColors.valid;
+  static const _kAmber = CubagColors.due;
 
   final _subjects = [
     {
@@ -126,9 +127,9 @@ class _EngagementPageState extends State<EngagementPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF1E130D) : Colors.white;
-    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
-    final text = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
-    final muted = isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B);
+    final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
+    final text = isDark ? const Color(0xFFFFF8F3) : CubagColors.ink;
+    final muted = isDark ? const Color(0xFFC8ADA0) : CubagColors.muted;
     final surfaceRaised = isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
 
     return AppLayout(
@@ -522,7 +523,6 @@ class _EngagementPageState extends State<EngagementPage> {
                           color: sm['color'] as Color,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
@@ -542,12 +542,11 @@ class _EngagementPageState extends State<EngagementPage> {
                       Row(
                         children: [
                           Text(
-                            'SUBMITTED BY YOU',
+                            'Submitted by you',
                             style: TextStyle(
                               fontSize: 11,
                               color: muted,
                               fontWeight: FontWeight.w700,
-                              letterSpacing: 0.4,
                             ),
                           ),
                           const Spacer(),
@@ -597,7 +596,6 @@ class _EngagementPageState extends State<EngagementPage> {
                                     fontSize: 11,
                                     color: isAdmin ? _kBrown : muted,
                                     fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.4,
                                   ),
                                 ),
                                 const Spacer(),
@@ -695,7 +693,6 @@ class _EngagementPageState extends State<EngagementPage> {
                         color: sm['color'] as Color,
                         fontSize: 10.5,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 0.4,
                       ),
                     ),
                   ),

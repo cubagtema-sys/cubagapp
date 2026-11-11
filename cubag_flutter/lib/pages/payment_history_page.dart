@@ -16,16 +16,17 @@ import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
 // Balanced CUBAG Brand Palette
 const _kBrown = Color(0xFF6B3E26); // Primary Brown
-const _kOrange = Color(0xFFFF5000); // Primary Orange CTA
+const _kOrange = CubagColors.action; // Primary Orange CTA
 const _kDarkBrown = Color(0xFF3E2418); // Deep Dark Contrast
-const _kCream = Color(0xFFF8F4F0); // Light Background Cream
+const _kCream = CubagColors.sand; // Light Background Cream
 const _kWhite = Color(0xFFFFFFFF); // White Surfaces
-const _kText = Color(0xFF2B211D); // Deep Body Text
-const _kMuted = Color(0xFF6F625B); // Secondary Muted Text
-const _kBorder = Color(0xFFE8DED6); // Soft Warm Border
+const _kText = CubagColors.ink; // Deep Body Text
+const _kMuted = CubagColors.muted; // Secondary Muted Text
+const _kBorder = CubagColors.line; // Soft Warm Border
 
 class PaymentHistoryPage extends StatefulWidget {
   const PaymentHistoryPage({super.key});
@@ -53,22 +54,22 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     },
     'pending': {
       'label': 'PENDING APPROVAL',
-      'color': Color(0xFFD97706),
-      'bg': Color(0xFFFFFBEB),
+      'color': CubagColors.due,
+      'bg': CubagColors.dueTint,
       'border': Color(0xFFFDE68A),
       'icon': Icons.hourglass_top_rounded,
     },
     'failed': {
       'label': 'FAILED',
-      'color': Color(0xFFDC2626),
-      'bg': Color(0xFFFEF2F2),
+      'color': CubagColors.lapsed,
+      'bg': CubagColors.lapsedTint,
       'border': Color(0xFFFECACA),
       'icon': Icons.cancel_rounded,
     },
     'overdue': {
       'label': 'OVERDUE',
-      'color': Color(0xFFDC2626),
-      'bg': Color(0xFFFEF2F2),
+      'color': CubagColors.lapsed,
+      'bg': CubagColors.lapsedTint,
       'border': Color(0xFFFECACA),
       'icon': Icons.warning_amber_rounded,
     },
@@ -240,7 +241,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                         ),
                       ),
                       child: pw.Text(
-                        'OFFICIAL RECEIPT',
+                        'Official receipt',
                         style: pw.TextStyle(
                           fontSize: 12,
                           fontWeight: pw.FontWeight.bold,
@@ -255,7 +256,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                 // Receipt Title
                 pw.Center(
                   child: pw.Text(
-                    'PAYMENT RECEIPT',
+                    'Payment receipt',
                     style: pw.TextStyle(
                       fontSize: 20,
                       fontWeight: pw.FontWeight.bold,
@@ -280,7 +281,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                   child: pw.Column(
                     children: [
                       pw.Text(
-                        'TOTAL AMOUNT PAID',
+                        'Total amount paid',
                         style: pw.TextStyle(
                           fontSize: 12,
                           color: PdfColor.fromInt(0xFF6F625B),
@@ -491,7 +492,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dialogBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final surfaceBg = isDark ? const Color(0xFF1A0F0A) : _kCream;
+    final surfaceBg = isDark ? CubagColors.ink : _kCream;
     final borderCol = isDark ? const Color(0xFF4D2D20) : _kBorder;
     final titleCol = isDark ? Colors.white : _kBrown;
     final mutedCol = isDark ? Colors.white70 : _kMuted;
@@ -576,11 +577,10 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
 
                 // Receipt Title & Badge
                 Text(
-                  'OFFICIAL PAYMENT RECEIPT',
+                  'Official payment receipt',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
                     color: titleCol,
                   ),
                 ),
@@ -632,12 +632,11 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                   child: Column(
                     children: [
                       Text(
-                        'TOTAL AMOUNT PAID',
+                        'Total amount paid',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: mutedCol,
-                          letterSpacing: 1,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -934,7 +933,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: isDark ? const Color(0xFF382218) : const Color(0xFFF1F5F9),
+            color: isDark ? const Color(0xFF382218) : CubagColors.sand,
             width: 1,
           ),
         ),
@@ -1060,7 +1059,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final surfaceBg = isDark ? const Color(0xFF1A0F0A) : _kCream;
+    final surfaceBg = isDark ? CubagColors.ink : _kCream;
     final borderCol = isDark ? const Color(0xFF4D2D20) : _kBorder;
     final textCol = isDark ? Colors.white : _kText;
     final mutedCol = isDark ? Colors.white70 : _kMuted;
@@ -1114,12 +1113,11 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                                   ),
                                 ),
                                 child: const Text(
-                                  'OFFICIAL FINANCIAL STATEMENT',
+                                  'Official financial statement',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.4,
                                   ),
                                 ),
                               ),
@@ -1251,10 +1249,10 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                   ),
                   _kpiCard(
                     icon: Icons.cancel_rounded,
-                    color: const Color(0xFFDC2626),
+                    color: CubagColors.lapsed,
                     bg: isDark
-                        ? const Color(0xFFDC2626).withAlpha(35)
-                        : const Color(0xFFFEF2F2),
+                        ? CubagColors.lapsed.withAlpha(35)
+                        : CubagColors.lapsedTint,
                     label: 'FAILED',
                     value: 'GH₵ ${_fmt(failedTotal)}',
                     isDark: isDark,
@@ -1616,7 +1614,6 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                                               fontSize: 10.5,
                                               fontWeight: FontWeight.w700,
                                               color: config['color'] as Color,
-                                              letterSpacing: 0.4,
                                             ),
                                           ),
                                         ),
@@ -1945,7 +1942,6 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                     fontSize: 10,
                     color: color,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 0.4,
                   ),
                 ),
               ),
@@ -1995,7 +1991,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A0F0A) : _kCream,
+        color: isDark ? CubagColors.ink : _kCream,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: isDark ? const Color(0xFF4D2D20) : _kBorder),
       ),
@@ -2074,7 +2070,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                   const Icon(
                     Icons.cancel_rounded,
                     size: 16,
-                    color: Color(0xFFDC2626),
+                    color: CubagColors.lapsed,
                   ),
                   const SizedBox(width: 8),
                   Text('Failed ($failedCount)'),

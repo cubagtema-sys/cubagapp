@@ -5,6 +5,7 @@ import '../services/calendar_service.dart';
 import '../components/shimmer_loader.dart';
 import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
+import '../design/cubag_design.dart';
 
 class EventsPage extends StatefulWidget {
   const EventsPage({super.key});
@@ -154,14 +155,14 @@ class _EventsPageState extends State<EventsPage> {
           border: Border.all(
             color: isSelected
                 ? primary
-                : (isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6)),
+                : (isDark ? const Color(0xFF3D261C) : CubagColors.line),
             width: 1.0,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : (isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B)),
+            color: isSelected ? Colors.white : (isDark ? const Color(0xFFC8ADA0) : CubagColors.muted),
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
             fontSize: 13,
           ),
@@ -172,9 +173,9 @@ class _EventsPageState extends State<EventsPage> {
 
   Widget _buildHeaderControls(Color primary, bool isDark) {
     final cardBg = isDark ? const Color(0xFF1E130D) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
-    final textColor = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
-    final mutedColor = isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B);
+    final borderColor = isDark ? const Color(0xFF3D261C) : CubagColors.line;
+    final textColor = isDark ? const Color(0xFFFFF8F3) : CubagColors.ink;
+    final mutedColor = isDark ? const Color(0xFFC8ADA0) : CubagColors.muted;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,9 +242,9 @@ class _EventsPageState extends State<EventsPage> {
   }
 
   Widget _buildCalendarBadge(DateTime? date, Color primary, bool isDark) {
-    final badgeBorder = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final badgeBorder = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final badgeBg = isDark ? const Color(0xFF1E130D) : Colors.white;
-    final dayTextColor = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
+    final dayTextColor = isDark ? const Color(0xFFFFF8F3) : CubagColors.ink;
 
     if (date == null) {
       return Container(
@@ -294,7 +295,6 @@ class _EventsPageState extends State<EventsPage> {
                 color: Colors.white,
                 fontSize: 10.5,
                 fontWeight: FontWeight.w900,
-                letterSpacing: 0.5,
               ),
             ),
           ),
@@ -343,7 +343,6 @@ class _EventsPageState extends State<EventsPage> {
               color: color,
               fontSize: 11,
               fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
             ),
           ),
         ],
@@ -439,12 +438,11 @@ class _EventsPageState extends State<EventsPage> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        'EVENT DETAILS',
+                        'Event details',
                         style: TextStyle(
                           color: primary,
                           fontSize: 13,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
@@ -452,14 +450,14 @@ class _EventsPageState extends State<EventsPage> {
                       tooltip: 'Close',
                       icon: const Icon(
                         Icons.close_rounded,
-                        color: Color(0xFF64748b),
+                        color: CubagColors.muted,
                       ),
                       onPressed: () => Navigator.pop(ctx),
                     ),
                   ],
                 ),
               ),
-              const Divider(height: 1, color: Color(0xFFf1f5f9)),
+              const Divider(height: 1, color: CubagColors.sand),
               // Scrollable Content
               Flexible(
                 child: SingleChildScrollView(
@@ -517,10 +515,10 @@ class _EventsPageState extends State<EventsPage> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFf8fafc),
+                        color: CubagColors.sand,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: const Color(0xFFcbd5e1).withAlpha(80),
+                          color: CubagColors.lineStrong.withAlpha(80),
                         ),
                       ),
                       child: Text(
@@ -528,7 +526,7 @@ class _EventsPageState extends State<EventsPage> {
                             'No description provided.',
                         style: TextStyle(
                           fontSize: 15,
-                          color: const Color(0xFF475569),
+                          color: CubagColors.inkSoft,
                           height: 1.5,
                           fontWeight: FontWeight.w500,
                         ),
@@ -595,7 +593,7 @@ class _EventsPageState extends State<EventsPage> {
                                   ],
                                 ),
                                 behavior: SnackBarBehavior.floating,
-                                backgroundColor: const Color(0xFF10b981),
+                                backgroundColor: CubagColors.valid,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -677,7 +675,7 @@ class _EventsPageState extends State<EventsPage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
-                color: Color(0xFFf1f5f9),
+                color: CubagColors.sand,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -706,7 +704,7 @@ class _EventsPageState extends State<EventsPage> {
                   : 'Check back later for meetings and seminars.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: const Color(0xFF64748b),
+                color: CubagColors.muted,
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
               ),
@@ -736,21 +734,21 @@ class _EventsPageState extends State<EventsPage> {
           if (eventDay == todayDate) {
             statusPill = _buildStatusPill(
               'Today',
-              const Color(0xFF10b981),
+              CubagColors.valid,
               isBlinking: true,
             );
           } else if (eventDay.isAfter(todayDate)) {
             statusPill = _buildStatusPill('Upcoming', const Color(0xFF3b82f6));
           } else {
-            statusPill = _buildStatusPill('Past', const Color(0xFF64748b));
+            statusPill = _buildStatusPill('Past', CubagColors.muted);
           }
         }
 
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final cardBg = isDark ? const Color(0xFF1E130D) : Colors.white;
         final textColor = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF281710);
-        final mutedColor = isDark ? const Color(0xFFC8ADA0) : const Color(0xFF64748B);
-        final borderColor = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+        final mutedColor = isDark ? const Color(0xFFC8ADA0) : CubagColors.muted;
+        final borderColor = isDark ? const Color(0xFF3D261C) : CubagColors.line;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
@@ -833,7 +831,7 @@ class _EventsPageState extends State<EventsPage> {
                                       e['time'].toString(),
                                       style: TextStyle(
                                         fontSize: 13.5,
-                                        color: const Color(0xFF64748b),
+                                        color: CubagColors.muted,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -855,7 +853,7 @@ class _EventsPageState extends State<EventsPage> {
                                         e['location'].toString(),
                                         style: TextStyle(
                                           fontSize: 13.5,
-                                          color: const Color(0xFF64748b),
+                                          color: CubagColors.muted,
                                           fontWeight: FontWeight.w600,
                                         ),
                                         maxLines: 1,
@@ -879,7 +877,7 @@ class _EventsPageState extends State<EventsPage> {
                                       'Limit: ${e['capacity']}',
                                       style: TextStyle(
                                         fontSize: 13.5,
-                                        color: const Color(0xFF64748b),
+                                        color: CubagColors.muted,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),

@@ -11,14 +11,15 @@ import '../utils/course_payment_policy.dart';
 import '../services/socket_service.dart';
 import 'package:go_router/go_router.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
 const _kBrown = Color(0xFF6B3E26);
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10B981);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
 const _kBlue = Color(0xFF3B82F6);
 const _kIndigo = Color(0xFF6366F1);
 const _kPurple = Color(0xFF8B5CF6);
-const _kRed = Color(0xFFEF4444);
+const _kRed = CubagColors.lapsed;
 
 class CtiCoursesPage extends StatefulWidget {
   const CtiCoursesPage({super.key});
@@ -196,11 +197,11 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
       builder: (sheetCtx) => StatefulBuilder(
         builder: (context, setSheetState) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
-          final sheetBg = isDark ? const Color(0xFF1A0F0A) : Colors.white;
-          final textCol = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
-          final subTextCol = isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748B);
-          final borderCol = isDark ? const Color(0xFF281710) : const Color(0xFFE2E8F0);
-          final innerBox = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC);
+          final sheetBg = isDark ? CubagColors.ink : Colors.white;
+          final textCol = isDark ? CubagColors.sand : CubagColors.ink;
+          final subTextCol = isDark ? const Color(0xFF5F6B7E) : CubagColors.muted;
+          final borderCol = isDark ? const Color(0xFF281710) : CubagColors.line;
+          final innerBox = isDark ? CubagColors.ink : CubagColors.sand;
 
           Color networkBadgeCol = _kOrange;
           String networkLabel = 'Enter MoMo phone number';
@@ -208,7 +209,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
             networkBadgeCol = const Color(0xFFEAB308);
             networkLabel = 'MTN Mobile Money';
           } else if (detectedNetwork == 'Telecel' || detectedNetwork == 'Vodafone') {
-            networkBadgeCol = const Color(0xFFEF4444);
+            networkBadgeCol = CubagColors.lapsed;
             networkLabel = 'Telecel Cash';
           } else if (detectedNetwork == 'AirtelTigo') {
             networkBadgeCol = const Color(0xFF3B82F6);
@@ -260,7 +261,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                     const SizedBox(height: 16),
 
                     if (!isFreeCourse) ...[
-                      Text('SELECT MOBILE CARRIER', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: subTextCol, letterSpacing: 0.5)),
+                      Text('Select mobile carrier', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: subTextCol, letterSpacing: 0.5)),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
@@ -283,7 +284,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                         }).toList(),
                       ),
                       const SizedBox(height: 12),
-                      Text('MOMO PHONE NUMBER', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: subTextCol, letterSpacing: 0.5)),
+                      Text('MoMo phone number', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900, color: subTextCol, letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       TextFormField(
                         keyboardType: TextInputType.phone,
@@ -437,8 +438,8 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
         builder: (context, setDlgState) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
           final cardBg = isDark ? const Color(0xFF1E1B18) : Colors.white;
-          final textCol = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
-          final mutedCol = isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748B);
+          final textCol = isDark ? CubagColors.sand : CubagColors.ink;
+          final mutedCol = isDark ? const Color(0xFF5F6B7E) : CubagColors.muted;
 
           Future<void> checkStatus({bool isManual = false}) async {
             if (isCompleted || !mounted || isChecking) return;
@@ -576,10 +577,10 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF2A231C) : const Color(0xFFF1F5F9),
+                    color: isDark ? const Color(0xFF2A231C) : CubagColors.sand,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isDark ? const Color(0xFF3E332A) : const Color(0xFFE2E8F0),
+                      color: isDark ? const Color(0xFF3E332A) : CubagColors.line,
                     ),
                   ),
                   child: Row(
@@ -737,9 +738,9 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
   }
 
   Widget _buildMiniBadge(IconData icon, String text, Color color, {bool isDark = false}) {
-    final borderCol = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
+    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final bgCol = isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
-    final textCol = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
+    final textCol = isDark ? const Color(0xFFFFF8F3) : CubagColors.ink;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -786,11 +787,11 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF140C08) : const Color(0xFFF8F4F0);
+    final bg = isDark ? const Color(0xFF140C08) : CubagColors.sand;
     final cardBg = isDark ? const Color(0xFF1E130D) : Colors.white;
-    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
-    final textPrimary = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
-    final textMuted = isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B);
+    final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
+    final textPrimary = isDark ? const Color(0xFFFFF8F3) : CubagColors.ink;
+    final textMuted = isDark ? const Color(0xFFC8ADA0) : CubagColors.muted;
 
     return AppLayout(
       title: 'CTI Courses',

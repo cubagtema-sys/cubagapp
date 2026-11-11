@@ -10,11 +10,12 @@ import '../services/theme_service.dart';
 import '../utils/course_payment_policy.dart';
 import '../utils/platform_info.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
 // ── CUBAG Dynamic Brand Color Hierarchy ──────────────────────────────────────
 bool get _isDark => ThemeService.instance.isDark;
 Color get _kBg => _isDark
-    ? const Color(0xFF1A0F0A)
+    ? CubagColors.ink
     : const Color(0xFFFAF6F0); // stone ground
 Color get _kCream => _isDark
     ? const Color(0xFF22140E)
@@ -23,9 +24,9 @@ Color get _kCardBg => _isDark
     ? const Color(0xFF22140E)
     : const Color(0xFFFBF8F3); // warm ivory paper card
 Color get _kBrown => _isDark
-    ? const Color(0xFFFF5000)
+    ? CubagColors.action
     : const Color(0xFF1F1612); // deep espresso ink / accent
-Color get _kAccent => const Color(0xFFFF5000); // primary CTA & highlights
+Color get _kAccent => CubagColors.action; // primary CTA & highlights
 Color get _kText => _isDark
     ? const Color(0xFFFFF8F3)
     : const Color(0xFF1F1612); // deep espresso text
@@ -34,8 +35,8 @@ Color get _kMuted => _isDark
     : const Color(0xFF6B5E55); // secondary editorial ink
 Color get _kBorder => _isDark
     ? const Color(0xFF3D261C)
-    : const Color(0xFFE8DED6); // warm bronze borders
-Color get _kGreen => const Color(0xFF10B981); // verified/success
+    : CubagColors.line; // warm bronze borders
+Color get _kGreen => CubagColors.valid; // verified/success
 
 class GuestServiceRequestPage extends StatefulWidget {
   final String? initialService;
@@ -482,7 +483,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                           ScaffoldMessenger.of(ctx).showSnackBar(
                                             SnackBar(
                                               content: Text(msg),
-                                              backgroundColor: const Color(0xFFF59E0B),
+                                              backgroundColor: CubagColors.due,
                                               duration: const Duration(seconds: 4),
                                             ),
                                           );
@@ -494,7 +495,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                         ScaffoldMessenger.of(ctx).showSnackBar(
                                           const SnackBar(
                                             content: Text('Payment pending: Please approve on your phone and try again.'),
-                                            backgroundColor: Color(0xFFF59E0B),
+                                            backgroundColor: CubagColors.due,
                                           ),
                                         );
                                       }
@@ -519,7 +520,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF10b981),
+                              backgroundColor: CubagColors.valid,
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
@@ -1241,7 +1242,6 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                       fontSize: 9.5,
                                       fontWeight: FontWeight.w800,
                                       color: AppColors.accentOrangeText,
-                                      letterSpacing: 0.4,
                                     ),
                                   ),
                                 ),
@@ -1460,12 +1460,11 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'OFFICIAL CTI COHORT',
+                            'Official CTI cohort',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
                               color: AppColors.accentOrangeText,
-                              letterSpacing: 0.5,
                             ),
                           ),
                         ),
@@ -1875,7 +1874,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         decoration: BoxDecoration(
           color: isLocked
-              ? (_isDark ? const Color(0xFF281710) : const Color(0xFFF8F4F0))
+              ? (_isDark ? const Color(0xFF281710) : CubagColors.sand)
               : _kCream,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
@@ -1916,7 +1915,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            'LOCKED',
+                            'Locked',
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
@@ -2249,7 +2248,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('📅 Event added to your calendar!'),
-                            backgroundColor: Color(0xFF10B981),
+                            backgroundColor: CubagColors.valid,
                           ),
                         );
                       }
@@ -2328,12 +2327,11 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ACCREDITED CLEARING AGENTS',
+                        'Accredited clearing agents',
                         style: TextStyle(
                           color: _kBrown,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
                         ),
                       ),
                       const SizedBox(height: 2),

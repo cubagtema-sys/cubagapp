@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
+import '../design/cubag_design.dart';
 
 class VesselMovementsPage extends StatefulWidget {
   const VesselMovementsPage({super.key});
@@ -24,9 +25,9 @@ class _VesselMovementsPageState extends State<VesselMovementsPage> {
   late TextEditingController _searchController;
 
   static const _kBrown = Color(0xFF6B3E26);
-  static const _kOrange = Color(0xFFFF5000);
-  static const _kGreen = Color(0xFF10B981);
-  static const _kAmber = Color(0xFFF59E0B);
+  static const _kOrange = CubagColors.action;
+  static const _kGreen = CubagColors.valid;
+  static const _kAmber = CubagColors.due;
 
   @override
   void initState() {
@@ -168,9 +169,9 @@ class _VesselMovementsPageState extends State<VesselMovementsPage> {
     final isConnected = socket?.connected ?? false;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF1E130D) : Colors.white;
-    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
-    final text = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
-    final muted = isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B);
+    final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
+    final text = isDark ? const Color(0xFFFFF8F3) : CubagColors.ink;
+    final muted = isDark ? const Color(0xFFC8ADA0) : CubagColors.muted;
     final surfaceRaised = isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
 
     // Convert map to list and sort by last_update descending
@@ -508,7 +509,6 @@ class _VesselMovementsPageState extends State<VesselMovementsPage> {
                                 color: _kGreen,
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w700,
-                                letterSpacing: 0.4,
                               ),
                             ),
                           ),
@@ -529,12 +529,11 @@ class _VesselMovementsPageState extends State<VesselMovementsPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'DEPARTURE',
+                            'Departure',
                             style: TextStyle(
                               fontSize: 11,
                               color: muted,
                               fontWeight: FontWeight.w700,
-                              letterSpacing: 0.4,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -567,12 +566,11 @@ class _VesselMovementsPageState extends State<VesselMovementsPage> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            'DESTINATION',
+                            'Destination',
                             style: TextStyle(
                               fontSize: 11,
                               color: muted,
                               fontWeight: FontWeight.w700,
-                              letterSpacing: 0.4,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -930,12 +928,11 @@ class _VesselMovementsPageState extends State<VesselMovementsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'DESTINATION',
+                  'Destination',
                   style: TextStyle(
                     fontSize: 10.5,
                     color: muted,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 0.4,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -963,7 +960,6 @@ class _VesselMovementsPageState extends State<VesselMovementsPage> {
                     fontSize: 10.5,
                     color: muted,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 0.4,
                   ),
                 ),
                 const SizedBox(height: 2),

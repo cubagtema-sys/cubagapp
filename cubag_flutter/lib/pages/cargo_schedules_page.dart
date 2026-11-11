@@ -4,6 +4,7 @@ import '../components/iframe_widget.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
+import '../design/cubag_design.dart';
 
 class CargoSchedulesPage extends StatefulWidget {
   const CargoSchedulesPage({super.key});
@@ -314,9 +315,9 @@ class _CargoSchedulesPageState extends State<CargoSchedulesPage> {
                       decoration: BoxDecoration(
                         color: isLive
                             ? (isConnected
-                                  ? const Color(0xFF10b981)
+                                  ? CubagColors.valid
                                   : Colors.grey)
-                            : const Color(0xFF10b981),
+                            : CubagColors.valid,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -332,9 +333,9 @@ class _CargoSchedulesPageState extends State<CargoSchedulesPage> {
                         fontWeight: FontWeight.bold,
                         color: isLive
                             ? (isConnected
-                                  ? const Color(0xFF10b981)
+                                  ? CubagColors.valid
                                   : Colors.grey)
-                            : const Color(0xFF10b981),
+                            : CubagColors.valid,
                       ),
                     ),
                   ],
@@ -642,7 +643,7 @@ class _CargoSchedulesPageState extends State<CargoSchedulesPage> {
                                               .toUpperCase() ??
                                           'UNDERWAY',
                                       style: const TextStyle(
-                                        color: Color(0xFF10b981),
+                                        color: CubagColors.valid,
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -666,7 +667,7 @@ class _CargoSchedulesPageState extends State<CargoSchedulesPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  'DEPARTURE',
+                                  'Departure',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey,
@@ -706,7 +707,7 @@ class _CargoSchedulesPageState extends State<CargoSchedulesPage> {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 const Text(
-                                  'DESTINATION',
+                                  'Destination',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey,
@@ -1018,7 +1019,7 @@ class _CargoSchedulesPageState extends State<CargoSchedulesPage> {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: isUnderway
-                                          ? const Color(0xFF10b981)
+                                          ? CubagColors.valid
                                           : Colors.amber,
                                       fontSize: 14,
                                     ),
@@ -1061,7 +1062,7 @@ class _CargoSchedulesPageState extends State<CargoSchedulesPage> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       const Text(
-                                        'DESTINATION',
+                                        'Destination',
                                         style: TextStyle(
                                           fontSize: 11,
                                           color: Colors.grey,
@@ -1204,7 +1205,7 @@ class _CargoSchedulesPageState extends State<CargoSchedulesPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  'CONTAINER',
+                                  'Container',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey,
@@ -1239,7 +1240,7 @@ class _CargoSchedulesPageState extends State<CargoSchedulesPage> {
                                   fontWeight: FontWeight.bold,
                                   color: inProgress
                                       ? const Color(0xFF3b82f6)
-                                      : const Color(0xFF10b981),
+                                      : CubagColors.valid,
                                 ),
                               ),
                             ),

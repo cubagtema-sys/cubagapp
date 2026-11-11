@@ -6,15 +6,16 @@ import 'package:go_router/go_router.dart';
 import '../components/app_layout.dart';
 import '../components/shimmer_loader.dart';
 import '../services/api_service.dart';
+import '../design/cubag_design.dart';
 
 // Balanced CUBAG Brand Palette
 const _kBrown = Color(0xFF6B3E26); // Primary Brown
-const _kOrange = Color(0xFFFF5000); // Primary Orange CTA
-const _kCream = Color(0xFFF8F4F0); // Light Background Cream
+const _kOrange = CubagColors.action; // Primary Orange CTA
+const _kCream = CubagColors.sand; // Light Background Cream
 const _kWhite = Color(0xFFFFFFFF); // White Surfaces
-const _kText = Color(0xFF2B211D); // Deep Body Text
-const _kMuted = Color(0xFF6F625B); // Secondary Muted Text
-const _kBorder = Color(0xFFE8DED6); // Soft Warm Border
+const _kText = CubagColors.ink; // Deep Body Text
+const _kMuted = CubagColors.muted; // Secondary Muted Text
+const _kBorder = CubagColors.line; // Soft Warm Border
 
 class NetworkingPage extends StatefulWidget {
   const NetworkingPage({super.key});
@@ -31,7 +32,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
 
   final Map<String, Color> _typeColors = {
     'Licentiate': _kOrange,
-    'Associate': const Color(0xFF10b981),
+    'Associate': CubagColors.valid,
     'Corporate': _kBrown,
   };
 
@@ -108,7 +109,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
         : (isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0));
     final chipBorder = isSelected
         ? _kBrown
-        : (isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6));
+        : (isDark ? const Color(0xFF3D261C) : CubagColors.line);
 
     return GestureDetector(
       onTap: () => setState(() => _filterType = value),
@@ -549,7 +550,6 @@ class _NetworkingPageState extends State<NetworkingPage> {
                         fontSize: 11,
                         color: color,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
                       ),
                     ),
                   ),
@@ -619,7 +619,6 @@ class _NetworkingPageState extends State<NetworkingPage> {
                             fontSize: 11,
                             color: _kMuted,
                             fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -891,7 +890,6 @@ class _NetworkingPageState extends State<NetworkingPage> {
                         fontWeight: FontWeight.w800,
                         fontSize: 12,
                         color: _kBrown,
-                        letterSpacing: 0.5,
                         fontFeatures: [FontFeature.tabularFigures()],
                       ),
                     ),

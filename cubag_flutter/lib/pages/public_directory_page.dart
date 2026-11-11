@@ -4,17 +4,18 @@ import 'package:go_router/go_router.dart';
 import '../services/api_service.dart';
 import 'admin_qr_scanner_page.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
 // Unified CUBAG Brand Palette
 const _kBrown = Color(0xFF6B3E26); // Primary brand brown
-const _kDark = Color(0xFF2B211D); // Deep dark contrast & hero
-const _kAccent = Color(0xFFFF5000); // Accent CTA orange
+const _kDark = CubagColors.ink; // Deep dark contrast & hero
+const _kAccent = CubagColors.action; // Accent CTA orange
 const _kBg = Color(0xFFFFFFFF); // Page background
-const _kCream = Color(0xFFF8F4F0); // Surface light cream
-const _kText = Color(0xFF2B211D); // Body primary text
-const _kMuted = Color(0xFF6F625B); // Secondary muted text
-const _kBorder = Color(0xFFE8DED6); // Soft warm border
-const _kGreen = Color(0xFF10B981); // Verified good standing green
+const _kCream = CubagColors.sand; // Surface light cream
+const _kText = CubagColors.ink; // Body primary text
+const _kMuted = CubagColors.muted; // Secondary muted text
+const _kBorder = CubagColors.line; // Soft warm border
+const _kGreen = CubagColors.valid; // Verified good standing green
 
 class PublicDirectoryPage extends StatefulWidget {
   const PublicDirectoryPage({super.key});
@@ -357,7 +358,6 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                                 fontWeight: FontWeight.w900,
                                 fontSize: 18,
                                 color: _kBrown,
-                                letterSpacing: 1,
                               ),
                             ),
                             Text(
@@ -452,12 +452,11 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'OFFICIAL PUBLIC DIRECTORY',
+                              'Official public directory',
                               style: TextStyle(
                                 color: AppColors.accentOrangeText,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
-                                letterSpacing: 0.8,
                               ),
                             ),
                           ],

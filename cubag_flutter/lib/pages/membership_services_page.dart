@@ -8,14 +8,15 @@ import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../components/app_layout.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
 // Balanced CUBAG Brand Palette
 const _kBrown = Color(0xFF6B3E26); // Primary Brown
-const _kOrange = Color(0xFFFF5000); // Primary Orange CTA
+const _kOrange = CubagColors.action; // Primary Orange CTA
 const _kWhite = Color(0xFFFFFFFF); // White Surfaces
-const _kText = Color(0xFF2B211D); // Deep Body Text
-const _kMuted = Color(0xFF6F625B); // Secondary Muted Text
-const _kBorder = Color(0xFFE8DED6); // Soft Warm Border
+const _kText = CubagColors.ink; // Deep Body Text
+const _kMuted = CubagColors.muted; // Secondary Muted Text
+const _kBorder = CubagColors.line; // Soft Warm Border
 
 class MembershipServicesPage extends StatefulWidget {
   const MembershipServicesPage({super.key});
@@ -360,11 +361,10 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
             children: [
               // ── 1. Digital Membership & Profile Card ──────────────────────
               Text(
-                'DIGITAL MEMBERSHIP CREDENTIAL',
+                'Digital membership credential',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
                   color: _kBrown,
                 ),
               ),
@@ -396,12 +396,12 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isGoodStanding
-                                      ? const Color(0xFF10b981).withAlpha(30)
+                                      ? CubagColors.valid.withAlpha(30)
                                       : _kOrange.withAlpha(30),
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
                                     color: isGoodStanding
-                                        ? const Color(0xFF10b981).withAlpha(120)
+                                        ? CubagColors.valid.withAlpha(120)
                                         : _kOrange.withAlpha(120),
                                   ),
                                 ),
@@ -414,7 +414,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: isGoodStanding
-                                            ? const Color(0xFF10b981)
+                                            ? CubagColors.valid
                                             : _kOrange,
                                       ),
                                     ),
@@ -427,7 +427,6 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         color: Colors.white,
                                         fontSize: 11.5,
                                         fontWeight: FontWeight.w800,
-                                        letterSpacing: 0.5,
                                       ),
                                     ),
                                   ],
@@ -460,12 +459,11 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'MEMBERSHIP ID',
+                                        'Membership ID',
                                         style: TextStyle(
                                           color: AppColors.accentOrangeText,
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
-                                          letterSpacing: 0.5,
                                         ),
                                       ),
                                       const SizedBox(height: 2),
@@ -486,12 +484,11 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'CLASSIFICATION',
+                                          'Classification',
                                           style: TextStyle(
                                             color: AppColors.accentOrangeText,
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
-                                            letterSpacing: 0.5,
                                           ),
                                         ),
                                         const SizedBox(height: 2),
@@ -547,12 +544,11 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'OFFICIAL QR VERIFICATION',
+                                          'Official QR verification',
                                           style: TextStyle(
                                             color: AppColors.accentOrangeText,
                                             fontSize: 12,
                                             fontWeight: FontWeight.w800,
-                                            letterSpacing: 0.5,
                                           ),
                                         ),
                                         const SizedBox(height: 2),
@@ -585,12 +581,12 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                       ),
                                       decoration: BoxDecoration(
                                         color: isGoodStanding
-                                            ? const Color(0xFF10b981).withAlpha(30)
+                                            ? CubagColors.valid.withAlpha(30)
                                             : _kOrange.withAlpha(30),
                                         borderRadius: BorderRadius.circular(6),
                                         border: Border.all(
                                           color: isGoodStanding
-                                              ? const Color(0xFF10b981).withAlpha(120)
+                                              ? CubagColors.valid.withAlpha(120)
                                               : _kOrange.withAlpha(120),
                                         ),
                                       ),
@@ -603,7 +599,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
                                               color: isGoodStanding
-                                                  ? const Color(0xFF10b981)
+                                                  ? CubagColors.valid
                                                   : _kOrange,
                                             ),
                                           ),
@@ -616,7 +612,6 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                               color: Colors.white,
                                               fontSize: 11.5,
                                               fontWeight: FontWeight.w800,
-                                              letterSpacing: 0.5,
                                             ),
                                           ),
                                         ],
@@ -649,12 +644,11 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              'MEMBERSHIP ID',
+                                              'Membership ID',
                                               style: TextStyle(
                                                 color: AppColors.accentOrangeText,
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.bold,
-                                                letterSpacing: 0.5,
                                               ),
                                             ),
                                             const SizedBox(height: 2),
@@ -675,12 +669,11 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                'CLASSIFICATION',
+                                                'Classification',
                                                 style: TextStyle(
                                                   color: AppColors.accentOrangeText,
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.bold,
-                                                  letterSpacing: 0.5,
                                                 ),
                                               ),
                                               const SizedBox(height: 2),
@@ -735,12 +728,11 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
-                                    'SCAN TO VERIFY',
+                                    'Scan to verify',
                                     style: TextStyle(
                                       color: Colors.white.withAlpha(180),
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.5,
                                     ),
                                   ),
                                 ],
@@ -755,11 +747,10 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
 
               // ── 2. Registered Services & Dues Breakdown ───────────────────
               Text(
-                'REGISTERED SERVICES & DUES BREAKDOWN',
+                'Registered services & dues breakdown',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
                   color: _kBrown,
                 ),
               ),
@@ -792,7 +783,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                           children: [
                             Expanded(
                               child: Text(
-                                '1. REGISTRATION FEE (ONE-TIME)',
+                                '1. Registration fee (one-time)',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -809,7 +800,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               ),
                               decoration: BoxDecoration(
                                 color: _isRegFeePaid
-                                    ? const Color(0xFF10b981).withAlpha(25)
+                                    ? CubagColors.valid.withAlpha(25)
                                     : _kOrange.withAlpha(25),
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -931,7 +922,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               ),
                               decoration: BoxDecoration(
                                 color: _isPackageFeePaid
-                                    ? const Color(0xFF10b981).withAlpha(25)
+                                    ? CubagColors.valid.withAlpha(25)
                                     : _kOrange.withAlpha(25),
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -1077,17 +1068,17 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               ),
                               decoration: BoxDecoration(
                                 color: isRenewalPaid
-                                    ? const Color(0xFF10b981).withAlpha(25)
+                                    ? CubagColors.valid.withAlpha(25)
                                     : (_isPartiallyPaid
-                                        ? const Color(0xFFF59E0B).withAlpha(25)
+                                        ? CubagColors.due.withAlpha(25)
                                         : (hasCalculatedRenewalBill
-                                            ? const Color(0xFFF59E0B).withAlpha(25)
+                                            ? CubagColors.due.withAlpha(25)
                                             : (isUnderReview
-                                                ? const Color(0xFFF59E0B).withAlpha(25)
+                                                ? CubagColors.due.withAlpha(25)
                                                 : (isRevision || isRenewalExpired
-                                                    ? const Color(0xFFEF4444).withAlpha(25)
+                                                    ? CubagColors.lapsed.withAlpha(25)
                                                     : (isRenewalDueSoon
-                                                        ? const Color(0xFFF59E0B).withAlpha(25)
+                                                        ? CubagColors.due.withAlpha(25)
                                                         : _kOrange.withAlpha(25)))))),
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -1113,11 +1104,11 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                   color: isRenewalPaid
                                       ? const Color(0xFF059669)
                                       : (_isPartiallyPaid || hasCalculatedRenewalBill || isUnderReview
-                                          ? const Color(0xFFD97706)
+                                          ? CubagColors.due
                                           : (isRevision || isRenewalExpired
-                                              ? const Color(0xFFDC2626)
+                                              ? CubagColors.lapsed
                                               : (isRenewalDueSoon
-                                                  ? const Color(0xFFD97706)
+                                                  ? CubagColors.due
                                                   : _kOrange))),
                                 ),
                               ),
@@ -1151,9 +1142,9 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: isUnderReview
-                                    ? const Color(0xFFF59E0B).withAlpha(90)
+                                    ? CubagColors.due.withAlpha(90)
                                     : (isRevision
-                                        ? const Color(0xFFDC2626).withAlpha(90)
+                                        ? CubagColors.lapsed.withAlpha(90)
                                         : _kOrange.withAlpha(60)),
                                 width: 1.2,
                               ),
@@ -1168,8 +1159,8 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
                                         color: (isUnderReview
-                                                ? const Color(0xFFF59E0B)
-                                                : (isRevision ? const Color(0xFFDC2626) : _kOrange))
+                                                ? CubagColors.due
+                                                : (isRevision ? CubagColors.lapsed : _kOrange))
                                             .withAlpha(25),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
@@ -1180,8 +1171,8 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                                 ? Icons.warning_amber_rounded
                                                 : Icons.assignment_outlined),
                                         color: isUnderReview
-                                            ? const Color(0xFFD97706)
-                                            : (isRevision ? const Color(0xFFDC2626) : _kOrange),
+                                            ? CubagColors.due
+                                            : (isRevision ? CubagColors.lapsed : _kOrange),
                                         size: 24,
                                       ),
                                     ),
@@ -1322,15 +1313,15 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               decoration: BoxDecoration(
-                                color: (isRenewalPaid ? const Color(0xFF10b981) : const Color(0xFFF59E0B)).withAlpha(18),
+                                color: (isRenewalPaid ? CubagColors.valid : CubagColors.due).withAlpha(18),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: (isRenewalPaid ? const Color(0xFF10b981) : const Color(0xFFF59E0B)).withAlpha(50)),
+                                border: Border.all(color: (isRenewalPaid ? CubagColors.valid : CubagColors.due).withAlpha(50)),
                               ),
                               child: Row(
                                 children: [
                                   Icon(
                                     isRenewalPaid ? Icons.check_circle_rounded : Icons.hourglass_top_rounded,
-                                    color: isRenewalPaid ? const Color(0xFF059669) : const Color(0xFFD97706),
+                                    color: isRenewalPaid ? const Color(0xFF059669) : CubagColors.due,
                                     size: 18,
                                   ),
                                   const SizedBox(width: 8),
@@ -1385,16 +1376,16 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                             Container(
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF59E0B).withAlpha(15),
+                                color: CubagColors.due.withAlpha(15),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFF59E0B).withAlpha(60)),
+                                border: Border.all(color: CubagColors.due.withAlpha(60)),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
                                     children: [
-                                      const Icon(Icons.pie_chart_rounded, color: Color(0xFFD97706), size: 20),
+                                      const Icon(Icons.pie_chart_rounded, color: CubagColors.due, size: 20),
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
@@ -1413,7 +1404,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                           borderRadius: BorderRadius.circular(6),
                                         ),
                                         child: Text(
-                                          'PROVISIONAL GOOD STANDING',
+                                          'Provisional good standing',
                                           style: TextStyle(
                                             fontSize: 9.5,
                                             fontWeight: FontWeight.w800,
@@ -1431,7 +1422,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                           ? (_renewalAmountPaid / (double.tryParse(_renewalTotal)!)).clamp(0.0, 1.0)
                                           : 0.0,
                                       minHeight: 8,
-                                      backgroundColor: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                                      backgroundColor: isDark ? Colors.white12 : CubagColors.line,
                                       valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
                                     ),
                                   ),
@@ -1442,7 +1433,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                       Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text('TOTAL BILLED', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: subTextColor)),
+                                          Text('Total billed', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: subTextColor)),
                                           const SizedBox(height: 2),
                                           Text('GHS $_renewalTotal', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textColor)),
                                         ],
@@ -1450,7 +1441,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                       Column(
                                         crossAxisAlignment: CrossAxisAlignment.center,
                                         children: [
-                                          Text('PAID TO DATE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: const Color(0xFF059669))),
+                                          Text('Paid to date', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: const Color(0xFF059669))),
                                           const SizedBox(height: 2),
                                           Text('GHS ${_renewalAmountPaid.toStringAsFixed(2)}', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF059669))),
                                         ],
@@ -1458,9 +1449,9 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                       Column(
                                         crossAxisAlignment: CrossAxisAlignment.end,
                                         children: [
-                                          Text('BALANCE DUE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: const Color(0xFFD97706))),
+                                          Text('Balance due', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: CubagColors.due)),
                                           const SizedBox(height: 2),
-                                          Text('GHS ${_renewalBalanceDue.toStringAsFixed(2)}', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFFD97706))),
+                                          Text('GHS ${_renewalBalanceDue.toStringAsFixed(2)}', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: CubagColors.due)),
                                         ],
                                       ),
                                     ],
@@ -1478,7 +1469,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                   margin: const EdgeInsets.only(bottom: 6),
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: isDark ? Colors.white.withAlpha(5) : const Color(0xFFF1F5F9),
+                                    color: isDark ? Colors.white.withAlpha(5) : CubagColors.sand,
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Row(
@@ -1530,13 +1521,13 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF59E0B).withAlpha(18),
+                                color: CubagColors.due.withAlpha(18),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFFF59E0B).withAlpha(50)),
+                                border: Border.all(color: CubagColors.due.withAlpha(50)),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.receipt_long_rounded, color: Color(0xFFD97706), size: 18),
+                                  const Icon(Icons.receipt_long_rounded, color: CubagColors.due, size: 18),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
@@ -1585,13 +1576,13 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFDC2626).withAlpha(18),
+                                  color: CubagColors.lapsed.withAlpha(18),
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: const Color(0xFFDC2626).withAlpha(50)),
+                                  border: Border.all(color: CubagColors.lapsed.withAlpha(50)),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 18),
+                                    const Icon(Icons.warning_amber_rounded, color: CubagColors.lapsed, size: 18),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
@@ -1611,13 +1602,13 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF59E0B).withAlpha(18),
+                                  color: CubagColors.due.withAlpha(18),
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: const Color(0xFFF59E0B).withAlpha(50)),
+                                  border: Border.all(color: CubagColors.due.withAlpha(50)),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.alarm_rounded, color: Color(0xFFD97706), size: 18),
+                                    const Icon(Icons.alarm_rounded, color: CubagColors.due, size: 18),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(

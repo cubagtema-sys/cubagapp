@@ -5,18 +5,19 @@ import '../services/api_service.dart';
 import '../services/theme_service.dart';
 import '../components/app_logo.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
 // Dynamic Palette
 bool get _isDark => ThemeService.instance.isDark;
 Color get _kBrown => const Color(0xFF6B3E26);
-Color get _kAccent => const Color(0xFFFF5000);
-Color get _kBg => _isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8F4F0);
+Color get _kAccent => CubagColors.action;
+Color get _kBg => _isDark ? CubagColors.ink : CubagColors.sand;
 Color get _kCardBg => _isDark ? const Color(0xFF281710) : Colors.white;
 Color get _kCream =>
-    _isDark ? const Color(0xFF4D2D20) : const Color(0xFFF8F4F0);
+    _isDark ? const Color(0xFF4D2D20) : CubagColors.sand;
 Color get _kBorder =>
-    _isDark ? const Color(0xFF4D2D20) : const Color(0xFFF8F4F0);
-Color get _kText => _isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
+    _isDark ? const Color(0xFF4D2D20) : CubagColors.sand;
+Color get _kText => _isDark ? const Color(0xFFFFF8F3) : CubagColors.ink;
 Color get _kMuted =>
     _isDark ? const Color(0xFFC8ADA0) : const Color(0xFF7A6B63);
 Color get _kGreen => const Color(0xFF2E7D32);
@@ -248,11 +249,10 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'STAKEHOLDER GRIEVANCE MECHANISM',
+                                'Stakeholder grievance mechanism',
                                 style: TextStyle(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.0,
                                   color: AppColors.accentOrangeText,
                                 ),
                               ),
@@ -355,7 +355,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                         borderRadius: BorderRadius.circular(5),
                       ),
                       child: Text(
-                        'GRIEVANCE DESK',
+                        'Grievance desk',
                         style: TextStyle(
                           color: AppColors.accentOrangeText,
                           fontSize: 10.5,
@@ -888,12 +888,11 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
           const SizedBox(height: 20),
 
           Text(
-            'YOUR COMPLAINT TRACKING ID:',
+            'Your complaint tracking ID:',
             style: TextStyle(
               color: _kMuted,
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
             ),
           ),
           const SizedBox(height: 8),
@@ -915,7 +914,6 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: _kBrown,
-                      letterSpacing: 1.0,
                     ),
                   ),
                 ),
@@ -1194,12 +1192,11 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'COMPLAINT TRACKING ORDER',
+                      'Complaint tracking order',
                       style: TextStyle(
                         color: _kBrown,
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -1230,7 +1227,6 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                     color: statusColor,
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
                   ),
                 ),
               ),
@@ -1258,12 +1254,11 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
 
           const SizedBox(height: 24),
           Text(
-            'LIVE INVESTIGATION TIMELINE',
+            'Live investigation timeline',
             style: TextStyle(
               color: _kBrown,
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
             ),
           ),
           const SizedBox(height: 16),

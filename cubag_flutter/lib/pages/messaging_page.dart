@@ -3,6 +3,7 @@ import '../components/app_layout.dart';
 import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
+import '../design/cubag_design.dart';
 
 class MessagingPage extends StatefulWidget {
   final String? initialUserId;
@@ -301,7 +302,7 @@ class _MessagingPageState extends State<MessagingPage> {
   Widget _buildEmptyChatPlaceholder(Color primary) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF7F2),
+      color: isDark ? CubagColors.ink : const Color(0xFFFAF7F2),
       child: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -326,7 +327,7 @@ class _MessagingPageState extends State<MessagingPage> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : const Color(0xFF1A0F0A),
+                  color: isDark ? Colors.white : CubagColors.ink,
                 ),
               ),
               const SizedBox(height: 6),
@@ -334,7 +335,7 @@ class _MessagingPageState extends State<MessagingPage> {
                 'Select a conversation to exchange direct messages with fellow CUBAG members & the secretariat.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                  color: isDark ? Colors.white70 : CubagColors.muted,
                   fontSize: 14,
                   height: 1.4,
                 ),
@@ -351,8 +352,8 @@ class _MessagingPageState extends State<MessagingPage> {
     final cardBg = isDark ? const Color(0xFF1E120B) : Colors.white;
     final inputBg = isDark ? const Color(0xFF281710) : const Color(0xFFF4EEE6);
     final borderCol = isDark ? const Color(0xFF3E2417) : const Color(0xFFE5DDD3);
-    final textCol = isDark ? Colors.white : const Color(0xFF1A0F0A);
-    final subTextCol = isDark ? Colors.white70 : const Color(0xFF64748B);
+    final textCol = isDark ? Colors.white : CubagColors.ink;
+    final subTextCol = isDark ? Colors.white70 : CubagColors.muted;
     final hintCol = isDark ? Colors.white54 : const Color(0xFF5F6B7E);
 
     return Container(
@@ -587,7 +588,7 @@ class _MessagingPageState extends State<MessagingPage> {
                                             vertical: 2.5,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFEF4444),
+                                            color: CubagColors.lapsed,
                                             borderRadius: BorderRadius.circular(10),
                                           ),
                                           child: Text(
@@ -743,13 +744,13 @@ class _MessagingPageState extends State<MessagingPage> {
     final headerBg = isDark ? const Color(0xFF23140D) : Colors.white;
     final chatBg = isDark ? const Color(0xFF170D08) : const Color(0xFFF7F3EE);
     final borderCol = isDark ? const Color(0xFF3E2417) : const Color(0xFFE5DDD3);
-    final textCol = isDark ? Colors.white : const Color(0xFF1A0F0A);
-    final subTextCol = isDark ? Colors.white70 : const Color(0xFF64748B);
+    final textCol = isDark ? Colors.white : CubagColors.ink;
+    final subTextCol = isDark ? Colors.white70 : CubagColors.muted;
     final receivedBubbleBg = isDark ? const Color(0xFF281710) : Colors.white;
     final receivedBubbleBorder =
         isDark ? const Color(0xFF3D251A) : const Color(0xFFE2D6CB);
     final inputBarBg = isDark ? const Color(0xFF23140D) : Colors.white;
-    final inputFieldBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF3ECE4);
+    final inputFieldBg = isDark ? CubagColors.ink : const Color(0xFFF3ECE4);
     final hintCol = isDark ? Colors.white54 : const Color(0xFF5F6B7E);
 
     return Column(

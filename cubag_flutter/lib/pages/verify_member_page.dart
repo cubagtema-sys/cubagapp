@@ -3,10 +3,11 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/api_service.dart';
 import 'admin_qr_scanner_page.dart';
+import '../design/cubag_design.dart';
 
 const _kBrown = Color(0xFF6B3E26);
-const _kOrange = Color(0xFFFF5000);
-const _kDark = Color(0xFF1A0F0A);
+const _kOrange = CubagColors.action;
+const _kDark = CubagColors.ink;
 
 class VerifyMemberPage extends StatefulWidget {
   final String? memberId;
@@ -125,7 +126,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: CubagColors.sand,
       appBar: AppBar(
         backgroundColor: _kDark,
         elevation: 0,
@@ -162,10 +163,9 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                     const SizedBox(height: 20),
                     Center(
                       child: Text(
-                        'VERIFYING CUBAG CREDENTIALS...',
+                        'Verifying CUBAG credentials...',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
                           fontSize: 13,
                           color: Colors.grey.shade600,
                         ),
@@ -191,7 +191,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: CubagColors.line),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -207,13 +207,13 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: _error != null
-                  ? const Color(0xFFEF4444).withValues(alpha: 0.1)
+                  ? CubagColors.lapsed.withValues(alpha: 0.1)
                   : _kOrange.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               _error != null ? Icons.warning_amber_rounded : Icons.verified_user_rounded,
-              color: _error != null ? const Color(0xFFEF4444) : _kOrange,
+              color: _error != null ? CubagColors.lapsed : _kOrange,
               size: 40,
             ),
           ),
@@ -233,7 +233,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: _error != null ? const Color(0xFFDC2626) : Colors.grey.shade600,
+              color: _error != null ? CubagColors.lapsed : Colors.grey.shade600,
               height: 1.5,
             ),
           ),
@@ -271,11 +271,10 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
-                  'OR SEARCH MANUALLY',
+                  'Or search manually',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 0.8,
                     color: Colors.grey.shade500,
                   ),
                 ),
@@ -306,7 +305,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                     )
                   : null,
               filled: true,
-              fillColor: const Color(0xFFF8FAFC),
+              fillColor: CubagColors.sand,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -366,7 +365,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
   Widget _buildVerifiedCard(Map<String, dynamic> m) {
     final status = (m['status']?.toString().toLowerCase() ?? 'active').trim();
     final isVerified = m['verified'] == true || status == 'active' || m['good_standing'] == true;
-    final badgeColor = isVerified ? const Color(0xFF10b981) : const Color(0xFFf59e0b);
+    final badgeColor = isVerified ? CubagColors.valid : CubagColors.due;
 
     return Column(
       children: [
@@ -393,7 +392,6 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
                   fontSize: 13,
-                  letterSpacing: 0.5,
                 ),
               ),
             ],
@@ -434,7 +432,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                           fit: BoxFit.cover,
                         )
                       : Container(
-                          color: const Color(0xFFF1F5F9),
+                          color: CubagColors.sand,
                           child: Center(
                             child: Text(
                               _initials(m['name']?.toString() ?? ''),
@@ -502,9 +500,9 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                       margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+                        color: CubagColors.sand,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        border: Border.all(color: CubagColors.line),
                       ),
                       child: Row(
                         children: [
@@ -520,7 +518,6 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                                     fontSize: 11,
                                     color: Colors.grey.shade600,
                                     fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
                                   ),
                                 ),
                                 const SizedBox(height: 2),

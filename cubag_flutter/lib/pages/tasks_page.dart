@@ -9,19 +9,20 @@ import '../components/in_app_document_viewer.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../services/theme_service.dart';
+import '../design/cubag_design.dart';
 
 // Balanced CUBAG Brand Palette & Editorial Tokens
 bool get _isDark => ThemeService.instance.isDark;
 const _kBrown = Color(0xFF6B3E26);
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10B981);
-const _kAmber = Color(0xFFF59E0B);
-const _kRed = Color(0xFFEF4444);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
+const _kAmber = CubagColors.due;
+const _kRed = CubagColors.lapsed;
 Color get _kCardBg => _isDark ? const Color(0xFF1E130D) : const Color(0xFFFFFFFF);
 Color get _kSurfaceRaised => _isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
-Color get _kBorder => _isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
-Color get _kText => _isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
-Color get _kMuted => _isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B);
+Color get _kBorder => _isDark ? const Color(0xFF3D261C) : CubagColors.line;
+Color get _kText => _isDark ? const Color(0xFFFFF8F3) : CubagColors.ink;
+Color get _kMuted => _isDark ? const Color(0xFFC8ADA0) : CubagColors.muted;
 
 class TasksPage extends StatefulWidget {
   const TasksPage({super.key});
@@ -265,12 +266,11 @@ class _TasksPageState extends State<TasksPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'COMPLIANCE & OBLIGATIONS',
+                                    'Compliance & obligations',
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w800,
                                       color: _kBrown,
-                                      letterSpacing: 0.8,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
@@ -535,7 +535,7 @@ class _TasksPageState extends State<TasksPage> {
           statusIcon = Icons.hourglass_top_rounded;
           statusPillText = 'Under Review';
           statusPillBg = _kAmber.withAlpha(25);
-          statusPillTextColor = const Color(0xFFD97706);
+          statusPillTextColor = CubagColors.due;
           statusSubtext = 'Uploaded successfully. Secretariat vetting in progress.';
         } else {
           borderColor = _kBorder;

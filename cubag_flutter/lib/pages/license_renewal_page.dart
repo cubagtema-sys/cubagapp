@@ -7,6 +7,7 @@ import '../components/shimmer_loader.dart';
 import '../services/api_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
 class LicenseRenewalPage extends StatefulWidget {
   const LicenseRenewalPage({super.key});
@@ -129,7 +130,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                       Theme.of(context).brightness ==
                                           Brightness.dark
                                       ? Colors.white
-                                      : const Color(0xFF1A0F0A),
+                                      : CubagColors.ink,
                                 ),
                               ),
                             ),
@@ -201,7 +202,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: Theme.of(context).brightness == Brightness.dark
-              ? [const Color(0xFF1A0F0A), const Color(0xFF1A0F0A)]
+              ? [CubagColors.ink, CubagColors.ink]
               : [primary, primary.withValues(alpha: 0.85)],
         ),
         borderRadius: BorderRadius.circular(20),
@@ -272,16 +273,16 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                 ),
                 decoration: BoxDecoration(
                   color: status == 'active'
-                      ? const Color(0xFF10b981).withValues(alpha: 0.2)
+                      ? CubagColors.valid.withValues(alpha: 0.2)
                       : status == 'suspended'
-                      ? const Color(0xFFef4444).withValues(alpha: 0.2)
+                      ? CubagColors.lapsed.withValues(alpha: 0.2)
                       : Colors.amber.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: status == 'active'
-                        ? const Color(0xFF10b981).withValues(alpha: 0.4)
+                        ? CubagColors.valid.withValues(alpha: 0.4)
                         : status == 'suspended'
-                        ? const Color(0xFFef4444).withValues(alpha: 0.4)
+                        ? CubagColors.lapsed.withValues(alpha: 0.4)
                         : Colors.amber.withValues(alpha: 0.4),
                   ),
                 ),
@@ -291,9 +292,9 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: status == 'active'
-                        ? const Color(0xFF10b981)
+                        ? CubagColors.valid
                         : status == 'suspended'
-                        ? const Color(0xFFef4444)
+                        ? CubagColors.lapsed
                         : Colors.amber,
                   ),
                 ),
@@ -392,7 +393,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                         margin: const EdgeInsets.only(bottom: 40),
                         decoration: BoxDecoration(
                           color: step.state == _StepState.done
-                              ? const Color(0xFF10b981)
+                              ? CubagColors.valid
                               : Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(2),
                         ),
@@ -410,11 +411,11 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
   Color _stepColor(_StepState state, Color primary) {
     switch (state) {
       case _StepState.done:
-        return const Color(0xFF10b981);
+        return CubagColors.valid;
       case _StepState.active:
         return primary;
       case _StepState.error:
-        return const Color(0xFFef4444);
+        return CubagColors.lapsed;
       case _StepState.pending:
         return Theme.of(context).brightness == Brightness.dark
             ? const Color(0xFF4D2D20)
@@ -433,9 +434,9 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
       margin: const EdgeInsets.only(bottom: 24),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF10b981).withAlpha(isDark ? 25 : 18),
+        color: CubagColors.valid.withAlpha(isDark ? 25 : 18),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF10b981).withAlpha(80)),
+        border: Border.all(color: CubagColors.valid.withAlpha(80)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -443,12 +444,12 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFF10b981).withAlpha(40),
+              color: CubagColors.valid.withAlpha(40),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.verified_rounded,
-              color: Color(0xFF10b981),
+              color: CubagColors.valid,
               size: 22,
             ),
           ),
@@ -462,7 +463,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
-                    color: const Color(0xFF10b981),
+                    color: CubagColors.valid,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -514,7 +515,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
         border: Border.all(
           color: Theme.of(context).brightness == Brightness.dark
               ? const Color(0xFF4D2D20)
-              : const Color(0xFFE8DED6),
+              : CubagColors.line,
           width: 1.0,
         ),
         boxShadow: [
@@ -531,12 +532,12 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: const Color(0xFFef4444).withValues(alpha: 0.1),
+              color: CubagColors.lapsed.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.lock_outline_rounded,
-              color: Color(0xFFef4444),
+              color: CubagColors.lapsed,
               size: 36,
             ),
           ),
@@ -548,7 +549,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
               fontSize: 22,
               color: Theme.of(context).brightness == Brightness.dark
                   ? Colors.white
-                  : const Color(0xFF1A0F0A),
+                  : CubagColors.ink,
             ),
           ),
           const SizedBox(height: 12),
@@ -625,7 +626,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
         border: Border.all(
           color: Theme.of(context).brightness == Brightness.dark
               ? const Color(0xFF4D2D20)
-              : const Color(0xFFE8DED6),
+              : CubagColors.line,
           width: 1.0,
         ),
       ),
@@ -651,7 +652,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
               fontSize: 20,
               color: Theme.of(context).brightness == Brightness.dark
                   ? Colors.white
-                  : const Color(0xFF1A0F0A),
+                  : CubagColors.ink,
             ),
           ),
           const SizedBox(height: 8),
@@ -694,10 +695,10 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
     final approved = rec['approved'] == true;
     final suspended = rec['status'] == 'suspended';
     final statusColor = approved
-        ? const Color(0xFF10b981)
+        ? CubagColors.valid
         : suspended
-        ? const Color(0xFFef4444)
-        : const Color(0xFFf59e0b);
+        ? CubagColors.lapsed
+        : CubagColors.due;
     final statusLabel = approved
         ? 'Active'
         : suspended
@@ -713,7 +714,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
         border: Border.all(
           color: Theme.of(context).brightness == Brightness.dark
               ? const Color(0xFF4D2D20)
-              : const Color(0xFFE8DED6),
+              : CubagColors.line,
           width: 1.0,
         ),
         boxShadow: [
@@ -753,7 +754,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                     fontSize: 16,
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Colors.white
-                        : const Color(0xFF1A0F0A),
+                        : CubagColors.ink,
                   ),
                 ),
               ),
@@ -803,7 +804,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFF1A0F0A)
+                    ? CubagColors.ink
                     : Colors.grey.shade50,
                 border: Border.all(color: Theme.of(context).dividerColor),
                 borderRadius: BorderRadius.circular(12),
@@ -834,7 +835,6 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                             fontSize: 10,
                             color: const Color(0xFF6b6375),
                             fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -846,7 +846,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                             color:
                                 Theme.of(context).brightness == Brightness.dark
                                 ? Colors.white
-                                : const Color(0xFF1A0F0A),
+                                : CubagColors.ink,
                           ),
                         ),
                       ],
@@ -935,9 +935,9 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFFf59e0b).withValues(alpha: 0.1),
+                color: CubagColors.due.withValues(alpha: 0.1),
                 border: Border.all(
-                  color: const Color(0xFFf59e0b).withValues(alpha: 0.3),
+                  color: CubagColors.due.withValues(alpha: 0.3),
                 ),
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -946,7 +946,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                 children: [
                   const Icon(
                     Icons.hourglass_empty_rounded,
-                    color: Color(0xFFf59e0b),
+                    color: CubagColors.due,
                     size: 16,
                   ),
                   const SizedBox(width: 8),
@@ -954,7 +954,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                     'Awaiting admin approval...',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: const Color(0xFFf59e0b),
+                      color: CubagColors.due,
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1004,7 +1004,6 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
                 ),
               ),
             ],
@@ -1040,7 +1039,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'OFFICIAL',
+                    'Official',
                     style: TextStyle(fontFamily: 'Source Serif Display', 
                       color: Colors.white,
                       fontSize: 8,
@@ -1048,7 +1047,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                     ),
                   ),
                   Text(
-                    'SEAL',
+                    'Seal',
                     style: TextStyle(fontFamily: 'Source Serif Display', 
                       color: Colors.white,
                       fontSize: 8,
@@ -1071,9 +1070,9 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
             width: double.infinity,
             constraints: const BoxConstraints(maxWidth: 800),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8F4F0), // Off-white paper color
+              color: CubagColors.sand, // Off-white paper color
               border: Border.all(
-                color: const Color(0xFFFF5000),
+                color: CubagColors.action,
                 width: borderWidth,
               ),
               borderRadius: BorderRadius.circular(8),
@@ -1145,11 +1144,11 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'CUSTOMS BROKERS ASSOCIATION OF GHANA',
+                                    'Customs brokers association of ghana',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontSize: isMobile ? 8 : 10,
-                                      color: const Color(0xFF64748b),
+                                      color: CubagColors.muted,
                                       letterSpacing: isMobile ? 1.0 : 1.5,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -1171,12 +1170,12 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                         ),
                         SizedBox(height: isMobile ? 24 : 40),
                         Text(
-                          'CERTIFICATE OF LICENSURE',
+                          'Certificate of licensure',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontFamily: 'Source Serif Display', 
                             fontSize: isMobile ? 16 : 22,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1A0F0A),
+                            color: CubagColors.ink,
                             letterSpacing: isMobile ? 1 : 2,
                           ),
                         ),
@@ -1186,7 +1185,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                           style: TextStyle(fontFamily: 'Source Serif Display', 
                             fontSize: isMobile ? 14 : 16,
                             fontStyle: FontStyle.italic,
-                            color: const Color(0xFF475569),
+                            color: CubagColors.inkSoft,
                           ),
                         ),
                         SizedBox(height: isMobile ? 10 : 16),
@@ -1206,7 +1205,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                           'represented by ${user['name']?.toString() ?? rec['name']?.toString() ?? 'Member Name'}',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontFamily: 'Source Serif Display', 
-                            color: const Color(0xFF64748b),
+                            color: CubagColors.muted,
                             fontStyle: FontStyle.italic,
                             fontSize: isMobile ? 14 : 16,
                           ),
@@ -1217,7 +1216,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                           textAlign: TextAlign.center,
                           style: TextStyle(fontFamily: 'Source Serif Display', 
                             fontSize: isMobile ? 14 : 16,
-                            color: const Color(0xFF1A0F0A),
+                            color: CubagColors.ink,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -1226,7 +1225,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                           textAlign: TextAlign.center,
                           style: TextStyle(fontFamily: 'Source Serif Display', 
                             fontSize: isMobile ? 12 : 14,
-                            color: const Color(0xFF475569),
+                            color: CubagColors.inkSoft,
                           ),
                         ),
                         SizedBox(height: isMobile ? 24 : 32),
@@ -1236,8 +1235,8 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                             vertical: isMobile ? 8 : 12,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFf8fafc),
-                            border: Border.all(color: const Color(0xFFe2e8f0)),
+                            color: CubagColors.sand,
+                            border: Border.all(color: CubagColors.line),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Row(
@@ -1250,7 +1249,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                     'License Number:',
                                     style: TextStyle(
                                       fontSize: isMobile ? 9 : 10,
-                                      color: const Color(0xFF64748b),
+                                      color: CubagColors.muted,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -1259,7 +1258,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                     'Valid Until:',
                                     style: TextStyle(
                                       fontSize: isMobile ? 9 : 10,
-                                      color: const Color(0xFF64748b),
+                                      color: CubagColors.muted,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -1274,8 +1273,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                     style: TextStyle(
                                       fontSize: isMobile ? 11 : 12,
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF1A0F0A),
-                                      letterSpacing: 1,
+                                      color: CubagColors.ink,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -1284,8 +1282,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                     style: TextStyle(
                                       fontSize: isMobile ? 11 : 12,
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF1A0F0A),
-                                      letterSpacing: 1,
+                                      color: CubagColors.ink,
                                     ),
                                   ),
                                 ],

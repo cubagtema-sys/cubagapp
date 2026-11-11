@@ -4,6 +4,7 @@ import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
 import '../utils/intelligence_data.dart';
+import '../design/cubag_design.dart';
 
 class LiveDataPage extends StatefulWidget {
   const LiveDataPage({super.key});
@@ -30,8 +31,8 @@ class _LiveDataPageState extends State<LiveDataPage> {
   static const int _newsPerPage = 10;
 
   static const _kBrown = Color(0xFF6B3E26);
-  static const _kOrange = Color(0xFFFF5000);
-  static const _kGreen = Color(0xFF10B981);
+  static const _kOrange = CubagColors.action;
+  static const _kGreen = CubagColors.valid;
 
   String _formatTime() {
     final now = DateTime.now();
@@ -137,9 +138,9 @@ class _LiveDataPageState extends State<LiveDataPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF1E130D) : Colors.white;
-    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
-    final text = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
-    final muted = isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B);
+    final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
+    final text = isDark ? const Color(0xFFFFF8F3) : CubagColors.ink;
+    final muted = isDark ? const Color(0xFFC8ADA0) : CubagColors.muted;
     final surfaceRaised = isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
 
     final totalPages = (_news.length / _newsPerPage).ceil().clamp(1, 999);
@@ -168,12 +169,11 @@ class _LiveDataPageState extends State<LiveDataPage> {
                         const _BlinkingDot(color: _kGreen),
                         const SizedBox(width: 6),
                         const Text(
-                          'LIVE INTELLIGENCE STREAM',
+                          'Live intelligence stream',
                           style: TextStyle(
                             fontSize: 11.5,
                             color: _kGreen,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
                           ),
                         ),
                       ],
@@ -642,16 +642,15 @@ class _SampleBadge extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
-          color: const Color(0xFFFEF3C7),
+          color: CubagColors.dueTint,
           borderRadius: BorderRadius.circular(4),
         ),
         child: const Text(
-          'SAMPLE',
+          'Sample',
           style: TextStyle(
             fontSize: 10,
             color: Color(0xFF92400E),
             fontWeight: FontWeight.w800,
-            letterSpacing: 0.5,
           ),
         ),
       ),

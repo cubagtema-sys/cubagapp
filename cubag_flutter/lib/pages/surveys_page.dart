@@ -6,9 +6,10 @@ import '../components/cors_image_widget.dart';
 import '../components/shimmer_loader.dart';
 import '../services/api_service.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10B981);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
 const _kPurple = Color(0xFF8B5CF6);
 
 class SurveysPage extends StatefulWidget {
@@ -115,7 +116,7 @@ class _SurveysPageState extends State<SurveysPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF1A0F0A) : Colors.white,
+        backgroundColor: isDark ? CubagColors.ink : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -169,11 +170,11 @@ class _SurveysPageState extends State<SurveysPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF140C08) : const Color(0xFFF8F4F0);
+    final bg = isDark ? const Color(0xFF140C08) : CubagColors.sand;
     final cardBg = isDark ? const Color(0xFF1E130D) : Colors.white;
-    final border = isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6);
-    final textPrimary = isDark ? const Color(0xFFFFF8F3) : const Color(0xFF2B211D);
-    final textMuted = isDark ? const Color(0xFFC8ADA0) : const Color(0xFF6F625B);
+    final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
+    final textPrimary = isDark ? const Color(0xFFFFF8F3) : CubagColors.ink;
+    final textMuted = isDark ? const Color(0xFFC8ADA0) : CubagColors.muted;
 
     final currentList = _tab == 'active' ? _active : _past;
     final filteredList = _filterList(currentList);
@@ -369,7 +370,6 @@ class _SurveysPageState extends State<SurveysPage> {
                       style: TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: 0.6,
                         color: isElection ? _kPurple : _kOrange,
                       ),
                     ),
@@ -449,7 +449,7 @@ class _SurveysPageState extends State<SurveysPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(color: _kGreen.withAlpha(20), borderRadius: BorderRadius.circular(4)),
-                        child: Text('VOTED', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _kGreen)),
+                        child: Text('Voted', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _kGreen)),
                       ),
                   ],
                 ),

@@ -5,16 +5,17 @@ import '../services/api_service.dart';
 import '../components/app_logo.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
 // Balanced CUBAG Brand Palette
 const _kBrown = Color(0xFF6B3E26); // Primary Brown
-const _kOrange = Color(0xFFFF5000); // Primary Orange CTA
+const _kOrange = CubagColors.action; // Primary Orange CTA
 const _kDarkBrown = Color(0xFF3E2418); // Deep Dark Contrast
-const _kCream = Color(0xFFF8F4F0); // Light Background Cream
+const _kCream = CubagColors.sand; // Light Background Cream
 const _kWhite = Color(0xFFFFFFFF); // White Surfaces
-const _kText = Color(0xFF2B211D); // Deep Body Text
-const _kMuted = Color(0xFF6F625B); // Secondary Muted Text
-const _kBorder = Color(0xFFE8DED6); // Soft Warm Border
+const _kText = CubagColors.ink; // Deep Body Text
+const _kMuted = CubagColors.muted; // Secondary Muted Text
+const _kBorder = CubagColors.line; // Soft Warm Border
 
 class OTPVerificationPage extends StatefulWidget {
   final String? email;
@@ -360,15 +361,15 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
             margin: const EdgeInsets.only(bottom: 20),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFfef2f2),
+              color: CubagColors.lapsedTint,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFfee2e2)),
+              border: Border.all(color: CubagColors.lapsedTint),
             ),
             child: Row(
               children: [
                 const Icon(
                   Icons.error_outline,
-                  color: Color(0xFFef4444),
+                  color: CubagColors.lapsed,
                   size: 18,
                 ),
                 const SizedBox(width: 10),
@@ -376,7 +377,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
                   child: Text(
                     _error,
                     style: const TextStyle(
-                      color: Color(0xFFb91c1c),
+                      color: CubagColors.lapsed,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),

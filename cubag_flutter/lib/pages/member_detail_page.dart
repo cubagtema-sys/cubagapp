@@ -7,6 +7,7 @@ import '../components/cors_image_widget.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../utils/app_logger.dart';
+import '../design/cubag_design.dart';
 
 class MemberDetailPage extends StatefulWidget {
   final String? memberId;
@@ -179,8 +180,8 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                                         .toUpperCase(),
                                     style: TextStyle(
                                       color: _member!['status'] == 'active'
-                                          ? const Color(0xFF10b981)
-                                          : const Color(0xFFef4444),
+                                          ? CubagColors.valid
+                                          : CubagColors.lapsed,
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -412,7 +413,6 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                                       fontSize: 12,
                                       color: Colors.grey,
                                       fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.5,
                                     ),
                                   ),
                                   Text(
@@ -451,7 +451,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
-            Icon(Icons.verified_rounded, color: Color(0xFF10B981)),
+            Icon(Icons.verified_rounded, color: CubagColors.valid),
             SizedBox(width: 8),
             Text('Confirm Payment'),
           ],
@@ -467,7 +467,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF10B981),
+              backgroundColor: CubagColors.valid,
               foregroundColor: Colors.white,
             ),
             child: const Text('Verify & Confirm'),
@@ -486,7 +486,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Payment verified and confirmed successfully!'),
-            backgroundColor: Color(0xFF10B981),
+            backgroundColor: CubagColors.valid,
           ),
         );
         ApiService.deleteCacheKeysMatching('members/${widget.memberId}');
@@ -525,7 +525,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
     final fullUrl = _resolveUrl(receiptUrl);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = Theme.of(context).cardColor;
-    final textColor = isDark ? Colors.white : const Color(0xFF1A0F0A);
+    final textColor = isDark ? Colors.white : CubagColors.ink;
 
     showDialog(
       context: context,
@@ -541,12 +541,12 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF5000).withValues(alpha: 0.12),
+                color: CubagColors.action.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
                 Icons.account_balance_rounded,
-                color: Color(0xFFFF5000),
+                color: CubagColors.action,
                 size: 22,
               ),
             ),
@@ -567,7 +567,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                     '$memberName · GH₵ ${amount.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 13,
-                      color: const Color(0xFF64748B),
+                      color: CubagColors.muted,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -597,7 +597,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                   url: fullUrl,
                   fit: BoxFit.contain,
                   placeholder: const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFFF5000)),
+                    child: CircularProgressIndicator(color: CubagColors.action),
                   ),
                   errorWidget: Center(
                     child: Column(
@@ -627,7 +627,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
               icon: const Icon(Icons.check_circle_rounded, size: 16),
               label: const Text('Verify & Mark Paid'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF10B981),
+                backgroundColor: CubagColors.valid,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -647,7 +647,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
     }
 
     final cardBg = Theme.of(context).cardColor;
-    final borderColor = isDark ? const Color(0xFF4D2D20) : const Color(0xFFE2E8F0);
+    final borderColor = isDark ? const Color(0xFF4D2D20) : CubagColors.line;
 
     return Container(
       margin: const EdgeInsets.only(top: 16),
@@ -752,10 +752,10 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                 final pId = p['id'] ?? p['tx_id'];
 
                 final statusColor = isPaid
-                    ? const Color(0xFF10B981)
+                    ? CubagColors.valid
                     : isPending
-                        ? const Color(0xFFF59E0B)
-                        : const Color(0xFFEF4444);
+                        ? CubagColors.due
+                        : CubagColors.lapsed;
 
                 return Padding(
                   padding: const EdgeInsets.all(16),
@@ -779,7 +779,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(color: borderColor),
-                              color: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC),
+                              color: isDark ? CubagColors.ink : CubagColors.sand,
                             ),
                             clipBehavior: Clip.antiAlias,
                             child: Stack(
@@ -842,7 +842,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 15.5,
-                                    color: isPaid ? const Color(0xFF10B981) : primary,
+                                    color: isPaid ? CubagColors.valid : primary,
                                   ),
                                 ),
                               ],
@@ -900,7 +900,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                                     icon: const Icon(Icons.check_circle_rounded, size: 14),
                                     label: const Text('Verify & Confirm'),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF10B981),
+                                      backgroundColor: CubagColors.valid,
                                       foregroundColor: Colors.white,
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                       minimumSize: Size.zero,

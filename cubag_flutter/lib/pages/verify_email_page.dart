@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/api_service.dart';
 import '../components/app_logo.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
+const _kOrange = CubagColors.action;
 const _kOrangeDark = Color(0xFFe06920);
 
 class VerifyEmailPage extends StatefulWidget {
@@ -235,7 +236,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                   ),
                   child: const Icon(
                     Icons.check_circle,
-                    color: Color(0xFF10b981),
+                    color: CubagColors.valid,
                     size: 32,
                   ),
                 ),
@@ -249,7 +250,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
                   ),
                   child: const Icon(
                     Icons.error,
-                    color: Color(0xFFef4444),
+                    color: CubagColors.lapsed,
                     size: 32,
                   ),
                 ),
@@ -262,7 +263,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: const Color(0xFF1A0F0A),
+            color: CubagColors.ink,
             letterSpacing: -0.5,
           ),
         ),

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../components/app_logo.dart';
+import '../design/cubag_design.dart';
 
 class VerifyPaymentPage extends StatefulWidget {
   final String? paymentRef;
@@ -24,7 +25,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
   String? _error;
 
   static const Color _kBrown = Color(0xFF6B3E26);
-  static const Color _kOrange = Color(0xFFFF5000);
+  static const Color _kOrange = CubagColors.action;
 
   @override
   void initState() {
@@ -120,11 +121,10 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
               const CircularProgressIndicator(color: _kOrange, strokeWidth: 3),
               const SizedBox(height: 16),
               Text(
-                'VERIFYING TREASURY RECEIPT...',
+                'Verifying treasury receipt...',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 13,
-                  letterSpacing: 1.2,
                   color: _kBrown,
                 ),
               ),
@@ -171,12 +171,12 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEF2F2),
+                      color: CubagColors.lapsedTint,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.cancel_rounded,
-                      color: Color(0xFFDC2626),
+                      color: CubagColors.lapsed,
                       size: 48,
                     ),
                   ),
@@ -204,7 +204,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8F4F0),
+                        color: CubagColors.sand,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -254,11 +254,11 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
     final bool isRejected = status == 'rejected' || status == 'declined' || status == 'failed';
 
     final Color statusColor = isApproved
-        ? const Color(0xFF16A34A)
-        : (isRejected ? const Color(0xFFDC2626) : const Color(0xFFD97706));
+        ? CubagColors.valid
+        : (isRejected ? CubagColors.lapsed : CubagColors.due);
     final Color statusBg = isApproved
-        ? const Color(0xFFF0FDF4)
-        : (isRejected ? const Color(0xFFFEF2F2) : const Color(0xFFFFFBEB));
+        ? CubagColors.validTint
+        : (isRejected ? CubagColors.lapsedTint : CubagColors.dueTint);
     final String statusLabel = isApproved
         ? 'OFFICIAL PAYMENT CLEARED'
         : (isRejected ? 'PAYMENT DECLINED' : 'PAYMENT UNDER REVIEW');
@@ -351,7 +351,6 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                                 color: statusColor,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 14,
-                                letterSpacing: 0.8,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -363,7 +362,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                                       : 'Receipt queued for Secretariat reconciliation'),
                               style: TextStyle(
                                 fontSize: 12,
-                                color: const Color(0xFF6F625B),
+                                color: CubagColors.muted,
                               ),
                             ),
                           ],
@@ -384,7 +383,6 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF8C7A70),
-                          letterSpacing: 0.5,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -403,7 +401,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                         decoration: BoxDecoration(
                           color: const Color(0xFFFAF6F2),
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFE8DED6)),
+                          border: Border.all(color: CubagColors.line),
                         ),
                         child: Text(
                           desc,
@@ -444,7 +442,7 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFFBF8F5),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE8DED6)),
+                    border: Border.all(color: CubagColors.line),
                   ),
                   child: Row(
                     children: [
@@ -459,12 +457,11 @@ class _VerifyPaymentPageState extends State<VerifyPaymentPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'AUTHENTICATED BY CUBAG TREASURY',
+                              'Authenticated by CUBAG treasury',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                                 color: _kBrown,
-                                letterSpacing: 0.8,
                               ),
                             ),
                             const SizedBox(height: 2),

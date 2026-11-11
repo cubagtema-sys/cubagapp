@@ -4,8 +4,9 @@ import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
 import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
+const _kOrange = CubagColors.action;
 
 class AnnouncementsPage extends StatefulWidget {
   const AnnouncementsPage({super.key});
@@ -196,20 +197,20 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
 
   Widget _categoryBadge(String category) {
     final cat = category.toUpperCase();
-    Color bg = const Color(0xFFf1f5f9);
-    Color fg = const Color(0xFF475569);
+    Color bg = CubagColors.sand;
+    Color fg = CubagColors.inkSoft;
 
     if (cat == 'OPERATIONS' || cat == 'PORT') {
       bg = const Color(0xFFe0f2fe);
       fg = const Color(0xFF0369a1);
     } else if (cat == 'BILLING' || cat == 'FINANCE') {
-      bg = const Color(0xFFdcfce7);
+      bg = CubagColors.validTint;
       fg = const Color(0xFF15803d);
     } else if (cat == 'REGULATORY' || cat == 'LEGAL') {
       bg = const Color(0xFFf3e8ff);
       fg = const Color(0xFF7e22ce);
     } else if (cat == 'GENERAL') {
-      bg = const Color(0xFFfef3c7);
+      bg = CubagColors.dueTint;
       fg = const Color(0xFFb45309);
     }
 
@@ -225,7 +226,6 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
           fontSize: 14,
           color: fg,
           fontWeight: FontWeight.w900,
-          letterSpacing: 0.5,
         ),
       ),
     );
@@ -255,10 +255,10 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         margin: const EdgeInsets.only(right: 8),
         decoration: BoxDecoration(
-          color: isSelected ? _kOrange : const Color(0xFFf1f5f9),
+          color: isSelected ? _kOrange : CubagColors.sand,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? _kOrange : const Color(0xFFe2e8f0),
+            color: isSelected ? _kOrange : CubagColors.line,
             width: 1,
           ),
           boxShadow: isSelected
@@ -274,7 +274,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
         child: Text(
           displayName,
           style: TextStyle(
-            color: isSelected ? Colors.white : const Color(0xFF475569),
+            color: isSelected ? Colors.white : CubagColors.inkSoft,
             fontWeight: FontWeight.w800,
             fontSize: 16,
           ),
@@ -327,7 +327,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                     // Search Input Box
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFf1f5f9),
+                        color: CubagColors.sand,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: TextFormField(
@@ -388,8 +388,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 17,
-                            color: const Color(0xFF64748b),
-                            letterSpacing: 0.5,
+                            color: CubagColors.muted,
                           ),
                         ),
                         if (unread > 0)
@@ -438,13 +437,13 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: const BoxDecoration(
-                                  color: Color(0xFFf8fafc),
+                                  color: CubagColors.sand,
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
                                   Icons.campaign_outlined,
                                   size: 48,
-                                  color: Color(0xFFcbd5e1),
+                                  color: CubagColors.lineStrong,
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -453,7 +452,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w800,
-                                  color: const Color(0xFF475569),
+                                  color: CubagColors.inkSoft,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -478,7 +477,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                                   }),
                                   style: OutlinedButton.styleFrom(
                                     side: const BorderSide(
-                                      color: Color(0xFFcbd5e1),
+                                      color: CubagColors.lineStrong,
                                     ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -487,7 +486,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                                   child: const Text(
                                     'Reset Filters',
                                     style: TextStyle(
-                                      color: Color(0xFF475569),
+                                      color: CubagColors.inkSoft,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -561,7 +560,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFcbd5e1),
+                        color: CubagColors.lineStrong,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -624,7 +623,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1A0F0A),
+                            color: CubagColors.ink,
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -639,20 +638,20 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        const Divider(height: 1, color: Color(0xFFe2e8f0)),
+                        const Divider(height: 1, color: CubagColors.line),
                         const SizedBox(height: 14),
                         Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1A0F0A).withAlpha(15),
+                                color: CubagColors.ink.withAlpha(15),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
                                 Icons.verified_user_rounded,
                                 size: 14,
-                                color: Color(0xFF1A0F0A),
+                                color: CubagColors.ink,
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -660,21 +659,21 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                               'Issued by: ',
                               style: TextStyle(
                                 fontSize: 15,
-                                color: const Color(0xFF64748b),
+                                color: CubagColors.muted,
                               ),
                             ),
                             Text(
                               '${a['posted_by'] ?? 'CUBAG National Secretariat'}',
                               style: TextStyle(
                                 fontSize: 15,
-                                color: const Color(0xFF1A0F0A),
+                                color: CubagColors.ink,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             const Spacer(),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1A0F0A),
+                                backgroundColor: CubagColors.ink,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -715,7 +714,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
         color: isRead ? Colors.white : _kOrange.withAlpha(8),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isRead ? const Color(0xFFe2e8f0) : _kOrange.withAlpha(80),
+          color: isRead ? CubagColors.line : _kOrange.withAlpha(80),
           width: isRead ? 1.0 : 1.5,
         ),
       ),
@@ -735,13 +734,13 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                   height: 44,
                   decoration: BoxDecoration(
                     color: (isRead
-                        ? const Color(0xFFf1f5f9)
+                        ? CubagColors.sand
                         : _kOrange.withAlpha(20)),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     iconData,
-                    color: isRead ? const Color(0xFF64748b) : _kOrange,
+                    color: isRead ? CubagColors.muted : _kOrange,
                     size: 22,
                   ),
                 ),
@@ -765,7 +764,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                                 fontWeight: isRead
                                     ? FontWeight.w600
                                     : FontWeight.w800,
-                                color: const Color(0xFF1A0F0A),
+                                color: CubagColors.ink,
                                 height: 1.25,
                               ),
                             ),
@@ -795,7 +794,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 14.5,
-                                color: const Color(0xFF64748b),
+                                color: CubagColors.muted,
                               ),
                             ),
                           ),
