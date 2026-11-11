@@ -7,11 +7,44 @@ import re
 logger = logging.getLogger(__name__)
 
 _AMOUNT_TOLERANCE = 0.02
+# SEC-20: every word that payment completion (routes/payments.py
+# _mark_payment_as_paid) or the fee-status checks (routes/auth.py) treat as
+# "this fee is paid". A description containing any of them must match an
+# official fee; otherwise a member could name their own price for it.
 _MUST_VERIFY_KEYWORDS = (
-    'registration', 'application', 'package', 'entrance', 'renewal',
-    'annual', 'dues', 'cti', 'course', 'training', 'clearing', 'consolidation',
-    'licentiate', 'associate', 'membership', 'customs licence', 'customs license',
+    'registration', 'application', 'reg form', 'package', 'entrance', 'renewal',
+    'annual', 'dues', 'cti', 'course', 'training', 'enrol', 'clearing',
+    'consolidation', 'licentiate', 'associate', 'membership', 'new member',
+    'licence', 'license', 'bill', 'onboarding', 'dossier',
 )
+
+INSTALLMENT_NEEDS_BILL = (
+    'Installments are only available on bills issued by the Secretariat. '
+    'Please pay this fee in full.'
+)
+
+
+def _is_renewal_description(desc_lower):
+    """Renewal dues, but not new-member dues. ('new' alone can't be the
+    exclusion: it is a substring of 'renewal'.)"""
+    return (
+        any(k in desc_lower for k in ('renewal', 'annual dues', 'dues'))
+        and not any(k in desc_lower for k in ('new member', 'package', 'entrance', 'registration'))
+    )
+
+
+def _open_renewal_bill_id(cursor, member_id):
+    cursor.execute(
+        """
+        SELECT id FROM compliance_applications
+        WHERE member_id = %s AND type = 'renewal'
+          AND status NOT IN ('approved', 'completed', 'payment_confirmed')
+        ORDER BY id DESC LIMIT 1
+        """,
+        (member_id,),
+    )
+    row = cursor.fetchone()
+    return row['id'] if row else None
 
 
 # Money columns are sometimes stored as text with a currency prefix
@@ -313,6 +346,17 @@ def validate_member_payment_amount(
     desc_lower = (description or '').lower()
     client_amount = float(client_amount)
 
+    # SEC-20: a partial payment outside a bill would still unlock the whole fee
+    # downstream (registration/package flags, licence year, course enrolment),
+    # because completion is decided by description keywords, not totals. Only
+    # bills track amount_paid, so installments must be tied to one. A renewal
+    # installment is attached to the member's open renewal bill.
+    if is_installment and not comp_app_id:
+        if _is_renewal_description(desc_lower):
+            comp_app_id = _open_renewal_bill_id(cursor, member_id)
+        if not comp_app_id:
+            return None, INSTALLMENT_NEEDS_BILL
+
     if comp_app_id:
         cursor.execute(
             """
@@ -345,21 +389,11 @@ def validate_member_payment_amount(
     if any(k in desc_lower for k in ('cti', 'course', 'training', 'enroll')):
         expected = get_cti_course_amount(cursor, description)
         if expected and expected > 0:
-            if is_installment:
-                if client_amount <= 0 or client_amount > expected + _AMOUNT_TOLERANCE:
-                    return None, f'Course installment must be between GHS 0.01 and GHS {expected:,.2f}.'
-                return client_amount, None
-            if not _close(client_amount, expected):
-                return expected, None
             return expected, None
 
     if any(k in desc_lower for k in ('renewal', 'annual dues', 'annual renewal', 'license renewal')):
         expected = _renewal_expected_amount(cursor, member_id, comp_app_id)
         if expected is not None and expected > 0:
-            if is_installment:
-                if client_amount <= 0 or client_amount > expected + _AMOUNT_TOLERANCE:
-                    return None, f'Renewal installment must be between GHS 0.01 and GHS {expected:,.2f}.'
-                return client_amount, None
             if not _close(client_amount, expected):
                 return None, f'Renewal amount must be GHS {expected:,.2f}.'
             return expected, None
@@ -370,10 +404,6 @@ def validate_member_payment_amount(
     if any(k in desc_lower for k in ('registration', 'reg form', 'application fee', 'entrance')):
         expected = _member_registration_fee(cursor, member_id)
         if expected is not None and expected > 0:
-            if is_installment:
-                if client_amount <= 0 or client_amount > expected + _AMOUNT_TOLERANCE:
-                    return None, f'Registration installment must be between GHS 0.01 and GHS {expected:,.2f}.'
-                return client_amount, None
             return expected, None
 
     # New membership package / dues fees are member-type specific (Licentiate / Associate / SME / Large).
@@ -381,22 +411,10 @@ def validate_member_payment_amount(
     if any(k in desc_lower for k in ('new member', 'membership dues', 'package', 'membership package')):
         expected = _member_package_fee(cursor, member_id)
         if expected is not None and expected > 0:
-            if is_installment:
-                if client_amount <= 0 or client_amount > expected + _AMOUNT_TOLERANCE:
-                    return None, f'Installment must be between GHS 0.01 and GHS {expected:,.2f}.'
-                return client_amount, None
-            if not _close(client_amount, expected):
-                return expected, None
             return expected, None
 
     sched_amt = _match_fee_schedule(cursor, description)
     if sched_amt is not None:
-        if is_installment:
-            if client_amount <= 0 or client_amount > sched_amt + _AMOUNT_TOLERANCE:
-                return None, f'Installment must be between GHS 0.01 and GHS {sched_amt:,.2f}.'
-            return client_amount, None
-        if not _close(client_amount, sched_amt):
-            return sched_amt, None
         return sched_amt, None
 
     if any(k in desc_lower for k in _MUST_VERIFY_KEYWORDS):

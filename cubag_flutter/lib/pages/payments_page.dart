@@ -226,6 +226,17 @@ class _PaymentsPageState extends State<PaymentsPage>
     super.dispose();
   }
 
+  /// SEC-20: the server accepts installments only against a bill (an explicit
+  /// compliance bill, or the member's open renewal bill). Registration,
+  /// package and course fees must be paid in full.
+  bool get _installmentsAvailable {
+    if (_complianceAppId != null) return true;
+    final r = _reason.toLowerCase();
+    return (r.contains('renewal') || r.contains('annual dues')) &&
+        !r.contains('new member') &&
+        !r.contains('package');
+  }
+
   double _getCurrentBillTotal() {
     final r = _reason.toLowerCase();
     if (r.contains('renewal') || r.contains('annual dues')) {
@@ -505,8 +516,9 @@ class _PaymentsPageState extends State<PaymentsPage>
     try {
       final api = ApiService();
       final currentBillTot = _getCurrentBillTotal();
-      final isInstallment = _isInstallmentMode ||
-          (currentBillTot > 0 && amt < (currentBillTot - 0.01));
+      final isInstallment = _installmentsAvailable &&
+          (_isInstallmentMode ||
+              (currentBillTot > 0 && amt < (currentBillTot - 0.01)));
       final requestData = {
         'amount': amt,
         'description': effectiveReason,
@@ -2143,7 +2155,9 @@ class _PaymentsPageState extends State<PaymentsPage>
                   ),
 
                   // Payment Mode Selector (Full vs Installment)
-                  if (_allowInstallments && _getCurrentBillTotal() > 0) ...[
+                  if (_allowInstallments &&
+                      _installmentsAvailable &&
+                      _getCurrentBillTotal() > 0) ...[
                     Divider(height: 1, color: isDark ? Colors.white10 : const Color(0xFFF1F5F9)),
                     Padding(
                       padding: const EdgeInsets.all(14),
