@@ -10,12 +10,13 @@ import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/session_storage.dart';
 import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
-const _kGreen = Color(0xFF10b981);
-const _kAmber = Color(0xFFf59e0b);
-const _kRed = Color(0xFFef4444);
-const _kNavy = Color(0xFF1A0F0A);
+const _kOrange = CubagColors.action;
+const _kGreen = CubagColors.valid;
+const _kAmber = CubagColors.due;
+const _kRed = CubagColors.lapsed;
+const _kNavy = CubagColors.ink;
 const _kBlue = Color(0xFF0284C7);
 
 class PaymentsPage extends StatefulWidget {
@@ -599,12 +600,12 @@ class _PaymentsPageState extends State<PaymentsPage>
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10b981).withAlpha(30),
+                        color: CubagColors.valid.withAlpha(30),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.verified_rounded,
-                        color: Color(0xFF10b981),
+                        color: CubagColors.valid,
                         size: 22,
                       ),
                     ),
@@ -729,12 +730,12 @@ class _PaymentsPageState extends State<PaymentsPage>
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10b981).withAlpha(30),
+                        color: CubagColors.valid.withAlpha(30),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.check_circle_rounded,
-                        color: Color(0xFF10b981),
+                        color: CubagColors.valid,
                         size: 22,
                       ),
                     ),
@@ -1350,7 +1351,7 @@ class _PaymentsPageState extends State<PaymentsPage>
               border: Border.all(
                 color: isDark
                     ? const Color(0xFF3D261C)
-                    : const Color(0xFFE8DED6),
+                    : CubagColors.line,
                 width: 1,
               ),
               boxShadow: [
@@ -1401,12 +1402,13 @@ class _PaymentsPageState extends State<PaymentsPage>
     return AppLayout(
       title: 'Payment',
       scrollable: false,
+      background: CubagColors.paper,
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+            padding: const EdgeInsets.symmetric(vertical: CubagSpace.md, horizontal: CubagSpace.lg),
             child: Stack(
               children: [
                 RefreshIndicator(
@@ -1416,33 +1418,18 @@ class _PaymentsPageState extends State<PaymentsPage>
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: Column(
                     children: [
+                      // Plain page: no card around the whole flow.
                       Container(
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E130D) : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6),
-                            width: 1.0,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withAlpha(isDark ? 30 : 6),
-                              blurRadius: 12,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        clipBehavior: Clip.antiAlias,
                         child: Column(
                           children: [
                             // ── Sleek Segmented Flow Stepper ──
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              padding: const EdgeInsets.only(bottom: 14),
                               decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0),
+                                color: CubagColors.paper,
                                 border: Border(
                                   bottom: BorderSide(
-                                    color: isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6),
+                                    color: isDark ? const Color(0xFF3D261C) : CubagColors.line,
                                     width: 1.0,
                                   ),
                                 ),
@@ -1474,11 +1461,10 @@ class _PaymentsPageState extends State<PaymentsPage>
                                                   borderRadius: BorderRadius.circular(6),
                                                 ),
                                                 child: Text(
-                                                  'STEP ${curIdx + 1} OF $totalSteps',
+                                                  'Step ${curIdx + 1} of $totalSteps',
                                                   style: TextStyle(
                                                     fontSize: 10,
                                                     fontWeight: FontWeight.w800,
-                                                    letterSpacing: 0.6,
                                                     color: AppColors.accentOrangeText,
                                                   ),
                                                 ),
@@ -1489,7 +1475,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                                 style: TextStyle(
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.w800,
-                                                  color: isDark ? Colors.white : const Color(0xFF1A0F0A),
+                                                  color: isDark ? Colors.white : CubagColors.ink,
                                                 ),
                                               ),
                                             ],
@@ -1513,14 +1499,14 @@ class _PaymentsPageState extends State<PaymentsPage>
                                                 child: Row(
                                                   mainAxisSize: MainAxisSize.min,
                                                   children: [
-                                                    const Icon(Icons.arrow_back_ios_rounded, size: 11, color: Color(0xFF64748B)),
+                                                    const Icon(Icons.arrow_back_ios_rounded, size: 11, color: CubagColors.muted),
                                                     const SizedBox(width: 3),
                                                     Text(
                                                       'Back',
                                                       style: TextStyle(
                                                         fontSize: 12,
                                                         fontWeight: FontWeight.w700,
-                                                        color: const Color(0xFF64748B),
+                                                        color: CubagColors.muted,
                                                       ),
                                                     ),
                                                   ],
@@ -1541,10 +1527,10 @@ class _PaymentsPageState extends State<PaymentsPage>
                                               margin: EdgeInsets.only(right: i == totalSteps - 1 ? 0 : 5),
                                               decoration: BoxDecoration(
                                                 color: isCompleted
-                                                    ? const Color(0xFF10b981)
+                                                    ? CubagColors.valid
                                                     : (isActive
                                                         ? _kOrange
-                                                        : (isDark ? Colors.white12 : const Color(0xFFE2E8F0))),
+                                                        : CubagColors.lineStrong),
                                                 borderRadius: BorderRadius.circular(2),
                                               ),
                                             ),
@@ -1579,7 +1565,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             'Secured by WhitsunPay PCI-DSS Compliance',
                             style: TextStyle(
                               fontSize: 13,
-                              color: const Color(0xFF64748b),
+                              color: CubagColors.muted,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -1602,7 +1588,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           height: 64,
                           decoration: const BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [Color(0xFF10b981), Color(0xFF059669)],
+                              colors: [CubagColors.valid, Color(0xFF059669)],
                             ),
                             shape: BoxShape.circle,
                           ),
@@ -1618,7 +1604,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFF1A0F0A),
+                            color: CubagColors.ink,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -1626,7 +1612,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           'Your transaction has been successfully processed.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Color(0xFF64748b),
+                            color: CubagColors.muted,
                             fontSize: 15,
                             height: 1.4,
                           ),
@@ -1637,7 +1623,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFf0fdf4),
+                              color: CubagColors.validTint,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: const Color(0xFFbbf7d0),
@@ -1646,12 +1632,11 @@ class _PaymentsPageState extends State<PaymentsPage>
                             child: Column(
                               children: [
                                 Text(
-                                  'AMOUNT PAID',
+                                  'Amount paid',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: const Color(0xFF16a34a),
+                                    color: CubagColors.valid,
                                     fontWeight: FontWeight.w900,
-                                    letterSpacing: 1,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -1681,7 +1666,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                   width: double.infinity,
                                   child: ElevatedButton(
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF10b981),
+                                      backgroundColor: CubagColors.valid,
                                       foregroundColor: Colors.white,
                                       elevation: 0,
                                       padding: const EdgeInsets.symmetric(
@@ -1722,7 +1707,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                       context.go('/payment-history');
                                     },
                                     style: TextButton.styleFrom(
-                                      foregroundColor: const Color(0xFF64748b),
+                                      foregroundColor: CubagColors.muted,
                                     ),
                                     child: Text(
                                       'View Payment History',
@@ -1741,7 +1726,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         TextButton(
                           onPressed: () => setState(() => _showSuccess = false),
                           style: TextButton.styleFrom(
-                            foregroundColor: const Color(0xFF64748b),
+                            foregroundColor: CubagColors.muted,
                           ),
                           child: Text(
                             'Close',
@@ -1766,7 +1751,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           height: 64,
                           decoration: const BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [Color(0xFFef4444), Color(0xFFdc2626)],
+                              colors: [CubagColors.lapsed, CubagColors.lapsed],
                             ),
                             shape: BoxShape.circle,
                           ),
@@ -1782,7 +1767,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFF1A0F0A),
+                            color: CubagColors.ink,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -1790,7 +1775,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           _errorMsg,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            color: Color(0xFF64748b),
+                            color: CubagColors.muted,
                             fontSize: 15,
                             height: 1.4,
                           ),
@@ -1800,7 +1785,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           width: double.infinity,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1A0F0A),
+                              backgroundColor: CubagColors.ink,
                               foregroundColor: Colors.white,
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1844,12 +1829,11 @@ class _PaymentsPageState extends State<PaymentsPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'PAYMENT CATEGORY',
+            'Payment category',
             style: TextStyle(
               fontSize: 13,
-              color: const Color(0xFF64748b),
+              color: CubagColors.muted,
               fontWeight: FontWeight.w800,
-              letterSpacing: 0.5,
             ),
           ),
           const SizedBox(height: 8),
@@ -2042,12 +2026,11 @@ class _PaymentsPageState extends State<PaymentsPage>
                 const Icon(Icons.alt_route_rounded, size: 15, color: _kOrange),
                 const SizedBox(width: 6),
                 Text(
-                  'RENEWAL COVERAGE SCOPE',
+                  'Renewal coverage scope',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF64748B),
-                    letterSpacing: 0.6,
+                    color: CubagColors.muted,
                   ),
                 ),
               ],
@@ -2084,10 +2067,10 @@ class _PaymentsPageState extends State<PaymentsPage>
             const SizedBox(height: 16),
             Container(
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                color: isDark ? CubagColors.ink : Colors.white,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                  color: isDark ? Colors.white12 : CubagColors.line,
                   width: 1.2,
                 ),
                 boxShadow: [
@@ -2111,12 +2094,11 @@ class _PaymentsPageState extends State<PaymentsPage>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'TOTAL BILL DUE',
+                              'Total bill due',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
-                                letterSpacing: 0.6,
-                                color: const Color(0xFF64748B),
+                                color: CubagColors.muted,
                               ),
                             ),
                             if (_isPartiallyPaid)
@@ -2127,7 +2109,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  'PARTIALLY PAID',
+                                  'Partially paid',
                                   style: TextStyle(
                                     fontSize: 9.5,
                                     fontWeight: FontWeight.w800,
@@ -2146,7 +2128,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             style: TextStyle(
                               fontSize: 26,
                               fontWeight: FontWeight.w900,
-                              color: isDark ? Colors.white : const Color(0xFF1A0F0A),
+                              color: isDark ? Colors.white : CubagColors.ink,
                               letterSpacing: -0.5,
                             ),
                           ),
@@ -2160,7 +2142,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                   ? (_renewalAmountPaid / (_renewalAmountPaid + _renewalBalanceDue)).clamp(0.0, 1.0)
                                   : 0.0,
                               minHeight: 6,
-                              backgroundColor: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                              backgroundColor: isDark ? Colors.white12 : CubagColors.line,
                               valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
                             ),
                           ),
@@ -2181,7 +2163,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w700,
-                                  color: isDark ? Colors.white70 : const Color(0xFF334155),
+                                  color: isDark ? Colors.white70 : CubagColors.inkSoft,
                                 ),
                               ),
                             ],
@@ -2195,26 +2177,25 @@ class _PaymentsPageState extends State<PaymentsPage>
                   if (_allowInstallments &&
                       _installmentsAvailable &&
                       _getCurrentBillTotal() > 0) ...[
-                    Divider(height: 1, color: isDark ? Colors.white10 : const Color(0xFFF1F5F9)),
+                    Divider(height: 1, color: isDark ? Colors.white10 : CubagColors.sand),
                     Padding(
                       padding: const EdgeInsets.all(14),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'PAYMENT OPTION',
+                            'Payment option',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                              color: const Color(0xFF64748B),
+                              color: CubagColors.muted,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                              color: isDark ? CubagColors.ink : CubagColors.sand,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Row(
@@ -2252,7 +2233,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                         style: TextStyle(
                                           fontSize: 13,
                                           fontWeight: !_isInstallmentMode ? FontWeight.w800 : FontWeight.w600,
-                                          color: !_isInstallmentMode ? _kOrange : const Color(0xFF64748B),
+                                          color: !_isInstallmentMode ? _kOrange : CubagColors.muted,
                                         ),
                                       ),
                                     ),
@@ -2296,7 +2277,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                         style: TextStyle(
                                           fontSize: 13,
                                           fontWeight: _isInstallmentMode ? FontWeight.w800 : FontWeight.w600,
-                                          color: _isInstallmentMode ? _kOrange : const Color(0xFF64748B),
+                                          color: _isInstallmentMode ? _kOrange : CubagColors.muted,
                                         ),
                                       ),
                                     ),
@@ -2310,18 +2291,17 @@ class _PaymentsPageState extends State<PaymentsPage>
                           if (_isInstallmentMode) ...[
                             const SizedBox(height: 12),
                             Text(
-                              'INSTALLMENT AMOUNT TO PAY',
+                              'Installment amount to pay',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
                                 color: AppColors.accentOrangeText,
                               ),
                             ),
                             const SizedBox(height: 6),
                             Container(
                               decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                                color: isDark ? CubagColors.ink : CubagColors.sand,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: _kOrange,
@@ -2361,7 +2341,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                       style: TextStyle(
                                         fontSize: 19,
                                         fontWeight: FontWeight.w800,
-                                        color: isDark ? Colors.white : const Color(0xFF1A0F0A),
+                                        color: isDark ? Colors.white : CubagColors.ink,
                                       ),
                                       decoration: const InputDecoration(
                                         border: InputBorder.none,
@@ -2395,7 +2375,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 }
                                 return Text(
                                   'Remaining balance after payment: GH₵ ${remainingAfter.toStringAsFixed(2)}',
-                                  style: TextStyle(fontSize: 11.5, color: const Color(0xFF64748B), fontWeight: FontWeight.w600),
+                                  style: TextStyle(fontSize: 11.5, color: CubagColors.muted, fontWeight: FontWeight.w600),
                                 );
                               },
                             ),
@@ -2414,10 +2394,10 @@ class _PaymentsPageState extends State<PaymentsPage>
             const SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                color: isDark ? CubagColors.ink : CubagColors.sand,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                  color: isDark ? Colors.white12 : CubagColors.line,
                   width: 1.0,
                 ),
               ),
@@ -2445,14 +2425,14 @@ class _PaymentsPageState extends State<PaymentsPage>
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
-                                    color: isDark ? Colors.white : const Color(0xFF1E293B),
+                                    color: isDark ? Colors.white : CubagColors.ink,
                                   ),
                                 ),
                                 Text(
                                   '${_renewalFeeBreakdown.length} line items • National & District',
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: const Color(0xFF64748B),
+                                    color: CubagColors.muted,
                                   ),
                                 ),
                               ],
@@ -2460,7 +2440,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           ),
                           Icon(
                             _isBreakdownExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                            color: const Color(0xFF64748B),
+                            color: CubagColors.muted,
                             size: 20,
                           ),
                         ],
@@ -2468,7 +2448,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     ),
                   ),
                   if (_isBreakdownExpanded) ...[
-                    Divider(height: 1, color: isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+                    Divider(height: 1, color: isDark ? Colors.white10 : CubagColors.line),
                     Padding(
                       padding: const EdgeInsets.all(14),
                       child: Builder(builder: (context) {
@@ -2490,7 +2470,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                     style: TextStyle(
                                       fontSize: 12.5,
                                       fontWeight: FontWeight.w500,
-                                      color: isDark ? Colors.white70 : const Color(0xFF334155),
+                                      color: isDark ? Colors.white70 : CubagColors.inkSoft,
                                     ),
                                   ),
                                 ),
@@ -2500,7 +2480,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                   style: TextStyle(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w700,
-                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                    color: isDark ? Colors.white : CubagColors.ink,
                                   ),
                                 ),
                               ],
@@ -2517,7 +2497,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                   const Icon(Icons.shield_outlined, size: 13, color: _kBlue),
                                   const SizedBox(width: 5),
                                   Text(
-                                    'NATIONAL STATUTORY CHARGES',
+                                    'National statutory charges',
                                     style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: _kBlue, letterSpacing: 0.5),
                                   ),
                                 ],
@@ -2532,7 +2512,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                   const Icon(Icons.location_city_outlined, size: 13, color: _kGreen),
                                   const SizedBox(width: 5),
                                   Text(
-                                    'DISTRICT OPERATIONAL CLEARANCE',
+                                    'District operational clearance',
                                     style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: _kGreen, letterSpacing: 0.5),
                                   ),
                                 ],
@@ -2559,10 +2539,10 @@ class _PaymentsPageState extends State<PaymentsPage>
             const SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                color: isDark ? CubagColors.ink : CubagColors.sand,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                  color: isDark ? Colors.white12 : CubagColors.line,
                   width: 1.0,
                 ),
               ),
@@ -2590,14 +2570,14 @@ class _PaymentsPageState extends State<PaymentsPage>
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
-                                    color: isDark ? Colors.white : const Color(0xFF1E293B),
+                                    color: isDark ? Colors.white : CubagColors.ink,
                                   ),
                                 ),
                                 Text(
                                   '${_regFeeBreakdown.length} line items included',
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: const Color(0xFF64748B),
+                                    color: CubagColors.muted,
                                   ),
                                 ),
                               ],
@@ -2605,7 +2585,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           ),
                           Icon(
                             _isBreakdownExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                            color: const Color(0xFF64748B),
+                            color: CubagColors.muted,
                             size: 20,
                           ),
                         ],
@@ -2613,7 +2593,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     ),
                   ),
                   if (_isBreakdownExpanded) ...[
-                    Divider(height: 1, color: isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+                    Divider(height: 1, color: isDark ? Colors.white10 : CubagColors.line),
                     Padding(
                       padding: const EdgeInsets.all(14),
                       child: Column(
@@ -2629,7 +2609,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                     cleanLabel,
                                     style: TextStyle(
                                       fontSize: 12.5,
-                                      color: isDark ? Colors.white70 : const Color(0xFF334155),
+                                      color: isDark ? Colors.white70 : CubagColors.inkSoft,
                                     ),
                                   ),
                                 ),
@@ -2639,7 +2619,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                   style: TextStyle(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w700,
-                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                    color: isDark ? Colors.white : CubagColors.ink,
                                   ),
                                 ),
                               ],
@@ -2674,10 +2654,10 @@ class _PaymentsPageState extends State<PaymentsPage>
                 margin: const EdgeInsets.only(top: 14),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10b981).withAlpha(18),
+                  color: CubagColors.valid.withAlpha(18),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: const Color(0xFF10b981).withAlpha(80),
+                    color: CubagColors.valid.withAlpha(80),
                   ),
                 ),
                 child: Row(
@@ -2685,7 +2665,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   children: [
                     const Icon(
                       Icons.verified_rounded,
-                      color: Color(0xFF10b981),
+                      color: CubagColors.valid,
                       size: 18,
                     ),
                     const SizedBox(width: 10),
@@ -2737,13 +2717,13 @@ class _PaymentsPageState extends State<PaymentsPage>
                       margin: const EdgeInsets.only(bottom: 14),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF59E0B).withAlpha(15),
+                        color: CubagColors.due.withAlpha(15),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFF59E0B).withAlpha(50)),
+                        border: Border.all(color: CubagColors.due.withAlpha(50)),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 18),
+                          const Icon(Icons.info_outline_rounded, color: CubagColors.due, size: 18),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -2826,7 +2806,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       margin: const EdgeInsets.only(bottom: 16),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF064E3B).withAlpha(40) : const Color(0xFFF0FDF4),
+                        color: isDark ? const Color(0xFF064E3B).withAlpha(40) : CubagColors.validTint,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: const Color(0xFF059669).withAlpha(100), width: 1.5),
                       ),
@@ -2847,11 +2827,10 @@ class _PaymentsPageState extends State<PaymentsPage>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'ANNUAL RENEWAL DUES SETTLED',
+                                  'Annual renewal dues settled',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.5,
                                     color: const Color(0xFF059669),
                                   ),
                                 ),
@@ -2976,7 +2955,7 @@ class _PaymentsPageState extends State<PaymentsPage>
               color: isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isDark ? const Color(0xFF3D261C) : const Color(0xFFE8DED6),
+                color: isDark ? const Color(0xFF3D261C) : CubagColors.line,
                 width: 1.0,
               ),
             ),
@@ -3004,7 +2983,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : const Color(0xFF1A0F0A),
+                          color: isDark ? Colors.white : CubagColors.ink,
                         ),
                       ),
                       const SizedBox(height: 1),
@@ -3012,7 +2991,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         'Upload required statutory verification files',
                         style: TextStyle(
                           fontSize: 11.5,
-                          color: const Color(0xFF64748B),
+                          color: CubagColors.muted,
                         ),
                       ),
                     ],
@@ -3061,7 +3040,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFe2e8f0)),
+                  border: Border.all(color: CubagColors.line),
                 ),
                 child: const Center(
                   child: Column(
@@ -3071,7 +3050,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       Text(
                         'Loading application details...',
                         style: TextStyle(
-                          color: Color(0xFF64748b),
+                          color: CubagColors.muted,
                           fontSize: 15,
                         ),
                       ),
@@ -3086,7 +3065,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFe2e8f0)),
+                  border: Border.all(color: CubagColors.line),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withAlpha(5),
@@ -3122,14 +3101,14 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF1A0F0A),
+                                  color: CubagColors.ink,
                                 ),
                               ),
                               Text(
                                 'Initiate your compliance application to upload required files.',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: const Color(0xFF64748b),
+                                  color: CubagColors.muted,
                                 ),
                               ),
                             ],
@@ -3142,7 +3121,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       'This payment category requires valid compliance documentation. Click below to start your application and upload required documents.',
                       style: TextStyle(
                         fontSize: 15,
-                        color: const Color(0xFF475569),
+                        color: CubagColors.inkSoft,
                         height: 1.5,
                       ),
                     ),
@@ -3208,12 +3187,11 @@ class _PaymentsPageState extends State<PaymentsPage>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'APPLICATION STATUS',
+                            'Application status',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
-                              color: const Color(0xFF64748b),
-                              letterSpacing: 0.5,
+                              color: CubagColors.muted,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -3261,12 +3239,11 @@ class _PaymentsPageState extends State<PaymentsPage>
 
               // Required Documents List
               Text(
-                'REQUIRED DOCUMENTS',
+                'Required documents',
                 style: TextStyle(
                   fontSize: 13,
-                  color: const Color(0xFF64748b),
+                  color: CubagColors.muted,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 10),
@@ -3283,7 +3260,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       border: Border.all(
                         color: uploaded
                             ? _kGreen.withAlpha(60)
-                            : const Color(0xFFe2e8f0),
+                            : CubagColors.line,
                         width: 1.5,
                       ),
                     ),
@@ -3299,14 +3276,14 @@ class _PaymentsPageState extends State<PaymentsPage>
                               decoration: BoxDecoration(
                                 color: uploaded
                                     ? _kGreen.withAlpha(20)
-                                    : const Color(0xFFf1f5f9),
+                                    : CubagColors.sand,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
                                 uploaded
                                     ? Icons.check_circle_rounded
                                     : Icons.upload_file_rounded,
-                                color: uploaded ? _kGreen : const Color(0xFF64748b),
+                                color: uploaded ? _kGreen : CubagColors.muted,
                                 size: 20,
                               ),
                             ),
@@ -3320,7 +3297,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15,
-                                      color: const Color(0xFF1A0F0A),
+                                      color: CubagColors.ink,
                                       height: 1.3,
                                     ),
                                   ),
@@ -3341,7 +3318,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                           fontSize: 12.5,
                                           color: uploaded
                                               ? _kGreen
-                                              : const Color(0xFF64748b),
+                                              : CubagColors.muted,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -3373,7 +3350,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: uploaded
-                                  ? const Color(0xFFf1f5f9)
+                                  ? CubagColors.sand
                                   : primary,
                               foregroundColor: uploaded
                                   ? const Color(0xFF4D2D20)
@@ -3382,7 +3359,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                                 side: BorderSide(
-                                  color: uploaded ? const Color(0xFFcbd5e1) : Colors.transparent,
+                                  color: uploaded ? CubagColors.lineStrong : Colors.transparent,
                                 ),
                               ),
                             ),
@@ -3448,13 +3425,13 @@ class _PaymentsPageState extends State<PaymentsPage>
                   ),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(
-                      color: Color(0xFFcbd5e1),
+                      color: CubagColors.lineStrong,
                       width: 1.5,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    foregroundColor: const Color(0xFF64748b),
+                    foregroundColor: CubagColors.muted,
                   ),
                 ),
               ),
@@ -3492,12 +3469,11 @@ class _PaymentsPageState extends State<PaymentsPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'PAYMENT CHANNEL',
+                    'Payment channel',
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 11,
-                      color: const Color(0xFF64748b),
-                      letterSpacing: 0.6,
+                      color: CubagColors.muted,
                     ),
                   ),
                   Text(
@@ -3505,7 +3481,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
-                      color: const Color(0xFF1A0F0A),
+                      color: CubagColors.ink,
                     ),
                   ),
                 ],
@@ -3516,12 +3492,11 @@ class _PaymentsPageState extends State<PaymentsPage>
 
           // ── CHANNEL: MOBILE MONEY ──
           Text(
-            'SELECT MOBILE CARRIER',
+            'Select mobile carrier',
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 13,
-                color: const Color(0xFF64748b),
-                letterSpacing: 0.6,
+                color: CubagColors.muted,
               ),
             ),
             const SizedBox(height: 10),
@@ -3550,7 +3525,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             border: Border.all(
                               color: _momoNetwork == entry['id']
                                   ? _kOrange
-                                  : const Color(0xFFcbd5e1),
+                                  : CubagColors.lineStrong,
                               width: _momoNetwork == entry['id'] ? 2.0 : 1.2,
                             ),
                           ),
@@ -3575,7 +3550,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                         : FontWeight.w600,
                                     color: _momoNetwork == entry['id']
                                         ? _kOrange
-                                        : const Color(0xFF334155),
+                                        : CubagColors.inkSoft,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -3594,12 +3569,11 @@ class _PaymentsPageState extends State<PaymentsPage>
             Row(
               children: [
                 Text(
-                  'MOMO NUMBER',
+                  'MoMo number',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
-                    color: const Color(0xFF64748b),
-                    letterSpacing: 0.6,
+                    color: CubagColors.muted,
                   ),
                 ),
                 const Spacer(),
@@ -3646,7 +3620,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       ? _kOrange
                       : (_momoPhone.isNotEmpty
                           ? const Color(0xFF5F6B7E)
-                          : const Color(0xFFcbd5e1)),
+                          : CubagColors.lineStrong),
                   width: isPhoneValid ? 2.0 : 1.5,
                 ),
                 boxShadow: [
@@ -3683,15 +3657,13 @@ class _PaymentsPageState extends State<PaymentsPage>
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: 2.0,
-                        color: const Color(0xFF1e293b),
+                        color: CubagColors.ink,
                       ),
                       decoration: InputDecoration(
                         hintText: '024XXXXXXX (10 digits)',
                         hintStyle: TextStyle(
                           color: const Color(0xFF5F6B7E),
                           fontSize: 17,
-                          letterSpacing: 1.0,
                           fontWeight: FontWeight.w500,
                         ),
                         counterText: "",
@@ -3716,7 +3688,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   fontSize: 13.5,
                   color: (_momoNetwork.isNotEmpty && isPhoneValid)
                       ? _kOrange
-                      : const Color(0xFF64748b),
+                      : CubagColors.muted,
                   fontWeight: (_momoNetwork.isNotEmpty && isPhoneValid)
                       ? FontWeight.w600
                       : FontWeight.normal,
@@ -3732,12 +3704,12 @@ class _PaymentsPageState extends State<PaymentsPage>
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xFFF8FAFC),
-                    Color(0xFFF1F5F9),
+                    CubagColors.sand,
+                    CubagColors.sand,
                   ],
                 ),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: CubagColors.line),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -3764,7 +3736,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 14.5,
-                            color: const Color(0xFF0f172a),
+                            color: CubagColors.ink,
                           ),
                         ),
                         const SizedBox(height: 3),
@@ -3772,7 +3744,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           'A PIN authorization prompt will appear on your phone screen automatically once you proceed.',
                           style: TextStyle(
                             fontSize: 13.5,
-                            color: const Color(0xFF475569),
+                            color: CubagColors.inkSoft,
                             height: 1.35,
                           ),
                         ),
@@ -3809,7 +3781,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _kOrange,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: const Color(0xFFcbd5e1),
+                    disabledBackgroundColor: CubagColors.lineStrong,
                     disabledForegroundColor: const Color(0xFF5F6B7E),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -3839,13 +3811,13 @@ class _PaymentsPageState extends State<PaymentsPage>
                       ),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(
-                          color: Color(0xFFcbd5e1),
+                          color: CubagColors.lineStrong,
                           width: 1.5,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        foregroundColor: const Color(0xFF64748b),
+                        foregroundColor: CubagColors.muted,
                       ),
                     );
                   },
@@ -3867,10 +3839,10 @@ class _PaymentsPageState extends State<PaymentsPage>
         children: [
           Container(
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              color: isDark ? CubagColors.ink : Colors.white,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                color: isDark ? Colors.white12 : CubagColors.line,
                 width: 1.2,
               ),
               boxShadow: [
@@ -3892,7 +3864,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   ),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [_kOrange, Color(0xFFea580c)],
+                      colors: [_kOrange, CubagColors.action],
                     ),
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(16),
@@ -3906,12 +3878,11 @@ class _PaymentsPageState extends State<PaymentsPage>
                           const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 18),
                           const SizedBox(width: 8),
                           Text(
-                            'DIGITAL INVOICE SUMMARY',
+                            'Digital invoice summary',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w900,
                               fontSize: 13,
-                              letterSpacing: 0.6,
                             ),
                           ),
                         ],
@@ -3923,12 +3894,11 @@ class _PaymentsPageState extends State<PaymentsPage>
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          'VERIFIED INVOICE',
+                          'Verified invoice',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
                             fontSize: 9.5,
-                            letterSpacing: 0.5,
                           ),
                         ),
                       ),
@@ -3942,7 +3912,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withAlpha(6) : const Color(0xFFFFF7ED),
+                    color: isDark ? Colors.white.withAlpha(6) : CubagColors.actionTint,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: _kOrange.withAlpha(60)),
                   ),
@@ -3950,12 +3920,11 @@ class _PaymentsPageState extends State<PaymentsPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'TOTAL PAYABLE AMOUNT',
+                        'Total payable amount',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFFC2410C),
-                          letterSpacing: 0.8,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -3976,7 +3945,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFD97706).withAlpha(20),
+                            color: CubagColors.due.withAlpha(20),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -4003,13 +3972,13 @@ class _PaymentsPageState extends State<PaymentsPage>
                               : 'Annual Renewal (National & District)'))
                       : _reason,
                 ),
-                Divider(height: 1, indent: 16, endIndent: 16, color: isDark ? Colors.white10 : const Color(0xFFF1F5F9)),
+                Divider(height: 1, indent: 16, endIndent: 16, color: isDark ? Colors.white10 : CubagColors.sand),
                 _buildInvoiceRow(
                   'Selected Method',
                   methodLabel,
                 ),
                 if (_momoPhone.isNotEmpty) ...[
-                  Divider(height: 1, indent: 16, endIndent: 16, color: isDark ? Colors.white10 : const Color(0xFFF1F5F9)),
+                  Divider(height: 1, indent: 16, endIndent: 16, color: isDark ? Colors.white10 : CubagColors.sand),
                   _buildInvoiceRow(
                     'MoMo Account',
                     _momoPhone,
@@ -4022,12 +3991,11 @@ class _PaymentsPageState extends State<PaymentsPage>
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     child: Text(
-                      'ITEMIZED CHARGES BREAKDOWN',
+                      'Itemized charges breakdown',
                       style: TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF5F6B7E),
-                        letterSpacing: 0.8,
                       ),
                     ),
                   ),
@@ -4035,10 +4003,10 @@ class _PaymentsPageState extends State<PaymentsPage>
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withAlpha(4) : const Color(0xFFF8FAFC),
+                      color: isDark ? Colors.white.withAlpha(4) : CubagColors.sand,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+                        color: isDark ? Colors.white10 : CubagColors.line,
                       ),
                     ),
                     child: Column(
@@ -4055,7 +4023,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                     style: TextStyle(
                                       fontSize: 12.5,
                                       fontWeight: FontWeight.w500,
-                                      color: isDark ? Colors.white70 : const Color(0xFF475569),
+                                      color: isDark ? Colors.white70 : CubagColors.inkSoft,
                                     ),
                                   ),
                                 ),
@@ -4065,7 +4033,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                   style: TextStyle(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w700,
-                                    color: isDark ? Colors.white : const Color(0xFF1E293B),
+                                    color: isDark ? Colors.white : CubagColors.ink,
                                   ),
                                 ),
                               ],
@@ -4086,11 +4054,11 @@ class _PaymentsPageState extends State<PaymentsPage>
                 onPressed: () => setState(() => _step = 3),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(50, 50),
-                  side: const BorderSide(color: Color(0xFFcbd5e1), width: 1.5),
+                  side: const BorderSide(color: CubagColors.lineStrong, width: 1.5),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  foregroundColor: const Color(0xFF475569),
+                  foregroundColor: CubagColors.inkSoft,
                 ),
                 child: const Icon(Icons.arrow_back_rounded, size: 20),
               ),
@@ -4171,7 +4139,7 @@ class _PaymentsPageState extends State<PaymentsPage>
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: const Color(0xFF1A0F0A),
+              color: CubagColors.ink,
             ),
           ),
           const SizedBox(height: 8),
@@ -4179,7 +4147,7 @@ class _PaymentsPageState extends State<PaymentsPage>
             'A MoMo prompt has been sent to $_momoPhone.\nOpen your phone and enter your PIN to approve.',
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Color(0xFF64748b),
+              color: CubagColors.muted,
               fontSize: 15,
               height: 1.5,
             ),
@@ -4319,7 +4287,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF10b981),
+                backgroundColor: CubagColors.valid,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
@@ -4337,7 +4305,7 @@ class _PaymentsPageState extends State<PaymentsPage>
               _currentTxRef = '';
             }),
             style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF64748b),
+              foregroundColor: CubagColors.muted,
             ),
             child: Text(
               'Cancel & Change Method',
@@ -4379,13 +4347,13 @@ class _PaymentsPageState extends State<PaymentsPage>
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected
-              ? _kOrange.withAlpha(isDark ? 30 : 15)
-              : (isDark ? Colors.white.withAlpha(5) : const Color(0xFFF8FAFC)),
+              ? CubagColors.actionTint
+              : CubagColors.paper,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
                 ? _kOrange
-                : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                : CubagColors.lineStrong,
             width: isSelected ? 1.8 : 1.0,
           ),
         ),
@@ -4418,7 +4386,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             style: TextStyle(
                               fontSize: 13.5,
                               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                              color: isDark ? Colors.white : const Color(0xFF1E293B),
+                              color: isDark ? Colors.white : CubagColors.ink,
                             ),
                           ),
                           if (isRecommended)
@@ -4429,7 +4397,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                'RECOMMENDED',
+                                'Recommended',
                                 style: TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w800,
@@ -4444,7 +4412,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         subtitle,
                         style: TextStyle(
                           fontSize: 11.5,
-                          color: const Color(0xFF64748B),
+                          color: CubagColors.muted,
                           height: 1.3,
                         ),
                       ),
@@ -4457,7 +4425,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: isSelected ? _kOrange : const Color(0xFF475569),
+                    color: isSelected ? _kOrange : CubagColors.inkSoft,
                   ),
                 ),
               ],
@@ -4483,7 +4451,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF64748B),
+                    color: CubagColors.muted,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -4500,7 +4468,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               style: TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFF1E293B),
+                                color: CubagColors.ink,
                               ),
                             ),
                           ),
@@ -4511,7 +4479,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         style: TextStyle(
                           fontSize: isHighlight ? 18 : 14.5,
                           fontWeight: isHighlight ? FontWeight.w800 : FontWeight.w700,
-                          color: isHighlight ? _kOrange : const Color(0xFF1E293B),
+                          color: isHighlight ? _kOrange : CubagColors.ink,
                         ),
                       ),
               ],
@@ -4528,7 +4496,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF64748B),
+                    color: CubagColors.muted,
                   ),
                 ),
               ),
@@ -4550,7 +4518,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFF1E293B),
+                                color: CubagColors.ink,
                               ),
                             ),
                           ),
@@ -4562,7 +4530,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         style: TextStyle(
                           fontSize: isHighlight ? 18 : 14,
                           fontWeight: isHighlight ? FontWeight.w800 : FontWeight.w700,
-                          color: isHighlight ? _kOrange : const Color(0xFF1E293B),
+                          color: isHighlight ? _kOrange : CubagColors.ink,
                         ),
                       ),
               ),

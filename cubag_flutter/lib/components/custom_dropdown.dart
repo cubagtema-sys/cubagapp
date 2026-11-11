@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import '../design/cubag_design.dart';
 
-const _kOrange = Color(0xFFFF5000);
+const _kOrange = CubagColors.action;
 
 class DropdownItem<T> {
   final T value;
@@ -48,7 +49,7 @@ class CustomDropdown<T> extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
           color: !enabled
-              ? (isDark ? const Color(0xFF1A0F0A) : const Color(0xFFf1f5f9))
+              ? (isDark ? CubagColors.ink : CubagColors.sand)
               : (isDark ? const Color(0xFF281710) : Colors.white),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
@@ -70,7 +71,7 @@ class CustomDropdown<T> extends StatelessWidget {
                     hint ?? '',
                     style: TextStyle(
                       fontSize: 15,
-                      color: isDark ? const Color(0xFF64748b) : Colors.grey,
+                      color: isDark ? CubagColors.muted : Colors.grey,
                       fontWeight: FontWeight.w500,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -85,7 +86,7 @@ class CustomDropdown<T> extends StatelessWidget {
                         ? (isDark ? Colors.white38 : Colors.grey.shade500)
                         : (isDark
                             ? const Color(0xFF5F6B7E)
-                            : const Color(0xFF64748b)),
+                            : CubagColors.muted),
                   ),
                   dropdownColor: isDark
                       ? const Color(0xFF281710)
@@ -95,10 +96,10 @@ class CustomDropdown<T> extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 15,
                     color: !enabled
-                        ? (isDark ? Colors.white60 : const Color(0xFF334155))
+                        ? (isDark ? Colors.white60 : CubagColors.inkSoft)
                         : (isDark
-                            ? const Color(0xFFcbd5e1)
-                            : const Color(0xFF1A0F0A)),
+                            ? CubagColors.lineStrong
+                            : CubagColors.ink),
                     fontWeight: FontWeight.w600,
                   ),
                   onChanged: enabled
@@ -127,8 +128,8 @@ class CustomDropdown<T> extends StatelessWidget {
                                 color: isSelected
                                     ? _kOrange
                                     : (isDark
-                                          ? const Color(0xFFcbd5e1)
-                                          : const Color(0xFF1A0F0A)),
+                                          ? CubagColors.lineStrong
+                                          : CubagColors.ink),
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
