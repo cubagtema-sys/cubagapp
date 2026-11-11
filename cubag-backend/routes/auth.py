@@ -10,6 +10,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import cross_origin
 from config.db import get_db
 from config.cache import cache
+from config import biometric_tokens
 from config.rate_limit import (
     rate_limit,
     otp_attempt_limited,
@@ -427,6 +428,216 @@ def register():
         conn.close()
 
 
+def _complete_login(cursor, member):
+    """Everything that happens once the caller has proved who they are
+    (password, or a biometric device credential): account-status checks, token
+    minting and the session payload. Shared so both paths behave identically."""
+    # ── Block suspended / inactive accounts ───────────────────────────
+    member_status = str(member.get('status') or 'active').lower()
+    # SEC-07: deleted accounts can never sign in again.
+    if member_status == 'deleted':
+        return jsonify({'message': 'Invalid credentials'}), 401
+    if member_status == 'suspended':
+        return jsonify({
+            'message': 'Your account has been suspended. Please contact the CUBAG Secretariat for assistance.'
+        }), 403
+    if member_status == 'inactive':
+        return jsonify({
+            'message': 'Your account is inactive. Please contact the CUBAG Secretariat to reactivate.'
+        }), 403
+
+    # BUG-B05 fix: default False so missing column never silently bypasses verification
+    if not member.get('email_verified', False):
+        return jsonify({'message': 'Please check your email to verify your account before logging in.'}), 403
+
+    from utils import calculate_and_update_member_rating
+    comp_score = member.get('compliance_score')
+    if comp_score is None: comp_score = 100
+    s_rating = member.get('star_rating')
+    if s_rating is None: s_rating = 5.0
+    m_score = member.get('manual_review_score')
+    if m_score is None: m_score = 10
+
+    # Trigger asynchronous background rating update so login returns instantly
+    member_id_val = member['id']
+    def _async_rating_update(m_id):
+        c = None
+        try:
+            c = get_db()
+            with c.cursor() as cur:
+                calculate_and_update_member_rating(m_id, cur)
+        except Exception as ex:
+            logger.debug(f"[auth] Async rating update error: {ex}")
+        finally:
+            if c:
+                try:
+                    c.close()
+                except Exception:
+                    pass
+
+    import threading
+    threading.Thread(target=_async_rating_update, args=(member_id_val,), daemon=True).start()
+
+    # Generate JWT with identity and role. Admins get a shorter token.
+    role = member.get('role', 'member')
+    from datetime import timedelta
+    token_ttl = timedelta(hours=8) if role in ('admin', 'sub_admin', 'super_admin') else timedelta(hours=48)
+    token = create_access_token(
+        identity=str(member['id']),
+        # 'tv' = token_version; bumping it in the DB revokes old tokens (SEC-16)
+        additional_claims={'role': role, 'tv': int(member.get('token_version') or 0)},
+        expires_delta=token_ttl,
+    )
+
+    # Expiry date serialization
+    expiry = str(member['license_expiry_date']) if member.get('license_expiry_date') else None
+
+    # Audit log for admin & sub_admin logins
+    if role in ('admin', 'sub_admin', 'super_admin'):
+        from utils import log_admin_action
+                
+        # Fetch actual IP, falling back to remote_addr if no proxy header exists
+        forwarded_for = request.headers.get('X-Forwarded-For')
+        actual_ip = forwarded_for.split(',')[0].strip() if forwarded_for else request.remote_addr
+                
+        log_admin_action(
+            member['id'],
+            f'{role.replace("_", " ").title()} Login',
+            role, member['id'], member['name'],
+            f'IP: {actual_ip}'
+        )
+
+    sub_perms = []
+    if role == 'sub_admin':
+        cursor.execute(
+            "SELECT permission_key FROM sub_admin_permissions WHERE sub_admin_id = %s AND granted = true",
+            (member['id'],)
+        )
+        sub_perms = [r['permission_key'] for r in cursor.fetchall()]
+
+    user_status = member.get('status') or 'pending'
+    is_admin_role = role in ('admin', 'sub_admin', 'super_admin')
+    user_license = None if is_admin_role else member.get('license_number')
+    has_paid_fee = False
+    is_pkg_paid = False
+    is_good_standing = False
+    mem_no = None
+    is_ren_paid = False
+
+    if role == 'member':
+        # Check for any registration/application fee payment
+        cursor.execute("""
+            SELECT COUNT(*) as cnt FROM payments
+            WHERE member_id = %s
+              AND LOWER(status) IN ('completed', 'successful', 'paid', 'success')
+              AND (
+                  LOWER(description) LIKE '%%registration%%'
+                  OR LOWER(description) LIKE '%%application%%'
+                  OR LOWER(description) LIKE '%%reg form%%'
+              )
+        """, (member['id'],))
+        reg_row = cursor.fetchone()
+        has_any_reg_payment = (reg_row['cnt'] > 0) if reg_row else False
+
+        # Check specifically for package fee payment
+        cursor.execute("""
+            SELECT COUNT(*) as cnt FROM payments
+            WHERE member_id = %s
+              AND LOWER(status) IN ('completed', 'successful', 'paid', 'success')
+              AND (
+                  LOWER(description) LIKE '%%new member%%'
+                  OR LOWER(description) LIKE '%%entrance%%'
+                  OR LOWER(description) LIKE '%%package%%'
+                  OR LOWER(description) LIKE '%%clearing & forwarding only%%'
+                  OR LOWER(description) LIKE '%%consolidation only%%'
+                  OR LOWER(description) LIKE '%%licentiate membership%%'
+                  OR LOWER(description) LIKE '%%associate membership%%'
+              )
+              AND LOWER(description) NOT LIKE '%%registration%%'
+              AND LOWER(description) NOT LIKE '%%application%%'
+              AND LOWER(description) NOT LIKE '%%renewal%%'
+        """, (member['id'],))
+        pkg_row = cursor.fetchone()
+        has_pkg_payment = (pkg_row['cnt'] > 0) if pkg_row else False
+
+        # Check specifically for annual renewal payment
+        cursor.execute("""
+            SELECT COUNT(*) as cnt FROM payments
+            WHERE member_id = %s
+              AND LOWER(status) IN ('completed', 'successful', 'paid', 'success')
+              AND (
+                  LOWER(description) LIKE '%%renewal%%'
+                  OR LOWER(description) LIKE '%%annual renewal%%'
+              )
+        """, (member['id'],))
+        ren_row = cursor.fetchone()
+        has_renewal_payment = (ren_row['cnt'] > 0) if ren_row else False
+
+        is_pkg_paid = (member.get('package_fee_paid') is True) or has_pkg_payment
+        has_paid_fee = has_any_reg_payment or (member.get('registration_fee_paid') is True) or (member.get('application_fee_paid') is True)
+        is_good_standing = is_pkg_paid
+        is_ren_paid = has_renewal_payment
+
+        raw_status = str(user_status).lower().strip()
+        is_docs_approved = raw_status in ('active', 'approved')
+
+        if is_docs_approved and has_paid_fee:
+            user_status = 'active'
+        else:
+            user_status = raw_status
+
+        if not is_pkg_paid:
+            mem_no = 'PENDING SETTLEMENT'
+            user_license = 'PENDING SETTLEMENT'
+        else:
+            mem_no = member.get('membership_number') or member.get('license_number') or f"CUBAG-{member['id']:04d}"
+            if 'pending' in str(mem_no).lower():
+                mem_no = f"CUBAG-{member['id']:04d}"
+            user_license = mem_no
+    elif is_admin_role:
+        has_paid_fee = True
+        is_pkg_paid = True
+        is_good_standing = True
+        user_status = 'active'
+
+    return jsonify({
+        'token': token,
+        'permissions': sub_perms,
+        'user': {
+            'id': member['id'],
+            'name': member['name'],
+            'email': member['email'],
+            'company': member['company'],
+            'memberType': member['member_type'],
+            'member_type': member['member_type'],
+            'fee_category': member.get('fee_category'),
+            'member_scale': member.get('member_scale'),
+            'licenseNumber': user_license,
+            'license_number': user_license,
+            'membershipNumber': mem_no,
+            'membership_number': mem_no,
+            'licenseExpiryDate': None if is_admin_role else expiry,
+            'license_expiry_date': None if is_admin_role else expiry,
+            'portOfOperation': member['port_of_operation'],
+            'status': user_status,
+            'registration_fee_paid': has_paid_fee,
+            'application_fee_paid': has_paid_fee,
+            'package_fee_paid': is_pkg_paid,
+            'good_standing': is_good_standing,
+            'is_good_standing': is_good_standing,
+            'is_renewal_paid': is_ren_paid,
+            'renewal_paid': is_ren_paid,
+            'role': role,
+            'permissions': sub_perms,
+            'profile_photo': member.get('profile_photo') or None,
+            'compliance_score': None if is_admin_role else comp_score,
+            'star_rating': None if is_admin_role else s_rating,
+            'manual_review_score': None if is_admin_role else m_score,
+            'breakdown': {}
+        }
+    }), 200
+
+
 @auth_bp.route('/login', methods=['POST'])
 @rate_limit('login', max_requests=12, window_seconds=300)
 def login():
@@ -489,210 +700,7 @@ def login():
                 return jsonify({'message': 'Invalid credentials'}), 401
             clear_otp_failures('login', _login_key)
 
-            # ── Block suspended / inactive accounts ───────────────────────────
-            member_status = str(member.get('status') or 'active').lower()
-            # SEC-07: deleted accounts can never sign in again.
-            if member_status == 'deleted':
-                return jsonify({'message': 'Invalid credentials'}), 401
-            if member_status == 'suspended':
-                return jsonify({
-                    'message': 'Your account has been suspended. Please contact the CUBAG Secretariat for assistance.'
-                }), 403
-            if member_status == 'inactive':
-                return jsonify({
-                    'message': 'Your account is inactive. Please contact the CUBAG Secretariat to reactivate.'
-                }), 403
-
-            # BUG-B05 fix: default False so missing column never silently bypasses verification
-            if not member.get('email_verified', False):
-                return jsonify({'message': 'Please check your email to verify your account before logging in.'}), 403
-
-            from utils import calculate_and_update_member_rating
-            comp_score = member.get('compliance_score')
-            if comp_score is None: comp_score = 100
-            s_rating = member.get('star_rating')
-            if s_rating is None: s_rating = 5.0
-            m_score = member.get('manual_review_score')
-            if m_score is None: m_score = 10
-
-            # Trigger asynchronous background rating update so login returns instantly
-            member_id_val = member['id']
-            def _async_rating_update(m_id):
-                c = None
-                try:
-                    c = get_db()
-                    with c.cursor() as cur:
-                        calculate_and_update_member_rating(m_id, cur)
-                except Exception as ex:
-                    logger.debug(f"[auth] Async rating update error: {ex}")
-                finally:
-                    if c:
-                        try:
-                            c.close()
-                        except Exception:
-                            pass
-
-            import threading
-            threading.Thread(target=_async_rating_update, args=(member_id_val,), daemon=True).start()
-
-            # Generate JWT with identity and role. Admins get a shorter token.
-            role = member.get('role', 'member')
-            from datetime import timedelta
-            token_ttl = timedelta(hours=8) if role in ('admin', 'sub_admin', 'super_admin') else timedelta(hours=48)
-            token = create_access_token(
-                identity=str(member['id']),
-                # 'tv' = token_version; bumping it in the DB revokes old tokens (SEC-16)
-                additional_claims={'role': role, 'tv': int(member.get('token_version') or 0)},
-                expires_delta=token_ttl,
-            )
-
-            # Expiry date serialization
-            expiry = str(member['license_expiry_date']) if member.get('license_expiry_date') else None
-
-            # Audit log for admin & sub_admin logins
-            if role in ('admin', 'sub_admin', 'super_admin'):
-                from utils import log_admin_action
-                
-                # Fetch actual IP, falling back to remote_addr if no proxy header exists
-                forwarded_for = request.headers.get('X-Forwarded-For')
-                actual_ip = forwarded_for.split(',')[0].strip() if forwarded_for else request.remote_addr
-                
-                log_admin_action(
-                    member['id'],
-                    f'{role.replace("_", " ").title()} Login',
-                    role, member['id'], member['name'],
-                    f'IP: {actual_ip}'
-                )
-
-            sub_perms = []
-            if role == 'sub_admin':
-                cursor.execute(
-                    "SELECT permission_key FROM sub_admin_permissions WHERE sub_admin_id = %s AND granted = true",
-                    (member['id'],)
-                )
-                sub_perms = [r['permission_key'] for r in cursor.fetchall()]
-
-            user_status = member.get('status') or 'pending'
-            is_admin_role = role in ('admin', 'sub_admin', 'super_admin')
-            user_license = None if is_admin_role else member.get('license_number')
-            has_paid_fee = False
-            is_pkg_paid = False
-            is_good_standing = False
-            mem_no = None
-            is_ren_paid = False
-
-            if role == 'member':
-                # Check for any registration/application fee payment
-                cursor.execute("""
-                    SELECT COUNT(*) as cnt FROM payments
-                    WHERE member_id = %s
-                      AND LOWER(status) IN ('completed', 'successful', 'paid', 'success')
-                      AND (
-                          LOWER(description) LIKE '%%registration%%'
-                          OR LOWER(description) LIKE '%%application%%'
-                          OR LOWER(description) LIKE '%%reg form%%'
-                      )
-                """, (member['id'],))
-                reg_row = cursor.fetchone()
-                has_any_reg_payment = (reg_row['cnt'] > 0) if reg_row else False
-
-                # Check specifically for package fee payment
-                cursor.execute("""
-                    SELECT COUNT(*) as cnt FROM payments
-                    WHERE member_id = %s
-                      AND LOWER(status) IN ('completed', 'successful', 'paid', 'success')
-                      AND (
-                          LOWER(description) LIKE '%%new member%%'
-                          OR LOWER(description) LIKE '%%entrance%%'
-                          OR LOWER(description) LIKE '%%package%%'
-                          OR LOWER(description) LIKE '%%clearing & forwarding only%%'
-                          OR LOWER(description) LIKE '%%consolidation only%%'
-                          OR LOWER(description) LIKE '%%licentiate membership%%'
-                          OR LOWER(description) LIKE '%%associate membership%%'
-                      )
-                      AND LOWER(description) NOT LIKE '%%registration%%'
-                      AND LOWER(description) NOT LIKE '%%application%%'
-                      AND LOWER(description) NOT LIKE '%%renewal%%'
-                """, (member['id'],))
-                pkg_row = cursor.fetchone()
-                has_pkg_payment = (pkg_row['cnt'] > 0) if pkg_row else False
-
-                # Check specifically for annual renewal payment
-                cursor.execute("""
-                    SELECT COUNT(*) as cnt FROM payments
-                    WHERE member_id = %s
-                      AND LOWER(status) IN ('completed', 'successful', 'paid', 'success')
-                      AND (
-                          LOWER(description) LIKE '%%renewal%%'
-                          OR LOWER(description) LIKE '%%annual renewal%%'
-                      )
-                """, (member['id'],))
-                ren_row = cursor.fetchone()
-                has_renewal_payment = (ren_row['cnt'] > 0) if ren_row else False
-
-                is_pkg_paid = (member.get('package_fee_paid') is True) or has_pkg_payment
-                has_paid_fee = has_any_reg_payment or (member.get('registration_fee_paid') is True) or (member.get('application_fee_paid') is True)
-                is_good_standing = is_pkg_paid
-                is_ren_paid = has_renewal_payment
-
-                raw_status = str(user_status).lower().strip()
-                is_docs_approved = raw_status in ('active', 'approved')
-
-                if is_docs_approved and has_paid_fee:
-                    user_status = 'active'
-                else:
-                    user_status = raw_status
-
-                if not is_pkg_paid:
-                    mem_no = 'PENDING SETTLEMENT'
-                    user_license = 'PENDING SETTLEMENT'
-                else:
-                    mem_no = member.get('membership_number') or member.get('license_number') or f"CUBAG-{member['id']:04d}"
-                    if 'pending' in str(mem_no).lower():
-                        mem_no = f"CUBAG-{member['id']:04d}"
-                    user_license = mem_no
-            elif is_admin_role:
-                has_paid_fee = True
-                is_pkg_paid = True
-                is_good_standing = True
-                user_status = 'active'
-
-            return jsonify({
-                'token': token,
-                'permissions': sub_perms,
-                'user': {
-                    'id': member['id'],
-                    'name': member['name'],
-                    'email': member['email'],
-                    'company': member['company'],
-                    'memberType': member['member_type'],
-                    'member_type': member['member_type'],
-                    'fee_category': member.get('fee_category'),
-                    'member_scale': member.get('member_scale'),
-                    'licenseNumber': user_license,
-                    'license_number': user_license,
-                    'membershipNumber': mem_no,
-                    'membership_number': mem_no,
-                    'licenseExpiryDate': None if is_admin_role else expiry,
-                    'license_expiry_date': None if is_admin_role else expiry,
-                    'portOfOperation': member['port_of_operation'],
-                    'status': user_status,
-                    'registration_fee_paid': has_paid_fee,
-                    'application_fee_paid': has_paid_fee,
-                    'package_fee_paid': is_pkg_paid,
-                    'good_standing': is_good_standing,
-                    'is_good_standing': is_good_standing,
-                    'is_renewal_paid': is_ren_paid,
-                    'renewal_paid': is_ren_paid,
-                    'role': role,
-                    'permissions': sub_perms,
-                    'profile_photo': member.get('profile_photo') or None,
-                    'compliance_score': None if is_admin_role else comp_score,
-                    'star_rating': None if is_admin_role else s_rating,
-                    'manual_review_score': None if is_admin_role else m_score,
-                    'breakdown': {}
-                }
-            }), 200
+            return _complete_login(cursor, member)
     except Exception as e:
         logger.error(f'[login] {e}')
         return jsonify({'message': 'An unexpected error occurred. Please try again.'}), 500
@@ -1471,6 +1479,9 @@ def update_profile():
             if updates:
                 params.append(member_id)
                 cursor.execute(f"UPDATE members SET {', '.join(updates)} WHERE id = %s", tuple(params))
+                if new_email and apply_email:
+                    # SEC-14: the sign-in address changed; enrolled devices must re-enrol.
+                    biometric_tokens.revoke_all(cursor, member_id, 'email_changed')
                 conn.commit()
 
             # Invalidate cached /auth/me for this user
@@ -1672,6 +1683,8 @@ def change_password():
                 (hashed_pw, member_id),
             )
             new_tv = int((cursor.fetchone() or {}).get('token_version') or 0)
+            # SEC-14: biometric device credentials do not survive a password change.
+            biometric_tokens.revoke_all(cursor, member_id, 'password_changed')
             conn.commit()
             _invalidate_status_cache(member_id)
             new_token = _issue_token(member_id, member.get('role') or 'member', new_tv)
@@ -1751,6 +1764,7 @@ def delete_account():
                 WHERE id = %s
             """, (member_id,))
             _purge_member_personal_data(cursor, member_id)
+            biometric_tokens.revoke_all(cursor, member_id, 'account_deleted')
             conn.commit()
         _invalidate_status_cache(member_id)
         return jsonify({'message': 'Account deleted successfully', 'status': 'deleted'}), 200
@@ -1884,6 +1898,7 @@ def reset_password():
                 "UPDATE members SET password_hash = %s, token_version = COALESCE(token_version, 0) + 1 WHERE id = %s",
                 (hashed_pw, member_row['id']),
             )
+            biometric_tokens.revoke_all(cursor, member_row['id'], 'password_reset')
             _invalidate_status_cache(member_row['id'])
             cursor.execute("DELETE FROM otp_codes WHERE LOWER(email) = LOWER(%s) AND type = 'password_reset'", (actual_email,))
             conn.commit()
@@ -1897,3 +1912,206 @@ def reset_password():
 
 # SMS OTP routes (send-sms-otp, verify-sms-otp) have been removed.
 # No SMS gateway integration exists. Use email OTP via /send-otp and /verify-email.
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SEC-14: revocable biometric sign-in (docs/CUBAG_SEC14_DESIGN.md)
+# The phone holds a random per-device credential instead of the password. The
+# server stores only its hash, rotates it on every use and can revoke it.
+# ══════════════════════════════════════════════════════════════════════════════
+def _biometric_refused(status=401, message=None):
+    return jsonify({'message': message or biometric_tokens.INVALID_MESSAGE,
+                    'error_code': biometric_tokens.INVALID_CODE}), status
+
+
+@auth_bp.route('/biometric/enroll', methods=['POST'])
+@jwt_required()
+@rate_limit('biometric_enroll', max_requests=10, window_seconds=300)
+def biometric_enroll():
+    """Issue a device credential. Needs the current password as well as a valid
+    session, so a stolen access token cannot mint a long-lived credential."""
+    member_id = get_jwt_identity()
+    data = request.get_json(silent=True) or {}
+    device_id = data.get('device_id')
+    password = data.get('password')
+    if not biometric_tokens.valid_device_id(device_id):
+        return jsonify({'message': 'A valid device_id is required.'}), 400
+    if not password or not isinstance(password, str):
+        return jsonify({'message': 'Your current password is required to enable biometric sign-in.'}), 400
+    lock_key = f'member{member_id}'
+    if otp_attempt_limited('bio_enroll', lock_key, max_attempts=5):
+        return jsonify({'message': 'Too many attempts. Please wait 15 minutes and try again.'}), 429
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, role, status, password_hash, COALESCE(token_version, 0) AS token_version "
+                "FROM members WHERE id = %s", (member_id,))
+            member = cursor.fetchone()
+            if not member or str(member.get('status') or '').lower() in ('deleted', 'suspended', 'inactive'):
+                return jsonify({'message': 'Biometric sign-in is not available for this account.'}), 403
+            if (member.get('role') or 'member') in biometric_tokens.ADMIN_ROLES:
+                return jsonify({'message': 'Biometric sign-in is not available for administrator accounts.'}), 403
+            try:
+                password_ok = (check_password_hash(member['password_hash'], password)
+                               or check_password_hash(member['password_hash'], password.strip()))
+            except Exception:
+                password_ok = False
+            if not password_ok:
+                record_otp_failure('bio_enroll', lock_key)
+                # 400, not 401: a wrong password here must not sign the user out.
+                return jsonify({'message': 'Incorrect password.'}), 400
+            clear_otp_failures('bio_enroll', lock_key)
+            issued = biometric_tokens.issue(
+                cursor, member['id'], device_id, member['token_version'],
+                device_name=data.get('device_name'), platform=data.get('platform'))
+            conn.commit()
+            return jsonify(issued), 201
+    except Exception as e:
+        logger.error(f'[biometric-enroll] {e}')
+        return jsonify({'message': 'Could not enable biometric sign-in. Please try again.'}), 500
+    finally:
+        conn.close()
+
+
+@auth_bp.route('/biometric/login', methods=['POST'])
+@rate_limit('biometric_login', max_requests=12, window_seconds=300)
+def biometric_login():
+    """Sign in with a device credential. Every refusal looks the same to the caller."""
+    data = request.get_json(silent=True) or {}
+    credential = data.get('biometric_token')
+    device_id = data.get('device_id')
+    row_id, _secret = biometric_tokens.parse_credential(credential)
+    if row_id is None or not biometric_tokens.valid_device_id(device_id):
+        return _biometric_refused()
+    lock_key = f'row{row_id}'
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            if otp_attempt_limited('bio_login', lock_key, max_attempts=biometric_tokens.MAX_WRONG_ATTEMPTS):
+                biometric_tokens.revoke_row(cursor, row_id, 'too_many_attempts')
+                conn.commit()
+                return _biometric_refused()
+            row, reason = biometric_tokens.check(cursor, credential, device_id)
+            if row is None:
+                if reason == 'wrong_secret':
+                    record_otp_failure('bio_login', lock_key)
+                conn.commit()  # keep any revocation made by check()
+                logger.warning(f'[biometric-login] refused row={row_id} reason={reason}')
+                return _biometric_refused()
+
+            cursor.execute("SELECT * FROM members WHERE id = %s", (row['member_id'],))
+            member = cursor.fetchone()
+            status = str((member or {}).get('status') or 'active').lower()
+            if not member or status == 'deleted':
+                biometric_tokens.revoke_row(cursor, row['id'], 'account_unavailable')
+                conn.commit()
+                return _biometric_refused()
+            if (member.get('role') or 'member') in biometric_tokens.ADMIN_ROLES:
+                biometric_tokens.revoke_row(cursor, row['id'], 'role_not_allowed')
+                conn.commit()
+                return _biometric_refused()
+            if int(member.get('token_version') or 0) != int(row.get('token_version') or 0):
+                # Password changed/reset or "sign out everywhere" since enrolment.
+                biometric_tokens.revoke_row(cursor, row['id'], 'credentials_changed')
+                conn.commit()
+                return _biometric_refused()
+
+            response, http_status = _complete_login(cursor, member)
+            if http_status != 200:
+                # Suspended / inactive / unverified: same message as password login.
+                conn.rollback()
+                return response, http_status
+            new_credential = biometric_tokens.rotate(cursor, row['id'], row['token_hash'])
+            conn.commit()
+            clear_otp_failures('bio_login', lock_key)
+            body = response.get_json() or {}
+            body['biometric_token'] = new_credential
+            body['biometric_expires_at'] = row['expires_at'].isoformat() + 'Z'
+            return jsonify(body), 200
+    except Exception as e:
+        logger.error(f'[biometric-login] {e}')
+        return jsonify({'message': 'An unexpected error occurred. Please try again.'}), 500
+    finally:
+        conn.close()
+
+
+@auth_bp.route('/biometric/revoke', methods=['POST'])
+@rate_limit('biometric_revoke', max_requests=20, window_seconds=300)
+def biometric_revoke():
+    """Turn biometric sign-in off. Either a signed-in member revokes one device
+    (or all), or a signed-out device revokes itself by presenting its credential."""
+    data = request.get_json(silent=True) or {}
+    device_id = data.get('device_id')
+    try:
+        verify_jwt_in_request(optional=True)
+        member_id = get_jwt_identity()
+    except Exception:
+        member_id = None
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            if member_id:
+                if data.get('all') is True:
+                    biometric_tokens.revoke_all(cursor, member_id, 'user_revoked_all')
+                elif biometric_tokens.valid_device_id(device_id):
+                    biometric_tokens.revoke_device(cursor, member_id, device_id)
+                else:
+                    return jsonify({'message': 'device_id is required.'}), 400
+            else:
+                row, _reason = biometric_tokens.check(cursor, data.get('biometric_token'), device_id)
+                if row is not None:
+                    biometric_tokens.revoke_row(cursor, row['id'], 'user_revoked')
+                # Same answer whether or not the credential was valid.
+            conn.commit()
+            return jsonify({'message': 'Biometric sign-in has been turned off.'}), 200
+    except Exception as e:
+        logger.error(f'[biometric-revoke] {e}')
+        return jsonify({'message': 'Could not update biometric sign-in. Please try again.'}), 500
+    finally:
+        conn.close()
+
+
+@auth_bp.route('/biometric/devices', methods=['GET'])
+@jwt_required()
+def biometric_devices():
+    member_id = get_jwt_identity()
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            return jsonify({'devices': biometric_tokens.list_devices(cursor, member_id)}), 200
+    except Exception as e:
+        logger.error(f'[biometric-devices] {e}')
+        return jsonify({'message': 'Could not load devices.'}), 500
+    finally:
+        conn.close()
+
+
+@auth_bp.route('/logout', methods=['POST'])
+@jwt_required()
+def logout():
+    """Server side of sign-out.
+    - forget_device + device_id: also revoke this device's biometric credential.
+    - all_devices: sign out everywhere (bump token_version, revoke all credentials).
+    A plain logout leaves the biometric credential valid on purpose, so the
+    member can sign back in with Face ID / fingerprint."""
+    member_id = get_jwt_identity()
+    data = request.get_json(silent=True) or {}
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            if data.get('all_devices') is True:
+                cursor.execute(
+                    "UPDATE members SET token_version = COALESCE(token_version, 0) + 1 WHERE id = %s",
+                    (member_id,))
+                biometric_tokens.revoke_all(cursor, member_id, 'signed_out_everywhere')
+            elif data.get('forget_device') is True and biometric_tokens.valid_device_id(data.get('device_id')):
+                biometric_tokens.revoke_device(cursor, member_id, data.get('device_id'), 'signed_out')
+            conn.commit()
+        _invalidate_status_cache(member_id)
+        return jsonify({'message': 'Signed out.'}), 200
+    except Exception as e:
+        logger.error(f'[logout] {e}')
+        return jsonify({'message': 'Could not complete sign-out on the server. Please try again.'}), 500
+    finally:
+        conn.close()

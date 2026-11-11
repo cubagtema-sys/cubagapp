@@ -90,7 +90,7 @@ from config.authz import BLOCKED_STATUSES, BLOCKED_STATUS_MESSAGES
 # enforcement must not run on them.
 _UNAUTHENTICATED_AUTH_ENDPOINTS = {
     'login', 'register', 'send-otp', 'verify-email', 'verify-otp', 'resend-otp',
-    'forgot-password', 'reset-password',
+    'forgot-password', 'reset-password', 'biometric/login',
 }
 from routes.auth import auth_bp
 from routes.members import members_bp

@@ -1081,6 +1081,10 @@ def init_db():
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_schedules_status ON schedules(status)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_tasks_member_id ON tasks(member_id, due_date ASC)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_task_submissions_member_task ON task_submissions(member_id, task_id)")
+            # SEC-14: revocable per-device credentials for biometric sign-in.
+            from config.biometric_tokens import DDL as _BIO_DDL, INDEX_DDL as _BIO_INDEX_DDL
+            cursor.execute(_BIO_DDL)
+            cursor.execute(_BIO_INDEX_DDL)
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_platform_settings_key ON platform_settings(config_key)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_announcements_created_at ON announcements(created_at DESC) WHERE deleted_at IS NULL")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_license_history_member_id ON license_history(member_id, archived_at DESC)")
