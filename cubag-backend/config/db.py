@@ -164,7 +164,8 @@ def init_db():
                 ADD COLUMN IF NOT EXISTS renewal_fee_breakdown TEXT,
                 ADD COLUMN IF NOT EXISTS renewal_fee_title TEXT,
                 ADD COLUMN IF NOT EXISTS token_version INT DEFAULT 0,
-                ADD COLUMN IF NOT EXISTS pending_email VARCHAR(150);
+                ADD COLUMN IF NOT EXISTS pending_email VARCHAR(150),
+                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
             """)
 
             # OTP Codes table for pre-registration verification
@@ -871,6 +872,24 @@ def init_db():
                     ('renewal', 'renewal_sme_with_consolidation', 'SMEs (With Consolidation)', 'sme', 'with_consolidation', 3456.00, 'Base SME (2170) + Consolidation (1286)'),
                     ('renewal', 'renewal_large_corporate_with_consolidation', 'Large Corporate (With Consolidation)', 'large_corporate', 'with_consolidation', 6081.00, 'Base Corporate (4795) + Consolidation (1286)');
                 """)
+
+            # DB-01: this table was referenced (FK below, routes/tasks.py) but never
+            # created, so init_db() failed and rolled back on any fresh database.
+            # IF NOT EXISTS makes this a no-op where the table already exists.
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS task_submissions (
+                    id SERIAL PRIMARY KEY,
+                    task_id INT NOT NULL,
+                    member_id INT NOT NULL,
+                    completion_note TEXT,
+                    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    admin_verified BOOLEAN DEFAULT FALSE,
+                    admin_verified_at TIMESTAMP,
+                    admin_notes TEXT,
+                    FOREIGN KEY (task_id) REFERENCES tasks(id),
+                    FOREIGN KEY (member_id) REFERENCES members(id)
+                )
+            """)
 
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS task_submission_files (

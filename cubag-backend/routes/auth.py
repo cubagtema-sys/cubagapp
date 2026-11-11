@@ -1740,7 +1740,8 @@ def delete_account():
                     email = CONCAT('deleted_', id, '@deleted.invalid'),
                     phone = NULL,
                     fcm_token = NULL,
-                    password_hash = NULL,
+                    -- password_hash is NOT NULL: store a value no password can ever match
+                    password_hash = '!deleted',
                     agency_code = NULL,
                     license_number = NULL,
                     digital_address = NULL,

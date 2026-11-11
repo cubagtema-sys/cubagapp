@@ -150,7 +150,7 @@ def test_sec07_delete_account_clears_credentials_and_bumps_token_version(client,
     upd = db.executed(r"UPDATE members SET status = 'deleted'")
     assert upd, 'deletion UPDATE not executed'
     sql = upd[0][0]
-    for col in ('password_hash = NULL', 'agency_code = NULL', 'license_number = NULL', 'token_version'):
+    for col in ("password_hash = '!deleted'", 'agency_code = NULL', 'license_number = NULL', 'token_version'):
         assert col in sql
 
 
