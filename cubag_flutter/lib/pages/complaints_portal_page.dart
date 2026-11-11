@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../services/theme_service.dart';
 import '../components/app_logo.dart';
+import '../utils/app_colors.dart';
 
 // Dynamic Palette
 bool get _isDark => ThemeService.instance.isDark;
@@ -253,7 +254,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 1.0,
-                                  color: _kAccent,
+                                  color: AppColors.accentOrangeText,
                                 ),
                               ),
                             ],
@@ -357,7 +358,7 @@ class _ComplaintsPortalPageState extends State<ComplaintsPortalPage> {
                       child: Text(
                         'GRIEVANCE DESK',
                         style: GoogleFonts.inter(
-                          color: _kAccent,
+                          color: AppColors.accentOrangeText,
                           fontSize: 10.5,
                           fontWeight: FontWeight.bold,
                         ),

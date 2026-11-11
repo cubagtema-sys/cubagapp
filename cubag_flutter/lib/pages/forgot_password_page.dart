@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/theme_service.dart';
 import '../components/app_logo.dart';
+import '../utils/app_colors.dart';
 
 // Balanced CUBAG Dynamic Palette
 bool get _isDark => ThemeService.instance.isDark;
@@ -513,7 +514,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     TextSpan(
                       text: 'Sign In',
                       style: TextStyle(
-                        color: _kOrange,
+                        color: AppColors.accentOrangeText,
                         fontWeight: FontWeight.w800,
                         fontSize: 17,
                       ),

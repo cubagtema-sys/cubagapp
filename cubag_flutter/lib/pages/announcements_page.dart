@@ -337,18 +337,18 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                         decoration: InputDecoration(
                           hintText: 'Search circulars by title or keyword...',
                           hintStyle: const TextStyle(
-                            color: Color(0xFF94a3b8),
+                            color: Color(0xFF5F6B7E),
                             fontSize: 18,
                           ),
                           prefixIcon: const Icon(
                             Icons.search_rounded,
-                            color: Color(0xFF94a3b8),
+                            color: Color(0xFF5F6B7E),
                           ),
                           suffixIcon: _searchCtrl.text.isNotEmpty
                               ? IconButton(
                                   icon: const Icon(
                                     Icons.clear_rounded,
-                                    color: Color(0xFF94a3b8),
+                                    color: Color(0xFF5F6B7E),
                                   ),
                                   onPressed: () => setState(() {
                                     _searchCtrl.clear();
@@ -464,7 +464,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   fontSize: 17,
-                                  color: Color(0xFF94a3b8),
+                                  color: Color(0xFF5F6B7E),
                                   height: 1.4,
                                 ),
                               ),
@@ -597,7 +597,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                                         'Ref: CIRC-${a['id'] ?? '001'}',
                                         style: GoogleFonts.inter(
                                           fontSize: 15,
-                                          color: const Color(0xFF94a3b8),
+                                          color: const Color(0xFF5F6B7E),
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -609,7 +609,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                                       dateStr,
                                       style: GoogleFonts.inter(
                                         fontSize: 15,
-                                        color: const Color(0xFF94a3b8),
+                                        color: const Color(0xFF5F6B7E),
                                       ),
                                     ),
                                   ],
@@ -776,7 +776,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                               dateStr,
                               style: GoogleFonts.inter(
                                 fontSize: 13,
-                                color: const Color(0xFF94a3b8),
+                                color: const Color(0xFF5F6B7E),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),

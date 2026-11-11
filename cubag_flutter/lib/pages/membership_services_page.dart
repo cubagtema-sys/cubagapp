@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../components/app_layout.dart';
+import '../utils/app_colors.dart';
 
 // Balanced CUBAG Brand Palette
 const _kBrown = Color(0xFF6B3E26); // Primary Brown
@@ -462,7 +463,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                       Text(
                                         'MEMBERSHIP ID',
                                         style: GoogleFonts.inter(
-                                          color: _kOrange,
+                                          color: AppColors.accentOrangeText,
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
                                           letterSpacing: 0.5,
@@ -488,7 +489,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         Text(
                                           'CLASSIFICATION',
                                           style: GoogleFonts.inter(
-                                            color: _kOrange,
+                                            color: AppColors.accentOrangeText,
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
                                             letterSpacing: 0.5,
@@ -549,7 +550,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         Text(
                                           'OFFICIAL QR VERIFICATION',
                                           style: GoogleFonts.inter(
-                                            color: _kOrange,
+                                            color: AppColors.accentOrangeText,
                                             fontSize: 12,
                                             fontWeight: FontWeight.w800,
                                             letterSpacing: 0.5,
@@ -651,7 +652,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                             Text(
                                               'MEMBERSHIP ID',
                                               style: GoogleFonts.inter(
-                                                color: _kOrange,
+                                                color: AppColors.accentOrangeText,
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.bold,
                                                 letterSpacing: 0.5,
@@ -677,7 +678,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                               Text(
                                                 'CLASSIFICATION',
                                                 style: GoogleFonts.inter(
-                                                  color: _kOrange,
+                                                  color: AppColors.accentOrangeText,
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.bold,
                                                   letterSpacing: 0.5,
@@ -883,7 +884,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               style: GoogleFonts.inter(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
-                                color: _kOrange,
+                                color: AppColors.accentOrangeText,
                               ),
                             ),
                           ],
@@ -1004,7 +1005,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               style: GoogleFonts.inter(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
-                                color: _kOrange,
+                                color: AppColors.accentOrangeText,
                               ),
                             ),
                           ],
@@ -1312,7 +1313,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                 style: GoogleFonts.inter(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w900,
-                                  color: _kOrange,
+                                  color: AppColors.accentOrangeText,
                                 ),
                               ),
                             ],

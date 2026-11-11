@@ -441,7 +441,7 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                               style: GoogleFonts.inter(
                                 fontSize: 30,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF94a3b8),
+                                color: const Color(0xFF5F6B7E),
                               ),
                             ),
                           ),

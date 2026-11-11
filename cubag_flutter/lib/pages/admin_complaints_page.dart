@@ -6,6 +6,7 @@ import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
+import '../utils/app_colors.dart';
 
 const _kBrown = Color(0xFF6B3E26);
 const _kOrange = Color(0xFFFF5000);
@@ -191,7 +192,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Update Grievance Case', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)),
-                      Text(item['complaint_id']?.toString() ?? '', style: GoogleFonts.inter(fontSize: 12, color: _kOrange, fontWeight: FontWeight.bold)),
+                      Text(item['complaint_id']?.toString() ?? '', style: GoogleFonts.inter(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -420,7 +421,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(complaintId, style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w700, color: _kOrange)),
+                              Text(complaintId, style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.accentOrangeText)),
                               const SizedBox(width: 3),
                               const Icon(Icons.copy_rounded, size: 10, color: _kOrange),
                             ],
@@ -487,7 +488,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                       SelectableText('Contact: $phone | $email', style: GoogleFonts.inter(fontSize: 12, color: subTextColor)),
                       if (company != 'N/A') ...[
                         const SizedBox(height: 2),
-                        SelectableText('Company: $company', style: GoogleFonts.inter(fontSize: 12, color: _kOrange, fontWeight: FontWeight.w500)),
+                        SelectableText('Company: $company', style: GoogleFonts.inter(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.w500)),
                       ],
                       if (targetEntity.isNotEmpty) ...[
                         const SizedBox(height: 4),
@@ -769,7 +770,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                                               child: Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                                                 decoration: BoxDecoration(color: _kBrown.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                                                child: SelectableText(id, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: _kOrange)),
+                                                child: SelectableText(id, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.accentOrangeText)),
                                               ),
                                             ),
                                             const SizedBox(width: 4),

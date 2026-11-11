@@ -12,6 +12,7 @@ import '../components/trend_line.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/socket_service.dart';
+import '../utils/app_colors.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10b981);
@@ -230,7 +231,7 @@ class _ProfilePageState extends State<ProfilePage> {
           final isDark = Theme.of(ctx).brightness == Brightness.dark;
           final sheetBg = isDark ? const Color(0xFF1E130D) : Colors.white;
           final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-          final textMuted = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+          final textMuted = isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748B);
 
           return Padding(
             padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
@@ -584,7 +585,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final cardBg = isDark ? const Color(0xFF1A0F0A) : Colors.white;
     final border = isDark ? const Color(0xFF281710) : const Color(0xFFE2E8F0);
     final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final textMuted = isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748B);
     final tileBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F4);
     final isMobile = MediaQuery.of(context).size.width < 600;
 
@@ -823,7 +824,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 style: GoogleFonts.inter(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: _kOrange,
+                                  color: AppColors.accentOrangeText,
                                 ),
                               ),
                             ],
@@ -868,7 +869,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.4,
-                          color: _kOrange,
+                          color: AppColors.accentOrangeText,
                         ),
                       ),
                     ),
@@ -997,7 +998,7 @@ class _ProfilePageState extends State<ProfilePage> {
         backgroundColor: _kOrange.withAlpha(30),
         child: Text(
           _initials,
-          style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w900, color: _kOrange),
+          style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.accentOrangeText),
         ),
       );
 
@@ -1071,7 +1072,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.4,
-                              color: _kOrange,
+                              color: AppColors.accentOrangeText,
                             ),
                           ),
                         ],
@@ -1247,7 +1248,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               style: GoogleFonts.inter(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 8.5,
-                                color: _kOrange,
+                                color: AppColors.accentOrangeText,
                                 letterSpacing: 0.8,
                               ),
                             ),
@@ -1380,7 +1381,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           style: GoogleFonts.inter(
                             fontSize: 9.5,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF94A3B8),
+                            color: const Color(0xFF5F6B7E),
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -1399,7 +1400,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           style: GoogleFonts.inter(
                             fontSize: 9.5,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF94A3B8),
+                            color: const Color(0xFF5F6B7E),
                             letterSpacing: 0.5,
                           ),
                         ),

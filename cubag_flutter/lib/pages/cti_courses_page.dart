@@ -11,6 +11,7 @@ import '../utils/course_payment_policy.dart';
 
 import '../services/socket_service.dart';
 import 'package:go_router/go_router.dart';
+import '../utils/app_colors.dart';
 
 const _kBrown = Color(0xFF6B3E26);
 const _kOrange = Color(0xFFFF5000);
@@ -198,7 +199,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
           final isDark = Theme.of(context).brightness == Brightness.dark;
           final sheetBg = isDark ? const Color(0xFF1A0F0A) : Colors.white;
           final textCol = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
-          final subTextCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+          final subTextCol = isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748B);
           final borderCol = isDark ? const Color(0xFF281710) : const Color(0xFFE2E8F0);
           final innerBox = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF8FAFC);
 
@@ -242,7 +243,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                       ],
                     ),
                     const SizedBox(height: 10),
-                    Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: _kOrange)),
+                    Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.accentOrangeText)),
                     const SizedBox(height: 4),
                     Text('$startDate • $duration • $mode', style: GoogleFonts.inter(fontSize: 13, color: subTextCol)),
                     const SizedBox(height: 14),
@@ -437,7 +438,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
           final isDark = Theme.of(context).brightness == Brightness.dark;
           final cardBg = isDark ? const Color(0xFF1E1B18) : Colors.white;
           final textCol = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
-          final mutedCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+          final mutedCol = isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748B);
 
           Future<void> checkStatus({bool isManual = false}) async {
             if (isCompleted || !mounted || isChecking) return;
@@ -562,7 +563,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                   ),
                   child: Text(
                     'GH₵ ${amount.toStringAsFixed(2)}  •  $network  •  $phone',
-                    style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w700, color: _kOrange),
+                    style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.accentOrangeText),
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -600,7 +601,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                   Text(
                     statusMessage,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(fontSize: 12, color: _kOrange, fontWeight: FontWeight.w500),
+                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.w500),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -688,7 +689,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
           children: [
             Text('You are successfully enrolled in:', style: GoogleFonts.inter(fontSize: 14)),
             const SizedBox(height: 4),
-            Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: _kOrange)),
+            Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.accentOrangeText)),
             const SizedBox(height: 8),
             Text('🗓️ Starts: $startDate', style: GoogleFonts.inter(fontSize: 13.5, color: _kGreen, fontWeight: FontWeight.bold)),
           ],
@@ -1142,7 +1143,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                 style: const TextStyle(
                   fontSize: 16.5,
                   fontWeight: FontWeight.w700,
-                  color: _kOrange,
+                  color: AppColors.accentOrangeText,
                   letterSpacing: -0.3,
                   fontFeatures: [FontFeature.tabularFigures()],
                 ),

@@ -12,6 +12,7 @@ import '../services/api_service.dart';
 import '../components/fetch_error_view.dart';
 import '../components/shimmer_loader.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../utils/app_colors.dart';
 part 'admin_surveys/admin_surveys_widgets.dart';
 
 const _kOrange = Color(0xFFFF5000);
@@ -2480,7 +2481,7 @@ class _State extends State<AdminSurveysPage>
                     Text(
                       'Uploading...',
                       style: TextStyle(
-                        color: _kOrange,
+                        color: AppColors.accentOrangeText,
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                       ),
@@ -2557,7 +2558,7 @@ class _State extends State<AdminSurveysPage>
               style: GoogleFonts.inter(
                 fontSize: 15,
                 fontWeight: FontWeight.w900,
-                color: _kOrange,
+                color: AppColors.accentOrangeText,
               ),
             ),
           ),

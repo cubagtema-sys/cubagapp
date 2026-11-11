@@ -10,6 +10,7 @@ import '../services/theme_service.dart';
 import '../components/app_logo.dart';
 import '../core/router.dart';
 import '../utils/validators.dart';
+import '../utils/app_colors.dart';
 
 // Balanced CUBAG Dynamic Palette
 bool get _isDark => ThemeService.instance.isDark;
@@ -496,7 +497,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     Text(
                       'ACCREDITED CORPORATE MEMBERSHIP',
                       style: GoogleFonts.inter(
-                        color: _kOrange,
+                        color: AppColors.accentOrangeText,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.8,
@@ -606,7 +607,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 12.5,
-                  color: _kOrange,
+                  color: AppColors.accentOrangeText,
                 ),
               ),
             ],
@@ -761,7 +762,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   TextSpan(
                     text: 'Sign In',
                     style: TextStyle(
-                      color: _kOrange,
+                      color: AppColors.accentOrangeText,
                       fontWeight: FontWeight.w800,
                       fontSize: _compact ? 14 : 17,
                     ),
@@ -1310,7 +1311,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w800,
-                        color: _kOrange,
+                        color: AppColors.accentOrangeText,
                         height: 1.2,
                       ),
                       maxLines: 2,
@@ -1451,7 +1452,7 @@ class _RegisterPageState extends State<RegisterPage> {
             return FilterChip(
               avatar: isSelected
                   ? const Icon(Icons.check_circle_rounded, size: 17, color: Colors.white)
-                  : const Icon(Icons.radio_button_unchecked_rounded, size: 17, color: Color(0xFF94A3B8)),
+                  : const Icon(Icons.radio_button_unchecked_rounded, size: 17, color: Color(0xFF5F6B7E)),
               label: Text(
                 district,
                 style: GoogleFonts.inter(

@@ -19,7 +19,7 @@ class AdminSearchDelegate extends SearchDelegate<String> {
         iconTheme: IconThemeData(color: Color(0xFF64748b)),
       ),
       inputDecorationTheme: const InputDecorationTheme(
-        hintStyle: TextStyle(color: Color(0xFF94a3b8), fontSize: 16),
+        hintStyle: TextStyle(color: Color(0xFF5F6B7E), fontSize: 16),
         border: InputBorder.none,
       ),
     );
@@ -66,7 +66,7 @@ class AdminSearchDelegate extends SearchDelegate<String> {
             SizedBox(height: 12),
             Text(
               'Type at least 2 characters to search',
-              style: TextStyle(color: Color(0xFF94a3b8), fontSize: 15),
+              style: TextStyle(color: Color(0xFF5F6B7E), fontSize: 15),
             ),
           ],
         ),
@@ -177,7 +177,7 @@ class _DebouncedSearchBodyState extends State<_DebouncedSearchBody> {
             const SizedBox(height: 12),
             Text(
               'No results for "${widget.query}"',
-              style: const TextStyle(color: Color(0xFF94a3b8), fontSize: 15),
+              style: const TextStyle(color: Color(0xFF5F6B7E), fontSize: 15),
             ),
           ],
         ),

@@ -9,6 +9,7 @@ import '../components/shimmer_loader.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
+import '../utils/app_colors.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -840,7 +841,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       'Walk-in payments: Cash, Cheque, POS card, Direct wire',
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: isDark ? const Color(0xFF94a3b8) : const Color(0xFF64748b),
+                        color: isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748b),
                       ),
                     ),
                   ],
@@ -1302,7 +1303,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             ? 'Showing latest 5 of ${pendingMembers.length}'
                             : '${pendingMembers.length} awaiting review',
                         style: GoogleFonts.inter(
-                          color: kAdminOrange,
+                          color: AppColors.accentOrangeText,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ).copyWith(

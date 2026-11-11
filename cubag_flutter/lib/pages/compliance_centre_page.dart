@@ -1934,7 +1934,7 @@ class _ApplicationCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8), size: 18),
+            const Icon(Icons.chevron_right_rounded, color: Color(0xFF5F6B7E), size: 18),
           ],
         ),
       ),

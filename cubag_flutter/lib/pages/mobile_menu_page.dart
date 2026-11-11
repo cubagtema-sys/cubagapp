@@ -385,7 +385,7 @@ class MobileMenuPage extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: FontWeight.w900,
-              color: isDark ? const Color(0xFF9ca3af) : const Color(0xFF64748b),
+              color: isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748b),
               letterSpacing: 1.0,
             ),
           ),

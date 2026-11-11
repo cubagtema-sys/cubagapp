@@ -10,6 +10,7 @@ import '../services/calendar_service.dart';
 import '../services/theme_service.dart';
 import '../utils/course_payment_policy.dart';
 import '../utils/platform_info.dart';
+import '../utils/app_colors.dart';
 
 // ── CUBAG Dynamic Brand Color Hierarchy ──────────────────────────────────────
 bool get _isDark => ThemeService.instance.isDark;
@@ -430,7 +431,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                 style: GoogleFonts.inter(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w900,
-                                  color: _kAccent,
+                                  color: AppColors.accentOrangeText,
                                 ),
                               ),
                             ],
@@ -634,7 +635,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                     style: GoogleFonts.inter(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w900,
-                                      color: _kAccent,
+                                      color: AppColors.accentOrangeText,
                                     ),
                                   ),
                                 ],
@@ -722,7 +723,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                       style: GoogleFonts.inter(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
-                                        color: _kAccent,
+                                        color: AppColors.accentOrangeText,
                                       ),
                                     ),
                                   )
@@ -1237,7 +1238,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                                     style: GoogleFonts.inter(
                                       fontSize: 9.5,
                                       fontWeight: FontWeight.w800,
-                                      color: _kAccent,
+                                      color: AppColors.accentOrangeText,
                                       letterSpacing: 0.4,
                                     ),
                                   ),
@@ -1461,7 +1462,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                             style: GoogleFonts.inter(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
-                              color: _kAccent,
+                              color: AppColors.accentOrangeText,
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -1472,7 +1473,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                           style: GoogleFonts.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.w900,
-                            color: _kAccent,
+                            color: AppColors.accentOrangeText,
                             fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
@@ -2686,7 +2687,7 @@ class _GuestServiceRequestPageState extends State<GuestServiceRequestPage> {
                             style: GoogleFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: _kAccent,
+                              color: AppColors.accentOrangeText,
                             ),
                           ),
                           const SizedBox(width: 4),

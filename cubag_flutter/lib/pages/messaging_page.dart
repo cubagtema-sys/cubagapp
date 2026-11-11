@@ -354,7 +354,7 @@ class _MessagingPageState extends State<MessagingPage> {
     final borderCol = isDark ? const Color(0xFF3E2417) : const Color(0xFFE5DDD3);
     final textCol = isDark ? Colors.white : const Color(0xFF1A0F0A);
     final subTextCol = isDark ? Colors.white70 : const Color(0xFF64748B);
-    final hintCol = isDark ? Colors.white54 : const Color(0xFF94A3B8);
+    final hintCol = isDark ? Colors.white54 : const Color(0xFF5F6B7E);
 
     return Container(
       color: cardBg,
@@ -751,7 +751,7 @@ class _MessagingPageState extends State<MessagingPage> {
         isDark ? const Color(0xFF3D251A) : const Color(0xFFE2D6CB);
     final inputBarBg = isDark ? const Color(0xFF23140D) : Colors.white;
     final inputFieldBg = isDark ? const Color(0xFF1A0F0A) : const Color(0xFFF3ECE4);
-    final hintCol = isDark ? Colors.white54 : const Color(0xFF94A3B8);
+    final hintCol = isDark ? Colors.white54 : const Color(0xFF5F6B7E);
 
     return Column(
       children: [

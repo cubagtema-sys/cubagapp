@@ -16,6 +16,7 @@ import '../components/shimmer_loader.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../utils/app_logger.dart';
+import '../utils/app_colors.dart';
 
 // Balanced CUBAG Brand Palette
 const _kBrown = Color(0xFF6B3E26); // Primary Brown
@@ -1717,7 +1718,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                                             style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w600,
-                                              color: _kOrange,
+                                              color: AppColors.accentOrangeText,
                                             ),
                                           ),
                                   ),

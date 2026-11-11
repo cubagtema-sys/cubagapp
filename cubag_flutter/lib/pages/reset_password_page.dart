@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../components/app_logo.dart';
+import '../utils/app_colors.dart';
 
 // Balanced CUBAG Brand Palette
 const _kBrown = Color(0xFF6B3E26); // Primary Brown
@@ -400,7 +401,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               label: const Text(
                 'Sign In',
                 style: TextStyle(
-                  color: _kOrange,
+                  color: AppColors.accentOrangeText,
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
                 ),

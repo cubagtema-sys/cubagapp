@@ -6,6 +6,7 @@ import '../components/app_layout.dart';
 import '../components/cors_image_widget.dart';
 import '../components/shimmer_loader.dart';
 import '../services/api_service.dart';
+import '../utils/app_colors.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10B981);
@@ -124,7 +125,7 @@ class _SurveysPageState extends State<SurveysPage> {
             const SizedBox(height: 14),
             Text('Vote Cast Successfully!', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18)),
             const SizedBox(height: 6),
-            Text(title, style: GoogleFonts.inter(fontSize: 14, color: _kOrange), textAlign: TextAlign.center),
+            Text(title, style: GoogleFonts.inter(fontSize: 14, color: AppColors.accentOrangeText), textAlign: TextAlign.center),
             const SizedBox(height: 18),
             SizedBox(
               width: double.infinity,
@@ -537,7 +538,7 @@ class _SurveysPageState extends State<SurveysPage> {
             ),
             const SizedBox(height: 12),
           ],
-          Text(title, style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w900, color: _kOrange)),
+          Text(title, style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w900, color: AppColors.accentOrangeText)),
           if (desc.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(desc, style: GoogleFonts.inter(fontSize: 13.5, color: textMuted)),

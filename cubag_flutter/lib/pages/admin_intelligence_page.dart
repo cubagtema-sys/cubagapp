@@ -8,6 +8,7 @@ import '../components/skeleton_loader.dart';
 import '../services/api_service.dart';
 import '../components/cors_image_widget.dart';
 import '../utils/app_logger.dart';
+import '../utils/app_colors.dart';
 
 const _kOrange = Color(0xFFFF5000);
 
@@ -491,7 +492,7 @@ class _State extends State<AdminIntelligencePage> {
                 children: [
                   Text(
                     '${filtered.length} Feed Items',
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: _kOrange),
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.accentOrangeText),
                   ),
                   if (_lastUpdated.isNotEmpty) ...[
                     const SizedBox(width: 6),

@@ -4,6 +4,7 @@ import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../utils/session_storage.dart';
 import '../services/api_service.dart';
+import '../utils/app_colors.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10b981);
@@ -300,7 +301,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                         Text(
                           (_user['role']?.toString() ?? 'ADMIN').toUpperCase(),
                           style: GoogleFonts.inter(
-                            color: kAdminOrange,
+                            color: AppColors.accentOrangeText,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                             letterSpacing: 0.5,

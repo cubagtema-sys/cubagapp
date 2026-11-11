@@ -84,7 +84,7 @@ class CustomDropdown<T> extends StatelessWidget {
                     color: !enabled
                         ? (isDark ? Colors.white38 : Colors.grey.shade500)
                         : (isDark
-                            ? const Color(0xFF94a3b8)
+                            ? const Color(0xFF5F6B7E)
                             : const Color(0xFF64748b)),
                   ),
                   dropdownColor: isDark

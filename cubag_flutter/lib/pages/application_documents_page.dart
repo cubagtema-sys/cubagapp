@@ -10,6 +10,7 @@ import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/session_storage.dart';
+import '../utils/app_colors.dart';
 
 // ── Colour constants ─────────────────────────────────────────────────────────
 const _kGreen = Color(0xFF10b981);
@@ -397,7 +398,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                   style: GoogleFonts.inter(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
-                    color: _kOrange,
+                    color: AppColors.accentOrangeText,
                   ),
                 ),
               ],
@@ -862,7 +863,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
                           style: GoogleFonts.inter(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
-                            color: _kOrange,
+                            color: AppColors.accentOrangeText,
                             letterSpacing: 0.5,
                           ),
                         ),

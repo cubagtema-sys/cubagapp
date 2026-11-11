@@ -214,7 +214,7 @@ class _IframeWidgetState extends State<IframeWidget> {
                     style: GoogleFonts.inter(
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF94A3B8),
+                      color: const Color(0xFF5F6B7E),
                     ),
                   ),
                 ],

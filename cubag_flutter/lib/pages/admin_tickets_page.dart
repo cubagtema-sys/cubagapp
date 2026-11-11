@@ -7,6 +7,7 @@ import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
+import '../utils/app_colors.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10B981);
@@ -639,7 +640,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                     if (company.isNotEmpty)
                                       SelectableText(
                                         company,
-                                        style: GoogleFonts.inter(fontSize: 11.5, color: _kOrange, fontWeight: FontWeight.w500),
+                                        style: GoogleFonts.inter(fontSize: 11.5, color: AppColors.accentOrangeText, fontWeight: FontWeight.w500),
                                         maxLines: 1,
                                       ),
                                   ],
@@ -941,7 +942,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                 Text(memberName, style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold, color: textPrimary)),
                 if (company.isNotEmpty) ...[
                   Text(' • ', style: GoogleFonts.inter(fontSize: 12, color: textMuted)),
-                  Text(company, style: GoogleFonts.inter(fontSize: 12, color: _kOrange, fontWeight: FontWeight.w600)),
+                  Text(company, style: GoogleFonts.inter(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.w600)),
                 ],
                 const Spacer(),
                 Text(date, style: GoogleFonts.inter(fontSize: 11.5, color: textMuted)),

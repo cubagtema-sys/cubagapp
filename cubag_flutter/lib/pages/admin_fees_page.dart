@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
 import '../utils/session_storage.dart';
+import '../utils/app_colors.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10B981);
@@ -162,7 +163,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       const Divider(height: 1),
                       const SizedBox(height: 14),
 
-                      Text('TARIFF SECTION *', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
+                      Text('TARIFF SECTION *', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       Wrap(
                         spacing: 8,
@@ -223,14 +224,14 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       ),
                       const SizedBox(height: 14),
 
-                      Text('TARIFF PURPOSE / LABEL *', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
+                      Text('TARIFF PURPOSE / LABEL *', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       TextField(
                         controller: nameCtrl,
                         style: GoogleFonts.inter(fontSize: 15, color: textCol),
                         decoration: InputDecoration(
                           hintText: 'e.g. Subscription fee (small companies)',
-                          hintStyle: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF94A3B8)),
+                          hintStyle: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF5F6B7E)),
                           filled: true,
                           fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
@@ -241,7 +242,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       const SizedBox(height: 14),
 
                       // SETTLEMENT BANK & PRESET BUTTONS
-                      Text('WHITSUN PAY SETTLEMENT DESTINATION *', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
+                      Text('WHITSUN PAY SETTLEMENT DESTINATION *', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       Wrap(
                         spacing: 6,
@@ -312,7 +313,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('AMOUNT (GHS) *', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
+                                Text('AMOUNT (GHS) *', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                                 const SizedBox(height: 6),
                                 TextField(
                                   controller: amountCtrl,
@@ -320,7 +321,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                                   style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: textCol),
                                   decoration: InputDecoration(
                                     prefixText: 'GHS ',
-                                    prefixStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: _kOrange),
+                                    prefixStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.accentOrangeText),
                                     filled: true,
                                     fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
@@ -336,7 +337,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('TARGET SCALE *', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
+                                Text('TARGET SCALE *', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                                 const SizedBox(height: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -377,7 +378,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('BILLING UNIT', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
+                                Text('BILLING UNIT', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                                 const SizedBox(height: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -412,7 +413,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('FREQUENCY', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
+                                Text('FREQUENCY', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                                 const SizedBox(height: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -444,7 +445,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       ),
                       const SizedBox(height: 14),
 
-                      Text('DESCRIPTION / NOTES', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.5)),
+                      Text('DESCRIPTION / NOTES', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF5F6B7E), letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       TextField(
                         controller: descCtrl,
@@ -452,7 +453,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                         style: GoogleFonts.inter(fontSize: 14, color: textCol),
                         decoration: InputDecoration(
                           hintText: 'e.g. Mandatory statutory fee settled to Zenith Bank account',
-                          hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF94A3B8)),
+                          hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF5F6B7E)),
                           filled: true,
                           fillColor: isDark ? const Color(0xFF1A0F0A) : const Color(0xFFFAF6F0),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
@@ -467,7 +468,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                         children: [
                           TextButton(
                             onPressed: () => Navigator.of(dlgCtx).pop(),
-                            child: Text('Cancel', style: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontWeight: FontWeight.bold)),
+                            child: Text('Cancel', style: GoogleFonts.inter(color: const Color(0xFF5F6B7E), fontWeight: FontWeight.bold)),
                           ),
                           const SizedBox(width: 10),
                           ElevatedButton.icon(
@@ -1484,7 +1485,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                           children: [
                             Text(freq, style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.bold, color: textPrimary)),
                             if (unit != 'flat')
-                              Text(unit.replaceAll('_', ' '), style: GoogleFonts.inter(fontSize: 10, color: _kOrange)),
+                              Text(unit.replaceAll('_', ' '), style: GoogleFonts.inter(fontSize: 10, color: AppColors.accentOrangeText)),
                           ],
                         ),
                       ),

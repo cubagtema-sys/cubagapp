@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import 'admin_qr_scanner_page.dart';
+import '../utils/app_colors.dart';
 
 // Unified CUBAG Brand Palette
 const _kBrown = Color(0xFF6B3E26); // Primary brand brown
@@ -454,7 +455,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                             Text(
                               'OFFICIAL PUBLIC DIRECTORY',
                               style: GoogleFonts.inter(
-                                color: _kAccent,
+                                color: AppColors.accentOrangeText,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.8,

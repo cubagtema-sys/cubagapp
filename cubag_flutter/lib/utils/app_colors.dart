@@ -26,7 +26,13 @@ class AppColors {
   static const Color textSecondary = Color(
     0xFF6B3E26,
   ); // Subtitles / secondary info
-  static const Color textMuted = Color(0xFF94A3B8); // Muted captions & hints
+  // UI-02: #94A3B8 was 2.56:1 on white. #5F6B7E is >= 4.9:1 on white and cream.
+  static const Color textMuted = Color(0xFF5F6B7E); // Muted captions & hints
+
+  /// UI-02: brand orange (#FF5000) is 3.28:1 on white, too low for text.
+  /// Use this for orange TEXT and links (5.2:1 on white, 4.7:1 on cream);
+  /// keep [accentOrange] for buttons, fills, icons and borders.
+  static const Color accentOrangeText = Color(0xFFC2410C);
 
   // Semantic Status Colors (Separated from Brand Orange!)
   static const Color statusGoodStanding = Color(

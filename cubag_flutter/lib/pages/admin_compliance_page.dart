@@ -551,7 +551,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                                                     fontSize: 12.5,
                                                     fontWeight: FontWeight.w800,
                                                     letterSpacing: 0.6,
-                                                    color: Color(0xFF94A3B8),
+                                                    color: Color(0xFF5F6B7E),
                                                   ),
                                                 ),
                                               ),
@@ -635,7 +635,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
       paymentIcon = Icons.hourglass_top_rounded;
     } else {
       paymentLabel = 'Pending';
-      paymentColor = const Color(0xFF94A3B8);
+      paymentColor = const Color(0xFF5F6B7E);
       paymentIcon = Icons.pending_rounded;
     }
 
@@ -875,7 +875,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
       paymentIcon = Icons.hourglass_top_rounded;
     } else {
       paymentLabel = 'Pending';
-      paymentColor = const Color(0xFF94A3B8);
+      paymentColor = const Color(0xFF5F6B7E);
       paymentIcon = Icons.pending_rounded;
     }
 
@@ -2776,7 +2776,7 @@ class _MemberInfoCard extends StatelessWidget {
       paymentStatusCol = _kAmber;
     } else {
       paymentStatusVal = 'Pending (Unpaid)';
-      paymentStatusCol = const Color(0xFF94A3B8);
+      paymentStatusCol = const Color(0xFF5F6B7E);
     }
     final cardBg = isDark ? _kCardDark : const Color(0xFFFBF8F3);
     final borderColor = isDark ? _kBorderDark : const Color(0xFFE8DED6);

@@ -5,6 +5,7 @@ import '../components/app_layout.dart';
 import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
+import '../utils/app_colors.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10B981);
@@ -1112,7 +1113,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
 
               IconButton(
                 tooltip: 'Copy Text',
-                icon: const Icon(Icons.copy_rounded, size: 14, color: Color(0xFF94A3B8)),
+                icon: const Icon(Icons.copy_rounded, size: 14, color: Color(0xFF5F6B7E)),
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: '$title\n\n$body'));
                   _showToast('Circular text copied to clipboard.', _kGreen);
@@ -1189,7 +1190,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
               },
               child: Text(
                 isExpanded ? 'Show Less' : 'Read Full Circular →',
-                style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold, color: _kOrange),
+                style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.bold, color: AppColors.accentOrangeText),
               ),
             ),
           ],

@@ -8,6 +8,7 @@ import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../components/fetch_error_view.dart';
 import '../utils/app_logger.dart';
+import '../utils/app_colors.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10b981);
@@ -312,7 +313,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.broken_image_rounded, size: 40, color: Color(0xFF94a3b8)),
+                              const Icon(Icons.broken_image_rounded, size: 40, color: Color(0xFF5F6B7E)),
                               const SizedBox(height: 10),
                               Text(
                                 'Unable to load receipt image directly.\nClick "Open in new tab" above.',
@@ -330,7 +331,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
               const SizedBox(height: 8),
               Text(
                 'Pinch / scroll to zoom into receipt details',
-                style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF94a3b8)),
+                style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF5F6B7E)),
               ),
             ],
           ),
@@ -387,7 +388,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
         ? const Color(0xFFf8fafc)
         : const Color(0xFF1A0F0A);
     final subTextColor = isDark
-        ? const Color(0xFF94a3b8)
+        ? const Color(0xFF5F6B7E)
         : const Color(0xFF475569);
     final hasReceipt = receiptUrl != null && receiptUrl.isNotEmpty && receiptUrl != 'null';
 
@@ -540,7 +541,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
         ? const Color(0xFF4D2D20)
         : const Color(0xFFe2e8f0);
     final subTextColor = isDark
-        ? const Color(0xFF94a3b8)
+        ? const Color(0xFF5F6B7E)
         : const Color(0xFF64748b);
     final inputBg = isDark
         ? const Color(0xFF1A0F0A).withAlpha(120)
@@ -1244,7 +1245,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                       style: GoogleFonts.inter(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
-                                        color: _kOrange,
+                                        color: AppColors.accentOrangeText,
                                         letterSpacing: 0.3,
                                       ),
                                     ),
@@ -1264,7 +1265,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                                               ? memberName[0].toUpperCase()
                                               : 'M',
                                           style: GoogleFonts.inter(
-                                            color: _kOrange,
+                                            color: AppColors.accentOrangeText,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 14,
                                           ),
@@ -2040,7 +2041,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? _kCardBg : Colors.white;
     final textColor = isDark ? const Color(0xFFf8fafc) : const Color(0xFF1A0F0A);
-    final subTextColor = isDark ? const Color(0xFF94a3b8) : const Color(0xFF64748b);
+    final subTextColor = isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748b);
     final borderColor = isDark ? const Color(0xFF4D2D20) : const Color(0xFFe2e8f0);
     final inputBg = isDark ? const Color(0xFF1A0F0A).withAlpha(120) : const Color(0xFFf8fafc);
 
@@ -2225,7 +2226,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                             child: Text(
                                               name.isNotEmpty ? name[0].toUpperCase() : 'M',
                                               style: GoogleFonts.inter(
-                                                color: _kOrange,
+                                                color: AppColors.accentOrangeText,
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 13,
                                               ),
@@ -2256,7 +2257,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                                   style: GoogleFonts.inter(
                                                     fontSize: 9.5,
                                                     fontWeight: FontWeight.bold,
-                                                    color: _kOrange,
+                                                    color: AppColors.accentOrangeText,
                                                   ),
                                                 ),
                                               ),
@@ -2362,7 +2363,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                             style: GoogleFonts.inter(
                                               fontSize: 10,
                                               fontWeight: FontWeight.bold,
-                                              color: _kOrange,
+                                              color: AppColors.accentOrangeText,
                                             ),
                                           ),
                                         ),
@@ -2749,7 +2750,7 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
                                     labelText: 'Part #',
                                     labelStyle: GoogleFonts.inter(fontSize: 11, color: subTextColor),
                                     prefixText: '#',
-                                    prefixStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, color: _kOrange),
+                                    prefixStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, color: AppColors.accentOrangeText),
                                     isDense: true,
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                                     filled: true,

@@ -10,6 +10,7 @@ import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/session_storage.dart';
+import '../utils/app_colors.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10b981);
@@ -659,7 +660,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
-                                  color: _kOrange,
+                                  color: AppColors.accentOrangeText,
                                 ),
                               ),
                             ),
@@ -1479,7 +1480,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                                     fontSize: 10,
                                                     fontWeight: FontWeight.w800,
                                                     letterSpacing: 0.6,
-                                                    color: _kOrange,
+                                                    color: AppColors.accentOrangeText,
                                                   ),
                                                 ),
                                               ),
@@ -1572,7 +1573,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           const Icon(
                             Icons.verified_user_outlined,
                             size: 14,
-                            color: Color(0xFF94a3b8),
+                            color: Color(0xFF5F6B7E),
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -2315,7 +2316,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.5,
-                                color: _kOrange,
+                                color: AppColors.accentOrangeText,
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -2346,7 +2347,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                       style: GoogleFonts.inter(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w800,
-                                        color: _kOrange,
+                                        color: AppColors.accentOrangeText,
                                       ),
                                     ),
                                   ),
@@ -3041,7 +3042,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           style: GoogleFonts.inter(
                             fontWeight: FontWeight.w700,
                             fontSize: 11.5,
-                            color: _kOrange,
+                            color: AppColors.accentOrangeText,
                           ),
                         ),
                       ],
@@ -3330,7 +3331,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                       Icon(
                                         uploaded ? Icons.check_circle_rounded : Icons.info_outline_rounded,
                                         size: 13,
-                                        color: uploaded ? _kGreen : const Color(0xFF94a3b8),
+                                        color: uploaded ? _kGreen : const Color(0xFF5F6B7E),
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
@@ -3627,7 +3628,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           style: GoogleFonts.inter(
                             fontSize: 13.5,
                             fontWeight: FontWeight.bold,
-                            color: _kOrange,
+                            color: AppColors.accentOrangeText,
                           ),
                         ),
                       ],
@@ -3645,7 +3646,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   color: isPhoneValid
                       ? _kOrange
                       : (_momoPhone.isNotEmpty
-                          ? const Color(0xFF94a3b8)
+                          ? const Color(0xFF5F6B7E)
                           : const Color(0xFFcbd5e1)),
                   width: isPhoneValid ? 2.0 : 1.5,
                 ),
@@ -3665,7 +3666,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   Icon(
                     Icons.phone_iphone_rounded,
                     size: 22,
-                    color: isPhoneValid ? _kOrange : const Color(0xFF94a3b8),
+                    color: isPhoneValid ? _kOrange : const Color(0xFF5F6B7E),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -3689,7 +3690,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       decoration: InputDecoration(
                         hintText: '024XXXXXXX (10 digits)',
                         hintStyle: GoogleFonts.inter(
-                          color: const Color(0xFF94a3b8),
+                          color: const Color(0xFF5F6B7E),
                           fontSize: 17,
                           letterSpacing: 1.0,
                           fontWeight: FontWeight.w500,
@@ -3810,7 +3811,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     backgroundColor: _kOrange,
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: const Color(0xFFcbd5e1),
-                    disabledForegroundColor: const Color(0xFF94a3b8),
+                    disabledForegroundColor: const Color(0xFF5F6B7E),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -3967,7 +3968,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           style: GoogleFonts.inter(
                             fontSize: 28,
                             fontWeight: FontWeight.w900,
-                            color: _kOrange,
+                            color: AppColors.accentOrangeText,
                           ),
                         ),
                       ),
@@ -4026,7 +4027,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                       style: GoogleFonts.inter(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w800,
-                        color: const Color(0xFF94A3B8),
+                        color: const Color(0xFF5F6B7E),
                         letterSpacing: 0.8,
                       ),
                     ),
@@ -4283,11 +4284,11 @@ class _PaymentsPageState extends State<PaymentsPage>
             children: [
               Text(
                 'Checking status... (attempt ${_pollAttempt + 1}/$_pollMax)',
-                style: const TextStyle(fontSize: 10, color: Color(0xFF94a3b8)),
+                style: const TextStyle(fontSize: 10, color: Color(0xFF5F6B7E)),
               ),
               Text(
                 '~${remaining}s left',
-                style: const TextStyle(fontSize: 10, color: Color(0xFF94a3b8)),
+                style: const TextStyle(fontSize: 10, color: Color(0xFF5F6B7E)),
               ),
             ],
           ),
@@ -4399,7 +4400,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   padding: const EdgeInsets.only(top: 2),
                   child: Icon(
                     isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                    color: isSelected ? _kOrange : const Color(0xFF94A3B8),
+                    color: isSelected ? _kOrange : const Color(0xFF5F6B7E),
                     size: 20,
                   ),
                 ),

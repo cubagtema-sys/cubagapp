@@ -12,6 +12,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_logo.dart';
 import '../utils/app_logger.dart';
 import '../utils/session_storage.dart';
+import '../utils/app_colors.dart';
 
 class AppLayout extends StatefulWidget {
   final Widget child;
@@ -635,7 +636,7 @@ class _AppLayoutState extends State<AppLayout> {
                                   style: GoogleFonts.inter(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
-                                    color: const Color(0xFFFF5000),
+                                    color: AppColors.accentOrangeText,
                                   ),
                                 ),
                                 const SizedBox(width: 4),
@@ -712,7 +713,7 @@ class _AppLayoutState extends State<AppLayout> {
                                 : const Color(0xFFf1f5f9),
                             child: Icon(
                               Icons.person_rounded,
-                              color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                              color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
                               size: 18,
                             ),
                           ),
@@ -722,7 +723,7 @@ class _AppLayoutState extends State<AppLayout> {
                                 : const Color(0xFFf1f5f9),
                             child: Icon(
                               Icons.person_rounded,
-                              color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                              color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
                               size: 18,
                             ),
                           ),
@@ -733,7 +734,7 @@ class _AppLayoutState extends State<AppLayout> {
                               : const Color(0xFFf1f5f9),
                           child: Icon(
                             Icons.person_rounded,
-                            color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                            color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
                             size: 18,
                           ),
                         ),
@@ -769,7 +770,7 @@ class _AppLayoutState extends State<AppLayout> {
                           : const Color(0xFFf1f5f9),
                       child: Icon(
                         Icons.person_rounded,
-                        color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                        color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
                         size: 20,
                       ),
                     ),
@@ -779,7 +780,7 @@ class _AppLayoutState extends State<AppLayout> {
                           : const Color(0xFFf1f5f9),
                       child: Icon(
                         Icons.person_rounded,
-                        color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                        color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
                         size: 20,
                       ),
                     ),
@@ -790,7 +791,7 @@ class _AppLayoutState extends State<AppLayout> {
                         : const Color(0xFFf1f5f9),
                     child: Icon(
                       Icons.person_rounded,
-                      color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                      color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
                       size: 20,
                     ),
                   ),
@@ -1212,7 +1213,7 @@ class _AppLayoutState extends State<AppLayout> {
                                 Icon(
                                   Icons.notifications_off_outlined,
                                   size: 40,
-                                  color: isThemeDark ? Colors.white38 : const Color(0xFF94A3B8),
+                                  color: isThemeDark ? Colors.white38 : const Color(0xFF5F6B7E),
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
@@ -1907,7 +1908,7 @@ class _AppLayoutState extends State<AppLayout> {
                                       : const Color(0xFFf1f5f9),
                                   child: Icon(
                                     Icons.person_rounded,
-                                    color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                                    color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
                                     size: 18,
                                   ),
                                 ),
@@ -1917,7 +1918,7 @@ class _AppLayoutState extends State<AppLayout> {
                                       : const Color(0xFFf1f5f9),
                                   child: Icon(
                                     Icons.person_rounded,
-                                    color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                                    color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
                                     size: 18,
                                   ),
                                 ),
@@ -1928,7 +1929,7 @@ class _AppLayoutState extends State<AppLayout> {
                                     : const Color(0xFFf1f5f9),
                                 child: Icon(
                                   Icons.person_rounded,
-                                  color: isDark ? Colors.white70 : const Color(0xFF94a3b8),
+                                  color: isDark ? Colors.white70 : const Color(0xFF5F6B7E),
                                   size: 18,
                                 ),
                               ),
@@ -2503,7 +2504,7 @@ class _AppLayoutState extends State<AppLayout> {
         : Colors.black.withValues(alpha: 0.03);
     final activeIconColor = isDark ? const Color(0xFFFF5000) : primaryBrown;
     final inactiveIconColor = isDark
-        ? const Color(0xFF94a3b8)
+        ? const Color(0xFF5F6B7E)
         : const Color(0xFF6F625B);
     final activeTextColor = isDark ? Colors.white : primaryBrown;
     final inactiveTextColor = isDark

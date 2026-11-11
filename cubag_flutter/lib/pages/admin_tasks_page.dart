@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../components/fetch_error_view.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
+import '../utils/app_colors.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10b981);
@@ -515,7 +516,7 @@ class _State extends State<AdminTasksPage> {
                                 Text(
                                   task['member_name'] ?? 'Unknown',
                                   style: const TextStyle(
-                                    color: _kOrange,
+                                    color: AppColors.accentOrangeText,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                   ),

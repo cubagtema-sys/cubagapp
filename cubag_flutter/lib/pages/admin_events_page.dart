@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../components/fetch_error_view.dart';
 import 'admin_qr_scanner_page.dart';
 import '../utils/app_logger.dart';
+import '../utils/app_colors.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10b981);
@@ -799,7 +800,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                                               style: GoogleFonts.inter(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 16,
-                                                color: _kOrange,
+                                                color: AppColors.accentOrangeText,
                                               ),
                                             ),
                                           ],

@@ -13,6 +13,7 @@ import '../services/push_notification_service.dart';
 import '../components/app_logo.dart';
 import '../core/router.dart';
 import '../services/theme_service.dart';
+import '../utils/app_colors.dart';
 
 // Balanced CUBAG Dynamic Palette
 bool get _isDark => ThemeService.instance.isDark;
@@ -981,7 +982,7 @@ class _LoginPageState extends State<LoginPage> {
                     TextSpan(
                       text: 'Create an Account',
                       style: TextStyle(
-                        color: _kOrange,
+                        color: AppColors.accentOrangeText,
                         fontWeight: FontWeight.w800,
                         fontSize: isMobile ? 14 : 16,
                       ),

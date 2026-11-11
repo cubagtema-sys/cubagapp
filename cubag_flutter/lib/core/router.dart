@@ -73,6 +73,7 @@ import '../pages/admin_tickets_page.dart';
 import '../pages/admin_complaints_page.dart';
 import '../pages/admin_sub_admins_page.dart';
 import '../pages/admin_compliance_page.dart';
+import '../utils/app_colors.dart';
 
 /// Routes accessible without a JWT token.
 const _publicRoutes = {
@@ -976,7 +977,7 @@ class _AdminUnavailableBodyState extends State<_AdminUnavailableBody> {
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
-                                        color: Color(0xFF94a3b8),
+                                        color: Color(0xFF5F6B7E),
                                         letterSpacing: 1,
                                       ),
                                     ),
@@ -1022,7 +1023,7 @@ class _AdminUnavailableBodyState extends State<_AdminUnavailableBody> {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFFFF5000),
+                                color: AppColors.accentOrangeText,
                               ),
                             ),
                           ],

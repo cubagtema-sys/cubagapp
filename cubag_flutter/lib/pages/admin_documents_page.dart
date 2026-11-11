@@ -9,6 +9,7 @@ import '../components/cors_image_widget.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
+import '../utils/app_colors.dart';
 import '../components/doc_preview_stub.dart'
     if (dart.library.html) '../components/doc_preview_web.dart'
     as doc_preview;
@@ -514,7 +515,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                                                     fontSize: 12.5,
                                                     fontWeight: FontWeight.w800,
                                                     letterSpacing: 0.6,
-                                                    color: Color(0xFF94A3B8),
+                                                    color: Color(0xFF5F6B7E),
                                                   ),
                                                 ),
                                               ),
@@ -696,7 +697,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
                                     style: GoogleFonts.inter(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
-                                      color: _kOrange,
+                                      color: AppColors.accentOrangeText,
                                     ),
                                   ),
                                 ),
@@ -1956,7 +1957,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                 children: [
                                   const Icon(Icons.remove_red_eye_rounded, size: 13, color: _kOrange),
                                   const SizedBox(width: 4),
-                                  Text('Preview', style: GoogleFonts.inter(fontSize: 12, color: _kOrange, fontWeight: FontWeight.w600)),
+                                  Text('Preview', style: GoogleFonts.inter(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.w600)),
                                 ],
                               ),
                             ),

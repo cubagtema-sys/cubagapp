@@ -1458,7 +1458,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               ),
               TextSpan(
                 text: 'Int\'l Trade',
-                style: TextStyle(color: _kAccent),
+                style: TextStyle(color: AppColors.accentOrangeText),
               ),
             ],
           ),
@@ -1564,7 +1564,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                     ),
                     TextSpan(
                       text: 'Int\'l Trade',
-                      style: TextStyle(color: _kAccent),
+                      style: TextStyle(color: AppColors.accentOrangeText),
                     ),
                   ],
                 ),

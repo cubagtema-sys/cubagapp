@@ -6,6 +6,7 @@ import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
+import '../utils/app_colors.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10B981);
@@ -825,7 +826,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                               Text(memberName, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13.5, color: textColor)),
                               if (company.isNotEmpty) ...[
                                 const SizedBox(width: 6),
-                                Text('• $company', style: GoogleFonts.inter(fontSize: 11.5, color: _kOrange, fontWeight: FontWeight.w500)),
+                                Text('• $company', style: GoogleFonts.inter(fontSize: 11.5, color: AppColors.accentOrangeText, fontWeight: FontWeight.w500)),
                               ],
                             ],
                           ),
@@ -1222,7 +1223,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(courseTitle, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      Text('Enrolled Students (${courseEnrollments.length} Total)', style: GoogleFonts.inter(fontSize: 12, color: _kOrange, fontWeight: FontWeight.w600)),
+                      Text('Enrolled Students (${courseEnrollments.length} Total)', style: GoogleFonts.inter(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ),
@@ -1280,7 +1281,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                                     CircleAvatar(
                                       radius: 16,
                                       backgroundColor: _kOrange.withValues(alpha: 0.15),
-                                      child: Text(memberName.isNotEmpty ? memberName[0].toUpperCase() : 'M', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12, color: _kOrange)),
+                                      child: Text(memberName.isNotEmpty ? memberName[0].toUpperCase() : 'M', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.accentOrangeText)),
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
@@ -1439,7 +1440,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       '🔔 Broadcast Push Notification to all Members',
-                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: _kOrange),
+                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.accentOrangeText),
                     ),
                     value: notifyMembers,
                     activeColor: _kOrange,

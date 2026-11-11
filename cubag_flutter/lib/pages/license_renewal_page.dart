@@ -7,6 +7,7 @@ import '../components/in_app_document_viewer.dart';
 import '../components/shimmer_loader.dart';
 import '../services/api_service.dart';
 import '../utils/app_logger.dart';
+import '../utils/app_colors.dart';
 
 class LicenseRenewalPage extends StatefulWidget {
   const LicenseRenewalPage({super.key});
@@ -257,7 +258,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                       'Track your membership renewal status',
                       style: GoogleFonts.inter(
                         color: Theme.of(context).brightness == Brightness.dark
-                            ? const Color(0xFF9ca3af)
+                            ? const Color(0xFF5F6B7E)
                             : Colors.white.withValues(alpha: 0.75),
                         fontSize: 12,
                       ),
@@ -374,7 +375,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                               color:
                                   Theme.of(context).brightness ==
                                       Brightness.dark
-                                  ? const Color(0xFF9ca3af)
+                                  ? const Color(0xFF5F6B7E)
                                   : Colors.white.withValues(alpha: 0.65),
                               fontSize: 10,
                             ),
@@ -1139,7 +1140,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                     style: GoogleFonts.cinzel(
                                       fontWeight: FontWeight.w900,
                                       fontSize: isMobile ? 28 : 42,
-                                      color: const Color(0xFFFF5000),
+                                      color: AppColors.accentOrangeText,
                                       letterSpacing: isMobile ? 2 : 4,
                                     ),
                                   ),

@@ -13,6 +13,7 @@ import '../services/socket_service.dart';
 import '../services/theme_service.dart';
 import '../utils/session_storage.dart';
 import '../utils/intelligence_data.dart';
+import '../utils/app_colors.dart';
 
 // Balanced CUBAG Brand Palette & Editorial Tokens
 bool get _isDark => ThemeService.instance.isDark;
@@ -411,7 +412,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                 style: GoogleFonts.inter(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w900,
-                                  color: _kOrange,
+                                  color: AppColors.accentOrangeText,
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -479,7 +480,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               style: GoogleFonts.inter(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w900,
-                                color: _kOrange,
+                                color: AppColors.accentOrangeText,
                               ),
                             ),
                           ],
@@ -1247,7 +1248,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     Text(
                       'MEMBERSHIP ENTRANCE PACKAGE REQUIRED',
                       style: GoogleFonts.inter(
-                        color: _kOrange,
+                        color: AppColors.accentOrangeText,
                         fontSize: 13,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.8,
@@ -1345,7 +1346,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       style: GoogleFonts.inter(
                         fontWeight: FontWeight.w900,
                         fontSize: 11,
-                        color: _kOrange,
+                        color: AppColors.accentOrangeText,
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),

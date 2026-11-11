@@ -7,6 +7,7 @@ import '../services/cache_service.dart';
 import '../services/notification_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
+import '../utils/app_colors.dart';
 
 const _kOrange = Color(0xFFFF5000);
 
@@ -285,7 +286,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 15,
-                color: Color(0xFF94a3b8),
+                color: Color(0xFF5F6B7E),
                 height: 1.4,
               ),
             ),
@@ -413,7 +414,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       dateStr,
                                       style: GoogleFonts.inter(
                                         fontSize: 13,
-                                        color: const Color(0xFF94a3b8),
+                                        color: const Color(0xFF5F6B7E),
                                       ),
                                     ),
                                   ],
@@ -676,7 +677,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                         size: 13,
                                         color: isDark
                                             ? Colors.white38
-                                            : const Color(0xFF94a3b8),
+                                            : const Color(0xFF5F6B7E),
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
@@ -686,7 +687,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                           fontWeight: FontWeight.w500,
                                           color: isDark
                                               ? Colors.white60
-                                              : const Color(0xFF94a3b8),
+                                              : const Color(0xFF5F6B7E),
                                         ),
                                       ),
                                     ],
@@ -884,18 +885,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           hintText:
                               'Search notifications by title or keyword...',
                           hintStyle: const TextStyle(
-                            color: Color(0xFF94a3b8),
+                            color: Color(0xFF5F6B7E),
                             fontSize: 16,
                           ),
                           prefixIcon: const Icon(
                             Icons.search_rounded,
-                            color: Color(0xFF94a3b8),
+                            color: Color(0xFF5F6B7E),
                           ),
                           suffixIcon: _searchCtrl.text.isNotEmpty
                               ? IconButton(
                                   icon: const Icon(
                                     Icons.clear_rounded,
-                                    color: Color(0xFF94a3b8),
+                                    color: Color(0xFF5F6B7E),
                                   ),
                                   onPressed: () => setState(() {
                                     _searchCtrl.clear();
@@ -976,7 +977,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     style: GoogleFonts.inter(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w700,
-                                      color: _kOrange,
+                                      color: AppColors.accentOrangeText,
                                     ),
                                   ),
                                 ],

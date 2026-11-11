@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../components/app_logo.dart';
 import '../utils/app_logger.dart';
+import '../utils/app_colors.dart';
 
 // Balanced CUBAG Brand Palette
 const _kBrown = Color(0xFF6B3E26); // Primary Brown
@@ -320,7 +321,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
               label: const Text(
                 'Sign In',
                 style: TextStyle(
-                  color: _kOrange,
+                  color: AppColors.accentOrangeText,
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
                 ),
@@ -465,7 +466,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
                   child: Text(
                     _resending ? 'Sending...' : 'Resend Code',
                     style: const TextStyle(
-                      color: _kOrange,
+                      color: AppColors.accentOrangeText,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),

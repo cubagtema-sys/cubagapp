@@ -4,6 +4,7 @@ import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../utils/app_logger.dart';
+import '../utils/app_colors.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10B981);
@@ -300,7 +301,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
         ? const Color(0xFF4D2D20)
         : const Color(0xFFE2E8F0);
     final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textMuted = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final textMuted = isDark ? const Color(0xFF5F6B7E) : const Color(0xFF64748B);
 
     final currentRules = _currentRules;
     final totalRules = currentRules.length;
@@ -1189,7 +1190,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                           style: GoogleFonts.inter(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w800,
-                            color: _kOrange,
+                            color: AppColors.accentOrangeText,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -1230,7 +1231,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                           style: GoogleFonts.inter(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w800,
-                            color: _kOrange,
+                            color: AppColors.accentOrangeText,
                           ),
                         ),
                         const SizedBox(height: 6),

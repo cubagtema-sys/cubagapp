@@ -82,7 +82,7 @@ class _AdminEventAttendeesPageState extends State<AdminEventAttendeesPage> {
         ? const Color(0xFFf8fafc)
         : const Color(0xFF1A0F0A);
     final subTextColor = isDark
-        ? const Color(0xFF94a3b8)
+        ? const Color(0xFF5F6B7E)
         : const Color(0xFF475569);
     final inputBg = isDark
         ? const Color(0xFF1A0F0A).withValues(alpha: 0.4)

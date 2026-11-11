@@ -4,6 +4,7 @@ import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../utils/app_logger.dart';
+import '../utils/app_colors.dart';
 
 const _kOrange = Color(0xFFFF5000);
 const _kGreen = Color(0xFF10b981);
@@ -508,7 +509,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
                                       style: GoogleFonts.robotoMono(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
-                                        color: _kOrange,
+                                        color: AppColors.accentOrangeText,
                                       ),
                                     ),
                                   ),

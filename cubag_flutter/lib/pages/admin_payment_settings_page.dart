@@ -577,7 +577,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w800,
-            color: const Color(0xFF94A3B8),
+            color: const Color(0xFF5F6B7E),
             letterSpacing: 0.5,
           ),
         ),

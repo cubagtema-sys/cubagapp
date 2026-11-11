@@ -377,7 +377,7 @@ class _EventsPageState extends State<EventsPage> {
                 label,
                 style: GoogleFonts.inter(
                   fontSize: 13,
-                  color: const Color(0xFF94a3b8),
+                  color: const Color(0xFF5F6B7E),
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.2,
                 ),
@@ -682,7 +682,7 @@ class _EventsPageState extends State<EventsPage> {
               child: const Icon(
                 Icons.event_busy_rounded,
                 size: 40,
-                color: Color(0xFF94a3b8),
+                color: Color(0xFF5F6B7E),
               ),
             ),
             const SizedBox(height: 16),
@@ -825,7 +825,7 @@ class _EventsPageState extends State<EventsPage> {
                                     const Icon(
                                       Icons.access_time_rounded,
                                       size: 13,
-                                      color: Color(0xFF94a3b8),
+                                      color: Color(0xFF5F6B7E),
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
@@ -846,7 +846,7 @@ class _EventsPageState extends State<EventsPage> {
                                     const Icon(
                                       Icons.location_on_rounded,
                                       size: 13,
-                                      color: Color(0xFF94a3b8),
+                                      color: Color(0xFF5F6B7E),
                                     ),
                                     const SizedBox(width: 4),
                                     Flexible(
@@ -871,7 +871,7 @@ class _EventsPageState extends State<EventsPage> {
                                     const Icon(
                                       Icons.people_outline_rounded,
                                       size: 13,
-                                      color: Color(0xFF94a3b8),
+                                      color: Color(0xFF5F6B7E),
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
@@ -894,7 +894,7 @@ class _EventsPageState extends State<EventsPage> {
                       alignment: Alignment.center,
                       child: Icon(
                         Icons.chevron_right_rounded,
-                        color: Color(0xFF94a3b8),
+                        color: Color(0xFF5F6B7E),
                         size: 20,
                       ),
                     ),
