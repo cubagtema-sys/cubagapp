@@ -21,16 +21,9 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
   bool _success = false;
   bool _fetching = true;
 
-  List<Map<String, dynamic>> _banks = [
-    {
-      'bankName': 'GCB Bank Limited',
-      'accountName': 'Customs Brokers Association Ghana (CUBAG)',
-      'accountNumber': '1011130022445',
-      'branch': 'High Street Branch, Accra',
-      'isDefault': true,
-      'type': 'bank',
-    },
-  ];
+  // No built-in sample account: members must only ever see real, saved
+  // accounts, and a deleted account must stay deleted.
+  List<Map<String, dynamic>> _banks = [];
 
   @override
   void initState() {
@@ -52,13 +45,12 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
               .map((item) => Map<String, dynamic>.from(item as Map))
               .where((b) => b['type'] != 'momo')
               .toList();
-          if (list.isNotEmpty) {
-            setState(() {
-              _banks = list;
-              _fetching = false;
-            });
-            return;
-          }
+          // An empty saved list is a real answer (all accounts removed).
+          setState(() {
+            _banks = list;
+            _fetching = false;
+          });
+          return;
         }
       }
       setState(() => _fetching = false);
@@ -78,10 +70,29 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
     });
   }
 
-  void _removeBank(int index) {
+  Future<void> _removeBank(int index) async {
+    final name = (_banks[index]['bankName'] ?? '').toString().trim();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove this account?'),
+        content: Text(
+          '${name.isEmpty ? 'This account' : name} will no longer be shown to members as a way to pay. '
+          'The change is saved straight away.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Remove')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final wasDefault = _banks[index]['isDefault'] == true;
     setState(() {
       _banks.removeAt(index);
+      if (wasDefault && _banks.isNotEmpty) _banks.first['isDefault'] = true;
     });
+    await _save();
   }
 
   Future<void> _save() async {
