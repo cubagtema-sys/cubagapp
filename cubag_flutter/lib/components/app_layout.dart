@@ -190,6 +190,9 @@ class _AppLayoutState extends State<AppLayout> {
           ? null
           : _buildBottomNav(context, authService.userRole, currentRoute),
       body: Row(
+        // Stretch: otherwise a short page sizes to its content and the Row
+        // centres it vertically (pages floated mid-screen on tablets).
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (isDesktop) _buildSidebar(context, authService.userRole),
           if (isTablet) ..._buildMemberRail(context, currentRoute, size.width),

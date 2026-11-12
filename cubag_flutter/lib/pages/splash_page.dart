@@ -92,7 +92,15 @@ class _SplashPageState extends State<SplashPage>
         }
       }
       if (startRoute.isNotEmpty) {
-        context.go(startRoute);
+        // A comma-separated list tours the screens, 10 s each.
+        final routes = startRoute.split(',');
+        final router = GoRouter.of(context);
+        router.go(routes.first);
+        for (final r in routes.skip(1)) {
+          await Future<void>.delayed(const Duration(seconds: 10));
+          debugPrint('[DesignPreview] tour -> $r');
+          router.go(r);
+        }
         return;
       }
     }
