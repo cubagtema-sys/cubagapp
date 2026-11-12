@@ -76,7 +76,7 @@ class _SplashPageState extends State<SplashPage>
     // Design preview (debug builds only, compiled out of release): sign in
     // with a demo account and/or open a given screen, so screens can be
     // reviewed on a simulator without typing. Set with --dart-define.
-    if (kDebugMode) {
+    if (!kReleaseMode) {
       const demoEmail = String.fromEnvironment('DESIGN_LOGIN_EMAIL');
       const startRoute = String.fromEnvironment('DESIGN_START_ROUTE');
       if (demoEmail.isNotEmpty && !loggedIn) {
@@ -124,7 +124,7 @@ class _SplashPageState extends State<SplashPage>
   void _proceedAfterLogin(AuthService auth) {
     final role = SessionStorage.instance.getStringSync('cubag_role') ?? auth.userRole;
     if (role == 'admin' || role == 'sub_admin' || role == 'super_admin') {
-      if (!kIsWeb) {
+      if (!kIsWeb && !(!kReleaseMode && const bool.fromEnvironment('DESIGN_ADMIN_PREVIEW'))) {
         context.go('/admin-unavailable');
       } else {
         context.go('/admin/dashboard');

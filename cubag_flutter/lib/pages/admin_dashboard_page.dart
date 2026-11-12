@@ -10,6 +10,8 @@ import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
 import '../design/cubag_design.dart';
+import 'admin_dashboard/admin_overview.dart';
+import '../utils/session_storage.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -24,10 +26,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   bool _prefetchStarted = false;
 
   // Stats Data
-  int _totalMembers = 0;
-  int _openTickets = 0;
-  double _revenue = 0.0;
-  int _applicationsCount = 0;
+  /// Full GET /admin/dashboard response (kpis, queue, revenue_by_month, ...).
+  Map<String, dynamic> _dash = {};
   List<dynamic> _rawMembers = [];
   Timer? _prefetchTimer;
   Map<String, String> _forex = {
@@ -36,7 +36,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     'GBP': '19.50',
     'CNY': '2.15',
   };
-  int _activeWorkspaceIndex = 0; // 0: Vetting Queue, 1: Maritime & FX, 2: Counter POS Desk
 
   @override
   void initState() {
@@ -148,21 +147,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           }
           if (data is Map) {
             final dData = Map<String, dynamic>.from(data);
-            final stats = dData['kpis'] is Map
-                ? Map<String, dynamic>.from(dData['kpis'])
-                : <String, dynamic>{};
-            if (mounted) {
-              setState(() {
-                _totalMembers =
-                    int.tryParse(stats['total_members']?.toString() ?? '') ?? 0;
-                _openTickets =
-                    int.tryParse(stats['open_tickets']?.toString() ?? '') ?? 0;
-                _revenue =
-                    double.tryParse(stats['revenue']?.toString() ?? '') ?? 0.0;
-                _applicationsCount =
-                    int.tryParse(stats['applications']?.toString() ?? '') ?? 0;
-              });
-            }
+            if (mounted) setState(() => _dash = dData);
           }
         }),
         api.fetchDataWithCache(
@@ -266,7 +251,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         .toList();
 
     return AppLayout(
-      title: 'Admin Dashboard',
+      title: 'Dashboard',
+      background: CubagColors.paper,
       hideSearch: false,
       scrollable: true,
       child: _loading
@@ -280,71 +266,40 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (_error != null) _buildErrorBanner(isDark),
-                      _buildTypographicKpiLedger(
-                        context,
-                        pendingMembers.length,
-                        isDark,
+                      AdminOverview(
+                        dashboard: _dash,
+                        adminName: (SessionStorage.instance.getStringSync('cubag_name') ?? '')
+                            .trim()
+                            .split(' ')
+                            .first,
+                        onOpen: (route) => context.go(route),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: CubagSpace.xxl),
                       LayoutBuilder(
                         builder: (context, constraints) {
-                          final isDesktop = constraints.maxWidth >= 1050;
-                          if (isDesktop) {
-                            return Column(
+                          final approvals = _buildPendingApprovalsCard(
+                            context,
+                            pendingMembers,
+                            primary,
+                            cardBg,
+                            borderColor,
+                            textColor,
+                            subTextColor,
+                          );
+                          final counter = _buildCounterPaymentActionCard(context, isDark);
+                          if (constraints.maxWidth >= 1000) {
+                            return Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildQuickNavStrip(context, isDark),
-                                const SizedBox(height: 20),
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      flex: 62,
-                                      child: _buildPendingApprovalsCard(
-                                        context,
-                                        pendingMembers,
-                                        primary,
-                                        cardBg,
-                                        borderColor,
-                                        textColor,
-                                        subTextColor,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 20),
-                                    Expanded(
-                                      flex: 38,
-                                      child: Column(
-                                        children: [
-                                          _buildCounterPaymentActionCard(context, isDark),
-                                          const SizedBox(height: 16),
-                                          _buildPortOperationalDeskCard(context, isDark),
-                                          const SizedBox(height: 16),
-                                          _buildForexDeskCard(context, isDark),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                Expanded(flex: 7, child: approvals),
+                                const SizedBox(width: CubagSpace.xl),
+                                Expanded(flex: 4, child: counter),
                               ],
                             );
                           }
-
                           return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildWorkspaceTabs(context, isDark, pendingMembers.length),
-                              const SizedBox(height: 16),
-                              _buildActiveWorkspaceContent(
-                                context,
-                                pendingMembers,
-                                primary,
-                                cardBg,
-                                borderColor,
-                                textColor,
-                                subTextColor,
-                                isDark,
-                              ),
-                            ],
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [approvals, const SizedBox(height: CubagSpace.xl), counter],
                           );
                         },
                       ),
@@ -356,442 +311,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ),
     );
   }
-
-  Widget _buildQuickNavStrip(BuildContext context, bool isDark) {
-    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-    final cardBg = isDark ? const Color(0xFF22140E) : Colors.white;
-    final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
-
-    final shortcuts = [
-      {'title': 'Members Directory', 'route': '/admin/members', 'icon': Icons.people_alt_rounded, 'color': const Color(0xFF2563EB)},
-      {'title': 'Registration Vetting', 'route': '/admin/documents', 'icon': Icons.folder_copy_rounded, 'color': kAdminOrange},
-      {'title': 'Document Rules', 'route': '/admin/document-rules', 'icon': Icons.rule_folder_rounded, 'color': const Color(0xFF6366F1)},
-      {'title': 'Compliance Renewal', 'route': '/admin/compliance', 'icon': Icons.verified_user_rounded, 'color': CubagColors.valid},
-      {'title': 'Broadcast Notices', 'route': '/admin/announcements', 'icon': Icons.campaign_rounded, 'color': const Color(0xFF8B5CF6)},
-      {'title': 'Audit & Ledger', 'route': '/admin/audit-log', 'icon': Icons.security_rounded, 'color': CubagColors.muted},
-    ];
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderCol, width: 1.0),
-      ),
-      child: Row(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.bolt_rounded, size: 18, color: kAdminOrange),
-                const SizedBox(width: 6),
-                Text(
-                  'Quick actions',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(height: 20, width: 1, color: borderCol),
-          const SizedBox(width: 8),
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: shortcuts.map((s) {
-                  final col = s['color'] as Color;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: InkWell(
-                      onTap: () => context.go(s['route'] as String),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: col.withAlpha(isDark ? 25 : 12),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: col.withAlpha(isDark ? 60 : 35)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(s['icon'] as IconData, size: 14, color: col),
-                            const SizedBox(width: 6),
-                            Text(
-                              s['title'] as String,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? Colors.white : textInk,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-
-
-  Widget _buildTypographicKpiLedger(
-    BuildContext context,
-    int pendingCount,
-    bool isDark,
-  ) {
-    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-    final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
-    final subInk = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
-
-    final revParts = _revenue.toStringAsFixed(2).split('.');
-    final revWhole = revParts[0].replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    );
-    final revenueLabel = 'GH₵ $revWhole.${revParts[1]}';
-
-    final totalPending =
-        _applicationsCount > 0 ? _applicationsCount : pendingCount;
-
-    final items = [
-      {
-        'label': 'PENDING VETTING',
-        'value': '$totalPending',
-        'badge': totalPending > 0 ? 'Action Required' : 'Queue Clear',
-        'badgeColor': totalPending > 0 ? kAdminOrange : CubagColors.valid,
-        'onTap': () => setState(() => _activeWorkspaceIndex = 0),
-      },
-      {
-        'label': 'ACCREDITED MEMBERS',
-        'value': '$_totalMembers',
-        'badge': 'Active Registry',
-        'badgeColor': const Color(0xFF6B3E26),
-        'onTap': () => context.go('/admin/members'),
-      },
-      {
-        'label': 'SETTLED REVENUE',
-        'value': revenueLabel,
-        'badge': 'FY 2026 Settled',
-        'badgeColor': CubagColors.valid,
-        'onTap': () => context.go('/admin/payments'),
-      },
-      {
-        'label': 'OPEN TICKETS',
-        'value': '$_openTickets',
-        'badge': 'Support Desk',
-        'badgeColor': const Color(0xFF2563EB),
-        'onTap': () => context.go('/admin/tickets'),
-      },
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderCol, width: 1.0),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isSmall = constraints.maxWidth < 750;
-          if (isSmall) {
-            return Column(
-              children: items.asMap().entries.map((entry) {
-                final idx = entry.key;
-                final it = entry.value;
-                return Column(
-                  children: [
-                    _buildKpiItem(it, isDark, textInk, subInk),
-                    if (idx < items.length - 1)
-                      Divider(height: 1, color: borderCol, thickness: 1),
-                  ],
-                );
-              }).toList(),
-            );
-          }
-
-          return Row(
-            children: items.asMap().entries.map((entry) {
-              final idx = entry.key;
-              final it = entry.value;
-              return Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: idx < items.length - 1
-                        ? Border(right: BorderSide(color: borderCol, width: 1.0))
-                        : null,
-                  ),
-                  child: _buildKpiItem(it, isDark, textInk, subInk),
-                ),
-              );
-            }).toList(),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildKpiItem(
-    Map<String, dynamic> it,
-    bool isDark,
-    Color textInk,
-    Color subInk,
-  ) {
-    final badgeColor = it['badgeColor'] as Color;
-    return InkWell(
-      onTap: it['onTap'] as VoidCallback?,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  it['label'] as String,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: subInk,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                  decoration: BoxDecoration(
-                    color: badgeColor.withAlpha(20),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    it['badge'] as String,
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w800,
-                      color: badgeColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            SelectableText(
-              it['value'] as String,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                color: textInk,
-                letterSpacing: -0.4,
-              ).copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWorkspaceTabs(BuildContext context, bool isDark, int pendingCount) {
-    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-    final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
-    final subInk = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
-
-    final tabs = [
-      {
-        'index': 0,
-        'label': 'Applications & Vetting Queue',
-        'icon': Icons.pending_actions_rounded,
-        'badge': '$pendingCount',
-        'badgeColor': pendingCount > 0 ? kAdminOrange : CubagColors.valid,
-      },
-      {
-        'index': 1,
-        'label': 'Maritime Port & Forex Feeds',
-        'icon': Icons.anchor_rounded,
-        'badge': 'LIVE',
-        'badgeColor': CubagColors.valid,
-      },
-      {
-        'index': 2,
-        'label': 'Counter Walk-in POS Desk',
-        'icon': Icons.point_of_sale_rounded,
-        'badge': 'COUNTER',
-        'badgeColor': const Color(0xFF2563EB),
-      },
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E120B) : const Color(0xFFEDE5DC),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: borderCol, width: 1.0),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isSmall = constraints.maxWidth < 700;
-          if (isSmall) {
-            return Column(
-              children: tabs.map((t) => _buildTabItem(t, isDark, textInk, subInk)).toList(),
-            );
-          }
-
-          return Row(
-            children: tabs
-                .map((t) => Expanded(child: _buildTabItem(t, isDark, textInk, subInk)))
-                .toList(),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildTabItem(
-    Map<String, dynamic> t,
-    bool isDark,
-    Color textInk,
-    Color subInk,
-  ) {
-    final idx = t['index'] as int;
-    final isSelected = _activeWorkspaceIndex == idx;
-    final badgeColor = t['badgeColor'] as Color;
-    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-    final activeBg = isDark ? const Color(0xFF2A170F) : Colors.white;
-
-    return InkWell(
-      onTap: () => setState(() => _activeWorkspaceIndex = idx),
-      borderRadius: BorderRadius.circular(8),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 140),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: isSelected ? activeBg : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: isSelected ? Border.all(color: borderCol, width: 1.0) : null,
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(isDark ? 25 : 8),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  )
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              t['icon'] as IconData,
-              size: 16,
-              color: isSelected ? kAdminOrange : subInk,
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                t['label'] as String,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                  color: isSelected ? textInk : subInk,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? badgeColor.withAlpha(25)
-                    : (isDark ? Colors.white10 : Colors.black.withAlpha(12)),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                t['badge'] as String,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: isSelected ? badgeColor : subInk,
-                ).copyWith(
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActiveWorkspaceContent(
-    BuildContext context,
-    List<dynamic> pendingMembers,
-    Color primary,
-    Color cardBg,
-    Color borderColor,
-    Color textColor,
-    Color subTextColor,
-    bool isDark,
-  ) {
-    switch (_activeWorkspaceIndex) {
-      case 0:
-        return _buildPendingApprovalsCard(
-          context,
-          pendingMembers,
-          primary,
-          cardBg,
-          borderColor,
-          textColor,
-          subTextColor,
-        );
-      case 1:
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth > 850;
-            if (isWide) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(flex: 55, child: _buildPortOperationalDeskCard(context, isDark)),
-                  const SizedBox(width: 16),
-                  Expanded(flex: 45, child: _buildForexDeskCard(context, isDark)),
-                ],
-              );
-            }
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildPortOperationalDeskCard(context, isDark),
-                const SizedBox(height: 16),
-                _buildForexDeskCard(context, isDark),
-              ],
-            );
-          },
-        );
-      case 2:
-      default:
-        return _buildCounterPaymentActionCard(context, isDark);
-    }
-  }
-
-
 
   Widget _buildCounterPaymentActionCard(BuildContext context, bool isDark) {
     final cardBg = isDark ? const Color(0xFF1B2E24) : const Color(0xFFE8F5E9);
@@ -867,311 +386,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   fontSize: 13.5,
                 ),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPortOperationalDeskCard(BuildContext context, bool isDark) {
-    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-    final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderCol, width: 1.0),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.anchor_rounded, size: 16, color: kAdminOrange),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Port operations desk',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: textInk,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: CubagColors.valid.withAlpha(20),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    'Live status',
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w800,
-                      color: CubagColors.valid,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Divider(height: 1, thickness: 1, color: borderCol),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              children: [
-                _buildPortStatusRow('Tema Port (MPS Terminal 3)', 'Operational', 'Berth Normal', CubagColors.valid, isDark),
-                const SizedBox(height: 8),
-                _buildPortStatusRow('Takoradi Maritime Terminal', 'Operational', 'Clearance Active', CubagColors.valid, isDark),
-                const SizedBox(height: 8),
-                _buildPortStatusRow('Kotoka Cargo Village (KIA)', 'Operational', 'Air Waybills Active', CubagColors.valid, isDark),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () => context.go('/admin/port-news'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: textInk,
-                      side: BorderSide(color: borderCol),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                    ),
-                    child: Text(
-                      'Manage Port Bulletins →',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPortStatusRow(String name, String status, String note, Color color, bool isDark) {
-    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-    final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
-    final subInk = isDark ? const Color(0xFF9E8F84) : const Color(0xFF6B5E55);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF170C08) : Colors.white,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: borderCol, width: 0.8),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: textInk,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  note,
-                  style: TextStyle(fontSize: 10.5, color: subInk),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-            decoration: BoxDecoration(
-              color: color.withAlpha(20),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              status,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildForexDeskCard(BuildContext context, bool isDark) {
-    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-    final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderCol, width: 1.0),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.currency_exchange_rounded, size: 16, color: const Color(0xFF6B3E26)),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Official customs fx rates',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: textInk,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: CubagColors.valid.withAlpha(20),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    'Indicative',
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w800,
-                      color: CubagColors.valid,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Divider(height: 1, thickness: 1, color: borderCol),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              children: [
-                _buildFxRateRow('\$', 'USD / GHS', _forex['USD'] ?? '15.45', isDark),
-                const SizedBox(height: 6),
-                _buildFxRateRow('€', 'EUR / GHS', _forex['EUR'] ?? '16.80', isDark),
-                const SizedBox(height: 6),
-                _buildFxRateRow('£', 'GBP / GHS', _forex['GBP'] ?? '19.50', isDark),
-                const SizedBox(height: 6),
-                _buildFxRateRow('¥', 'CNY / GHS', _forex['CNY'] ?? '2.15', isDark),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () => context.go('/admin/intelligence'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: textInk,
-                      side: BorderSide(color: borderCol),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                    ),
-                    child: Text(
-                      'Update FX Tariffs & News →',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFxRateRow(String symbol, String pair, String rate, bool isDark) {
-    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-    final textInk = isDark ? Colors.white : const Color(0xFF1F1612);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF170C08) : Colors.white,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: borderCol, width: 0.8),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 22,
-                height: 22,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF22140E) : const Color(0xFFF4EFEA),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  symbol,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF6B3E26),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                pair,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: textInk,
-                ),
-              ),
-            ],
-          ),
-          Text(
-            rate,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: textInk,
-            ).copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ],

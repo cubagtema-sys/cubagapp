@@ -131,7 +131,7 @@ Future<void> _preloadDeferredLibraries() async {
 Future<void> _initFirebase() async {
   if (kIsWeb) return;
   // Design-preview debug runs (simulator screenshots): no push set-up.
-  if (kDebugMode && const String.fromEnvironment('DESIGN_LOGIN_EMAIL').isNotEmpty) return;
+  if (!kReleaseMode && const String.fromEnvironment('DESIGN_LOGIN_EMAIL').isNotEmpty) return;
   try {
     await Firebase.initializeApp();
     await CrashReporting.init();

@@ -2106,119 +2106,42 @@ class _AppLayoutState extends State<AppLayout> {
 
     List<Widget> sections = [];
     if (isAdmin) {
+      // Grouped by the Secretariat's daily work, in plain words.
       sections = [
-        _buildSection(context, 'CORE MANAGEMENT', currentRoute, [
-          _NavItemData(
-            'Dashboard',
-            Icons.grid_view_rounded,
-            '/admin/dashboard',
-          ),
+        _buildSection(context, 'Overview', currentRoute, [
+          _NavItemData('Dashboard', Icons.space_dashboard_rounded, '/admin/dashboard'),
+        ]),
+        _buildSection(context, 'Members', currentRoute, [
           _NavItemData('Members', Icons.people_alt_rounded, '/admin/members'),
-          _NavItemData(
-            'Registration',
-            Icons.folder_copy_rounded,
-            '/admin/documents',
-          ),
-          _NavItemData(
-            'Document Rules',
-            Icons.rule_folder_rounded,
-            '/admin/document-rules',
-          ),
-          _NavItemData(
-            'Renewal',
-            Icons.verified_user_rounded,
-            '/admin/compliance',
-          ),
-          _NavItemData(
-            'Announcements',
-            Icons.campaign_rounded,
-            '/admin/announcements',
-          ),
+          _NavItemData('Applications', Icons.folder_shared_rounded, '/admin/documents'),
+          _NavItemData('Compliance & renewals', Icons.verified_user_rounded, '/admin/compliance'),
         ]),
-        _buildSection(context, 'OPERATIONS & SUPPORT', currentRoute, [
-          _NavItemData(
-            'Port Operational News',
-            Icons.feed_rounded,
-            '/admin/port-news',
-          ),
-          _NavItemData(
-            'Intelligence Hub',
-            Icons.cell_tower_rounded,
-            '/admin/intelligence',
-          ),
-          _NavItemData(
-            'Support Tickets',
-            Icons.support_agent_rounded,
-            '/admin/tickets',
-          ),
-          _NavItemData(
-            'Complaints',
-            Icons.gavel_rounded,
-            '/admin/complaints',
-          ),
-          _NavItemData(
-            'Messaging',
-            Icons.chat_rounded,
-            '/admin/messages',
-          ),
-          _NavItemData(
-            'Reported Messages',
-            Icons.flag_rounded,
-            '/admin/message-reports',
-          ),
+        _buildSection(context, 'Money', currentRoute, [
+          _NavItemData('Payments', Icons.account_balance_wallet_rounded, '/admin/payments'),
+          _NavItemData('Revenue reports', Icons.insights_rounded, '/admin/analytics'),
+          _NavItemData('Fees', Icons.receipt_rounded, '/admin/fees'),
+          _NavItemData('Payment settings', Icons.tune_rounded, '/admin/payment-settings'),
         ]),
-        _buildSection(context, 'FINANCIALS & RECORDS', currentRoute, [
-          _NavItemData(
-            'Financial Center',
-            Icons.account_balance_wallet_rounded,
-            '/admin/payments',
-          ),
-          _NavItemData(
-            'Platform Analytics',
-            Icons.analytics_rounded,
-            '/admin/analytics',
-          ),
-          _NavItemData(
-            'Payment Settings',
-            Icons.payment_rounded,
-            '/admin/payment-settings',
-          ),
-          _NavItemData('Platform Fees', Icons.receipt_rounded, '/admin/fees'),
+        _buildSection(context, 'Communication', currentRoute, [
+          _NavItemData('Announcements', Icons.campaign_rounded, '/admin/announcements'),
+          _NavItemData('Messages', Icons.chat_rounded, '/admin/messages'),
+          _NavItemData('Reported messages', Icons.flag_rounded, '/admin/message-reports'),
+          _NavItemData('Support tickets', Icons.support_agent_rounded, '/admin/tickets'),
+          _NavItemData('Complaints', Icons.gavel_rounded, '/admin/complaints'),
         ]),
-        _buildSection(context, 'ENGAGEMENT & EVENTS', currentRoute, [
-          _NavItemData(
-            'Events & Meetings',
-            Icons.event_rounded,
-            '/admin/events',
-          ),
-          _NavItemData(
-            'CTI Short Courses',
-            Icons.school_rounded,
-            '/admin/cti-courses',
-          ),
-          _NavItemData(
-            'Photo Gallery',
-            Icons.photo_library_rounded,
-            '/admin/gallery',
-          ),
-          _NavItemData(
-            'Surveys & Elections',
-            Icons.how_to_vote_rounded,
-            '/admin/surveys',
-          ),
+        _buildSection(context, 'Events & content', currentRoute, [
+          _NavItemData('Events', Icons.event_rounded, '/admin/events'),
+          _NavItemData('CTI courses', Icons.school_rounded, '/admin/cti-courses'),
+          _NavItemData('Polls', Icons.how_to_vote_rounded, '/admin/surveys'),
+          _NavItemData('Gallery', Icons.photo_library_rounded, '/admin/gallery'),
+          _NavItemData('Port news', Icons.newspaper_rounded, '/admin/port-news'),
+          _NavItemData('Intelligence hub', Icons.cell_tower_rounded, '/admin/intelligence'),
         ]),
-        _buildSection(context, 'ADMINISTRATION', currentRoute, [
-          _NavItemData(
-            'Sub-Admins',
-            Icons.admin_panel_settings_rounded,
-            '/admin/sub-admins',
-          ),
-          _NavItemData(
-            'Ports of Operation',
-            Icons.anchor_rounded,
-            '/admin/ports',
-          ),
-          _NavItemData('Audit Log', Icons.history_rounded, '/admin/audit-log'),
+        _buildSection(context, 'Setup', currentRoute, [
+          _NavItemData('Document rules', Icons.rule_folder_rounded, '/admin/document-rules'),
+          _NavItemData('Ports & districts', Icons.anchor_rounded, '/admin/ports'),
+          _NavItemData('Sub-admins', Icons.admin_panel_settings_rounded, '/admin/sub-admins'),
+          _NavItemData('Audit log', Icons.history_rounded, '/admin/audit-log'),
         ]),
       ];
     } else if (role == 'sub_admin') {
@@ -2366,7 +2289,7 @@ class _AppLayoutState extends State<AppLayout> {
 
       sections = [
         if (showDashboard)
-          _buildSection(context, 'OVERVIEW', currentRoute, [
+          _buildSection(context, 'Overview', currentRoute, [
             _NavItemData(
               'Dashboard',
               Icons.grid_view_rounded,
@@ -2374,7 +2297,7 @@ class _AppLayoutState extends State<AppLayout> {
             ),
           ]),
         if (permittedItems.isNotEmpty)
-          _buildSection(context, 'MY MODULES', currentRoute, permittedItems),
+          _buildSection(context, 'My modules', currentRoute, permittedItems),
       ];
     } else {
       final status = authService.membershipStatus.toLowerCase().trim();
@@ -2382,7 +2305,7 @@ class _AppLayoutState extends State<AppLayout> {
 
       if (isPending) {
         sections = [
-          _buildSection(context, 'APPLICATION ONBOARDING', currentRoute, [
+          _buildSection(context, 'Application onboarding', currentRoute, [
             _NavItemData(
               'Complete Application',
               Icons.assignment_turned_in_rounded,
@@ -2397,10 +2320,10 @@ class _AppLayoutState extends State<AppLayout> {
         ];
       } else {
         sections = [
-          _buildSection(context, 'MAIN', currentRoute, [
+          _buildSection(context, 'Main', currentRoute, [
             _NavItemData('Dashboard', Icons.home_rounded, '/dashboard'),
           ]),
-          _buildSection(context, 'SERVICES', currentRoute, [
+          _buildSection(context, 'Services', currentRoute, [
             _NavItemData(
               'Membership Hub',
               Icons.card_membership_rounded,
@@ -2445,7 +2368,7 @@ class _AppLayoutState extends State<AppLayout> {
               '/engagement',
             ),
           ]),
-          _buildSection(context, 'RESOURCES', currentRoute, [
+          _buildSection(context, 'Resources', currentRoute, [
             _NavItemData(
                 'Intelligence Hub', Icons.analytics_rounded, '/live-data'),
             _NavItemData(

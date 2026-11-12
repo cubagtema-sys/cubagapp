@@ -291,3 +291,16 @@ def test_reset_email_leads_with_code_not_in_subject(monkeypatch):
     assert '12345678' not in sent['subj']
     assert '1234 5678' in sent['txt'] and '1234 5678' in sent['html']
     assert 'email=ama%2Bcubag%40example.com' in sent['txt']
+
+
+def test_admin_dashboard_has_queue_and_revenue_trend(client, auth, db):
+    db.on(r"FROM payments\s+WHERE LOWER\(status\) IN \('paid'", [{'month': '2026-10', 'total': 1250}])
+    db.on(r"FROM member_documents WHERE status = 'pending'", [{'count': 3}])
+    body = client.get(f'{API}/admin/dashboard', headers=auth(1)).get_json()
+    assert body['queue']['documents'] == 3
+    assert body['revenue_by_month'] == [{'month': '2026-10', 'total': 1250.0}]
+
+
+def test_dashboard_queue_respects_sub_admin_permissions(client, auth, db):
+    body = client.get(f'{API}/admin/dashboard', headers=auth(2)).get_json()  # sub-admin, no perms
+    assert body.get('queue', {}) == {} and body.get('revenue_by_month', []) == []

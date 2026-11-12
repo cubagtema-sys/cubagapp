@@ -132,7 +132,7 @@ class PushNotificationService {
   Future<void> requestPermissionsAndSyncToken() async {
     if (kIsWeb) return;
     // Design-preview debug runs: no system prompt over the screens under review.
-    if (kDebugMode && const String.fromEnvironment('DESIGN_LOGIN_EMAIL').isNotEmpty) return;
+    if (!kReleaseMode && const String.fromEnvironment('DESIGN_LOGIN_EMAIL').isNotEmpty) return;
     try {
       // 1. Request Darwin (iOS) notifications permission
       final iosPlugin = _localNotifications

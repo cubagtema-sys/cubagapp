@@ -157,6 +157,56 @@ def get_dashboard_stats():
                 except Exception as e:
                     documents_count = 0
 
+            # ── "Waiting for you" queue and revenue trend (dashboard v2) ──
+            # Counts of items that need an admin's action, pending only.
+            queue = {}
+            revenue_by_month = []
+
+            def _count(sql):
+                try:
+                    cursor.execute(sql)
+                    return int((cursor.fetchone() or {}).get('count') or 0)
+                except Exception:
+                    conn.rollback()
+                    return None
+
+            if has_p('members') or has_p('compliance'):
+                queue['documents'] = _count(
+                    "SELECT COUNT(DISTINCT member_id) AS count FROM member_documents WHERE status = 'pending'")
+            if has_p('compliance'):
+                queue['compliance'] = _count(
+                    "SELECT COUNT(id) AS count FROM compliance_applications "
+                    "WHERE status IN ('submitted', 'under_review', 'payment_submitted')")
+            if has_p('payments'):
+                queue['payments'] = _count(
+                    "SELECT COUNT(id) AS count FROM payments WHERE LOWER(status) = 'pending' "
+                    "AND receipt_url IS NOT NULL AND receipt_url <> ''")
+                try:
+                    cursor.execute("""
+                        SELECT to_char(date_trunc('month', COALESCE(paid_at, created_at)), 'YYYY-MM') AS month,
+                               COALESCE(SUM(amount), 0) AS total
+                        FROM payments
+                        WHERE LOWER(status) IN ('paid', 'completed', 'success', 'successful')
+                          AND COALESCE(paid_at, created_at) >= date_trunc('month', NOW()) - INTERVAL '5 months'
+                        GROUP BY 1 ORDER BY 1
+                    """)
+                    revenue_by_month = [
+                        {'month': r['month'], 'total': float(r['total'] or 0)} for r in cursor.fetchall()
+                    ]
+                except Exception:
+                    conn.rollback()
+                    revenue_by_month = []
+            if has_p('messaging'):
+                queue['reported_messages'] = _count(
+                    "SELECT COUNT(id) AS count FROM message_reports WHERE status = 'open'")
+            if has_p('complaints'):
+                queue['complaints'] = _count(
+                    "SELECT COUNT(id) AS count FROM complaints "
+                    "WHERE LOWER(COALESCE(status, 'open')) NOT IN ('resolved', 'closed', 'dismissed')")
+            if has_p('tickets'):
+                queue['tickets'] = open_tickets
+            queue = {k: v for k, v in queue.items() if v is not None}
+
             # ── Recent members ───────────────────────────────────────────
             if has_p('members'):
                 try:
@@ -190,6 +240,8 @@ def get_dashboard_stats():
                 'announcements':    announcements_count,
                 'schedules':        schedules_count,
             },
+            'queue': queue,
+            'revenue_by_month': revenue_by_month,
             'status_counts': status_counts,
             'type_counts':   type_counts,
             'recent_members': recent_members

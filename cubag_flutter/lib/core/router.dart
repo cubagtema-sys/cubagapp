@@ -109,6 +109,10 @@ Future<void> preloadMemberLibraries() async {}
 Future<void> preloadAdminLibraries() async {}
 
 // ── Router ───────────────────────────────────────────────────────────────────
+/// Design preview only (never in release builds): show admin pages on a
+/// tablet simulator. Set with --dart-define=DESIGN_ADMIN_PREVIEW=true.
+const bool _adminPreview = !kReleaseMode && bool.fromEnvironment('DESIGN_ADMIN_PREVIEW');
+
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
   refreshListenable: AuthService(),
@@ -148,7 +152,7 @@ final GoRouter appRouter = GoRouter(
 
     if (loggedIn && _isAdminRoute(loc)) {
       if (!isAdminRole) return '/dashboard';
-      if (!kIsWeb) return '/admin-unavailable';
+      if (!kIsWeb && !_adminPreview) return '/admin-unavailable';
     }
 
     // ── Member Status Guard: Lock unapproved or unpaid members to onboarding ──
@@ -187,7 +191,7 @@ final GoRouter appRouter = GoRouter(
 
     if (loggedIn && (loc == '/' || loc == '/landing' || loc == '/public-services' || loc == '/login' || loc == '/register')) {
       if (role == 'admin' || role == 'sub_admin' || role == 'super_admin') {
-        if (!kIsWeb) return '/admin-unavailable';
+        if (!kIsWeb && !_adminPreview) return '/admin-unavailable';
         if (role == 'sub_admin') {
           final perms = storage.getStringListSync('cubag_permissions') ?? auth.permissions;
           if (!perms.contains('dashboard')) {
