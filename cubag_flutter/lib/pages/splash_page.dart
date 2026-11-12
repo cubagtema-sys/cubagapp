@@ -79,7 +79,7 @@ class _SplashPageState extends State<SplashPage>
     if (!kReleaseMode) {
       const demoEmail = String.fromEnvironment('DESIGN_LOGIN_EMAIL');
       const startRoute = String.fromEnvironment('DESIGN_START_ROUTE');
-      if (demoEmail.isNotEmpty && !loggedIn) {
+      if (demoEmail.isNotEmpty) { // fresh session: a stale preview token would 401
         final err = await auth.login(
           demoEmail,
           const String.fromEnvironment('DESIGN_LOGIN_PASSWORD'),

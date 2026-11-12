@@ -3,12 +3,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../components/app_layout.dart';
-import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../components/fetch_error_view.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
 import '../design/cubag_design.dart';
+import '../components/cubag_ui.dart';
 
 const _kOrange = CubagColors.action;
 const _kGreen = CubagColors.valid;
@@ -30,7 +30,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
   Map<String, dynamic> _kpis = {'revenue': 0, 'pending': 0, 'failed': 0};
   List<dynamic> _transactions = [];
   String _search = '';
-  String _filterStatus = 'all';
+  String _filterStatus = 'pending'; // open on the work waiting
   int _page = 1;
   int _total = 0;
   bool _hasMore = true;
@@ -855,769 +855,456 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     }
   }
 
-  Widget _buildTypographicFinancialLedger({
-    required double revenue,
-    required String pendingCount,
-    required String failedCount,
-    required bool isDark,
-    required Color borderCol,
-    required Color cardBg,
-    required Color textInk,
-    required Color subInk,
-  }) {
-    final revParts = revenue.toStringAsFixed(2).split('.');
-    final revWhole = revParts[0].replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    );
-    final revFormatted = 'GH₵ $revWhole.${revParts[1]}';
-    final pCountInt = int.tryParse(pendingCount) ?? 0;
-    final fCountInt = int.tryParse(failedCount) ?? 0;
+  // ── Layout ────────────────────────────────────────────────────────────────
+  // Action first: the list opens on payments waiting to be verified. Each row
+  // reads like a sentence (who, what for, how much, how) and carries its own
+  // actions, so it works on a phone, a tablet and a laptop alike.
 
-    final items = [
-      {
-        'label': 'SETTLED REVENUE',
-        'value': revFormatted,
-        'badge': 'FY 2026 Audit',
-        'badgeColor': CubagColors.valid,
-      },
-      {
-        'label': 'PENDING APPROVALS',
-        'value': pendingCount,
-        'badge': pCountInt > 0 ? 'Slip Verification' : 'Queue Cleared',
-        'badgeColor': pCountInt > 0 ? kAdminOrange : CubagColors.valid,
-      },
-      {
-        'label': 'FAILED / REJECTED',
-        'value': failedCount,
-        'badge': fCountInt > 0 ? 'Action Required' : 'Zero Failed',
-        'badgeColor':
-            fCountInt > 0 ? CubagColors.lapsed : CubagColors.valid,
-      },
-    ];
+  static const _filters = [
+    ('pending', 'To verify'),
+    ('paid', 'Paid'),
+    ('failed', 'Rejected'),
+    ('all', 'All'),
+  ];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderCol, width: 1.0),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isSmall = constraints.maxWidth < 750;
-          if (isSmall) {
-            return Column(
-              children: items.asMap().entries.map((entry) {
-                final idx = entry.key;
-                final it = entry.value;
-                return Column(
-                  children: [
-                    _buildLedgerItem(it, textInk, subInk),
-                    if (idx < items.length - 1)
-                      Divider(height: 1, color: borderCol, thickness: 1),
-                  ],
-                );
-              }).toList(),
-            );
-          }
-
-          return Row(
-            children: items.asMap().entries.map((entry) {
-              final idx = entry.key;
-              final it = entry.value;
-              return Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: idx < items.length - 1
-                        ? Border(right: BorderSide(color: borderCol, width: 1.0))
-                        : null,
-                  ),
-                  child: _buildLedgerItem(it, textInk, subInk),
-                ),
-              );
-            }).toList(),
-          );
-        },
-      ),
-    );
+  String _money(double v) {
+    final s = v.toStringAsFixed(2);
+    final parts = s.split('.');
+    final whole = parts[0].replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+    return 'GH₵ $whole.${parts[1]}';
   }
 
-  Widget _buildLedgerItem(
-    Map<String, dynamic> it,
-    Color textInk,
-    Color subInk,
-  ) {
-    final badgeColor = it['badgeColor'] as Color;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                it['label'] as String,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: subInk,
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                decoration: BoxDecoration(
-                  color: badgeColor.withAlpha(20),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  it['badge'] as String,
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w800,
-                    color: badgeColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 5),
-          Text(
-            it['value'] as String,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: textInk,
-              letterSpacing: -0.4,
-            ).copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ],
-      ),
-    );
+  String _shortDate(String raw) {
+    final d = DateTime.tryParse(raw);
+    if (d == null) return raw.length > 10 ? raw.substring(0, 10) : raw;
+    const m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${d.day} ${m[d.month - 1]} ${d.year}';
+  }
+
+  (String, StatusKind) _statusOf(String status) {
+    switch (status.toLowerCase()) {
+      case 'paid':
+      case 'success':
+      case 'successful':
+      case 'completed':
+        return ('Paid', StatusKind.good);
+      case 'pending':
+      case 'processing':
+      case 'submitted':
+        return ('To verify', StatusKind.pending);
+      case 'rejected':
+        return ('Rejected', StatusKind.bad);
+      case 'failed':
+      case 'cancelled':
+        return ('Failed', StatusKind.bad);
+      case 'overdue':
+        return ('Overdue', StatusKind.bad);
+      default:
+        return (status.isEmpty ? 'Unknown' : status, StatusKind.neutral);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? kAdminPaperDark : kAdminPaperLight;
-    final borderColor = isDark ? kAdminBorderDark : kAdminBorderLight;
-    final headerBg =
-        isDark ? const Color(0xFF170C08) : const Color(0xFFF4EFEA);
-    final textColor = isDark ? Colors.white : kAdminInk;
-    final subTextColor =
-        isDark ? const Color(0xFF9E8F84) : const Color(0xFF6B5E55);
-
     final revenue = double.tryParse(_kpis['revenue']?.toString() ?? '0') ?? 0;
-    final pendingCount = _kpis['pending']?.toString() ?? '0';
-    final failedCount = _kpis['failed']?.toString() ?? '0';
+    // The server reports these as money totals (GH₵), not counts.
+    final pending = double.tryParse(_kpis['pending']?.toString() ?? '0') ?? 0;
+    final failed = double.tryParse(_kpis['failed']?.toString() ?? '0') ?? 0;
+    final wide = MediaQuery.sizeOf(context).width >= 700;
 
     return AppLayout(
-      title: 'Financial Center',
+      title: 'Payments',
       scrollable: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AdminHeader(
-            title: 'Financial Center & Transactions',
-            subtitle:
-                'Review member dues, subscription invoices, bank transfers, and payment approvals.',
-            actions: [
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kGreen,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                onPressed: _showRecordCounterPaymentModal,
-                icon: const Icon(Icons.point_of_sale_rounded, size: 18),
-                label: Text(
-                  '➕ Record Counter / Cash Payment',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kAdminOrange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                onPressed: () => _fetch(refresh: true),
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: Text(
-                  'Refresh',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // ── Typographic Metric Ledger ─────────────────────────────────────────
-          _buildTypographicFinancialLedger(
-            revenue: revenue,
-            pendingCount: pendingCount,
-            failedCount: failedCount,
-            isDark: isDark,
-            borderCol: borderColor,
-            cardBg: cardBg,
-            textInk: textColor,
-            subInk: subTextColor,
-          ),
-          const SizedBox(height: 16),
-
-
-
-          // ── Filter & Search Toolbar ──────────────────────────────────────────
-          AdminToolbar(
-            searchHint:
-                'Search transactions by member, reference, or description...',
-            onSearchChanged: _onSearchChanged,
-            filters: [
-              _filterChip('All Transactions', 'all'),
-              _filterChip('Paid', 'paid'),
-              _filterChip('Pending', 'pending'),
-              _filterChip('Overdue', 'overdue'),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // ── Tabular Payments DataTable ───────────────────────────────────────
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.all(40),
-              child: Center(child: CircularProgressIndicator(color: _kOrange)),
-            )
-          else if (_hasError && _transactions.isEmpty)
-            FetchErrorView(onRetry: () => _fetch(refresh: true))
-          else if (_transactions.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(48),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderColor),
-              ),
-              child: Column(
-                children: [
-                  Icon(Icons.payments_outlined, size: 48, color: subTextColor),
-                  const SizedBox(height: 12),
-                  Text(
-                    'No payment records found.',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: textColor,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Try clearing your search query or selecting a different status filter.',
-                    style: TextStyle(fontSize: 15, color: subTextColor),
-                  ),
-                ],
-              ),
-            )
-          else
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderColor),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minWidth: constraints.maxWidth,
-                        ),
-                        child: DataTable(
-                          headingRowColor: WidgetStateProperty.all(headerBg),
-                          headingTextStyle: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 14,
-                            color: subTextColor,
-                          ),
-                          dataTextStyle: TextStyle(
-                            fontSize: 15,
-                            color: textColor,
-                          ),
-                          columnSpacing: 24,
-                          horizontalMargin: 24,
-                          dataRowMinHeight: 64,
-                          dataRowMaxHeight: 76,
-                          columns: const [
-                            DataColumn(label: Text('Transaction ref')),
-                            DataColumn(label: Text('Member / company')),
-                            DataColumn(label: Text('Channel / method')),
-                            DataColumn(label: Text('Amount (GHS)')),
-                            DataColumn(label: Text('Description / purpose')),
-                            DataColumn(label: Text('Date')),
-                            DataColumn(label: Text('Status')),
-                            DataColumn(label: Text('Actions')),
-                          ],
-                          rows: _transactions.map((tx) {
-                            final status =
-                                tx['status']?.toString() ?? 'pending';
-                            final color = _statusColor(status);
-                            final amount =
-                                double.tryParse(
-                                  tx['amount']?.toString() ?? '0',
-                                ) ??
-                                0;
-                            final memberName =
-                                tx['member_name']?.toString() ?? 'Member';
-                            final momoTxId = tx['momo_tx_id']?.toString().trim();
-                            final rawRef = tx['payment_ref']?.toString().trim();
-                            final refCode = tx['ref_code']?.toString().trim();
-                            final txId = (momoTxId != null && momoTxId.isNotEmpty && momoTxId != 'null' && momoTxId != 'None')
-                                ? momoTxId
-                                : (refCode != null && refCode.isNotEmpty && refCode != 'null' && refCode != 'None')
-                                    ? refCode
-                                    : (rawRef != null && rawRef.isNotEmpty && rawRef != 'null' && rawRef != 'None')
-                                        ? rawRef
-                                        : 'TXN-${(tx['tx_id'] ?? tx['id'] ?? '1').toString().padLeft(6, '0')}';
-                            final desc =
-                                tx['description']?.toString() ??
-                                'Membership Dues';
-                            final date =
-                                tx['date']?.toString() ??
-                                tx['created_at']?.toString() ??
-                                '—';
-
-                            final method = (tx['payment_method'] ?? 'momo').toString().toLowerCase();
-                            final isBank = method == 'bank' || method == 'bank_transfer' || method == 'wire';
-                            final receiptUrl = tx['receipt_url']?.toString();
-                            final hasReceipt = receiptUrl != null && receiptUrl.isNotEmpty && receiptUrl != 'null';
-
-                            return DataRow(
-                              cells: [
-                                // 1. Transaction Ref (Sleek Orange Badge)
-                                DataCell(
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 5,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _kOrange.withAlpha(isDark ? 30 : 15),
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                        color: _kOrange.withAlpha(60),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      txId,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.accentOrangeText,
-                                        letterSpacing: 0.3,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                // 2. Member / Company
-                                DataCell(
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 14,
-                                        backgroundColor: _kOrange.withAlpha(35),
-                                        child: Text(
-                                          memberName.isNotEmpty
-                                              ? memberName[0].toUpperCase()
-                                              : 'M',
-                                          style: TextStyle(
-                                            color: AppColors.accentOrangeText,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Container(
-                                        constraints: const BoxConstraints(
-                                          maxWidth: 180,
-                                        ),
-                                        child: Text(
-                                          memberName,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15,
-                                            color: textColor,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // 3. Channel / Method (with Bank / Receipt Pill)
-                                DataCell(
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: isBank
-                                              ? const Color(0xFF0284c7).withAlpha(20)
-                                              : _kOrange.withAlpha(20),
-                                          borderRadius: BorderRadius.circular(6),
-                                          border: Border.all(
-                                            color: isBank
-                                                ? const Color(0xFF0284c7).withAlpha(60)
-                                                : _kOrange.withAlpha(60),
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              isBank
-                                                  ? Icons.account_balance_rounded
-                                                  : Icons.phone_android_rounded,
-                                              size: 13,
-                                              color: isBank
-                                                  ? const Color(0xFF0284c7)
-                                                  : _kOrange,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              isBank ? 'BANK' : 'MOMO',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w800,
-                                                color: isBank
-                                                    ? const Color(0xFF0284c7)
-                                                    : _kOrange,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      if (hasReceipt) ...[
-                                        const SizedBox(width: 6),
-                                        InkWell(
-                                          onTap: () => _showReceiptDialog(
-                                            receiptUrl,
-                                            memberName,
-                                            amount,
-                                            date,
-                                            txId: tx['tx_id'] ?? tx['id'],
-                                            isPending: status == 'pending',
-                                          ),
-                                          borderRadius: BorderRadius.circular(6),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: CubagColors.valid.withAlpha(20),
-                                              borderRadius: BorderRadius.circular(6),
-                                              border: Border.all(
-                                                color: CubagColors.valid.withAlpha(80),
-                                              ),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                const Icon(
-                                                  Icons.image_outlined,
-                                                  size: 13,
-                                                  color: _kGreen,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  'View Slip',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: _kGreen,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-
-                                // 4. Amount
-                                DataCell(
-                                  Text(
-                                    'GHS ${amount.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 16,
-                                      color: textColor,
-                                    ),
-                                  ),
-                                ),
-
-                                // 5. Description
-                                DataCell(
-                                  Container(
-                                    constraints: BoxConstraints(
-                                      minWidth: 160,
-                                      maxWidth: constraints.maxWidth > 900
-                                          ? constraints.maxWidth * 0.22
-                                          : 220,
-                                    ),
-                                    child: Text(
-                                      desc,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: subTextColor,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ),
-
-                                // 6. Date
-                                DataCell(
-                                  Text(
-                                    date.split('T').first,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: subTextColor,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-
-                                // 7. Status Badge
-                                DataCell(
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 9,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: color.withAlpha(25),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: color.withAlpha(50),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      status.toUpperCase(),
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w800,
-                                        color: color,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                // 8. Action Buttons
-                                DataCell(
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (status == 'pending') ...[
-                                        ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: _kGreen,
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 6,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                          ),
-                                          onPressed: _actionLoading
-                                              ? null
-                                              : () => _showConfirmDialog(
-                                                  tx['tx_id'] ?? tx['id'],
-                                                  amount,
-                                                  memberName,
-                                                  receiptUrl: receiptUrl,
-                                                  method: method,
-                                                  notes: tx['notes']?.toString(),
-                                                ),
-                                          child: const Text(
-                                            'Approve',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        OutlinedButton(
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor: _kRed,
-                                            side: const BorderSide(color: _kRed),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 6,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                          ),
-                                          onPressed: _actionLoading
-                                              ? null
-                                              : () => _rejectPayment(tx['tx_id'] ?? tx['id']),
-                                          child: const Text(
-                                            'Reject',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                      ],
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.receipt_long_rounded,
-                                          size: 18,
-                                          color: _kOrange,
-                                        ),
-                                        tooltip: 'View Invoice Details',
-                                        onPressed: () => _showDetailModal(
-                                          Map<String, dynamic>.from(tx),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-
-          const SizedBox(height: 16),
-
-          // ── Pagination Bar ───────────────────────────────────────────────────
-          if (_total > 0)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      background: CubagColors.sand,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1080),
+          child: Padding(
+            padding: EdgeInsets.all(wide ? CubagSpace.xl : CubagSpace.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Showing ${((_page - 1) * 25) + 1}–${(_page * 25).clamp(0, _total)} of $_total transactions',
-                  style: TextStyle(color: subTextColor, fontSize: 15),
-                ),
-                Row(
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.end,
+                  runSpacing: CubagSpace.md,
+                  spacing: CubagSpace.md,
                   children: [
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: textColor,
-                        side: BorderSide(color: borderColor),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 560),
+                      child: const PageIntro(
+                        'Payments',
+                        subtitle: 'Check each slip against your bank or MoMo statement, then confirm or reject it.',
                       ),
-                      onPressed: _page > 1
-                          ? () => _fetch(page: _page - 1)
-                          : null,
-                      icon: const Icon(Icons.chevron_left_rounded, size: 18),
-                      label: const Text('Previous'),
                     ),
-                    const SizedBox(width: 10),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: textColor,
-                        side: BorderSide(color: borderColor),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: 'Refresh',
+                          onPressed: () => _fetch(refresh: true),
+                          icon: const Icon(Icons.refresh_rounded, color: CubagColors.inkSoft),
                         ),
-                      ),
-                      onPressed: _hasMore
-                          ? () => _fetch(page: _page + 1)
-                          : null,
-                      icon: const Icon(Icons.chevron_right_rounded, size: 18),
-                      label: const Text('Next'),
+                        const SizedBox(width: CubagSpace.xs),
+                        FilledButton.icon(
+                          onPressed: _showRecordCounterPaymentModal,
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: const Text('Record counter payment'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
+                const SizedBox(height: CubagSpace.lg),
+                _summary(revenue, pending, failed, wide),
+                const SizedBox(height: CubagSpace.lg),
+                _toolbar(wide),
+                const SizedBox(height: CubagSpace.md),
+                if (_loading)
+                  const Padding(
+                    padding: EdgeInsets.all(48),
+                    child: Center(child: CircularProgressIndicator(color: CubagColors.action)),
+                  )
+                else if (_hasError && _transactions.isEmpty)
+                  FetchErrorView(onRetry: () => _fetch(refresh: true))
+                else if (_transactions.isEmpty)
+                  _empty()
+                else
+                  Container(
+                    decoration: BoxDecoration(
+                      color: CubagColors.paper,
+                      borderRadius: BorderRadius.circular(CubagRadius.card),
+                      border: Border.all(color: CubagColors.line),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: [
+                        for (var i = 0; i < _transactions.length; i++) ...[
+                          if (i > 0) const Divider(height: 1, color: CubagColors.line),
+                          _row(Map<String, dynamic>.from(_transactions[i] as Map), wide),
+                        ],
+                      ],
+                    ),
+                  ),
+                if (!_loading && (_page > 1 || _hasMore)) ...[
+                  const SizedBox(height: CubagSpace.md),
+                  Row(
+                    children: [
+                      Text(
+                        _total > 0 ? 'Page $_page of ${(_total / 25).ceil()} · $_total payments' : 'Page $_page',
+                        style: CubagType.small,
+                      ),
+                      const Spacer(),
+                      OutlinedButton(
+                        onPressed: _page > 1 ? () => _fetch(page: _page - 1) : null,
+                        child: const Text('Previous'),
+                      ),
+                      const SizedBox(width: CubagSpace.sm),
+                      OutlinedButton(
+                        onPressed: _hasMore ? () => _fetch(page: _page + 1) : null,
+                        child: const Text('Next'),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
-          const SizedBox(height: 32),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _summary(double revenue, double pending, double failed, bool wide) {
+    Widget figure(String label, String value, {Color color = CubagColors.ink, VoidCallback? onTap}) {
+      return Expanded(
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: CubagSpace.md, vertical: CubagSpace.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: CubagType.small),
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(value, style: CubagType.title.copyWith(color: color)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: CubagColors.paper,
+        borderRadius: BorderRadius.circular(CubagRadius.card),
+        border: Border.all(color: CubagColors.line),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            figure('Received', _money(revenue)),
+            const VerticalDivider(width: 1, color: CubagColors.line),
+            figure(
+              'Waiting to verify',
+              _money(pending),
+              color: pending > 0 ? CubagColors.due : CubagColors.ink,
+              onTap: () => _setFilter('pending'),
+            ),
+            const VerticalDivider(width: 1, color: CubagColors.line),
+            figure('Rejected or failed', _money(failed), onTap: () => _setFilter('failed')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _setFilter(String value) {
+    if (_filterStatus == value) return;
+    setState(() {
+      _filterStatus = value;
+      _page = 1;
+    });
+    _fetch(refresh: true);
+  }
+
+  Widget _toolbar(bool wide) {
+    final tabs = SegmentedButton<String>(
+      showSelectedIcon: false,
+      segments: [for (final f in _filters) ButtonSegment(value: f.$1, label: Text(f.$2))],
+      selected: {_filterStatus == 'overdue' ? 'failed' : _filterStatus},
+      onSelectionChanged: (s) => _setFilter(s.first),
+      style: ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        backgroundColor: WidgetStateProperty.resolveWith(
+          (st) => st.contains(WidgetState.selected) ? CubagColors.ink : CubagColors.paper,
+        ),
+        foregroundColor: WidgetStateProperty.resolveWith(
+          (st) => st.contains(WidgetState.selected) ? Colors.white : CubagColors.inkSoft,
+        ),
+        side: const WidgetStatePropertyAll(BorderSide(color: CubagColors.line)),
+      ),
+    );
+    final search = TextField(
+      onChanged: _onSearchChanged,
+      decoration: InputDecoration(
+        hintText: 'Search by name, reference or purpose',
+        prefixIcon: const Icon(Icons.search_rounded, size: 20),
+        isDense: true,
+        filled: true,
+        fillColor: CubagColors.paper,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(CubagRadius.control),
+          borderSide: const BorderSide(color: CubagColors.line),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(CubagRadius.control),
+          borderSide: const BorderSide(color: CubagColors.line),
+        ),
+      ),
+    );
+    if (wide) {
+      return Row(children: [tabs, const SizedBox(width: CubagSpace.md), Expanded(child: search)]);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SingleChildScrollView(scrollDirection: Axis.horizontal, child: tabs),
+        const SizedBox(height: CubagSpace.sm),
+        search,
+      ],
+    );
+  }
+
+  Widget _empty() {
+    final (title, body) = switch (_filterStatus) {
+      'pending' => ('Nothing to verify', 'New bank and MoMo slips from members will appear here.'),
+      'paid' => ('No confirmed payments yet', 'Payments appear here once you confirm them.'),
+      'failed' => ('No rejected payments', 'Payments you reject, or that fail, appear here.'),
+      _ => ('No payments found', 'Try a different search.'),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: CubagSpace.lg),
+      decoration: BoxDecoration(
+        color: CubagColors.paper,
+        borderRadius: BorderRadius.circular(CubagRadius.card),
+        border: Border.all(color: CubagColors.line),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.check_circle_outline_rounded, size: 36, color: CubagColors.muted),
+          const SizedBox(height: CubagSpace.sm),
+          Text(title, style: CubagType.bodyStrong),
+          const SizedBox(height: 4),
+          Text(body, style: CubagType.small, textAlign: TextAlign.center),
         ],
       ),
     );
   }
 
-  Widget _filterChip(String label, String value) {
-    final isSelected = _filterStatus == value;
-    return FilterChip(
-      label: Text(
-        label,
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-          fontSize: 14,
-          color: isSelected ? _kOrange : null,
+  Widget _row(Map<String, dynamic> tx, bool wide) {
+    final id = tx['tx_id'] ?? tx['id'];
+    final rawStatus = tx['status']?.toString() ?? 'pending';
+    final (statusLabel, statusKind) = _statusOf(rawStatus);
+    final isPending = statusKind == StatusKind.pending;
+    final amount = double.tryParse(tx['amount']?.toString() ?? '0') ?? 0;
+    final member = tx['member_name']?.toString() ?? 'Member';
+    final purpose = (tx['description']?.toString() ?? '').trim();
+    final date = _shortDate(tx['date']?.toString() ?? tx['created_at']?.toString() ?? '');
+    final method = (tx['payment_method'] ?? 'momo').toString().toLowerCase();
+    final methodLabel = switch (method) {
+      'bank' || 'bank_transfer' || 'wire' => 'Bank transfer',
+      'cash' || 'counter' => 'Counter',
+      'card' => 'Card',
+      _ => 'MoMo',
+    };
+    final ref = [tx['momo_tx_id'], tx['payment_ref'], tx['ref_code']]
+        .map((v) => v?.toString().trim() ?? '')
+        .firstWhere((v) => v.isNotEmpty && v != 'null', orElse: () => '');
+    final receiptUrl = tx['receipt_url']?.toString();
+    final hasReceipt = receiptUrl != null && receiptUrl.isNotEmpty && receiptUrl != 'null';
+
+    final details = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(member, style: CubagType.bodyStrong, maxLines: 1, overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 2),
+        Text(
+          purpose.isEmpty ? 'Payment' : purpose,
+          style: CubagType.body.copyWith(color: CubagColors.inkSoft),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
-      ),
-      selected: isSelected,
-      selectedColor: _kOrange.withAlpha(30),
-      checkmarkColor: _kOrange,
-      onSelected: (_) {
-        setState(() {
-          _filterStatus = value;
-          _page = 1;
-        });
-        _fetch(refresh: true);
-      },
+        const SizedBox(height: 4),
+        Text(
+          [methodLabel, date, if (ref.isNotEmpty) 'Ref $ref'].join(' · '),
+          style: CubagType.small,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
+
+    final amountBlock = Column(
+      crossAxisAlignment: wide ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        Text(_money(amount), style: CubagType.bodyStrong.copyWith(fontSize: 16)),
+        const SizedBox(height: 4),
+        StatusChip(statusLabel, kind: statusKind),
+      ],
+    );
+
+    final actions = Wrap(
+      spacing: CubagSpace.sm,
+      runSpacing: CubagSpace.xs,
+      alignment: WrapAlignment.end,
+      children: [
+        if (hasReceipt)
+          TextButton.icon(
+            onPressed: () => _showReceiptDialog(receiptUrl, member, amount, date, txId: id, isPending: isPending),
+            icon: const Icon(Icons.receipt_long_outlined, size: 18),
+            label: const Text('View slip'),
+          ),
+        if (isPending) ...[
+          OutlinedButton(
+            onPressed: _actionLoading ? null : () => _confirmReject(id, member),
+            style: OutlinedButton.styleFrom(foregroundColor: CubagColors.lapsed),
+            child: const Text('Reject'),
+          ),
+          FilledButton(
+            onPressed: _actionLoading
+                ? null
+                : () => _showConfirmDialog(
+                      id,
+                      amount,
+                      member,
+                      receiptUrl: receiptUrl,
+                      method: method,
+                      notes: tx['notes']?.toString(),
+                    ),
+            child: const Text('Confirm'),
+          ),
+        ] else
+          TextButton(onPressed: () => _showDetailModal(tx), child: const Text('Details')),
+      ],
+    );
+
+    return InkWell(
+      onTap: () => _showDetailModal(tx),
+      child: Padding(
+        padding: const EdgeInsets.all(CubagSpace.md),
+        child: wide
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(child: details),
+                  const SizedBox(width: CubagSpace.md),
+                  amountBlock,
+                  const SizedBox(width: CubagSpace.lg),
+                  ConstrainedBox(constraints: const BoxConstraints(minWidth: 220), child: actions),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: details),
+                      const SizedBox(width: CubagSpace.sm),
+                      amountBlock,
+                    ],
+                  ),
+                  const SizedBox(height: CubagSpace.sm),
+                  Align(alignment: Alignment.centerRight, child: actions),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Future<void> _confirmReject(dynamic id, String member) async {
+    final reason = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reject this payment?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('$member will be told the payment was not accepted.', style: CubagType.body),
+            const SizedBox(height: CubagSpace.md),
+            TextField(
+              controller: reason,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Reason (shown to the member)',
+                hintText: 'e.g. Amount on slip does not match',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: CubagColors.lapsed),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Reject payment'),
+          ),
+        ],
+      ),
+    );
+    final text = reason.text.trim();
+    reason.dispose();
+    if (ok == true) await _rejectPayment(id, reason: text.isEmpty ? null : text);
   }
 }
 

@@ -309,6 +309,9 @@ def init_db():
                 ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_ref VARCHAR(255);
                 -- SEC-20: which official fee a payment is for (pay by fee key).
                 ALTER TABLE payments ADD COLUMN IF NOT EXISTS fee_key VARCHAR(100);
+                -- MoMo transaction id: read by the admin payments list and documents
+                -- views; was only ever created by hand, so fresh databases lacked it.
+                ALTER TABLE payments ADD COLUMN IF NOT EXISTS momo_tx_id VARCHAR(100);
                 ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50) DEFAULT 'momo';
                 ALTER TABLE payments ADD COLUMN IF NOT EXISTS receipt_url TEXT;
                 ALTER TABLE payments ADD COLUMN IF NOT EXISTS bank_name VARCHAR(100);
