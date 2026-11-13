@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import '../components/cubag_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -21,7 +22,6 @@ import '../design/cubag_design.dart';
 // Balanced CUBAG Brand Palette
 const _kBrown = Color(0xFF6B3E26); // Primary Brown
 const _kOrange = CubagColors.action; // Primary Orange CTA
-const _kDarkBrown = Color(0xFF3E2418); // Deep Dark Contrast
 const _kCream = CubagColors.sand; // Light Background Cream
 const _kWhite = Color(0xFFFFFFFF); // White Surfaces
 const _kText = CubagColors.ink; // Deep Body Text
@@ -46,28 +46,28 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
 
   final Map<String, Map<String, dynamic>> _statusConfigs = {
     'paid': {
-      'label': 'PAID & VERIFIED',
+      'label': 'Paid',
       'color': Color(0xFF059669),
       'bg': Color(0xFFECFDF5),
       'border': Color(0xFFA7F3D0),
       'icon': Icons.check_circle_rounded,
     },
     'pending': {
-      'label': 'PENDING APPROVAL',
+      'label': 'Waiting for approval',
       'color': CubagColors.due,
       'bg': CubagColors.dueTint,
       'border': Color(0xFFFDE68A),
       'icon': Icons.hourglass_top_rounded,
     },
     'failed': {
-      'label': 'FAILED',
+      'label': 'Failed',
       'color': CubagColors.lapsed,
       'bg': CubagColors.lapsedTint,
       'border': Color(0xFFFECACA),
       'icon': Icons.cancel_rounded,
     },
     'overdue': {
-      'label': 'OVERDUE',
+      'label': 'Overdue',
       'color': CubagColors.lapsed,
       'bg': CubagColors.lapsedTint,
       'border': Color(0xFFFECACA),
@@ -118,7 +118,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     });
   }
 
-  String _fmt(double n) => n.toStringAsFixed(2);
+  String _fmt(double n) => n.toStringAsFixed(2).replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d)\.)'), (_) => ',');
 
   Future<Uint8List> _generateQrCodeImage(String data) async {
     try {
@@ -453,9 +453,22 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     );
   }
 
+  /// ISO-8601, or the HTTP-date form Flask uses ("Wed, 11 Nov 2026 15:55:10 GMT").
+  static DateTime? _parseDate(String raw) {
+    final iso = DateTime.tryParse(raw);
+    if (iso != null) return iso;
+    final m = RegExp(r'(\d{1,2}) ([A-Za-z]{3}) (\d{4}) (\d{2}):(\d{2}):(\d{2})').firstMatch(raw);
+    if (m == null) return null;
+    const mon = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    final mi = mon.indexOf(m.group(2)!.toLowerCase());
+    if (mi < 0) return null;
+    return DateTime.utc(int.parse(m.group(3)!), mi + 1, int.parse(m.group(1)!), int.parse(m.group(4)!),
+        int.parse(m.group(5)!), int.parse(m.group(6)!));
+  }
+
   String _formatDateTime(dynamic rawDate) {
     if (rawDate == null) return '—';
-    final dt = DateTime.tryParse(rawDate.toString())?.toLocal();
+    final dt = _parseDate(rawDate.toString())?.toLocal();
     if (dt == null) return rawDate.toString();
 
     final months = [
@@ -475,7 +488,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
     final period = dt.hour >= 12 ? 'PM' : 'AM';
     final min = dt.minute.toString().padLeft(2, '0');
-    return '${dt.day.toString().padLeft(2, '0')} ${months[dt.month - 1]} ${dt.year} • $hour:$min $period';
+    return '${dt.day} ${months[dt.month - 1]} ${dt.year}, $hour:$min $period';
   }
 
   void _showReceiptDialog(BuildContext context, Map<String, dynamic> payment) {
@@ -1075,200 +1088,71 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── 1. Financial Ledger Banner ──────────────────────────────────
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [_kBrown, _kDarkBrown],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: borderCol, width: 1.0),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _kOrange.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color: _kOrange.withValues(alpha: 0.4),
-                                    width: 1.0,
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Official financial statement',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                'Member Dues & Payment Ledger',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: isDesktop ? 22 : 18,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Track verified association dues, practice license renewals, and official treasury receipts.',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  fontSize: 13.5,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: _fetch,
-                          tooltip: 'Refresh Statement',
-                          icon: _loading
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(
-                                  Icons.refresh_rounded,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: () => context.go('/payments'),
-                          icon: const Icon(Icons.payment_rounded, size: 15),
-                          label: const Text('Make a Payment / Settle Dues'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _kOrange,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            textStyle: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13.5,
-                            ),
-                          ),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: () => context.go('/membership-services'),
-                          icon: const Icon(Icons.badge_outlined, size: 15),
-                          label: const Text('View Digital License Card'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.6),
-                              width: 1.0,
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            textStyle: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // ── 2. KPI Summary Grid ─────────────────────────────────────────
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: isDesktop ? 4 : (isTablet ? 2 : 2),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: isDesktop ? 1.9 : (isTablet ? 1.6 : 1.35),
+              // ── Heading and actions ────────────────────────────────────────
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.end,
+                spacing: CubagSpace.md,
+                runSpacing: CubagSpace.md,
                 children: [
-                  _kpiCard(
-                    icon: Icons.verified_rounded,
-                    color: const Color(0xFF059669),
-                    bg: isDark
-                        ? const Color(0xFF059669).withAlpha(35)
-                        : const Color(0xFFECFDF5),
-                    label: 'PAID',
-                    value: 'GH₵ ${_fmt(paidTotal)}',
-                    isDark: isDark,
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 520),
+                    child: const PageIntro(
+                      'Payment history',
+                      subtitle: 'Every payment you have made to CUBAG, with receipts.',
+                    ),
                   ),
-                  _kpiCard(
-                    icon: Icons.hourglass_top_rounded,
-                    color: _kOrange,
-                    bg: _kOrange.withAlpha(isDark ? 35 : 20),
-                    label: 'PENDING',
-                    value: 'GH₵ ${_fmt(pendingTotal)}',
-                    isDark: isDark,
-                  ),
-                  _kpiCard(
-                    icon: Icons.cancel_rounded,
-                    color: CubagColors.lapsed,
-                    bg: isDark
-                        ? CubagColors.lapsed.withAlpha(35)
-                        : CubagColors.lapsedTint,
-                    label: 'FAILED',
-                    value: 'GH₵ ${_fmt(failedTotal)}',
-                    isDark: isDark,
-                  ),
-                  _kpiCard(
-                    icon: Icons.receipt_long_rounded,
-                    color: isDark ? _kOrange : _kBrown,
-                    bg: isDark ? _kOrange.withAlpha(35) : _kCream,
-                    label: 'TRANSACTION',
-                    value: '$totalCount Txns',
-                    isDark: isDark,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: _fetch,
+                        tooltip: 'Refresh',
+                        icon: const Icon(Icons.refresh_rounded, color: CubagColors.inkSoft),
+                      ),
+                      const SizedBox(width: CubagSpace.xs),
+                      FilledButton(
+                        onPressed: () => context.go('/payments'),
+                        child: const Text('Make a payment'),
+                      ),
+                    ],
                   ),
                 ],
               ),
+              const SizedBox(height: CubagSpace.lg),
 
-              const SizedBox(height: 28),
+              // ── Summary: one quiet strip instead of four boxes ─────────────
+              Container(
+                decoration: BoxDecoration(
+                  color: CubagColors.paper,
+                  borderRadius: BorderRadius.circular(CubagRadius.card),
+                  border: Border.all(color: CubagColors.line),
+                ),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _summaryFigure('Paid', 'GH₵ ${_fmt(paidTotal)}', CubagColors.ink),
+                      const VerticalDivider(width: 1, color: CubagColors.line),
+                      _summaryFigure(
+                        'Waiting for approval',
+                        'GH₵ ${_fmt(pendingTotal)}',
+                        pendingTotal > 0 ? CubagColors.due : CubagColors.ink,
+                      ),
+                      if (failedTotal > 0) ...[
+                        const VerticalDivider(width: 1, color: CubagColors.line),
+                        _summaryFigure('Failed', 'GH₵ ${_fmt(failedTotal)}', CubagColors.lapsed),
+                      ],
+                      if (isTablet || isDesktop) ...[
+                        const VerticalDivider(width: 1, color: CubagColors.line),
+                        _summaryFigure('Payments', '$totalCount', CubagColors.ink),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: CubagSpace.lg),
 
               // ── 3. Search and Category Filter Toolbar ──────────────────────
               Container(
@@ -1894,80 +1778,22 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     );
   }
 
-  Widget _kpiCard({
-    required IconData icon,
-    required Color color,
-    required Color bg,
-    required String label,
-    required String value,
-    bool isDark = false,
-  }) {
-    final borderCol = isDark ? const Color(0xFF3D261C) : _kBorder;
-    final cardColor = isDark ? const Color(0xFF1E130D) : _kWhite;
-    final textColor = isDark ? const Color(0xFFFFF8F3) : _kText;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: cardColor,
-        border: Border.all(color: borderCol, width: 1.0),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: bg,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Icon(icon, color: color, size: 17),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: bg,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: color.withValues(alpha: 0.3), width: 1.0),
-                ),
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: color,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: Align(
+  Widget _summaryFigure(String label, String value, Color color) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.all(CubagSpace.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: CubagType.small, maxLines: 1, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
-                    color: textColor,
-                    letterSpacing: -0.3,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ),
+              child: Text(value, style: CubagType.title.copyWith(color: color)),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

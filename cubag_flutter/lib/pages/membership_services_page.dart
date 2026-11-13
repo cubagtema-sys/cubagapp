@@ -247,6 +247,36 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
     if (mounted) setState(() => _loadingFees = false);
   }
 
+  /// "GH₵ 1,620.00" from a number or numeric string.
+  String _ghs(Object? v) {
+    final n = v is num ? v.toDouble() : double.tryParse(v?.toString().replaceAll(',', '') ?? '') ?? 0;
+    final parts = n.toStringAsFixed(2).split('.');
+    final whole = parts[0].replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+    return 'GH₵ $whole.${parts[1]}';
+  }
+
+  /// Server titles arrive in capitals ("CLEARING & FORWARDING ONLY (SMEs)").
+  String _sentence(String t) {
+    if (t.isEmpty || t != t.toUpperCase().replaceAll('SMES', 'SMEs')) return t;
+    final keep = {'SMEs', 'SME', 'CUBAG', 'CTI', 'CPD'};
+    var first = true;
+    return t.split(' ').map((w) {
+      final bare = w.replaceAll(RegExp(r'[^A-Za-z]'), '');
+      if (keep.contains(bare) || bare.isEmpty) return w;
+      final out = first ? w[0] + w.substring(1).toLowerCase() : w.toLowerCase();
+      first = false;
+      return out;
+    }).join(' ');
+  }
+
+  /// Show line items only when they add up to the total; otherwise the
+  /// total alone (unset fees used to show GH₵ 0.00 lines under a real total).
+  List<Map<String, dynamic>> _itemsMatchingTotal(List<Map<String, dynamic>> items, String total) {
+    final t = double.tryParse(total.replaceAll(',', '')) ?? 0;
+    final sum = items.fold<double>(0, (a, i) => a + (double.tryParse(i['amount']?.toString().replaceAll(',', '') ?? '') ?? 0));
+    return (sum - t).abs() < 0.01 ? items : const [];
+  }
+
   String _formatScale(String? scale) {
     final s = (scale ?? '').toLowerCase();
     if (s.contains('large') || s.contains('corporate')) {
@@ -360,14 +390,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── 1. Digital Membership & Profile Card ──────────────────────
-              Text(
-                'Digital membership credential',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: _kBrown,
-                ),
-              ),
+              Text('Your membership card', style: CubagType.title),
               const SizedBox(height: 12),
 
               LayoutBuilder(
@@ -421,8 +444,8 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                     const SizedBox(width: 6),
                                     Text(
                                       isGoodStanding
-                                          ? 'ACTIVE IN GOOD STANDING'
-                                          : (_loadingFees ? 'CHECKING STATUS...' : 'PENDING PACKAGE SETTLEMENT'),
+                                          ? 'Active, in good standing'
+                                          : (_loadingFees ? 'Checking status…' : 'Membership dues not yet paid'),
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 11.5,
@@ -544,7 +567,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Official QR verification',
+                                          'Verification code',
                                           style: TextStyle(
                                             color: AppColors.accentOrangeText,
                                             fontSize: 12,
@@ -553,7 +576,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
-                                          'Scan to verify member credentials and status in live directory',
+                                          'Anyone can scan this to confirm your membership is valid.',
                                           style: TextStyle(
                                             color: Colors.white.withAlpha(200),
                                             fontSize: 13,
@@ -606,8 +629,8 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                           const SizedBox(width: 6),
                                           Text(
                                             isGoodStanding
-                                                ? 'ACTIVE IN GOOD STANDING'
-                                                : (_loadingFees ? 'CHECKING STATUS...' : 'PENDING PACKAGE SETTLEMENT'),
+                                                ? 'Active, in good standing'
+                                                : (_loadingFees ? 'Checking status…' : 'Membership dues not yet paid'),
                                             style: TextStyle(
                                               color: Colors.white,
                                               fontSize: 11.5,
@@ -746,14 +769,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
               const SizedBox(height: 32),
 
               // ── 2. Registered Services & Dues Breakdown ───────────────────
-              Text(
-                'Registered services & dues breakdown',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: _kBrown,
-                ),
-              ),
+              Text('Fees and dues', style: CubagType.title),
               const SizedBox(height: 12),
 
               if (_loadingFees)
@@ -783,7 +799,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                           children: [
                             Expanded(
                               child: Text(
-                                '1. Registration fee (one-time)',
+                                'Registration fee',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -805,7 +821,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                _isRegFeePaid ? 'PAID IN FULL' : 'PENDING PAYMENT',
+                                _isRegFeePaid ? 'Paid' : 'Not yet paid',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w900,
@@ -819,7 +835,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Paid separately upon registration before statutory documents are vetted.',
+                          'Paid once, when you apply, before your documents are checked.',
                           style: TextStyle(
                             fontSize: 14,
                             color: subTextColor,
@@ -836,7 +852,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  'Registration Form Fee',
+                                  'Registration form',
                                   style: TextStyle(
                                     fontSize: 15,
                                     color: textColor,
@@ -845,7 +861,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'GHS $_registrationFeeAmount',
+                                _ghs(_registrationFeeAmount),
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -862,7 +878,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Total:',
+                              'Total',
                               style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.bold,
@@ -870,7 +886,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               ),
                             ),
                             Text(
-                              'GHS $_registrationFeeAmount',
+                              _ghs(_registrationFeeAmount),
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
@@ -905,7 +921,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                           children: [
                             Expanded(
                               child: Text(
-                                '2. NEW MEMBERSHIP DUES: ${_packageTitle.toUpperCase()}',
+                                'New membership dues',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -927,7 +943,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                _isPackageFeePaid ? 'PAID IN FULL' : 'PENDING SETTLEMENT',
+                                _isPackageFeePaid ? 'Paid' : 'Not yet paid',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w900,
@@ -941,7 +957,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Specific entrance package breakdown for your registered company classification and scope.',
+                          'One-time package for ${_sentence(_packageTitle)}.',
                           style: TextStyle(
                             fontSize: 14,
                             color: subTextColor,
@@ -951,7 +967,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                         const SizedBox(height: 16),
                         const Divider(height: 1),
                         const SizedBox(height: 8),
-                        ..._packageBreakdown.map((item) {
+                        ..._itemsMatchingTotal(_packageBreakdown, _packageTotal).map((item) {
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 6),
                             child: Row(
@@ -965,7 +981,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                   ),
                                 ),
                                 Text(
-                                  'GHS ${item['amount']?.toString() ?? ''}',
+                                  _ghs(item['amount']?.toString() ?? ''),
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -983,7 +999,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Total:',
+                              'Total',
                               style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.bold,
@@ -991,7 +1007,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               ),
                             ),
                             Text(
-                              'GHS $_packageTotal',
+                              _ghs(_packageTotal),
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
@@ -1015,7 +1031,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               ),
                               onPressed: () => context.go('/payments?fee=New Membership Dues'),
                               icon: const Icon(Icons.payment_rounded, size: 16),
-                              label: const Text('Pay New Membership Dues'),
+                              label: const Text('Pay membership dues'),
                             ),
                           ),
                         ],
@@ -1049,9 +1065,9 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                 showRenewalFigures
                                     ? (_stripMembershipCategories(_renewalTitle).isNotEmpty &&
                                             !_stripMembershipCategories(_renewalTitle).toLowerCase().contains('annual renewal dues')
-                                        ? '3. ANNUAL RENEWAL DUES: ${_stripMembershipCategories(_renewalTitle).toUpperCase()}'
-                                        : '3. ANNUAL RENEWAL DUES')
-                                    : '3. ANNUAL RENEWAL DUES',
+                                        ? 'Annual renewal: ${_sentence(_stripMembershipCategories(_renewalTitle))}'
+                                        : 'Annual renewal')
+                                    : 'Annual renewal',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -1084,20 +1100,20 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                               ),
                               child: Text(
                                 isRenewalPaid
-                                    ? 'PAID & ACTIVE'
+                                    ? 'Paid'
                                     : (_isPartiallyPaid
-                                        ? 'PARTIALLY PAID • GHS ${_renewalBalanceDue.toStringAsFixed(2)} DUE'
+                                        ? 'Part paid · ${_ghs(_renewalBalanceDue)} left'
                                         : (hasCalculatedRenewalBill
-                                            ? 'OFFICIAL BILL ISSUED'
+                                            ? 'Bill issued'
                                             : (isUnderReview
-                                                ? 'UNDER VETTING'
+                                                ? 'Being reviewed'
                                                 : (isRevision
-                                                    ? 'REVISION REQUIRED'
+                                                    ? 'Changes needed'
                                                     : (isRenewalExpired
-                                                        ? 'RENEWAL OVERDUE'
+                                                        ? 'Overdue'
                                                         : (isRenewalDueSoon
-                                                            ? 'DUE IN $daysLeft DAYS'
-                                                            : 'ASSESSMENT PENDING')))))),
+                                                            ? 'Due in $daysLeft days'
+                                                            : 'Not yet billed')))))),
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w900,
@@ -1273,7 +1289,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'GHS ${item['amount']?.toString() ?? ''}',
+                                    _ghs(item['amount']?.toString() ?? ''),
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -1291,7 +1307,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Total:',
+                                'Total',
                                 style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.bold,
@@ -1299,7 +1315,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                 ),
                               ),
                               Text(
-                                'GHS $_renewalTotal',
+                                _ghs(_renewalTotal),
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w900,
@@ -1362,7 +1378,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                   onPressed: null,
                                   icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
                                   label: Text(
-                                    'Pay Annual Renewal Dues',
+                                    'Pay renewal dues',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15,
@@ -1389,7 +1405,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
-                                          'Installment Plan Active',
+                                          'Paying in instalments',
                                           style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
@@ -1435,7 +1451,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         children: [
                                           Text('Total billed', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: subTextColor)),
                                           const SizedBox(height: 2),
-                                          Text('GHS $_renewalTotal', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textColor)),
+                                          Text(_ghs(_renewalTotal), style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textColor)),
                                         ],
                                       ),
                                       Column(
@@ -1443,7 +1459,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         children: [
                                           Text('Paid to date', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: const Color(0xFF059669))),
                                           const SizedBox(height: 2),
-                                          Text('GHS ${_renewalAmountPaid.toStringAsFixed(2)}', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF059669))),
+                                          Text(_ghs(_renewalAmountPaid.toStringAsFixed(2)), style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF059669))),
                                         ],
                                       ),
                                       Column(
@@ -1451,7 +1467,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         children: [
                                           Text('Balance due', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: CubagColors.due)),
                                           const SizedBox(height: 2),
-                                          Text('GHS ${_renewalBalanceDue.toStringAsFixed(2)}', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: CubagColors.due)),
+                                          Text(_ghs(_renewalBalanceDue.toStringAsFixed(2)), style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: CubagColors.due)),
                                         ],
                                       ),
                                     ],
@@ -1477,7 +1493,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                       const Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF059669)),
                                       const SizedBox(width: 6),
                                       Text(
-                                        'Installment: GHS ${iAmt.toStringAsFixed(2)} ($iDate)',
+                                        'Instalment: ${_ghs(iAmt)} ($iDate)',
                                         style: TextStyle(fontSize: 12, color: textColor),
                                       ),
                                       const Spacer(),
@@ -1508,7 +1524,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                 },
                                 icon: const Icon(Icons.payment_rounded, size: 18),
                                 label: Text(
-                                  'Pay Next Installment / Balance (GHS ${_renewalBalanceDue.toStringAsFixed(2)})',
+                                  'Pay balance (${_ghs(_renewalBalanceDue)})',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
@@ -1532,8 +1548,8 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                   Expanded(
                                     child: Text(
                                       _allowInstallments
-                                          ? 'Official bill of GHS $_renewalTotal issued • Pay in full or in installments${_minInstallmentAmount > 0 ? " (Min: GHS ${_minInstallmentAmount.toStringAsFixed(2)})" : ""}'
-                                          : 'Official renewal bill issued • Payment of GHS $_renewalTotal is due',
+                                          ? 'Your bill of ${_ghs(_renewalTotal)} is ready. Pay in full or in instalments${_minInstallmentAmount > 0 ? " (minimum ${_ghs(_minInstallmentAmount)})" : ""}.'
+                                          : 'Your renewal bill of ${_ghs(_renewalTotal)} is ready to pay.',
                                       style: TextStyle(
                                         fontSize: 13.5,
                                         fontWeight: FontWeight.w600,
@@ -1562,7 +1578,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                 },
                                 icon: const Icon(Icons.payment_rounded, size: 18),
                                 label: Text(
-                                  _allowInstallments ? 'Pay Renewal Dues (Full or Part-Payment)' : 'Pay Annual Renewal Dues',
+                                  _allowInstallments ? 'Pay Renewal Dues (Full or Part-Payment)' : 'Pay renewal dues',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
@@ -1586,7 +1602,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        'Membership expired on ${_formatDate(expiry)} • Please renew to restore active standing',
+                                        'Your membership expired on ${_formatDate(expiry)}. Renew to become active again.',
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
@@ -1612,7 +1628,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        'Annual renewal window open ($daysLeft days left) • Renews for 365 days preserving remaining days',
+                                        'Renewal is open: $daysLeft days left. Renewing early keeps your remaining days.',
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
@@ -1638,7 +1654,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        'Statutory renewal documents must be submitted and vetted by the Secretariat before renewal dues can be settled. The Secretariat will calculate and issue your official renewal bill upon document approval.',
+                                        'First submit your renewal documents. Once the Secretariat approves them, it issues your renewal bill here.',
                                         style: TextStyle(
                                           fontSize: 13.5,
                                           fontWeight: FontWeight.w600,
@@ -1669,7 +1685,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                   onPressed: null,
                                   icon: const Icon(Icons.lock_outline_rounded, size: 18),
                                   label: Text(
-                                    'Pay Annual Renewal Dues (Documents Required)',
+                                    'Pay renewal dues (submit documents first)',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14.5,
@@ -1695,7 +1711,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                 onPressed: () => context.go('/compliance'),
                                 icon: const Icon(Icons.upload_file_rounded, size: 18),
                                 label: Text(
-                                  'Submit Renewal Documents (Step 1)',
+                                  'Submit renewal documents',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
@@ -1719,7 +1735,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                 child: OutlinedButton.icon(
                   onPressed: () => context.go('/compliance'),
                   icon: const Icon(Icons.folder_shared_outlined, size: 20),
-                  label: const Text('Manage Compliance & Documents'),
+                  label: const Text('Compliance and documents'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: _kBrown,
                     side: const BorderSide(color: _kBrown, width: 1.5),
