@@ -445,15 +445,15 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
     final displaySubAdmins = _filteredSubAdmins;
 
     return AppLayout(
-      title: 'Sub-Admins & Permissions',
+      title: 'Admins',
       scrollable: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AdminHeader(
-            title: 'Sub-Administrators & RBAC Access',
+            title: 'Admins',
             subtitle:
-                'Manage delegated administrative accounts, assign operational module scopes, and configure RBAC permissions.',
+                'Staff who help run CUBAG, and which sections each one can use.',
             actions: [
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
@@ -478,7 +478,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                 ),
                 icon: const Icon(Icons.person_add_rounded, size: 18),
                 label: Text(
-                  'Add Sub-Admin',
+                  'Add admin',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
@@ -494,7 +494,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
             children: [
               Expanded(
                 child: AdminStatCard(
-                  label: 'Total Sub-Admins',
+                  label: 'Total',
                   value: totalSubAdmins.toString(),
                   icon: Icons.admin_panel_settings_rounded,
                   color: kAdminBlue,
@@ -503,7 +503,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: AdminStatCard(
-                  label: 'Full Access Admins',
+                  label: 'Full access',
                   value: fullAccessCount.toString(),
                   icon: Icons.verified_user_rounded,
                   color: kAdminGreen,
@@ -512,7 +512,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: AdminStatCard(
-                  label: 'Scoped Officers',
+                  label: 'Limited access',
                   value: scopedCount.toString(),
                   icon: Icons.tune_rounded,
                   color: kAdminPurple,
@@ -522,7 +522,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
           ),
           // ── Search & Filter Controls ─────────────────────────────────────────
           AdminToolbar(
-            searchHint: 'Search sub-admin by name, email, or module...',
+            searchHint: 'Search admins',
             onSearchChanged: (v) => setState(() => _searchQuery = v),
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
@@ -548,7 +548,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                     color: textCol,
                   ),
                   items: const [
-                    DropdownMenuItem(value: 'all', child: Text('All Roles')),
+                    DropdownMenuItem(value: 'all', child: Text('All roles')),
                     DropdownMenuItem(
                       value: 'compliance',
                       child: Text('Compliance'),
@@ -603,7 +603,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'No sub-admin accounts match your filter.',
+                    'No admins found',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
@@ -612,7 +612,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Click "Add Sub-Admin" to delegate platform module responsibilities.',
+                    'Use Add admin to give a staff member access to some or all sections.',
                     style: TextStyle(fontSize: 15, color: subTextCol),
                   ),
                 ],

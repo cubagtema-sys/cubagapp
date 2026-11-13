@@ -647,15 +647,15 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
 
     List<Map<String, dynamic>> activeList = [];
     Color activeThemeColor = _kOrange;
-    String activeTitle = 'New Company Registration Tariffs';
+    String activeTitle = 'New registration';
 
     if (_selectedCategory == 'new_reg') {
       activeThemeColor = _kOrange;
-      activeTitle = 'New Company Registration Fees (Onboarding Only)';
+      activeTitle = 'New registration';
       activeList = newRegFees;
     } else if (_selectedCategory == 'national') {
       activeThemeColor = _kBlue;
-      activeTitle = 'Annual Renewal: National Fees (Statutory Charges)';
+      activeTitle = 'National renewal';
       if (_subFilter == 'small') {
         activeList = nationalFees.where((f) => (f['target_scale'] ?? '') == 'small' || f['label'].toString().toLowerCase().contains('small')).toList();
       } else if (_subFilter == 'large') {
@@ -667,22 +667,22 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
       }
     } else if (_selectedCategory == 'district') {
       activeThemeColor = _kGreen;
-      activeTitle = 'Annual Renewal: District Section (Clearance & Dues)';
+      activeTitle = 'District renewal';
       activeList = districtFees;
     } else if (_selectedCategory == 'variable') {
       activeThemeColor = _kPurple;
-      activeTitle = 'Variable & Optional Add-On Fees (Preloaded)';
+      activeTitle = 'Add-ons';
       activeList = variableFees;
     } else {
       activeThemeColor = _kBrown;
-      activeTitle = 'Master Fee Schedule (All Items)';
+      activeTitle = 'All fees';
       activeList = _fees;
     }
 
     final filteredDisplayList = _filterList(activeList);
 
     return AppLayout(
-      title: 'Platform Fees & Tariff Schedule',
+      title: 'Fees',
       scrollable: true,
       child: Container(
         color: bg,
@@ -692,8 +692,8 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
           children: [
             // ── TOP EXECUTIVE HEADER ─────────────────────────────────────────
             AdminHeader(
-              title: 'Platform Fees & Tariff Schedule',
-              subtitle: 'Manage official fee tariffs, Whitsun Pay settlement accounts, and dynamic annual renewal schedules.',
+              title: 'Fees',
+              subtitle: 'Set what members pay to register and renew, and which account each fee goes to.',
               actions: [
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
@@ -707,7 +707,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _kOrange))
                       : const Icon(Icons.cloud_upload_rounded, size: 18),
                   label: Text(
-                    _saving ? 'Publishing...' : 'Save & Publish Schedule',
+                    _saving ? 'Saving…' : 'Save and publish',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ),
@@ -735,40 +735,14 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                           fontSize: 13,
                           color: isDark ? Colors.white70 : const Color(0xFF6B5E55),
                         ),
-                        children: [
-                          const TextSpan(
-                            text: 'Whitsun Pay Multi-Account Settlement: ',
+                        children: const [
+                          TextSpan(
+                            text: 'One payment, several accounts. ',
                             style: TextStyle(fontWeight: FontWeight.bold, color: _kBlue),
                           ),
-                          const TextSpan(
-                            text: 'Members pay their total assessment in one seamless MoMo transaction. Based on the item categories below, collected funds automatically route and settle to their designated accounts (Zenith Bank ',
+                          TextSpan(
+                            text: 'Members pay their total in one MoMo payment; each fee below is settled into the account shown next to it.',
                           ),
-                          const TextSpan(
-                            text: '6010309212',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          const TextSpan(
-                            text: ', GCB ',
-                          ),
-                          const TextSpan(
-                            text: '107113005326',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          const TextSpan(
-                            text: ', Ecobank ',
-                          ),
-                          const TextSpan(
-                            text: '1441002452360',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          const TextSpan(
-                            text: ', NIB ',
-                          ),
-                          const TextSpan(
-                            text: '1110045585101',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          const TextSpan(text: ').'),
                         ],
                       ),
                     ),
@@ -802,7 +776,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
 
             // ── CATEGORY KPI CARDS ───────────────────────────────────────────
             Text(
-              'Fee schedule sections',
+              'Sections',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.8),
             ),
             const SizedBox(height: 10),
@@ -821,8 +795,8 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                   children: [
                     _buildCategoryKpiCard(
                       key: 'new_reg',
-                      title: 'New Registration',
-                      subtitle: 'Onboarding Tariffs (${newRegFees.length} Items)',
+                      title: 'New registration',
+                      subtitle: '${newRegFees.length} fees',
                       itemCount: newRegFees.length,
                       color: _kOrange,
                       icon: Icons.person_add_alt_1_rounded,
@@ -835,8 +809,8 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                     ),
                     _buildCategoryKpiCard(
                       key: 'national',
-                      title: 'National Renewal',
-                      subtitle: 'Statutory Charges (${nationalFees.length} Items)',
+                      title: 'National renewal',
+                      subtitle: '${nationalFees.length} fees',
                       itemCount: nationalFees.length,
                       color: _kBlue,
                       icon: Icons.shield_rounded,
@@ -849,8 +823,8 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                     ),
                     _buildCategoryKpiCard(
                       key: 'district',
-                      title: 'District Renewal',
-                      subtitle: 'Clearance & Dues (${districtFees.length} Items)',
+                      title: 'District renewal',
+                      subtitle: '${districtFees.length} fees',
                       itemCount: districtFees.length,
                       color: _kGreen,
                       icon: Icons.location_city_rounded,
@@ -863,8 +837,8 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                     ),
                     _buildCategoryKpiCard(
                       key: 'variable',
-                      title: 'Variable & Add-Ons',
-                      subtitle: 'Preloaded Add-Ons (${variableFees.length} Items)',
+                      title: 'Add-ons',
+                      subtitle: '${variableFees.length} fees',
                       itemCount: variableFees.length,
                       color: _kPurple,
                       icon: Icons.tune_rounded,
@@ -877,7 +851,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                     ),
                     _buildCategoryKpiCard(
                       key: 'settlement',
-                      title: 'Settlement Accounts',
+                      title: 'Accounts',
                       subtitle: 'Zenith, GCB, Ecobank, NIB',
                       itemCount: 4,
                       color: _kTeal,
@@ -968,7 +942,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
                           icon: const Icon(Icons.add_rounded, size: 16),
-                          label: Text('Add Fee Item', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                          label: Text('Add fee', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
@@ -991,7 +965,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                               onChanged: _onSearchChanged,
                               style: TextStyle(fontSize: 14, color: textPrimary),
                               decoration: InputDecoration(
-                                hintText: 'Search tariff by fee name, bank, or account number...',
+                                hintText: 'Search fees or accounts',
                                 hintStyle: TextStyle(fontSize: 13, color: textMuted),
                                 prefixIcon: Icon(Icons.search_rounded, size: 16, color: textMuted),
                                 border: InputBorder.none,
@@ -1002,7 +976,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Showing ${filteredDisplayList.length} tariffs',
+                          '${filteredDisplayList.length} fees',
                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textMuted),
                         ),
                       ],
@@ -1351,9 +1325,9 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                 headingRowColor: WidgetStateProperty.all(isDark ? const Color(0xFF22140E) : const Color(0xFFFAF6F0)),
                 headingTextStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.5),
                 columns: const [
-                  DataColumn(label: Text('Scale / section')),
-                  DataColumn(label: Text('Tariff purpose / label')),
-                  DataColumn(label: Text('Whitsun settlement account')),
+                  DataColumn(label: Text('Section')),
+                  DataColumn(label: Text('Fee')),
+                  DataColumn(label: Text('Paid into')),
                   DataColumn(label: Text('Amount (GHS)')),
                   DataColumn(label: Text('Unit / freq')),
                   DataColumn(label: Text('Actions')),

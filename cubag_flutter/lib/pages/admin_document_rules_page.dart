@@ -312,7 +312,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
     const String catTitle = 'Corporate Members';
 
     return AppLayout(
-      title: 'Compliance & Document Rules',
+      title: 'Requirements',
       scrollable: false,
       child: Container(
         color: bg,
@@ -326,9 +326,9 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
               child: AdminHeader(
-                title: 'Compliance & Document Rules',
+                title: 'Requirements',
                 subtitle:
-                    'Configure mandatory and optional compliance certificates for New Onboarding and Annual Renewals across all membership classes.',
+                    'The documents members must upload when they apply and when they renew.',
                 actions: [
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
@@ -346,7 +346,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                     onPressed: () => _openAddEditDialog(),
                     icon: const Icon(Icons.add_rounded, size: 18),
                     label: Text(
-                      'Add Rule',
+                      'Add document',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
@@ -411,14 +411,14 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               _buildScopePill(
-                                'Complete Application',
+                                'New members',
                                 'new',
                                 Icons.assignment_rounded,
                                 _countFor(_selectedCategory, 'new'),
                               ),
                               const SizedBox(width: 4),
                               _buildScopePill(
-                                'Annual Renewal',
+                                'Renewals',
                                 'renewal',
                                 Icons.autorenew_rounded,
                                 _countFor(_selectedCategory, 'renewal'),
@@ -446,7 +446,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                               ),
                               decoration: InputDecoration(
                                 hintText:
-                                    'Search document title, key, or instructions...',
+                                    'Search documents',
                                 hintStyle: TextStyle(
                                   fontSize: 12,
                                   color: textMuted,
@@ -467,25 +467,27 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                       ],
                     ),
                     const SizedBox(height: 12),
-                    // Counter mini-badges & Bulk Toggle Actions
-                    Row(
+                    // Counter mini-badges & Bulk Toggle Actions (wraps on narrow
+                    // screens; the bulk button overflowed in a Row).
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         _buildCounterBadge(
-                          'Total Rules',
+                          'Total',
                           '$totalRules',
                           Icons.rule_folder_rounded,
                           _kIndigo,
                           isDark,
                         ),
-                        const SizedBox(width: 8),
                         _buildCounterBadge(
-                          'Mandatory',
+                          'Required',
                           '$mandatoryRules',
                           Icons.lock_rounded,
                           _kRed,
                           isDark,
                         ),
-                        const SizedBox(width: 8),
                         _buildCounterBadge(
                           'Optional',
                           '$optionalRules',
@@ -493,15 +495,13 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                           _kAmber,
                           isDark,
                         ),
-                        const SizedBox(width: 8),
                         _buildCounterBadge(
-                          'Active in Prod',
+                          'Active',
                           '$activeRules',
                           Icons.check_circle_outline_rounded,
                           _kGreen,
                           isDark,
                         ),
-                        const Spacer(),
                         if (totalRules > 0) ...[
                           if (activeRules > 0)
                             OutlinedButton.icon(
@@ -513,7 +513,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                               ),
                               onPressed: () => _bulkToggleCategory(false),
                               icon: const Icon(Icons.power_settings_new_rounded, size: 15, color: _kRed),
-                              label: Text('Turn Off All ($catTitle)', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                              label: Text('Turn all off', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
                             )
                           else
                             ElevatedButton.icon(
@@ -526,7 +526,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                               ),
                               onPressed: () => _bulkToggleCategory(true),
                               icon: const Icon(Icons.check_circle_outline_rounded, size: 15),
-                              label: Text('Enable All ($catTitle)', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                              label: Text('Turn all on', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
                             ),
                         ],
                       ],
@@ -568,14 +568,14 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                     Expanded(
                       flex: 4,
                       child: Text(
-                        'Instructions & scope',
+                        'Instructions',
                         style: _headerColStyle(textMuted),
                       ),
                     ),
                     SizedBox(
                       width: 110,
                       child: Text(
-                        'Mandatory',
+                        'Required',
                         style: _headerColStyle(textMuted),
                         textAlign: TextAlign.center,
                       ),
@@ -900,7 +900,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      isRequired ? 'MANDATORY' : 'OPTIONAL',
+                      isRequired ? 'Required' : 'Optional',
                       style: TextStyle(
                         fontSize: 9.5,
                         fontWeight: FontWeight.w800,
@@ -950,7 +950,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        isActive ? 'ACTIVE' : 'OFF',
+                        isActive ? 'On' : 'Off',
                         style: TextStyle(
                           fontSize: 9.5,
                           fontWeight: FontWeight.w800,
@@ -1412,7 +1412,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
                     child: SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
-                        'Active in Production',
+                        'Active',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
