@@ -1,6 +1,6 @@
 /// What the member's licence looks like today, and the one action that moves
 /// it forward. Pure (no Flutter imports) so every branch is unit-tested.
-enum LicenceStage { activationPending, expired, dueSoon, renewalSoon, valid }
+enum LicenceStage { activationPending, expired, dueSoon, renewalPaid, renewalSoon, valid }
 
 class LicenceStatus {
   final LicenceStage stage;
@@ -52,6 +52,7 @@ LicenceStatus licenceStatus({
   required bool packagePaid,
   required DateTime? expiry,
   required int pendingTasks,
+  bool renewalPaid = false,
   DateTime? now,
 }) {
   final today = now ?? DateTime.now();
@@ -87,6 +88,20 @@ LicenceStatus licenceStatus({
       .inDays;
   final remaining = (daysLeft / 365).clamp(0.0, 1.0);
   final date = formatLicenceDate(exp);
+
+  // Paid this cycle's renewal but CUBAG has not issued the new licence yet:
+  // never ask the member to pay again.
+  if (renewalPaid && daysLeft <= 30) {
+    return LicenceStatus(
+      stage: LicenceStage.renewalPaid,
+      pill: 'Renewal paid',
+      message: daysLeft < 0
+          ? 'Your renewal is paid. CUBAG is issuing your new licence.'
+          : 'Your renewal is paid. Your new licence will show here once CUBAG issues it.',
+      daysLeft: daysLeft,
+      yearRemaining: (daysLeft / 365).clamp(0.0, 1.0),
+    );
+  }
 
   if (daysLeft < 0) {
     return LicenceStatus(

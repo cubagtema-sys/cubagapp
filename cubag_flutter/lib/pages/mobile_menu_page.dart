@@ -268,75 +268,55 @@ class MobileMenuPage extends StatelessWidget {
 
       if (isPending) {
         sections = [
-          _buildSection(context, 'Application onboarding', [
+          _buildSection(context, 'Your application', [
             _MenuItem(
-              'Complete Application',
-              Icons.assignment_turned_in_rounded,
+              'Complete your application',
+              Icons.assignment_turned_in_outlined,
               '/application-documents',
+              subtitle: 'Upload your documents',
             ),
             _MenuItem(
-              'Payment & Checkout',
-              Icons.payment_rounded,
+              'Pay fees',
+              Icons.payments_outlined,
               '/payments',
+              subtitle: 'Registration and membership fees',
             ),
           ]),
         ];
       } else {
+        // Grouped by what members come to do. Home, Network and Compliance
+        // are already in the bottom bar, so they are not repeated here.
         sections = [
-          _buildSection(context, 'Main', [
-            _MenuItem('Dashboard', Icons.home_rounded, '/dashboard'),
+          _buildSection(context, 'Dues and licence', [
+            _MenuItem('Pay dues', Icons.payments_outlined, '/payments',
+                subtitle: 'Renewal dues and other fees'),
+            _MenuItem('Licence and certificate', Icons.badge_outlined, '/license-renewal',
+                subtitle: 'Your licence, certificate and renewal'),
+            _MenuItem('Payment history', Icons.receipt_long_outlined, '/payment-history',
+                subtitle: 'Receipts for everything you have paid'),
+            _MenuItem('Membership services', Icons.card_membership_outlined, '/membership-services',
+                subtitle: 'Letters, records and requests'),
           ]),
-          _buildSection(context, 'Services', [
-            _MenuItem(
-              'Membership',
-              Icons.card_membership_rounded,
-              '/membership-services',
-            ),
-            _MenuItem(
-              'Compliance',
-              Icons.verified_user_rounded,
-              '/compliance',
-            ),
-            _MenuItem(
-              'Courses',
-              Icons.school_rounded,
-              '/courses',
-            ),
-            _MenuItem(
-              'Payments',
-              Icons.receipt_long_rounded,
-              '/payment-history',
-            ),
+          _buildSection(context, 'Learn and meet', [
+            _MenuItem('Events', Icons.event_outlined, '/events',
+                subtitle: 'Meetings and seminars'),
+            _MenuItem('CTI courses', Icons.school_outlined, '/courses',
+                subtitle: 'Training and enrolment'),
+            _MenuItem('Announcements', Icons.campaign_outlined, '/announcements',
+                subtitle: 'News from CUBAG'),
+            _MenuItem('Polls', Icons.how_to_vote_outlined, '/surveys',
+                subtitle: 'Have your say on CUBAG decisions'),
+          ]),
+          _buildSection(context, 'Work tools', [
+            _MenuItem('Messages', Icons.chat_bubble_outline_rounded, '/messaging'),
             _MenuItem('Tasks', Icons.task_alt_rounded, '/tasks'),
-            _MenuItem(
-              'Directory',
-              Icons.people_alt_rounded,
-              '/networking',
-            ),
-            _MenuItem(
-              'Messages',
-              Icons.chat_bubble_outline_rounded,
-              '/messaging',
-            ),
-            _MenuItem('Events', Icons.event_rounded, '/events'),
-            _MenuItem(
-              'Surveys',
-              Icons.how_to_vote_rounded,
-              '/surveys',
-            ),
-            _MenuItem(
-              'Support',
-              Icons.support_agent_rounded,
-              '/engagement',
-            ),
+            _MenuItem('Vessel movements', Icons.directions_boat_outlined, '/vessel-movements'),
+            _MenuItem('Cargo schedules', Icons.inventory_2_outlined, '/cargo-schedules'),
+            _MenuItem('Port insights', Icons.insights_outlined, '/live-data'),
           ]),
-          _buildSection(context, 'Resources', [
-            _MenuItem('Insights', Icons.analytics_rounded, '/live-data'),
-            _MenuItem(
-              'Vessels',
-              Icons.directions_boat_rounded,
-              '/vessel-movements',
-            ),
+          _buildSection(context, 'Help', [
+            _MenuItem('Support', Icons.support_agent_outlined, '/engagement',
+                subtitle: 'Ask CUBAG or report a problem'),
           ]),
         ];
       }
@@ -382,61 +362,30 @@ class MobileMenuPage extends StatelessWidget {
     String title,
     List<_MenuItem> items,
   ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(4, 24, 4, 8),
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
-              color: isDark ? const Color(0xFF5F6B7E) : CubagColors.muted,
-            ),
-          ),
+          padding: const EdgeInsets.fromLTRB(CubagSpace.xxs, CubagSpace.xl, CubagSpace.xxs, CubagSpace.xs),
+          child: Semantics(header: true, child: Text(title, style: CubagType.label.copyWith(color: CubagColors.muted))),
         ),
         Container(
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark
-                  ? const Color(0xFF4D2D20)
-                  : CubagColors.lineStrong.withValues(alpha: 0.5),
-              width: 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            color: CubagColors.paper,
+            borderRadius: BorderRadius.circular(CubagRadius.card),
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Column(
-              children: items.asMap().entries.map((entry) {
-                final index = entry.key;
-                final item = entry.value;
-                return Column(
-                  children: [
-                    _navTile(context, item),
-                    if (index != items.length - 1)
-                      Divider(
-                        height: 1,
-                        indent: 64,
-                        endIndent: 0,
-                        color: isDark
-                            ? const Color(0xFF4D2D20)
-                            : CubagColors.sand,
-                      ),
-                  ],
-                );
-              }).toList(),
-            ),
+          foregroundDecoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(CubagRadius.card),
+            border: Border.all(color: CubagColors.line),
+          ),
+          child: Column(
+            children: [
+              for (var i = 0; i < items.length; i++) ...[
+                if (i > 0) const Divider(height: 1, indent: 60, color: CubagColors.line),
+                _navTile(context, items[i]),
+              ],
+            ],
           ),
         ),
       ],
@@ -444,20 +393,9 @@ class MobileMenuPage extends StatelessWidget {
   }
 
   Widget _navTile(BuildContext context, _MenuItem item) {
-    final primary = Theme.of(context).primaryColor;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Normal vs Logout styling
-    final Color iconColor = item.isLogout ? CubagColors.lapsed : primary;
-    final Color badgeBgColor = item.isLogout
-        ? CubagColors.lapsed.withValues(alpha: 0.1)
-        : primary.withValues(alpha: 0.1);
-    final Color textColor = item.isLogout
-        ? CubagColors.lapsed
-        : (isDark ? Colors.white : const Color(0xFF281710));
-
+    final fg = item.isLogout ? CubagColors.lapsed : CubagColors.cocoa;
     return Material(
-      color: Colors.transparent,
+      color: CubagColors.paper,
       child: InkWell(
         onTap: () async {
           if (item.isLogout) {
@@ -467,40 +405,32 @@ class MobileMenuPage extends StatelessWidget {
             context.go(item.route);
           }
         },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: badgeBgColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Icon(item.icon, color: iconColor, size: 18),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  item.title,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 56),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: CubagSpace.md, vertical: 10),
+            child: Row(
+              children: [
+                Icon(item.icon, color: fg, size: 22),
+                const SizedBox(width: CubagSpace.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        item.title,
+                        style: CubagType.bodyStrong.copyWith(color: item.isLogout ? CubagColors.lapsed : CubagColors.ink),
+                      ),
+                      if (item.subtitle != null)
+                        Text(item.subtitle!, style: CubagType.small),
+                    ],
                   ),
                 ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: isDark
-                    ? const Color(0xFF4b5563)
-                    : CubagColors.lineStrong,
-                size: 20,
-              ),
-            ],
+                if (!item.isLogout)
+                  const Icon(Icons.chevron_right_rounded, color: CubagColors.lineStrong, size: 22),
+              ],
+            ),
           ),
         ),
       ),
@@ -512,6 +442,7 @@ class _MenuItem {
   final String title;
   final IconData icon;
   final String route;
+  final String? subtitle;
   final bool isLogout;
-  _MenuItem(this.title, this.icon, this.route, {this.isLogout = false});
+  _MenuItem(this.title, this.icon, this.route, {this.subtitle, this.isLogout = false});
 }

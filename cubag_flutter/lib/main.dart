@@ -10,6 +10,7 @@ import 'services/auth_service.dart';
 import 'services/notification_service.dart';
 import 'services/theme_service.dart';
 import 'services/api_service.dart';
+import 'components/offline_notice.dart';
 import 'services/push_notification_service.dart';
 import 'services/crash_reporting.dart';
 import 'utils/session_storage.dart';
@@ -192,11 +193,11 @@ class _CubagAppState extends State<CubagApp> with WidgetsBindingObserver {
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         final mediaQuery = MediaQuery.of(context);
-        // Clamp text scaler to a balanced range [0.85, 1.15] so system display scaling
-        // does not distort cards, inputs, and buttons on small screens.
+        // Honour the member's text size up to 130% (larger sizes would break
+        // fixed-height controls); never shrink below 85%.
         final clampedScaler = mediaQuery.textScaler.clamp(
           minScaleFactor: 0.85,
-          maxScaleFactor: 1.15,
+          maxScaleFactor: 1.3,
         );
         return MediaQuery(
           data: mediaQuery.copyWith(textScaler: clampedScaler),
@@ -204,7 +205,7 @@ class _CubagAppState extends State<CubagApp> with WidgetsBindingObserver {
           // Overlay (an error in current Flutter) and made every label
           // long-press selectable, fighting taps on cards. Screens that need
           // copyable text (references, receipts) use SelectableText.
-          child: child ?? const SizedBox.shrink(),
+          child: OfflineNotice(child: child ?? const SizedBox.shrink()),
         );
       },
     );

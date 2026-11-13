@@ -72,4 +72,23 @@ void main() {
     expect(parseExpiry(''), isNull);
     expect(parseExpiry('2026-12-05'), DateTime(2026, 12, 5));
   });
+
+  test('renewal paid inside the window: no second payment asked', () {
+    final s = licenceStatus(packagePaid: true, expiry: _in(22), pendingTasks: 0, renewalPaid: true, now: _now);
+    expect(s.stage, LicenceStage.renewalPaid);
+    expect(s.pill, 'Renewal paid');
+    expect(s.actionLabel, isNull);
+    expect(s.needsAttention, isFalse);
+  });
+
+  test('renewal paid after expiry: still no payment asked', () {
+    final s = licenceStatus(packagePaid: true, expiry: _in(-2), pendingTasks: 0, renewalPaid: true, now: _now);
+    expect(s.stage, LicenceStage.renewalPaid);
+    expect(s.actionRoute, isNull);
+  });
+
+  test('renewal paid far from expiry: plain valid', () {
+    final s = licenceStatus(packagePaid: true, expiry: _in(200), pendingTasks: 0, renewalPaid: true, now: _now);
+    expect(s.stage, LicenceStage.valid);
+  });
 }

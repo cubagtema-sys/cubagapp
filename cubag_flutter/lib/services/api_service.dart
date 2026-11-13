@@ -16,6 +16,17 @@ class ApiService {
 
   late Dio _dio;
 
+  /// True while the server cannot be reached (no connection, or it timed
+  /// out after retries). Cleared by the next successful response. Drives the
+  /// app-wide offline notice.
+  static final ValueNotifier<bool> offline = ValueNotifier(false);
+
+  static bool _isConnectionFailure(DioException e) =>
+      e.type == DioExceptionType.connectionTimeout ||
+      e.type == DioExceptionType.connectionError ||
+      e.type == DioExceptionType.receiveTimeout ||
+      (e.type == DioExceptionType.unknown && e.response == null);
+
   static String get _base {
     // ── 0. Saved custom API URL — DEBUG BUILDS ONLY (SEC-11). Release builds
     //       must never send credentials to a user-entered server.
@@ -196,7 +207,12 @@ class ApiService {
           }
           return handler.next(options);
         },
+        onResponse: (response, handler) {
+          if (offline.value) offline.value = false;
+          return handler.next(response);
+        },
         onError: (error, handler) async {
+          if (error.response != null && offline.value) offline.value = false;
           if (error.response?.statusCode == 401) {
             await AuthService().logout();
             final currentLoc =
@@ -232,6 +248,7 @@ class ApiService {
             }
           }
 
+          if (_isConnectionFailure(error)) offline.value = true;
           return handler.next(error);
         },
       ),

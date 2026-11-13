@@ -634,7 +634,17 @@ class _DashboardPageState extends State<DashboardPage> {
     Provider.of<ThemeService>(context);
     final role = _user['role'] as String? ?? '';
     final isAdmin = role == 'admin' || role == 'sub_admin' || role == 'super_admin';
-    final pending = _tasks.where((t) => t['done'] != true).toList();
+    // Same rule as Pay dues: this cycle's renewal is settled.
+    final renewalPaid = _user['is_renewal_paid'] == true ||
+        _user['renewal_paid'] == true ||
+        ((double.tryParse(_user['renewal_amount_paid']?.toString() ?? '') ?? 0) > 0 &&
+            _user['renewal_balance_due'] != null &&
+            (double.tryParse(_user['renewal_balance_due'].toString()) ?? 1) <= 0.01);
+    final pending = _tasks
+        .where((t) => t['done'] != true)
+        // The server's renewal reminder does not know the renewal is paid.
+        .where((t) => !(renewalPaid && t['system_type'] == 'renewal'))
+        .toList();
     final fullName = (_user['name'] as String? ?? 'Member').trim();
     final firstName = fullName.split(' ').first;
     final expiry = parseExpiry(_user['license_expiry_date']);
@@ -642,8 +652,21 @@ class _DashboardPageState extends State<DashboardPage> {
       packagePaid: isAdmin || _user['package_fee_paid'] == true,
       expiry: expiry,
       pendingTasks: _loadingTasks ? 0 : pending.length,
+      renewalPaid: renewalPaid,
     );
     final activeSurveys = _surveys.where(_isSurveyActive).length;
+    // Money still owed on this year's renewal (part payments).
+    final balanceDue = double.tryParse(_user['renewal_balance_due']?.toString() ?? '') ?? 0;
+    final owesBalance = !isAdmin && _user['renewal_is_partially_paid'] == true && balanceDue > 0.01;
+    final dueRows = <Widget>[
+      if (owesBalance)
+        TaskRow(
+          title: 'Pay the rest of your renewal dues',
+          due: 'GH₵ ${balanceDue.toStringAsFixed(2)} left to pay',
+          overdue: status.needsAttention,
+          onTap: () => context.go('/payments'),
+        ),
+    ];
 
     return AppLayout(
       title: 'Home',
@@ -682,11 +705,15 @@ class _DashboardPageState extends State<DashboardPage> {
                         onLink: () => context.go('/tasks'),
                       ),
                       HomeGroup(
-                        children: _loadingTasks && pending.isEmpty
-                            ? [const QuietRow(icon: Icons.hourglass_empty_rounded, text: 'Loading your tasks…')]
-                            : pending.isEmpty
-                                ? [const QuietRow(icon: Icons.check_circle_rounded, text: 'You\'re all caught up.')]
-                                : [for (final t in pending.take(3)) _taskRow(t)],
+                        children: [
+                          ...dueRows,
+                          if (_loadingTasks && pending.isEmpty && dueRows.isEmpty)
+                            const QuietRow(icon: Icons.hourglass_empty_rounded, text: 'Loading your tasks…')
+                          else if (pending.isEmpty && dueRows.isEmpty)
+                            const QuietRow(icon: Icons.check_circle_rounded, text: 'You\'re all caught up.')
+                          else
+                            for (final t in pending.take(3 - dueRows.length)) _taskRow(t),
+                        ],
                       ),
                     ],
                   );
@@ -697,7 +724,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       ShortcutGrid(
                         items: const [
                           Shortcut(Icons.payments_outlined, 'Pay dues', '/payments'),
-                          Shortcut(Icons.receipt_long_outlined, 'Statement', '/payment-history'),
+                          Shortcut(Icons.receipt_long_outlined, 'Receipts', '/payment-history'),
                           Shortcut(Icons.school_outlined, 'Courses', '/courses'),
                           Shortcut(Icons.groups_outlined, 'Member network', '/networking'),
                           Shortcut(Icons.how_to_vote_outlined, 'Polls', '/surveys'),
