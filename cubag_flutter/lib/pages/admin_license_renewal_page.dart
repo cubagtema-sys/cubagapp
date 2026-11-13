@@ -263,9 +263,9 @@ class _State extends State<AdminLicenseRenewalPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AdminHeader(
-              title: 'Licensing & Membership Renewals',
+              title: 'Licences',
               subtitle:
-                  'Manage member license validity, expiry date updates, and renewal approvals.',
+                  'Licence expiry dates and renewal approvals.',
               actions: [
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
@@ -1011,7 +1011,7 @@ class _State extends State<AdminLicenseRenewalPage> {
                     foregroundColor: Colors.white,
                     minimumSize: const Size(0, 48),
                   ),
-                  child: const Text('Verify & Approve'),
+                  child: const Text('Approve'),
                 ),
               ),
               const SizedBox(width: 10),

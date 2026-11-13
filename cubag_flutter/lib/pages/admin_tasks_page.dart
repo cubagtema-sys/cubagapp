@@ -199,7 +199,7 @@ class _State extends State<AdminTasksPage> {
       {'id': 'create', 'label': 'Assign New Task'},
     ];
     return AppLayout(
-      title: 'Compliance Control',
+      title: 'Tasks',
       scrollable: false,
       child: SingleChildScrollView(
         controller: _scrollController,
@@ -207,9 +207,9 @@ class _State extends State<AdminTasksPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AdminHeader(
-              title: 'Compliance Directives & Member Tasks',
+              title: 'Tasks',
               subtitle:
-                  'Assign mandatory filings, review member evidence submissions, and verify regulatory compliance.',
+                  'Tasks you set for members, and the proof they send back.',
               actions: [
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
@@ -339,7 +339,7 @@ class _State extends State<AdminTasksPage> {
           value: _memberId,
           hint: 'Select a member...',
           items: [
-            const DropdownItem(value: 'all', label: 'All Active Members'),
+            const DropdownItem(value: 'all', label: 'All active members'),
             ..._members.map(
               (m) => DropdownItem<String>(
                 value: m['id'].toString(),
@@ -461,7 +461,7 @@ class _State extends State<AdminTasksPage> {
           border: Border.all(color: Colors.grey.shade200),
         ),
         child: const Center(
-          child: Text('No tasks found.', style: TextStyle(color: Colors.grey)),
+          child: Text('No tasks yet', style: TextStyle(color: Colors.grey)),
         ),
       );
     }

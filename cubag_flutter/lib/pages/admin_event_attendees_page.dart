@@ -152,7 +152,7 @@ class _AdminEventAttendeesPageState extends State<AdminEventAttendeesPage> {
               onChanged: (v) => setState(() => _searchQuery = v),
               style: TextStyle(color: textColor, fontSize: 18),
               decoration: InputDecoration(
-                hintText: 'Search by name or company...',
+                hintText: 'Search attendees',
                 hintStyle: TextStyle(
                   color: subTextColor,
                   fontSize: 18,

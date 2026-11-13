@@ -262,15 +262,15 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
     final displayPorts = _filteredPorts;
 
     return AppLayout(
-      title: 'Ports of Operation',
+      title: 'Ports',
       scrollable: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AdminHeader(
-            title: 'Ports & Border Terminals',
+            title: 'Ports',
             subtitle:
-                'Manage operational entry points, customs terminals, and border stations across Ghana.',
+                'Ports, terminals and border posts members can choose from.',
             actions: [
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
@@ -313,7 +313,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: AdminStatCard(
-                  label: 'Active Locations',
+                  label: 'Active',
                   value: '$activePorts',
                   icon: Icons.check_circle_outline_rounded,
                   color: kAdminGreen,
@@ -322,7 +322,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: AdminStatCard(
-                  label: 'Inactive / Disabled',
+                  label: 'Inactive',
                   value: '$inactivePorts',
                   icon: Icons.pause_circle_outline_rounded,
                   color: Colors.grey,
@@ -334,7 +334,7 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
 
           // ── Search & Filter Controls ─────────────────────────────────────────
           AdminToolbar(
-            searchHint: 'Search by port name or code...',
+            searchHint: 'Search ports',
             onSearchChanged: (v) => setState(() => _searchQuery = v),
             filters: [
               AdminFilterChip(
@@ -438,9 +438,9 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
                           dataRowMinHeight: 62,
                           dataRowMaxHeight: 74,
                           columns: const [
-                            DataColumn(label: Text('Port / terminal name')),
+                            DataColumn(label: Text('Port')),
                             DataColumn(label: Text('Port code')),
-                            DataColumn(label: Text('Operational status')),
+                            DataColumn(label: Text('Status')),
                             DataColumn(label: Text('Actions')),
                           ],
                           rows: displayPorts.map((p) {

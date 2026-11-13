@@ -166,7 +166,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                 children: [
                   ListTile(
                     title: Text(
-                      'All Admins & Sub-Admins',
+                      'All admins',
                       style: TextStyle(
                         fontWeight: _filterActorId.isEmpty
                             ? FontWeight.bold
@@ -467,7 +467,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
     final displayLogs = _filteredLogs;
 
     // Determine current actor filter label
-    String currentActorLabel = 'All Admins & Sub-Admins';
+    String currentActorLabel = 'All admins';
     if (_filterActorId.isNotEmpty) {
       final match = _actorsOptions.firstWhere(
         (a) => a['id']?.toString() == _filterActorId,
@@ -477,15 +477,15 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
     }
 
     return AppLayout(
-      title: 'Audit Log',
+      title: 'Audit',
       scrollable: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AdminHeader(
-            title: 'Administrative Audit Trail',
+            title: 'Audit',
             subtitle:
-                'Real-time tamper-evident log of all operations performed by Super Admins and Sub-Admins.',
+                'A record of what each admin did, and when.',
             actions: [
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
@@ -508,7 +508,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                   size: 16,
                 ),
                 label: Text(
-                  _filtersVisible ? 'Hide Filters' : 'Filter Log',
+                  _filtersVisible ? 'Hide filters' : 'Filter Log',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
@@ -552,7 +552,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                       children: [
                         Expanded(
                           child: AdminStatCard(
-                            label: 'Total Logged Events',
+                            label: 'Entries',
                             value: '$_total',
                             icon: Icons.history_rounded,
                             color: kAdminBlue,
@@ -561,7 +561,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: AdminStatCard(
-                            label: 'Active Admins & Staff',
+                            label: 'Admins',
                             value: '${_actorsOptions.isNotEmpty ? _actorsOptions.length : 1}',
                             icon: Icons.admin_panel_settings_rounded,
                             color: kAdminPurple,
@@ -570,8 +570,8 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: AdminStatCard(
-                            label: 'Audit Integrity',
-                            value: '100% Tamper-Evident',
+                            label: 'Logging',
+                            value: 'On',
                             icon: Icons.verified_user_rounded,
                             color: kAdminGreen,
                           ),
@@ -584,7 +584,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                           children: [
                             Expanded(
                               child: AdminStatCard(
-                                label: 'Total Logged Events',
+                                label: 'Entries',
                                 value: '$_total',
                                 icon: Icons.history_rounded,
                                 color: kAdminBlue,
@@ -593,7 +593,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: AdminStatCard(
-                                label: 'Admins & Staff',
+                                label: 'Admins',
                                 value: '${_actorsOptions.isNotEmpty ? _actorsOptions.length : 1}',
                                 icon: Icons.admin_panel_settings_rounded,
                                 color: kAdminPurple,
@@ -603,8 +603,8 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                         ),
                         const SizedBox(height: 10),
                         AdminStatCard(
-                          label: 'Audit Integrity',
-                          value: '100% Tamper-Evident',
+                          label: 'Logging',
+                          value: 'On',
                           icon: Icons.verified_user_rounded,
                           color: kAdminGreen,
                         ),
@@ -632,7 +632,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                     onChanged: (val) => setState(() => _searchQuery = val),
                     style: TextStyle(fontSize: 14, color: textCol),
                     decoration: InputDecoration(
-                      hintText: 'Search logs by admin name, action, target subject...',
+                      hintText: 'Search the audit log',
                       hintStyle: TextStyle(fontSize: 13, color: subTextCol),
                       prefixIcon: const Icon(Icons.search_rounded, size: 18, color: _kOrange),
                       filled: true,
@@ -664,7 +664,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                       ActionChip(
                         avatar: const Icon(Icons.person_pin_rounded, size: 15, color: _kPurple),
                         label: Text(
-                          _filterActorId.isEmpty ? 'All Admins & Sub-Admins' : 'Admin: $currentActorLabel',
+                          _filterActorId.isEmpty ? 'All admins' : 'Admin: $currentActorLabel',
                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                         ),
                         onPressed: _showActorDialog,
@@ -674,7 +674,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                       ActionChip(
                         avatar: const Icon(Icons.category_outlined, size: 15, color: _kOrange),
                         label: Text(
-                          _filterTargetType.isEmpty ? 'All Target Types' : 'Type: $_filterTargetType',
+                          _filterTargetType.isEmpty ? 'All types' : 'Type: $_filterTargetType',
                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                         ),
                         onPressed: () {
@@ -696,7 +696,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                       ActionChip(
                         avatar: const Icon(Icons.touch_app_outlined, size: 15, color: _kBlue),
                         label: Text(
-                          _filterActionType.isEmpty ? 'All Actions' : 'Action: $_filterActionType',
+                          _filterActionType.isEmpty ? 'All actions' : 'Action: $_filterActionType',
                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                         ),
                         onPressed: () {
@@ -813,7 +813,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                             DataColumn(label: Text('Actor / admin')),
                             DataColumn(label: Text('Action')),
                             DataColumn(label: Text('Target type')),
-                            DataColumn(label: Text('Subject / details')),
+                            DataColumn(label: Text('Details')),
                             DataColumn(label: Text('Ip address')),
                             DataColumn(label: Text('Details')),
                           ],

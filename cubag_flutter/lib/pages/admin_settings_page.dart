@@ -266,7 +266,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
         : const Color(0xFFFAF6F0);
 
     return AppLayout(
-      title: 'Platform Settings',
+      title: 'Settings',
       scrollable: true,
       child: Center(
         child: ConstrainedBox(
@@ -275,9 +275,9 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AdminHeader(
-                title: 'System & Platform Settings',
+                title: 'Settings',
                 subtitle:
-                    'Manage admin credentials, profile security, and compliance scoring rules.',
+                    'Your admin account, password, and how compliance scores are worked out.',
                 actions: [
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -337,11 +337,11 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                   tabs: const [
                     Tab(
                       icon: Icon(Icons.manage_accounts_outlined, size: 18),
-                      text: 'Account & Security',
+                      text: 'Account',
                     ),
                     Tab(
                       icon: Icon(Icons.rule_rounded, size: 18),
-                      text: 'Compliance Scoring Rules',
+                      text: 'Scoring',
                     ),
                   ],
                 ),
@@ -425,7 +425,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Admin Profile Overview',
+                        'Your profile',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
@@ -433,7 +433,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                         ),
                       ),
                       Text(
-                        'Account details associated with your logged-in administrator session.',
+                        'The account you are signed in with.',
                         style: TextStyle(
                           fontSize: 13,
                           color: subTextCol,
@@ -452,7 +452,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                           children: [
                             Expanded(
                               child: _readOnlyField(
-                                'Full Name',
+                                'Full name',
                                 _user['name']?.toString() ?? 'Administrator',
                                 inputBg,
                                 borderCol,
@@ -463,7 +463,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                             const SizedBox(width: 14),
                             Expanded(
                               child: _readOnlyField(
-                                'Email Address',
+                                'Email',
                                 _user['email']?.toString() ?? 'admin@cubag.org',
                                 inputBg,
                                 borderCol,
@@ -476,7 +476,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                       : Column(
                           children: [
                             _readOnlyField(
-                              'Full Name',
+                              'Full name',
                               _user['name']?.toString() ?? 'Administrator',
                               inputBg,
                               borderCol,
@@ -485,7 +485,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                             ),
                             const SizedBox(height: 12),
                             _readOnlyField(
-                              'Email Address',
+                              'Email',
                               _user['email']?.toString() ?? 'admin@cubag.org',
                               inputBg,
                               borderCol,
@@ -505,7 +505,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                           children: [
                             Expanded(
                               child: _readOnlyField(
-                                'Role / Privileges',
+                                'Role',
                                 (_user['role']?.toString() ?? 'admin')
                                     .toUpperCase(),
                                 inputBg,
@@ -517,8 +517,8 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                             const SizedBox(width: 14),
                             Expanded(
                               child: _readOnlyField(
-                                'Session Status',
-                                'Active & Authenticated',
+                                'Session',
+                                'Signed in',
                                 inputBg,
                                 borderCol,
                                 textCol,
@@ -530,7 +530,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                       : Column(
                           children: [
                             _readOnlyField(
-                              'Role / Privileges',
+                              'Role',
                               (_user['role']?.toString() ?? 'admin')
                                   .toUpperCase(),
                               inputBg,
@@ -540,8 +540,8 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                             ),
                             const SizedBox(height: 12),
                             _readOnlyField(
-                              'Session Status',
-                              'Active & Authenticated',
+                              'Session',
+                              'Signed in',
                               inputBg,
                               borderCol,
                               textCol,
@@ -586,7 +586,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Security & Password Reset',
+                        'Password',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
@@ -594,7 +594,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                         ),
                       ),
                       Text(
-                        'Update your administrator portal login password for enhanced security.',
+                        'Change the password you sign in with.',
                         style: TextStyle(
                           fontSize: 13,
                           color: subTextCol,
@@ -647,7 +647,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
               ],
 
               _pwField(
-                'Current Password *',
+                'Current password *',
                 _currentCtrl,
                 _showCurrent,
                 () => setState(() => _showCurrent = !_showCurrent),
@@ -665,7 +665,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                           children: [
                             Expanded(
                               child: _pwField(
-                                'New Password *',
+                                'New password *',
                                 _newCtrl,
                                 _showNew,
                                 () => setState(() => _showNew = !_showNew),
@@ -678,7 +678,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                             const SizedBox(width: 14),
                             Expanded(
                               child: _pwField(
-                                'Confirm New Password *',
+                                'Confirm new password *',
                                 _confirmCtrl,
                                 _showConfirm,
                                 () => setState(
@@ -695,7 +695,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                       : Column(
                           children: [
                             _pwField(
-                              'New Password *',
+                              'New password *',
                               _newCtrl,
                               _showNew,
                               () => setState(() => _showNew = !_showNew),
@@ -706,7 +706,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                             ),
                             const SizedBox(height: 12),
                             _pwField(
-                              'Confirm New Password *',
+                              'Confirm new password *',
                               _confirmCtrl,
                               _showConfirm,
                               () => setState(

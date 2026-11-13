@@ -321,8 +321,8 @@ class _State extends State<AdminIntelligencePage> {
                 children: [
                   // Page Header
                   AdminHeader(
-                    title: 'Maritime Intelligence Hub',
-                    subtitle: 'Global maritime news feeds, port telemetry, and daily customs FX parity rates.',
+                    title: 'Insights',
+                    subtitle: 'Shipping news, port activity and exchange rates in one place.',
                     actions: [
                       OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
@@ -336,7 +336,7 @@ class _State extends State<AdminIntelligencePage> {
                           _loadIntelligence();
                         },
                         icon: const Icon(Icons.refresh_rounded, size: 16),
-                        label: Text('Refresh All', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
+                        label: Text('Refresh', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
                       ),
                     ],
                   ),
@@ -418,7 +418,7 @@ class _State extends State<AdminIntelligencePage> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Connected Sources:',
+                'Sources',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -431,7 +431,7 @@ class _State extends State<AdminIntelligencePage> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildSourceFilterChip('All Sources', 'all', _newsFilterSource == 'all', isDark, borderColor, textColor),
+                      _buildSourceFilterChip('All', 'all', _newsFilterSource == 'all', isDark, borderColor, textColor),
                       ..._feedSources.map((s) {
                         final name = s['source'] as String;
                         final color = Color(s['color'] as int);
@@ -458,7 +458,7 @@ class _State extends State<AdminIntelligencePage> {
                   onChanged: (_) => setState(() {}),
                   style: TextStyle(fontSize: 13.5, color: textColor),
                   decoration: InputDecoration(
-                    hintText: 'Search maritime bulletins, shipping lines, port news...',
+                    hintText: 'Search news',
                     hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
                     prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
                     filled: true,
@@ -492,7 +492,7 @@ class _State extends State<AdminIntelligencePage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    '${filtered.length} Feed Items',
+                    '${filtered.length} articles',
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.accentOrangeText),
                   ),
                   if (_lastUpdated.isNotEmpty) ...[
@@ -564,9 +564,9 @@ class _State extends State<AdminIntelligencePage> {
                 children: [
                   Icon(Icons.feed_outlined, color: subTextColor, size: 36),
                   const SizedBox(height: 12),
-                  Text('No articles match criteria', style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 15)),
+                  Text('No articles found', style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 15)),
                   const SizedBox(height: 4),
-                  Text('Try adjusting your search terms or filter selection.', style: TextStyle(color: subTextColor, fontSize: 12.5)),
+                  Text('Try another search or source.', style: TextStyle(color: subTextColor, fontSize: 12.5)),
                 ],
               ),
             ),
@@ -805,8 +805,8 @@ class _State extends State<AdminIntelligencePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Customs Duty FX Estimator', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: textColor)),
-                    Text('Instant tariff conversion to Ghana Cedis (GHS)', style: TextStyle(fontSize: 11.5, color: subTextColor)),
+                    Text('Duty estimator', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: textColor)),
+                    Text('Convert a value to Ghana cedis', style: TextStyle(fontSize: 11.5, color: subTextColor)),
                   ],
                 ),
               ),
@@ -931,10 +931,10 @@ class _State extends State<AdminIntelligencePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Bank of Ghana & ICUMS Parity', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: textColor)),
+                Text('About these rates', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: textColor)),
                 const SizedBox(height: 3),
                 Text(
-                  'Customs exchange rates must be synchronized daily at 09:00 GMT in compliance with GRA Customs Division tariff schedules.',
+                  'Estimates only. Check the official ICUMS rate before you file.',
                   style: TextStyle(fontSize: 11.5, color: subTextColor, height: 1.35),
                 ),
               ],
@@ -991,7 +991,7 @@ class _State extends State<AdminIntelligencePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Official Customs FX Rates (GHS)',
+                      'Exchange rates (GH₵)',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
@@ -999,7 +999,7 @@ class _State extends State<AdminIntelligencePage> {
                       ),
                     ),
                     Text(
-                      'Exchange rates published live to member portal & dashboard calculations.',
+                      'The rates you save here are shown to members and used in estimates.',
                       style: TextStyle(
                         fontSize: 12,
                         color: subTextColor,
@@ -1111,7 +1111,7 @@ class _State extends State<AdminIntelligencePage> {
                         )
                       : const Icon(Icons.check_rounded, size: 16),
                   label: Text(
-                    _forexSaving ? 'Saving...' : 'Save Rates',
+                    _forexSaving ? 'Saving…' : 'Save rates',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13.5,
