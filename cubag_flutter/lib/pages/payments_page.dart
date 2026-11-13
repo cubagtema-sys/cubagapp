@@ -1405,7 +1405,7 @@ class _PaymentsPageState extends State<PaymentsPage>
     final bank = (_paySettings['bankAccounts'] as List?)?.firstOrNull ?? {};
 
     return AppLayout(
-      title: 'Payment',
+      title: 'Pay dues',
       scrollable: false,
       background: CubagColors.paper,
       child: Align(
@@ -1442,8 +1442,8 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 builder: (ctx) {
                                   final reqDocs = _requiresDocuments;
                                   final labels = reqDocs
-                                      ? ['Fee Details', 'Documents', 'Method', 'Review', 'Verify']
-                                      : ['Fee Details', 'Method', 'Review', 'Verify'];
+                                      ? ['What you\'re paying', 'Your documents', 'How you\'ll pay', 'Check and pay', 'Confirmation']
+                                      : ['What you\'re paying', 'How you\'ll pay', 'Check and pay', 'Confirmation'];
                                   final stepMap = reqDocs
                                       ? {1: 0, 2: 1, 3: 2, 4: 3, 5: 4}
                                       : {1: 0, 3: 1, 4: 2, 5: 3};
@@ -1454,39 +1454,21 @@ class _PaymentsPageState extends State<PaymentsPage>
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        crossAxisAlignment: CrossAxisAlignment.end,
                                         children: [
-                                          Row(
-                                            children: [
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                                decoration: BoxDecoration(
-                                                  color: _kOrange.withAlpha(25),
-                                                  borderRadius: BorderRadius.circular(6),
-                                                ),
-                                                child: Text(
-                                                  'Step ${curIdx + 1} of $totalSteps',
-                                                  style: TextStyle(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.w800,
-                                                    color: AppColors.accentOrangeText,
-                                                  ),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                labels[curIdx],
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w800,
-                                                  color: isDark ? Colors.white : CubagColors.ink,
-                                                ),
-                                              ),
-                                            ],
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text('Step ${curIdx + 1} of $totalSteps', style: CubagType.small),
+                                                const SizedBox(height: 2),
+                                                Text(labels[curIdx], style: CubagType.display.copyWith(fontSize: 24, height: 1.2)),
+                                              ],
+                                            ),
                                           ),
                                           if (curIdx > 0 && _step < 5)
-                                            InkWell(
-                                              onTap: () {
+                                            TextButton.icon(
+                                              onPressed: () {
                                                 setState(() {
                                                   if (_step == 4) {
                                                     _step = 3;
@@ -1497,29 +1479,12 @@ class _PaymentsPageState extends State<PaymentsPage>
                                                   }
                                                 });
                                               },
-                                              borderRadius: BorderRadius.circular(6),
-                                              child: Padding(
-                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    const Icon(Icons.arrow_back_ios_rounded, size: 11, color: CubagColors.muted),
-                                                    const SizedBox(width: 3),
-                                                    Text(
-                                                      'Back',
-                                                      style: TextStyle(
-                                                        fontSize: 12,
-                                                        fontWeight: FontWeight.w700,
-                                                        color: CubagColors.muted,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
+                                              icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                                              label: const Text('Back'),
                                             ),
                                         ],
                                       ),
-                                      const SizedBox(height: 10),
+                                      const SizedBox(height: CubagSpace.md),
                                       // Clean segmented progress line
                                       Row(
                                         children: List.generate(totalSteps, (i) {
@@ -1549,7 +1514,8 @@ class _PaymentsPageState extends State<PaymentsPage>
 
                             // Step Form content with balanced mobile padding
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                              // The page already has side gutters; no second inset.
+                              padding: const EdgeInsets.symmetric(vertical: CubagSpace.lg),
                               child: _buildStepContent(_kOrange, bank),
                             ),
                           ],
@@ -2025,7 +1991,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                 const Icon(Icons.alt_route_rounded, size: 15, color: _kOrange),
                 const SizedBox(width: 6),
                 Text(
-                  'Renewal coverage scope',
+                  'What to renew',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -2037,8 +2003,8 @@ class _PaymentsPageState extends State<PaymentsPage>
             const SizedBox(height: 8),
             _buildRenewalScopeTile(
               scopeKey: 'combined',
-              title: 'Full Annual Renewal (National + District)',
-              subtitle: 'Full license + operational district clearance',
+              title: 'National and district',
+              subtitle: 'Your full licence and district clearance',
               amount: _combinedRenewalTotal ?? (_renewalFeeAmount ?? 1383.0),
               isDark: isDark,
               isRecommended: true,
@@ -2046,16 +2012,16 @@ class _PaymentsPageState extends State<PaymentsPage>
             const SizedBox(height: 8),
             _buildRenewalScopeTile(
               scopeKey: 'national',
-              title: 'National Renewal Dues Only',
-              subtitle: 'Statutory national dues, courses & legal audit',
+              title: 'National only',
+              subtitle: 'National dues, courses and legal audit',
               amount: _nationalRenewalTotal ?? 1133.0,
               isDark: isDark,
             ),
             const SizedBox(height: 8),
             _buildRenewalScopeTile(
               scopeKey: 'district',
-              title: 'District Clearance Only',
-              subtitle: 'Operational clearance for registered ports',
+              title: 'District only',
+              subtitle: 'Clearance for your registered ports',
               amount: _districtRenewalTotal ?? 250.0,
               isDark: isDark,
             ),
@@ -2123,7 +2089,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'GH₵ ${_getCurrentBillTotal().toStringAsFixed(2)}',
+                            _cedis(_getCurrentBillTotal()),
                             style: TextStyle(
                               fontSize: 26,
                               fontWeight: FontWeight.w900,
@@ -2362,18 +2328,18 @@ class _PaymentsPageState extends State<PaymentsPage>
 
                                 if (_amountCtrl.text.isNotEmpty && enteredAmt < (minBal - 0.01)) {
                                   return Text(
-                                    'Minimum installment is GH₵ ${minBal.toStringAsFixed(2)}',
+                                    'Minimum instalment is ${_cedis(minBal)}',
                                     style: TextStyle(fontSize: 11.5, color: Colors.redAccent, fontWeight: FontWeight.w600),
                                   );
                                 }
                                 if (_amountCtrl.text.isNotEmpty && enteredAmt > (maxBal + 0.01)) {
                                   return Text(
-                                    'Cannot exceed remaining balance of GH₵ ${maxBal.toStringAsFixed(2)}',
+                                    'Cannot be more than the balance of ${_cedis(maxBal)}',
                                     style: TextStyle(fontSize: 11.5, color: Colors.redAccent, fontWeight: FontWeight.w600),
                                   );
                                 }
                                 return Text(
-                                  'Remaining balance after payment: GH₵ ${remainingAfter.toStringAsFixed(2)}',
+                                  'Balance after this payment: ${_cedis(remainingAfter)}',
                                   style: TextStyle(fontSize: 11.5, color: CubagColors.muted, fontWeight: FontWeight.w600),
                                 );
                               },
@@ -4420,7 +4386,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  'GH₵ ${amount.toStringAsFixed(2)}',
+                  _cedis(amount),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
