@@ -45,6 +45,8 @@ class _PaymentsPageState extends State<PaymentsPage>
   bool _showSuccess = false;
   bool _showError = false;
   String _errorMsg = '';
+  // True when the panel reports a form problem, not a failed payment.
+  bool _errorIsCheck = false;
   String _confirmedAmount = '';
   List<dynamic> _fees = [];
   Map<String, dynamic> _paySettings = {};
@@ -516,21 +518,24 @@ class _PaymentsPageState extends State<PaymentsPage>
     final amt = double.tryParse(_amountCtrl.text) ?? 0;
     if (amt <= 0) {
       setState(() {
-        _errorMsg = 'Please enter a valid amount greater than 0.';
+        _errorMsg = 'Enter an amount greater than GH₵ 0.';
+        _errorIsCheck = true;
         _showError = true;
       });
       return;
     }
     if (_method == 'momo' && _momoNetwork.trim().isEmpty) {
       setState(() {
-        _errorMsg = 'Please select your MoMo carrier (MTN, Telecel, or AirtelTigo).';
+        _errorMsg = 'Choose your network: MTN, Telecel or AirtelTigo.';
+        _errorIsCheck = true;
         _showError = true;
       });
       return;
     }
     if (_method == 'momo' && _momoPhone.trim().isEmpty) {
       setState(() {
-        _errorMsg = 'Please enter your MoMo phone number.';
+        _errorMsg = 'Enter the number you will pay from.';
+        _errorIsCheck = true;
         _showError = true;
       });
       return;
@@ -1531,7 +1536,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'Secured by WhitsunPay PCI-DSS Compliance',
+                            'Payments processed by WhitsunPay',
                             style: TextStyle(
                               fontSize: 13,
                               color: CubagColors.muted,
@@ -1709,72 +1714,93 @@ class _PaymentsPageState extends State<PaymentsPage>
                     ),
                   ),
 
-                // Error Modal Overlay
-                if (_showError)
-                  _overlay(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [CubagColors.lapsed, CubagColors.lapsed],
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.close_rounded,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'Transaction Failed',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: CubagColors.ink,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _errorMsg,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: CubagColors.muted,
-                            fontSize: 15,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: CubagColors.ink,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onPressed: () => setState(() => _showError = false),
-                            child: Text(
-                              'Try Again',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                // Payment failed: a roomy panel, not a cramped modal box.
+                if (_showError) _failurePanel(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Shown when a payment is declined, cancelled or errors.
+  Widget _failurePanel() {
+    final reason = _errorMsg.trim().isEmpty ? 'The payment was not completed.' : _errorMsg.trim();
+    Widget tip(String t) => Padding(
+          padding: const EdgeInsets.only(bottom: CubagSpace.sm),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(top: 3),
+                child: Icon(Icons.check_rounded, size: 16, color: CubagColors.muted),
+              ),
+              const SizedBox(width: CubagSpace.sm),
+              Expanded(child: Text(t, style: CubagType.body.copyWith(color: CubagColors.inkSoft))),
+            ],
+          ),
+        );
+    return Positioned.fill(
+      child: Container(
+        color: CubagColors.ink.withAlpha(110),
+        alignment: Alignment.center,
+        child: SingleChildScrollView(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 520),
+            padding: const EdgeInsets.fromLTRB(CubagSpace.xl, CubagSpace.xl, CubagSpace.xl, CubagSpace.lg),
+            decoration: BoxDecoration(
+              color: CubagColors.paper,
+              borderRadius: BorderRadius.circular(CubagRadius.card + 4),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: const BoxDecoration(color: CubagColors.lapsedTint, shape: BoxShape.circle),
+                  child: Icon(_errorIsCheck ? Icons.edit_note_rounded : Icons.error_outline_rounded, color: CubagColors.lapsed, size: 28),
+                ),
+                const SizedBox(height: CubagSpace.lg),
+                Semantics(
+                  header: true,
+                  child: Text(_errorIsCheck ? 'Check your details' : 'Payment didn\'t go through', style: CubagType.display.copyWith(fontSize: 26)),
+                ),
+                const SizedBox(height: CubagSpace.sm),
+                Text(reason, style: CubagType.body),
+                if (!_errorIsCheck) ...[
+                  const SizedBox(height: CubagSpace.lg),
+                  const Divider(height: 1, color: CubagColors.line),
+                  const SizedBox(height: CubagSpace.md),
+                  const Text('What you can do', style: CubagType.label),
+                  const SizedBox(height: CubagSpace.sm),
+                  tip('Check you have enough money in your Mobile Money wallet.'),
+                  tip('Approve the prompt on your phone as soon as it appears.'),
+                  tip('Make sure the number and network are correct, then try again.'),
+                ],
+                const SizedBox(height: CubagSpace.lg),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => setState(() {
+                      _showError = false;
+                      _errorIsCheck = false;
+                    }),
+                    child: Text(_errorIsCheck ? 'OK' : 'Try again'),
+                  ),
+                ),
+                if (!_errorIsCheck) ...[
+                  const SizedBox(height: CubagSpace.xs),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () => setState(() => _showError = false),
+                      child: const Text('Close'),
                     ),
                   ),
+                ],
               ],
             ),
           ),
@@ -3531,49 +3557,7 @@ class _PaymentsPageState extends State<PaymentsPage>
             ),
             const SizedBox(height: 18),
 
-            Row(
-              children: [
-                Text(
-                  'MoMo number',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13,
-                    color: CubagColors.muted,
-                  ),
-                ),
-                const Spacer(),
-                if (_momoNetwork.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _kOrange.withAlpha(20),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: _kOrange.withAlpha(90),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.check_circle_rounded,
-                          size: 13,
-                          color: _kOrange,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          _carrierName(_momoNetwork),
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.accentOrangeText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
+            const Text('Number', style: CubagType.label),
             const SizedBox(height: 8),
 
             Container(
@@ -3625,14 +3609,22 @@ class _PaymentsPageState extends State<PaymentsPage>
                         color: CubagColors.ink,
                       ),
                       decoration: InputDecoration(
-                        hintText: '024XXXXXXX (10 digits)',
+                        hintText: '024 123 4567',
                         hintStyle: TextStyle(
                           color: const Color(0xFF5F6B7E),
                           fontSize: 17,
                           fontWeight: FontWeight.w500,
                         ),
                         counterText: "",
+                        // One box only: the outer container is the field.
                         border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        focusedErrorBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        filled: false,
+                        isDense: true,
                         contentPadding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
@@ -3640,26 +3632,15 @@ class _PaymentsPageState extends State<PaymentsPage>
                 ],
               ),
             ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
+            if (_momoNetwork.isEmpty || !isPhoneValid) ...[
+              const SizedBox(height: 8),
+              Text(
                 _momoNetwork.isEmpty
-                    ? 'Please select your mobile carrier (MTN, Telecel, or AirtelTigo) above.'
-                    : (!isPhoneValid
-                        ? 'Enter your 10-digit ${_carrierName(_momoNetwork)} number.'
-                        : '✓ ${_carrierName(_momoNetwork)} (Push prompt ready)'),
-                style: TextStyle(
-                  fontSize: 13.5,
-                  color: (_momoNetwork.isNotEmpty && isPhoneValid)
-                      ? _kOrange
-                      : CubagColors.muted,
-                  fontWeight: (_momoNetwork.isNotEmpty && isPhoneValid)
-                      ? FontWeight.w600
-                      : FontWeight.normal,
-                ),
+                    ? 'Choose your network above.'
+                    : 'Enter the 10-digit number you will pay from.',
+                style: CubagType.small,
               ),
-            ),
+            ],
             const SizedBox(height: 18),
 
             Container(
