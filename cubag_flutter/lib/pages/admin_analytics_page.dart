@@ -756,6 +756,12 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
     }
   }
 
+  /// "GH₵ 12,816": whole cedis with thousands separators.
+  static String _cedis(num v) {
+    final t = v.round().toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+    return 'GH₵ $t';
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -766,7 +772,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
     final innerBg = isDark ? CubagColors.ink : const Color(0xFFFAF6F0);
 
     return AppLayout(
-      title: 'Platform Analytics',
+      title: 'Revenue',
       hideSearch: false,
       scrollable: true,
       child: _loading
@@ -814,15 +820,15 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                   ),
 
                 AdminHeader(
-                  title: 'Platform Analytics & Business Intelligence',
+                  title: 'Revenue and activity',
                   subtitle:
-                      'Real-time financial performance telemetry, membership demographics, and service metrics.',
+                      'Money received, members and service activity for the period you choose.',
                   actions: [
                     OutlinedButton.icon(
                       onPressed: () => _showExportDialog(isDark, cardBg, textPrimary, textMuted),
                       icon: const Icon(Icons.download_rounded, size: 16),
                       label: Text(
-                        'Export Ledger',
+                        'Export',
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
@@ -883,25 +889,25 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                       childAspectRatio: isMobile ? 1.4 : 1.8,
                       children: [
                         AdminStatCard(
-                          label: 'Total Revenue',
-                          value: '₵${_filteredRevenue.toStringAsFixed(0)}',
+                          label: 'Revenue',
+                          value: _cedis(_filteredRevenue),
                           icon: Icons.payments_rounded,
                           color: _kGreen,
                         ),
                         AdminStatCard(
-                          label: 'Total Members',
+                          label: 'Members',
                           value: '$_filteredTotalMembersCount',
                           icon: Icons.people_alt_rounded,
                           color: _kBrown,
                         ),
                         AdminStatCard(
-                          label: 'Cargo Logs',
+                          label: 'Cargo logs',
                           value: '$_cargoSchedulesCount',
                           icon: Icons.local_shipping_rounded,
                           color: _kOrange,
                         ),
                         AdminStatCard(
-                          label: 'Open Tickets',
+                          label: 'Open tickets',
                           value: '$_openTickets',
                           icon: Icons.support_agent_rounded,
                           color: _kRed,
@@ -930,9 +936,9 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                       fontWeight: FontWeight.bold,
                     ),
                     tabs: const [
-                      Tab(text: 'Financial Center'),
-                      Tab(text: 'Membership Insights'),
-                      Tab(text: 'Operations & Alerts'),
+                      Tab(text: 'Money'),
+                      Tab(text: 'Members'),
+                      Tab(text: 'Operations'),
                     ],
                   ),
                 ),
@@ -1037,7 +1043,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Financial Revenue Stream Breakdown',
+                            'Revenue by type',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 20,
@@ -1045,7 +1051,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                             ),
                           ),
                           Text(
-                            'Comprehensive collection audit across Renewals, New Membership Dues, and CTI Courses',
+                            'Confirmed payments for renewals, new membership dues and courses.',
                             style: TextStyle(
                               fontSize: 16,
                               color: textMuted,
@@ -1217,7 +1223,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Revenue Stream Proportions',
+                          'Share of revenue',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -1225,7 +1231,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                           ),
                         ),
                         Text(
-                          '100% of Verified Collections',
+                          'Of confirmed payments',
                           style: TextStyle(
                             fontSize: 15,
                             color: textMuted,
@@ -1303,7 +1309,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Revenue Collection Trend (GH₵)',
+                        'Revenue by month (GH₵)',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -1361,7 +1367,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Dues Settlement Status',
+                        'Paid and outstanding',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -1743,7 +1749,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                 ),
               ),
               Text(
-                '₵${val.toStringAsFixed(0)}',
+                _cedis(val),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,

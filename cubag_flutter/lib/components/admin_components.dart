@@ -184,18 +184,21 @@ class AdminStatCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      value,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: textColor,
-                        letterSpacing: -0.4,
-                      ).copyWith(
-                        fontFeatures: const [FontFeature.tabularFigures()],
+                    // Shrink long figures (e.g. GH₵ 12,816) instead of cutting them off.
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        value,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: textColor,
+                          letterSpacing: -0.4,
+                        ).copyWith(
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(

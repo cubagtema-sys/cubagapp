@@ -13,6 +13,7 @@ import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
 import '../design/cubag_design.dart';
+import '../components/cubag_ui.dart';
 
 // ── Design tokens ────────────────────────────────────────────────────────────
 const _kPrimary = CubagColors.action;
@@ -297,7 +298,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? _kDarkBg : const Color(0xFFFAF6F0);
+    final bg = isDark ? _kDarkBg : CubagColors.sand;
     final cardBg = isDark ? _kCardDark : const Color(0xFFFBF8F3);
     final borderColor = isDark ? _kBorderDark : CubagColors.line;
     final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
@@ -322,7 +323,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
         .length;
 
     return AppLayout(
-      title: 'Compliance & Renewals',
+      title: 'Compliance',
       scrollable: false,
       child: Container(
         color: bg,
@@ -334,55 +335,24 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
             children: [
               // ── TOP HEADER ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Renewal Compliance Centre',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: textPrimary,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Review submitted annual renewals, compliance document audits, and fee billing.',
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            color: textMuted,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                  const Expanded(
+                    child: PageIntro(
+                      'Compliance',
+                      subtitle: 'Renewal and licence applications: check documents, issue the bill, then approve.',
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _kPrimary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
+                  IconButton(
+                    tooltip: 'Refresh',
                     onPressed: () => _fetch('renewal'),
-                    icon: const Icon(Icons.refresh_rounded, size: 16),
-                    label: Text(
-                      'Refresh',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
-                    ),
+                    icon: const Icon(Icons.refresh_rounded, color: CubagColors.inkSoft),
                   ),
                 ],
               ),
             ),
-
             const SizedBox(height: 6),
 
             // ── SEARCH & FILTER CONTROLS ──
@@ -402,7 +372,7 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                       onChanged: (v) => setState(() => _renewalSearch = v),
                       style: TextStyle(fontSize: 14, color: textPrimary),
                       decoration: InputDecoration(
-                        hintText: 'Search by applicant, company, or application ID...',
+                        hintText: 'Search name, company or ID',
                         hintStyle: TextStyle(fontSize: 13.5, color: textMuted),
                         prefixIcon: Icon(Icons.search_rounded, size: 18, color: textMuted),
                         border: InputBorder.none,
@@ -416,12 +386,12 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                     spacing: 6,
                     runSpacing: 6,
                     children: [
-                      _buildFilterChip('All', '', activeCategoryTotal, Icons.folder_copy_rounded, _kPrimary, isDark),
-                      _buildFilterChip('Under Review', 'under_review', underReviewCount, Icons.pending_actions_rounded, const Color(0xFF3B82F6), isDark),
+                      _buildFilterChip('New', 'submitted', submittedCount, Icons.send_rounded, _kAmber, isDark),
+                      _buildFilterChip('In review', 'under_review', underReviewCount, Icons.pending_actions_rounded, const Color(0xFF3B82F6), isDark),
+                      _buildFilterChip('Changes', 'revision_requested', revisionCount, Icons.replay_rounded, _kAmber, isDark),
                       _buildFilterChip('Approved', 'approved', approvedCount, Icons.verified_rounded, _kGreen, isDark),
-                      _buildFilterChip('Submitted', 'submitted', submittedCount, Icons.send_rounded, _kAmber, isDark),
-                      _buildFilterChip('Revision Needed', 'revision_requested', revisionCount, Icons.replay_rounded, _kAmber, isDark),
                       _buildFilterChip('Rejected', 'rejected', rejectedCount, Icons.cancel_rounded, _kRed, isDark),
+                      _buildFilterChip('All', '', activeCategoryTotal, Icons.folder_copy_rounded, _kPrimary, isDark),
                     ],
                   );
 
@@ -454,11 +424,14 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Container(
-                  decoration: BoxDecoration(
-                    color: cardBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: borderColor),
-                  ),
+                  // No big empty frame: the card only wraps real rows.
+                  decoration: currentList.isEmpty && _loading['renewal'] != true
+                      ? null
+                      : BoxDecoration(
+                          color: CubagColors.paper,
+                          borderRadius: BorderRadius.circular(CubagRadius.card),
+                          border: Border.all(color: CubagColors.line),
+                        ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: _loading['renewal'] == true
@@ -469,21 +442,31 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
                             itemBuilder: (_, _) => const ShimmerListTile(),
                           )
                         : currentList.isEmpty
-                            ? Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(32),
+                            ? Align(
+                                alignment: Alignment.topCenter,
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+                                  decoration: BoxDecoration(
+                                    color: CubagColors.paper,
+                                    borderRadius: BorderRadius.circular(CubagRadius.card),
+                                    border: Border.all(color: CubagColors.line),
+                                  ),
                                   child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.inbox_outlined, size: 40, color: Colors.grey.shade400),
-                                      const SizedBox(height: 12),
+                                      const Icon(Icons.task_alt_rounded, size: 36, color: CubagColors.muted),
+                                      const SizedBox(height: CubagSpace.sm),
                                       Text(
-                                        'No annual renewal applications found',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: textMuted,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                        _renewalFilterLabelEmpty(),
+                                        style: CubagType.bodyStrong,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      const Text(
+                                        'Applications appear here when members submit them.',
+                                        style: CubagType.small,
+                                        textAlign: TextAlign.center,
                                       ),
                                     ],
                                   ),
@@ -589,6 +572,15 @@ class _AdminCompliancePageState extends State<AdminCompliancePage> {
     ),
   );
 }
+
+  String _renewalFilterLabelEmpty() => switch (_statusFilters['renewal'] ?? '') {
+        'submitted' => 'No new applications',
+        'under_review' => 'Nothing in review',
+        'revision_requested' => 'No applications waiting for changes',
+        'approved' => 'No approved applications yet',
+        'rejected' => 'No rejected applications',
+        _ => 'No applications yet',
+      };
 
   TextStyle _tableHeaderStyle(Color textMuted) {
     return TextStyle(
