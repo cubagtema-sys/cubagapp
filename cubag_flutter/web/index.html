@@ -52,6 +52,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=block" rel="stylesheet">
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400&family=Source+Serif+4:opsz,wght@8..60,600&display=swap" rel="stylesheet">
   <style>
     html, body {
       font-family: 'Inter', 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -79,21 +82,30 @@
       z-index: 999999;
       transition: opacity 0.35s ease;
     }
-    .splash-logo {
-      width: 90px;
-      height: 90px;
-      border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-      animation: cubagPulse 2s infinite ease-in-out;
+    /* Same layout as lib/pages/splash_page.dart, so the hand-over from this
+       loading screen to the Flutter splash is seamless. */
+    .splash-mark {
+      width: 112px; height: 112px; padding: 5px; border-radius: 50%;
+      background: #FFFFFF; display: flex; align-items: center; justify-content: center;
     }
-    @keyframes cubagPulse {
-      0%, 100% { transform: scale(1); opacity: 0.95; }
-      50% { transform: scale(1.04); opacity: 1; }
+    .splash-mark img { width: 112px; height: 112px; border-radius: 50%; object-fit: cover; }
+    .splash-name {
+      margin: 32px 24px 0; color: #FFFFFF; text-align: center;
+      font-family: 'Source Serif 4', Georgia, serif; font-weight: 600;
+      font-size: 30px; line-height: 36px;
+    }
+    .splash-motto {
+      margin: 6px 24px 0; color: #E8C4AE; text-align: center;
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px; line-height: 24px;
     }
   </style>
 </head>
 <body>
-  <div id="cubag-splash-loader">
+  <div id="cubag-splash-loader" role="img" aria-label="Customs Brokers Association of Ghana. Loading.">
+    <div class="splash-mark"><img src="logo.jpeg" alt=""></div>
+    <div class="splash-name">Customs Brokers<br>Association of Ghana</div>
+    <div class="splash-motto">Honesty and Efficiency</div>
   </div>
   <!-- Flutter Web Bootstrap Loader -->
   <script src="flutter_bootstrap.js" async></script>

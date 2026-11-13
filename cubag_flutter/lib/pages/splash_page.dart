@@ -46,6 +46,13 @@ class _SplashPageState extends State<SplashPage>
     _scale = Tween<double>(begin: 0.94, end: 1).animate(curve);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      // Web: index.html already shows this same splash while the app
+      // downloads, so start fully visible (no blink) and hold briefly.
+      if (kIsWeb) {
+        _controller.value = 1;
+        Future.delayed(const Duration(milliseconds: 1200), _navigateNext);
+        return;
+      }
       // Respect "reduce motion": no animation, just a short pause.
       if (MediaQuery.of(context).disableAnimations) {
         _controller.value = 1;
