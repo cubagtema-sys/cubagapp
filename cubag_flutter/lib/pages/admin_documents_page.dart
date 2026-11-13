@@ -10,6 +10,7 @@ import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/app_colors.dart';
 import '../design/cubag_design.dart';
+import '../components/cubag_ui.dart';
 import '../components/doc_preview_stub.dart'
     if (dart.library.html) '../components/doc_preview_web.dart'
     as doc_preview;
@@ -35,7 +36,7 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
   bool _loading = true;
   List<dynamic> _members = [];
   String _search = '';
-  String _filter = 'all';
+  String _filter = 'pending_review'; // open on the work waiting
   final String _selectedCategory = 'corporate';
 
   Timer? _debounce;
@@ -169,888 +170,297 @@ class _AdminDocumentsPageState extends State<AdminDocumentsPage> {
     return list;
   }
 
-  TextStyle _headerColStyle(Color textMuted) {
-    return TextStyle(
-      fontSize: 15,
-      fontWeight: FontWeight.w700,
-      color: textMuted,
-    );
-  }
+  // ── Layout ────────────────────────────────────────────────────────────────
+  // Opens on the applicants whose documents are all in and waiting for a
+  // decision. Each applicant is one row: who, how far along, what to do.
 
-  Widget _buildFilterChip(String label, String key, int count, IconData icon, Color activeColor, bool isDark) {
-    final isSel = _filter == key;
-    return InkWell(
-      onTap: () => setState(() => _filter = key),
-      borderRadius: BorderRadius.circular(8),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSel ? activeColor.withAlpha(isDark ? 40 : 25) : (isDark ? const Color(0xFF22140E) : Colors.white),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSel ? activeColor : (isDark ? const Color(0xFF3D261C) : CubagColors.line),
-            width: isSel ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: isSel ? activeColor : (isDark ? Colors.white60 : const Color(0xFF7A6B60))),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: isSel ? FontWeight.w700 : FontWeight.w600,
-                color: isSel ? activeColor : (isDark ? Colors.white70 : const Color(0xFF6B5E55)),
-              ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-              decoration: BoxDecoration(
-                color: isSel ? activeColor : (isDark ? Colors.white12 : const Color(0xFFEDE5DC)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '$count',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.bold,
-                  color: isSel ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF7A6B60)),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  int _num(Map<String, dynamic> m, String k) => (m[k] as num?)?.toInt() ?? 0;
+
+  /// Label and kind for an applicant's documents.
+  (String, StatusKind) _stateOf(Map<String, dynamic> m) {
+    final up = _num(m, 'docs_uploaded');
+    final ap = _num(m, 'docs_approved');
+    final req = _num(m, 'total_required');
+    if ((m['status'] as String?) == 'active') return ('Active member', StatusKind.good);
+    if (req == 0) return ('No documents needed', StatusKind.good);
+    if (ap >= req) return ('Approved', StatusKind.good);
+    if (up >= req) return ('To review', StatusKind.pending);
+    return ('Incomplete', StatusKind.neutral);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? CubagColors.ink : const Color(0xFFFAF6F0);
-    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final borderColor = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
-    final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
-
-    final currentCategoryMembers = _getMembersForCategory('corporate');
-    final countAll = currentCategoryMembers.length;
-    final countNeedsReview = currentCategoryMembers.where((m) {
-      final up = (m['docs_uploaded'] as num?)?.toInt() ?? 0;
-      final ap = (m['docs_approved'] as num?)?.toInt() ?? 0;
-      final totalReq = (m['total_required'] as num?)?.toInt() ?? 0;
-      return totalReq > 0 && up >= totalReq && ap < totalReq;
-    }).length;
-    final countIncomplete = currentCategoryMembers.where((m) {
-      final up = (m['docs_uploaded'] as num?)?.toInt() ?? 0;
-      final totalReq = (m['total_required'] as num?)?.toInt() ?? 0;
-      return totalReq > 0 && up < totalReq;
-    }).length;
-    final countVetted = currentCategoryMembers.where((m) {
-      final ap = (m['docs_approved'] as num?)?.toInt() ?? 0;
-      final totalReq = (m['total_required'] as num?)?.toInt() ?? 0;
-      return (totalReq > 0 && ap >= totalReq) || totalReq == 0;
-    }).length;
-
-    return AppLayout(
-      title: 'Registration Hub',
-      scrollable: false,
-      child: Container(
-        color: bg,
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1440),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── TOP HEADER ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Applicant Documents',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: textPrimary,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Review statutory compliance certificates, company records, and membership vetting.',
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            color: textMuted,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: textPrimary,
-                      side: BorderSide(color: borderColor),
-                      backgroundColor: cardBg,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    onPressed: () {
-                      context.push('/admin/document-rules').then((_) => _fetch(forceRefresh: true));
-                    },
-                    icon: const Icon(Icons.rule_folder_rounded, size: 16, color: _kOrange),
-                    label: Text(
-                      'Document Rules',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _kOrange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    onPressed: () => _fetch(forceRefresh: true),
-                    icon: const Icon(Icons.refresh_rounded, size: 16),
-                    label: Text(
-                      'Refresh',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 6),
-
-            // ── SEARCH & FILTER CONTROLS ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isNarrow = constraints.maxWidth < 750;
-                  final searchField = Container(
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: borderColor),
-                    ),
-                    child: TextField(
-                      onChanged: _onSearchChanged,
-                      style: TextStyle(fontSize: 14, color: textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'Search by company, applicant name, TIN, or member ID...',
-                        hintStyle: TextStyle(fontSize: 13.5, color: textMuted),
-                        prefixIcon: Icon(Icons.search_rounded, size: 18, color: textMuted),
-                        border: InputBorder.none,
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 11, horizontal: 12),
-                      ),
-                    ),
-                  );
-
-                  final filterChips = Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      _buildFilterChip('All', 'all', countAll, Icons.folder_copy_rounded, _kOrange, isDark),
-                      _buildFilterChip('Needs Review', 'pending_review', countNeedsReview, Icons.hourglass_top_rounded, _kAmber, isDark),
-                      _buildFilterChip('Incomplete', 'incomplete', countIncomplete, Icons.upload_file_rounded, _kBlue, isDark),
-                      _buildFilterChip('Vetted', 'fully_approved', countVetted, Icons.check_circle_rounded, _kGreen, isDark),
-                    ],
-                  );
-
-                  if (isNarrow) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        searchField,
-                        const SizedBox(height: 8),
-                        filterChips,
-                      ],
-                    );
-                  }
-
-                  return Row(
-                    children: [
-                      Expanded(child: searchField),
-                      const SizedBox(width: 12),
-                      filterChips,
-                    ],
-                  );
-                },
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // ── MAIN CONTENT (TABLE OR CARDS) ──
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: cardBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: borderColor),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: _loading
-                        ? ListView.separated(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: 6,
-                            separatorBuilder: (_, index) => const SizedBox(height: 10),
-                            itemBuilder: (_, index) => const ShimmerListTile(),
-                          )
-                        : _filtered.isEmpty
-                            ? Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(32),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          color: _kOrange.withAlpha(15),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(Icons.folder_off_rounded, size: 40, color: _kOrange.withAlpha(180)),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        'No applicant records found',
-                                        style: TextStyle(
-                                          fontSize: 17,
-                                          fontWeight: FontWeight.bold,
-                                          color: textPrimary,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Try adjusting your search query or switching filters.',
-                                        style: TextStyle(fontSize: 13.5, color: textMuted),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                            : LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final isWide = constraints.maxWidth >= 900;
-                                  if (!isWide) {
-                                    // Mobile/Tablet responsive card list
-                                    return ListView.separated(
-                                      padding: const EdgeInsets.all(12),
-                                      itemCount: _filtered.length,
-                                      separatorBuilder: (_, _) => const SizedBox(height: 10),
-                                      itemBuilder: (ctx, i) => _buildApplicantCard(
-                                        _filtered[i],
-                                        isDark,
-                                        cardBg,
-                                        borderColor,
-                                        textPrimary,
-                                        textMuted,
-                                      ),
-                                    );
-                                  }
-
-                                  // Desktop Table
-                                  return Column(
-                                    children: [
-                                      // Table Header
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
-                                        decoration: BoxDecoration(
-                                          color: isDark ? const Color(0xFF1F120B) : CubagColors.sand,
-                                          border: Border(bottom: BorderSide(color: borderColor)),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            SizedBox(
-                                              width: 36,
-                                              child: Text('#', style: _headerColStyle(textMuted)),
-                                            ),
-                                            Expanded(
-                                              flex: 3,
-                                              child: Text('Applicant & firm', style: _headerColStyle(textMuted)),
-                                            ),
-                                            Expanded(
-                                              flex: 2,
-                                              child: Text('Type & port', style: _headerColStyle(textMuted)),
-                                            ),
-                                            SizedBox(
-                                              width: 180,
-                                              child: Text('Statutory docs', style: _headerColStyle(textMuted)),
-                                            ),
-                                            SizedBox(
-                                              width: 140,
-                                              child: Center(child: Text('Status', style: _headerColStyle(textMuted))),
-                                            ),
-                                            const SizedBox(
-                                              width: 100,
-                                              child: Align(
-                                                alignment: Alignment.centerRight,
-                                                child: Text(
-                                                  'Action',
-                                                  style: TextStyle(
-                                                    fontSize: 12.5,
-                                                    fontWeight: FontWeight.w800,
-                                                    color: Color(0xFF5F6B7E),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // Table Body
-                                      Expanded(
-                                        child: ListView.separated(
-                                          padding: EdgeInsets.zero,
-                                          itemCount: _filtered.length,
-                                          separatorBuilder: (_, _) => Divider(height: 1, color: borderColor),
-                                          itemBuilder: (ctx, i) => _buildApplicantRow(
-                                            _filtered[i],
-                                            i + 1,
-                                            isDark,
-                                            cardBg,
-                                            borderColor,
-                                            textPrimary,
-                                            textMuted,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-  Widget _buildApplicantRow(
-    Map<String, dynamic> m,
-    int index,
-    bool isDark,
-    Color cardBg,
-    Color border,
-    Color textCol,
-    Color subCol,
-  ) {
-    final name = ((m['name'] as String?) ?? 'Applicant').trim();
-    final company = ((m['company'] as String?) ?? 'Unnamed Enterprise').trim();
-    final status = (m['status'] as String?) ?? 'pending';
-    final memNo = (m['membership_number'] as String?) ?? 'PENDING';
-    final port = (m['port_of_operation'] as String?) ?? 'Tema Port';
-
-    final rawUp = m['docs_uploaded'];
-    final rawAp = m['docs_approved'];
-    final uploaded = rawUp == null ? 0 : (rawUp as num).toInt();
-    final approved = rawAp == null ? 0 : (rawAp as num).toInt();
-
-    final memberType = (m['member_type'] as String? ?? 'Corporate').trim();
-    final isSme = ((m['member_scale'] as String? ?? 'sme').toLowerCase()) == 'sme';
-    final totalExpected = (m['total_required'] as num?)?.toInt() ?? 0;
-
-    const Color typeColor = _kIndigo;
-
-    Color statusColor;
-    String statusLabel;
-    IconData statusIcon;
-    if (status == 'active') {
-      statusColor = _kGreen;
-      statusLabel = 'Active';
-      statusIcon = Icons.verified_rounded;
-    } else if (totalExpected == 0) {
-      statusColor = _kGreen;
-      statusLabel = 'Exempt';
-      statusIcon = Icons.check_circle_outline_rounded;
-    } else if (approved >= totalExpected && totalExpected > 0) {
-      statusColor = _kGreen;
-      statusLabel = 'Fully Vetted';
-      statusIcon = Icons.check_circle_rounded;
-    } else if (uploaded >= totalExpected) {
-      statusColor = _kAmber;
-      statusLabel = 'Needs Review';
-      statusIcon = Icons.hourglass_top_rounded;
-    } else if (uploaded > 0) {
-      statusColor = _kBlue;
-      statusLabel = 'Incomplete';
-      statusIcon = Icons.upload_file_rounded;
-    } else {
-      statusColor = _kRed;
-      statusLabel = 'Pending Upload';
-      statusIcon = Icons.warning_amber_rounded;
+    final all = _getAllMembers();
+    int count(String f) {
+      final saved = _filter;
+      _filter = f;
+      final n = _filtered.length;
+      _filter = saved;
+      return n;
     }
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () async {
-          await context.push('/admin/documents/${m['id']}');
-          if (mounted) {
-            await ApiService.deleteCacheKeysMatching('documents/admin');
-            _fetch(forceRefresh: true);
-          }
-        },
-        hoverColor: _kOrange.withAlpha(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 36,
-                child: Text(
-                  '$index',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: subCol,
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 3,
-                child: Row(
+    final counts = {
+      'pending_review': count('pending_review'),
+      'incomplete': count('incomplete'),
+      'fully_approved': count('fully_approved'),
+      'all': all.length,
+    };
+    final list = _filtered;
+    // Side-by-side rows need room beside the admin sidebar.
+    final wide = MediaQuery.sizeOf(context).width >= 1100;
+
+    return AppLayout(
+      title: 'Applications',
+      scrollable: true,
+      background: CubagColors.sand,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1080),
+          child: Padding(
+            padding: EdgeInsets.all(wide ? CubagSpace.xl : CubagSpace.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.end,
+                  spacing: CubagSpace.md,
+                  runSpacing: CubagSpace.md,
                   children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: typeColor.withAlpha(25),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: typeColor.withAlpha(60)),
-                      ),
-                      child: Center(
-                        child: Text(
-                          company.isNotEmpty
-                              ? company[0].toUpperCase()
-                              : (name.isNotEmpty ? name[0].toUpperCase() : 'C'),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: typeColor,
-                          ),
-                        ),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 560),
+                      child: const PageIntro(
+                        'Applications',
+                        subtitle: 'Check each applicant\'s documents, then approve or ask for changes.',
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SelectableText(
-                            company,
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w700,
-                              color: textCol,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Flexible(
-                                child: SelectableText(
-                                  name,
-                                  style: TextStyle(fontSize: 13, color: subCol),
-                                ),
-                              ),
-                              if (memNo.isNotEmpty && memNo != 'PENDING') ...[
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                  decoration: BoxDecoration(
-                                    color: _kOrange.withAlpha(20),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: SelectableText(
-                                    memNo,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.accentOrangeText,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: typeColor.withAlpha(20),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            memberType.toLowerCase().contains('corporate')
-                                ? (isSme ? 'Corporate • SME' : 'Large Corporate')
-                                : memberType,
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              color: typeColor,
-                            ),
-                          ),
+                        IconButton(
+                          tooltip: 'Refresh',
+                          onPressed: () => _fetch(forceRefresh: true),
+                          icon: const Icon(Icons.refresh_rounded, color: CubagColors.inkSoft),
+                        ),
+                        const SizedBox(width: CubagSpace.xs),
+                        OutlinedButton(
+                          onPressed: () =>
+                              context.push('/admin/document-rules').then((_) => _fetch(forceRefresh: true)),
+                          child: const Text('Requirements'),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      port,
-                      style: TextStyle(fontSize: 12, color: subCol),
-                      maxLines: 1,
                     ),
                   ],
                 ),
-              ),
-              SizedBox(
-                width: 180,
-                child: totalExpected == 0
-                    ? Row(
-                        children: [
-                          const Icon(Icons.check_circle_outline_rounded, size: 14, color: _kGreen),
-                          const SizedBox(width: 5),
-                          Text('No Docs Required', style: TextStyle(fontSize: 12.5, color: _kGreen, fontWeight: FontWeight.w600)),
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                '$uploaded / $totalExpected Docs',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: uploaded >= totalExpected ? _kGreen : textCol,
-                                ),
-                              ),
-                              if (approved > 0) ...[
-                                const SizedBox(width: 4),
-                                Text(
-                                  '($approved ✓)',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: _kGreen,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          SizedBox(
-                            width: 140,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(3),
-                              child: LinearProgressIndicator(
-                                value: (uploaded / totalExpected.toDouble()).clamp(0.0, 1.0),
-                                backgroundColor: isDark ? const Color(0xFF4D2D20) : CubagColors.line,
-                                color: uploaded >= totalExpected
-                                    ? _kGreen
-                                    : (uploaded >= (totalExpected / 2) ? _kOrange : _kRed),
-                                minHeight: 4,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-              SizedBox(
-                width: 140,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                const SizedBox(height: CubagSpace.lg),
+                _toolbar(counts, wide),
+                const SizedBox(height: CubagSpace.md),
+                if (_loading)
+                  const Padding(
+                    padding: EdgeInsets.all(48),
+                    child: Center(child: CircularProgressIndicator(color: CubagColors.action)),
+                  )
+                else if (list.isEmpty)
+                  _empty()
+                else
+                  Container(
                     decoration: BoxDecoration(
-                      color: statusColor.withAlpha(20),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: statusColor.withAlpha(60)),
+                      color: CubagColors.paper,
+                      borderRadius: BorderRadius.circular(CubagRadius.card),
+                      border: Border.all(color: CubagColors.line),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
                       children: [
-                        Icon(statusIcon, size: 12, color: statusColor),
-                        const SizedBox(width: 4),
-                        Text(
-                          statusLabel,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: statusColor,
-                          ),
-                        ),
+                        for (var i = 0; i < list.length; i++) ...[
+                          if (i > 0) const Divider(height: 1, color: CubagColors.line),
+                          _row(list[i], wide),
+                        ],
                       ],
                     ),
                   ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      await context.push('/admin/documents/${m['id']}');
-                      if (mounted) {
-                        await ApiService.deleteCacheKeysMatching('documents/admin');
-                        _fetch(forceRefresh: true);
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isDark ? const Color(0xFF4D2D20) : CubagColors.sand,
-                      foregroundColor: textCol,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(color: border),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('Review', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
-                        const SizedBox(width: 4),
-                        Icon(Icons.arrow_forward_rounded, size: 12, color: _kOrange),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildApplicantCard(
-    Map<String, dynamic> m,
-    bool isDark,
-    Color cardBg,
-    Color border,
-    Color textCol,
-    Color subCol,
-  ) {
+  Widget _toolbar(Map<String, int> counts, bool wide) {
+    const labels = {
+      'pending_review': 'To review',
+      'incomplete': 'Incomplete',
+      'fully_approved': 'Approved',
+      'all': 'All',
+    };
+    final tabs = SegmentedButton<String>(
+      showSelectedIcon: false,
+      segments: [
+        for (final e in labels.entries)
+          ButtonSegment(value: e.key, label: Text('${e.value} ${counts[e.key] ?? 0}')),
+      ],
+      selected: {labels.containsKey(_filter) ? _filter : 'all'},
+      onSelectionChanged: (s) => setState(() => _filter = s.first),
+      style: ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        backgroundColor: WidgetStateProperty.resolveWith(
+          (st) => st.contains(WidgetState.selected) ? CubagColors.ink : CubagColors.paper,
+        ),
+        foregroundColor: WidgetStateProperty.resolveWith(
+          (st) => st.contains(WidgetState.selected) ? Colors.white : CubagColors.inkSoft,
+        ),
+        side: const WidgetStatePropertyAll(BorderSide(color: CubagColors.line)),
+      ),
+    );
+    final search = TextField(
+      onChanged: _onSearchChanged,
+      decoration: InputDecoration(
+        hintText: 'Search name, company, TIN or member ID',
+        prefixIcon: const Icon(Icons.search_rounded, size: 20),
+        isDense: true,
+        filled: true,
+        fillColor: CubagColors.paper,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(CubagRadius.control),
+          borderSide: const BorderSide(color: CubagColors.line),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(CubagRadius.control),
+          borderSide: const BorderSide(color: CubagColors.line),
+        ),
+      ),
+    );
+    if (wide) {
+      return Row(children: [tabs, const SizedBox(width: CubagSpace.md), Expanded(child: search)]);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SingleChildScrollView(scrollDirection: Axis.horizontal, child: tabs),
+        const SizedBox(height: CubagSpace.sm),
+        search,
+      ],
+    );
+  }
+
+  Widget _empty() {
+    final (title, body) = switch (_filter) {
+      'pending_review' => ('Nothing to review', 'Applicants appear here once all their documents are uploaded.'),
+      'incomplete' => ('No incomplete applications', 'Everyone has uploaded what they need.'),
+      'fully_approved' => ('No approved applications yet', 'Applicants appear here once you approve them.'),
+      _ => ('No applicants found', 'Try a different search.'),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: CubagSpace.lg),
+      decoration: BoxDecoration(
+        color: CubagColors.paper,
+        borderRadius: BorderRadius.circular(CubagRadius.card),
+        border: Border.all(color: CubagColors.line),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.task_alt_rounded, size: 36, color: CubagColors.muted),
+          const SizedBox(height: CubagSpace.sm),
+          Text(title, style: CubagType.bodyStrong),
+          const SizedBox(height: 4),
+          Text(body, style: CubagType.small, textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(Map<String, dynamic> m, bool wide) {
     final name = ((m['name'] as String?) ?? 'Applicant').trim();
-    final company = ((m['company'] as String?) ?? 'Unnamed Enterprise').trim();
-    final memNo = (m['membership_number'] as String?) ?? 'PENDING';
-    final port = (m['port_of_operation'] as String?) ?? 'Tema Port';
+    final company = ((m['company'] as String?) ?? '').trim();
+    final memNo = ((m['membership_number'] as String?) ?? '').trim();
+    final port = ((m['port_of_operation'] as String?) ?? '').trim();
+    final scale = (m['member_scale'] as String? ?? 'sme') == 'large_corporate' ? 'Large corporate' : 'SME';
+    final up = _num(m, 'docs_uploaded');
+    final ap = _num(m, 'docs_approved');
+    final req = _num(m, 'total_required');
+    final (label, kind) = _stateOf(m);
+    final progress = req == 0 ? 1.0 : (up / req).clamp(0.0, 1.0);
 
-    final rawUp = m['docs_uploaded'];
-    final rawAp = m['docs_approved'];
-    final uploaded = rawUp == null ? 0 : (rawUp as num).toInt();
-    final approved = rawAp == null ? 0 : (rawAp as num).toInt();
-
-    final memberType = (m['member_type'] as String? ?? 'Corporate').trim();
-    final isSme = ((m['member_scale'] as String? ?? 'sme').toLowerCase()) == 'sme';
-    final totalExpected = (m['total_required'] as num?)?.toInt() ?? 0;
-
-    const Color typeColor = _kIndigo;
-
-    Color statusColor;
-    String statusLabel;
-    IconData statusIcon;
-    if (totalExpected == 0) {
-      statusColor = _kGreen;
-      statusLabel = 'Exempt';
-      statusIcon = Icons.check_circle_outline_rounded;
-    } else if (approved >= totalExpected && totalExpected > 0) {
-      statusColor = _kGreen;
-      statusLabel = 'Vetted';
-      statusIcon = Icons.check_circle_rounded;
-    } else if (uploaded >= totalExpected) {
-      statusColor = _kAmber;
-      statusLabel = 'Needs Review';
-      statusIcon = Icons.hourglass_top_rounded;
-    } else if (uploaded > 0) {
-      statusColor = _kBlue;
-      statusLabel = 'Incomplete';
-      statusIcon = Icons.upload_file_rounded;
-    } else {
-      statusColor = _kRed;
-      statusLabel = 'Pending';
-      statusIcon = Icons.warning_amber_rounded;
+    Future<void> open() async {
+      await context.push('/admin/documents/${m['id']}');
+      _fetch(forceRefresh: true);
     }
 
+    final who = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(company.isEmpty ? name : company, style: CubagType.bodyStrong, maxLines: 1, overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 2),
+        Text(
+          [
+            if (company.isNotEmpty) name,
+            scale,
+            if (port.isNotEmpty) port,
+            if (memNo.isNotEmpty && !memNo.toUpperCase().contains('PENDING')) memNo,
+          ].join(' · '),
+          style: CubagType.small,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+
+    final docs = SizedBox(
+      width: wide ? 180 : double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            req == 0 ? 'No documents needed' : '$up of $req uploaded${ap > 0 ? ', $ap approved' : ''}',
+            style: CubagType.caption,
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: CubagColors.sand,
+              color: ap >= req && req > 0 ? CubagColors.valid : CubagColors.cocoa,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final action = kind == StatusKind.pending
+        ? FilledButton(onPressed: open, child: const Text('Review'))
+        : OutlinedButton(onPressed: open, child: const Text('Open'));
+
     return InkWell(
-      onTap: () async {
-        await context.push('/admin/documents/${m['id']}');
-        if (mounted) {
-          await ApiService.deleteCacheKeysMatching('documents/admin');
-          _fetch(forceRefresh: true);
-        }
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: typeColor.withAlpha(25),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: typeColor.withAlpha(60)),
-                  ),
-                  child: Center(
-                    child: Text(
-                      company.isNotEmpty ? company[0].toUpperCase() : (name.isNotEmpty ? name[0].toUpperCase() : 'C'),
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: typeColor,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
+      onTap: open,
+      child: Padding(
+        padding: const EdgeInsets.all(CubagSpace.md),
+        child: wide
+            ? Row(
+                children: [
+                  Expanded(child: who),
+                  const SizedBox(width: CubagSpace.md),
+                  docs,
+                  const SizedBox(width: CubagSpace.lg),
+                  SizedBox(width: 150, child: Align(alignment: Alignment.centerLeft, child: StatusChip(label, kind: kind))),
+                  action,
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        company,
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w700,
-                          color: textCol,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        name + (memNo.isNotEmpty && memNo != 'PENDING' ? ' • $memNo' : ''),
-                        style: TextStyle(fontSize: 12.5, color: subCol),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                    children: [Expanded(child: who), const SizedBox(width: CubagSpace.sm), StatusChip(label, kind: kind)],
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: statusColor.withAlpha(20),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: statusColor.withAlpha(60)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(statusIcon, size: 11, color: statusColor),
-                      const SizedBox(width: 4),
-                      Text(
-                        statusLabel,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: statusColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: typeColor.withAlpha(20),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    memberType.toLowerCase().contains('corporate')
-                        ? (isSme ? 'Corporate • SME' : 'Large Corporate')
-                        : memberType,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: typeColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(port, style: TextStyle(fontSize: 12, color: subCol)),
-                const Spacer(),
-                Text(
-                  totalExpected == 0 ? 'Exempt' : '$uploaded/$totalExpected Docs${approved > 0 ? ' ($approved ✓)' : ''}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: uploaded >= totalExpected ? _kGreen : textCol,
-                  ),
-                ),
-              ],
-            ),
-            if (totalExpected > 0) ...[
-              const SizedBox(height: 6),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(3),
-                child: LinearProgressIndicator(
-                  value: (uploaded / totalExpected.toDouble()).clamp(0.0, 1.0),
-                  backgroundColor: isDark ? const Color(0xFF4D2D20) : CubagColors.line,
-                  color: uploaded >= totalExpected ? _kGreen : (uploaded >= (totalExpected / 2) ? _kOrange : _kRed),
-                  minHeight: 4,
-                ),
+                  const SizedBox(height: CubagSpace.sm),
+                  docs,
+                  const SizedBox(height: CubagSpace.sm),
+                  Align(alignment: Alignment.centerRight, child: action),
+                ],
               ),
-            ],
-          ],
-        ),
       ),
     );
   }

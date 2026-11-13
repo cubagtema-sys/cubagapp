@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:go_router/go_router.dart';
 import '../components/app_layout.dart';
 import '../components/custom_dropdown.dart';
 import '../components/admin_components.dart';
@@ -13,6 +12,7 @@ import '../components/fetch_error_view.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
 import '../design/cubag_design.dart';
+import '../components/cubag_ui.dart';
 part 'admin_members/admin_members_widgets.dart';
 
 class StandingTier {
@@ -461,7 +461,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
     }
 
     return AppLayout(
-      title: 'Association Members',
+      title: 'Members',
       scrollable: false,
       child: Stack(
         children: [
@@ -475,138 +475,61 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AdminHeader(
-                        title: 'Association Members Directory',
-                        subtitle:
-                            'Manage member compliance standings, branch classifications, verify credentials, and review records.',
-                        actions: [
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: kAdminOrange,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              elevation: 0,
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.end,
+                        spacing: CubagSpace.md,
+                        runSpacing: CubagSpace.md,
+                        children: [
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 560),
+                            child: const PageIntro(
+                              'Members',
+                              subtitle: 'Everyone registered with CUBAG. Open a member to see their details, standing and payments.',
                             ),
+                          ),
+                          IconButton(
+                            tooltip: 'Refresh',
                             onPressed: () => _fetch(refresh: true),
-                            icon: const Icon(Icons.refresh_rounded, size: 18),
-                            label: Text(
-                              'Refresh',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
+                            icon: const Icon(Icons.refresh_rounded, color: CubagColors.inkSoft),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      _buildTypographicMembersLedger(
-                        total: total,
-                        active: active,
-                        pending: pending,
-                        suspended: suspended,
-                        isDark: isDark,
-                        borderCol: borderColor,
-                        cardBg: cardBg,
-                        textInk: textColor,
-                        subInk: subTextColor,
-                      ),
-                      const SizedBox(height: 16),
-                      AdminToolbar(
-                        searchHint: 'Search members by name, company, email, TIN...',
-                        onSearchChanged: (v) => setState(() => _search = v),
-                        filters: [
-                          SizedBox(
-                            width: 160,
-                            child: CustomDropdown<String>(
-                              value: _filterStatus,
-                              prefixIcon: const Icon(
-                                Icons.filter_alt_outlined,
-                                size: 16,
-                                color: CubagColors.muted,
-                              ),
-                              items: [
-                                DropdownItem(value: 'all', label: 'All ($total)'),
-                                DropdownItem(
-                                  value: 'active',
-                                  label: 'Active ($active)',
-                                ),
-                                DropdownItem(
-                                  value: 'pending',
-                                  label: 'Pending ($pending)',
-                                ),
-                                const DropdownItem(
-                                  value: 'inactive',
-                                  label: 'Inactive',
-                                ),
-                                const DropdownItem(
-                                  value: 'suspended',
-                                  label: 'Suspended',
-                                ),
-                              ],
-                              onChanged: (v) => setState(() => _filterStatus = v),
-                            ),
-                          ),
-                          SizedBox(
-                            width: 150,
-                            child: CustomDropdown<String>(
-                              value: _sortBy,
-                              prefixIcon: const Icon(
-                                Icons.sort,
-                                size: 16,
-                                color: CubagColors.muted,
-                              ),
-                              items: const [
-                                DropdownItem(value: 'name', label: 'Name (A-Z)'),
-                                DropdownItem(
-                                  value: 'score_desc',
-                                  label: 'High Score',
-                                ),
-                                DropdownItem(value: 'score_asc', label: 'At Risk'),
-                              ],
-                              onChanged: (v) => setState(() => _sortBy = v),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: CubagSpace.lg),
+                      _summaryStrip(total, active, pending, suspended),
+                      const SizedBox(height: CubagSpace.lg),
+                      _membersToolbar(),
+                      const SizedBox(height: CubagSpace.md),
                       if (_loading)
                         ListView.separated(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          itemCount: 8,
+                          itemCount: 6,
                           separatorBuilder: (ctx, i) => const SizedBox(height: 12),
                           itemBuilder: (ctx, i) => const ShimmerListTile(),
                         )
                       else if (_hasError && _members.isEmpty)
                         FetchErrorView(onRetry: () => _fetch(refresh: true))
                       else if (filtered.isEmpty)
-                        const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(40),
-                            child: Text(
-                              'No members found matching the selected filter.',
-                              style: TextStyle(color: Colors.grey),
-                            ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 48, horizontal: CubagSpace.lg),
+                          decoration: BoxDecoration(
+                            color: CubagColors.paper,
+                            borderRadius: BorderRadius.circular(CubagRadius.card),
+                            border: Border.all(color: CubagColors.line),
+                          ),
+                          child: const Column(
+                            children: [
+                              Icon(Icons.people_outline_rounded, size: 36, color: CubagColors.muted),
+                              SizedBox(height: CubagSpace.sm),
+                              Text('No members found', style: CubagType.bodyStrong),
+                              SizedBox(height: 4),
+                              Text('Try another status or search.', style: CubagType.small),
+                            ],
                           ),
                         )
                       else
-                        _buildMembersTable(
-                          filtered,
-                          primary,
-                          context,
-                          isDark,
-                          cardBg,
-                          borderColor,
-                          textColor,
-                          subTextColor,
-                        ),
+                        _memberList(filtered),
                       const SizedBox(height: 12),
                       if (_loadingMore)
                         const Center(
@@ -618,7 +541,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                       if (!_loading)
                         Center(
                           child: Text(
-                            '${filtered.length} members shown${_total > 0 ? " of $_total" : ""}',
+                            'Showing ${filtered.length}${_total > 0 ? " of $_total" : ""}',
                             style: const TextStyle(fontSize: 13, color: Colors.grey),
                           ),
                         ),
@@ -726,6 +649,177 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  // ── Redesigned list ───────────────────────────────────────────────────────
+
+  Widget _summaryStrip(int total, int active, int pending, int suspended) {
+    Widget fig(String label, int v, String filter, {Color color = CubagColors.ink}) {
+      final selected = _filterStatus == filter;
+      return Expanded(
+        child: InkWell(
+          onTap: () => setState(() => _filterStatus = filter),
+          child: Container(
+            padding: const EdgeInsets.all(CubagSpace.md),
+            color: selected ? CubagColors.sand : null,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: CubagType.small, maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 4),
+                Text('$v', style: CubagType.title.copyWith(color: color)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: CubagColors.paper,
+        borderRadius: BorderRadius.circular(CubagRadius.card),
+        border: Border.all(color: CubagColors.line),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            fig('All', total, 'all'),
+            const VerticalDivider(width: 1, color: CubagColors.line),
+            fig('Active', active, 'active', color: CubagColors.valid),
+            const VerticalDivider(width: 1, color: CubagColors.line),
+            fig('Pending', pending, 'pending', color: pending > 0 ? CubagColors.due : CubagColors.ink),
+            const VerticalDivider(width: 1, color: CubagColors.line),
+            fig('Suspended', suspended, 'suspended', color: suspended > 0 ? CubagColors.lapsed : CubagColors.ink),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _membersToolbar() {
+    final search = TextField(
+      onChanged: (v) => setState(() => _search = v),
+      decoration: InputDecoration(
+        hintText: 'Search name or email',
+        prefixIcon: const Icon(Icons.search_rounded, size: 20),
+        isDense: true,
+        filled: true,
+        fillColor: CubagColors.paper,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(CubagRadius.control),
+          borderSide: const BorderSide(color: CubagColors.line),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(CubagRadius.control),
+          borderSide: const BorderSide(color: CubagColors.line),
+        ),
+      ),
+    );
+    final sort = SizedBox(
+      width: 170,
+      child: CustomDropdown<String>(
+        value: _sortBy,
+        prefixIcon: const Icon(Icons.sort, size: 16, color: CubagColors.muted),
+        items: const [
+          DropdownItem(value: 'name', label: 'Name'),
+          DropdownItem(value: 'score_desc', label: 'Best standing'),
+          DropdownItem(value: 'score_asc', label: 'At risk'),
+        ],
+        onChanged: (v) => setState(() => _sortBy = v),
+      ),
+    );
+    return Row(children: [Expanded(child: search), const SizedBox(width: CubagSpace.sm), sort]);
+  }
+
+  Widget _memberList(List<dynamic> list) {
+    final wide = MediaQuery.sizeOf(context).width >= 1100;
+    return Container(
+      decoration: BoxDecoration(
+        color: CubagColors.paper,
+        borderRadius: BorderRadius.circular(CubagRadius.card),
+        border: Border.all(color: CubagColors.line),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (var i = 0; i < list.length; i++) ...[
+            if (i > 0) const Divider(height: 1, color: CubagColors.line),
+            _memberRow(Map<String, dynamic>.from(list[i] as Map), wide),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _memberRow(Map<String, dynamic> m, bool wide) {
+    final name = (m['name']?.toString() ?? 'Member').trim();
+    final email = (m['email']?.toString() ?? '').trim();
+    final company = (m['company']?.toString() ?? '').trim();
+    final status = (m['status']?.toString() ?? 'inactive').toLowerCase();
+    final (label, kind) = switch (status) {
+      'active' => ('Active', StatusKind.good),
+      'pending' || 'pending_review' => ('Pending', StatusKind.pending),
+      'suspended' => ('Suspended', StatusKind.bad),
+      _ => ('Inactive', StatusKind.neutral),
+    };
+    final stars = double.tryParse(m['star_rating']?.toString() ?? '') ?? 5.0;
+    final score = int.tryParse(m['compliance_score']?.toString() ?? '') ?? 100;
+    final initials = name.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).take(2).map((w) => w[0].toUpperCase()).join();
+
+    final avatar = CircleAvatar(
+      radius: 20,
+      backgroundColor: CubagColors.sand,
+      child: Text(initials, style: CubagType.label.copyWith(color: CubagColors.cocoa)),
+    );
+    final who = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(name, style: CubagType.bodyStrong, maxLines: 1, overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 2),
+        Text(
+          [if (company.isNotEmpty) company, if (email.isNotEmpty) email].join(' · '),
+          style: CubagType.small,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+    final standing = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.star_rounded, size: 16, color: CubagColors.due),
+        const SizedBox(width: 2),
+        Text('${stars.toStringAsFixed(1)} · $score%', style: CubagType.small.copyWith(color: CubagColors.ink)),
+      ],
+    );
+
+    return InkWell(
+      onTap: () => _selectMember(m),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: CubagSpace.md, vertical: 12),
+        child: Row(
+          children: [
+            avatar,
+            const SizedBox(width: CubagSpace.md),
+            Expanded(child: who),
+            const SizedBox(width: CubagSpace.md),
+            if (wide) ...[standing, const SizedBox(width: CubagSpace.lg)],
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                StatusChip(label, kind: kind),
+                if (!wide) ...[const SizedBox(height: 4), standing],
+              ],
+            ),
+            const SizedBox(width: CubagSpace.sm),
+            const Icon(Icons.chevron_right_rounded, color: CubagColors.muted),
+          ],
+        ),
       ),
     );
   }
@@ -1277,581 +1371,6 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildTypographicMembersLedger({
-    required int total,
-    required int active,
-    required int pending,
-    required int suspended,
-    required bool isDark,
-    required Color borderCol,
-    required Color cardBg,
-    required Color textInk,
-    required Color subInk,
-  }) {
-    final items = [
-      {
-        'label': 'TOTAL MEMBERS',
-        'value': '$total',
-        'badge': 'Accredited Roll',
-        'badgeColor': const Color(0xFF6B3E26),
-      },
-      {
-        'label': 'ACTIVE STANDING',
-        'value': '$active',
-        'badge': 'In Good Standing',
-        'badgeColor': CubagColors.valid,
-      },
-      {
-        'label': 'PENDING VETTING',
-        'value': '$pending',
-        'badge': pending > 0 ? 'Requires Audit' : 'Queue Clear',
-        'badgeColor': pending > 0 ? kAdminOrange : CubagColors.valid,
-      },
-      {
-        'label': 'SUSPENDED',
-        'value': '$suspended',
-        'badge': suspended > 0 ? 'Sanctioned' : 'Zero Infractions',
-        'badgeColor':
-            suspended > 0 ? CubagColors.lapsed : CubagColors.valid,
-      },
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderCol, width: 1.0),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isSmall = constraints.maxWidth < 800;
-          if (isSmall) {
-            return Column(
-              children: items.asMap().entries.map((entry) {
-                final idx = entry.key;
-                final it = entry.value;
-                return Column(
-                  children: [
-                    _buildLedgerItem(it, textInk, subInk),
-                    if (idx < items.length - 1)
-                      Divider(height: 1, color: borderCol, thickness: 1),
-                  ],
-                );
-              }).toList(),
-            );
-          }
-
-          return Row(
-            children: items.asMap().entries.map((entry) {
-              final idx = entry.key;
-              final it = entry.value;
-              return Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: idx < items.length - 1
-                        ? Border(right: BorderSide(color: borderCol, width: 1.0))
-                        : null,
-                  ),
-                  child: _buildLedgerItem(it, textInk, subInk),
-                ),
-              );
-            }).toList(),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildLedgerItem(
-    Map<String, dynamic> it,
-    Color textInk,
-    Color subInk,
-  ) {
-    final badgeColor = it['badgeColor'] as Color;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                it['label'] as String,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: subInk,
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                decoration: BoxDecoration(
-                  color: badgeColor.withAlpha(20),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  it['badge'] as String,
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w800,
-                    color: badgeColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 5),
-          SelectableText(
-            it['value'] as String,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: textInk,
-              letterSpacing: -0.4,
-            ).copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMembersTable(
-    List<dynamic> members,
-    Color primary,
-    BuildContext context,
-    bool isDark,
-    Color cardBg,
-    Color borderColor,
-    Color textColor,
-    Color subTextColor,
-  ) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor, width: 1.0),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(11),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            const minTableWidth = 950.0;
-            final tableWidth = constraints.maxWidth > minTableWidth
-                ? constraints.maxWidth
-                : minTableWidth;
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: tableWidth,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Table Header Row
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF170C08)
-                            : const Color(0xFFF4EFEA),
-                        border: Border(
-                          bottom: BorderSide(color: borderColor, width: 1.0),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          _buildHeaderCell('ASSOCIATION MEMBER', 3, textColor),
-                          _buildHeaderCell('MEMBER TYPE', 2, textColor),
-                          _buildHeaderCell(
-                            'STANDING & COMPLIANCE',
-                            2,
-                            textColor,
-                          ),
-                          _buildHeaderCell('STATUS', 1, textColor),
-                          _buildHeaderCell(
-                            'ACTIONS',
-                            2,
-                            textColor,
-                            align: TextAlign.right,
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Table Body Rows (Lazy List Builder)
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: members.length,
-                      itemBuilder: (context, index) {
-                        final m = members[index];
-                        final isLast = index == members.length - 1;
-                        return _buildTableRow(
-                          m,
-                          index,
-                          isLast,
-                          primary,
-                          context,
-                          isDark,
-                          cardBg,
-                          borderColor,
-                          textColor,
-                          subTextColor,
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderCell(
-    String label,
-    int flex,
-    Color textColor, {
-    TextAlign align = TextAlign.left,
-  }) {
-    return Expanded(
-      flex: flex,
-      child: Text(
-        label,
-        textAlign: align,
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w800,
-          color: textColor.withValues(alpha: 0.7),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTableRow(
-    dynamic m,
-    int index,
-    bool isLast,
-    Color primary,
-    BuildContext ctx,
-    bool isDark,
-    Color cardBg,
-    Color borderColor,
-    Color textColor,
-    Color subTextColor,
-  ) {
-    final ss = _statusStyle[m['status']] ?? _statusStyle['inactive']!;
-    final c = _typeColors[m['member_type']] ?? primary;
-    final starRating =
-        double.tryParse(m['star_rating']?.toString() ?? '') ?? 5.0;
-    final score = int.tryParse(m['compliance_score']?.toString() ?? '') ?? 100;
-    final tier = StandingTier.getFromStars(starRating);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: index.isEven
-            ? cardBg
-            : (isDark ? CubagColors.ink : CubagColors.sand),
-        border: isLast
-            ? null
-            : Border(
-                bottom: BorderSide(
-                  color: borderColor.withValues(alpha: 0.6),
-                  width: 1,
-                ),
-              ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _selectMember(m as Map<String, dynamic>),
-          hoverColor: primary.withValues(alpha: 0.05),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Row(
-              children: [
-                // 1. Association Member (Avatar + Name/Email)
-                Expanded(
-                  flex: 3,
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: c.withAlpha(25),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: c.withAlpha(60), width: 1.0),
-                        ),
-                        alignment: Alignment.center,
-                        child:
-                            m['profile_photo'] != null &&
-                                m['profile_photo'].toString().isNotEmpty
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(7),
-                                child: CachedNetworkImage(
-                                  imageUrl: m['profile_photo'].toString(),
-                                  width: 38,
-                                  height: 38,
-                                  memCacheWidth: 76,
-                                  memCacheHeight: 76,
-                                  fit: BoxFit.cover,
-                                ),
-                              )
-                            : Text(
-                                _initials(m['name']?.toString() ?? ''),
-                                style: TextStyle(
-                                  color: c,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 14,
-                                ),
-                              ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SelectableText(
-                              m['name']?.toString() ?? '',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14.5,
-                                color: textColor,
-                                letterSpacing: -0.2,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            SelectableText(
-                              m['email']?.toString() ?? '',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                color: subTextColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // 2. Member Type
-                Expanded(
-                  flex: 2,
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          color: c,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          m['member_type']?.toString() ?? 'General Member',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: textColor.withValues(alpha: 0.9),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // 3. Standing & Compliance
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star_rounded,
-                            color: Color(0xFFFFB800),
-                            size: 15,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${starRating.toStringAsFixed(1)} / 5.0',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: textColor,
-                            ).copyWith(
-                              fontFeatures: const [FontFeature.tabularFigures()],
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '($score%)',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: subTextColor,
-                              fontWeight: FontWeight.w600,
-                            ).copyWith(
-                              fontFeatures: const [FontFeature.tabularFigures()],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 3),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: tier.color.withValues(
-                            alpha: isDark ? 0.2 : 0.12,
-                          ),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          tier.label,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: tier.color,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // 4. Status
-                Expanded(
-                  flex: 1,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: (ss['bg'] as Color).withValues(
-                          alpha: isDark ? 0.25 : 0.15,
-                        ),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: (ss['color'] as Color).withValues(alpha: 0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        (ss['label'] as String).toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: ss['color'] as Color,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // 5. Actions (View button + Approve if pending)
-                Expanded(
-                  flex: 2,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (m['status'] == 'pending' || m['status'] == 'pending_review') ...[
-                        ElevatedButton.icon(
-                          onPressed: () async {
-                            await context.push('/admin/compliance');
-                            if (mounted) {
-                              await ApiService.deleteCacheKeysMatching('members/admin');
-                              _fetch(refresh: true);
-                            }
-                          },
-                          icon: const Icon(Icons.verified_outlined, size: 14),
-                          label: Text(
-                            'Review Compliance',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: CubagColors.valid,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
-                            ),
-                            minimumSize: const Size(0, 34),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            elevation: 0,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                      ElevatedButton.icon(
-                        onPressed: () =>
-                            _selectMember(m as Map<String, dynamic>),
-                        icon: const Icon(Icons.visibility_outlined, size: 15),
-                        label: Text(
-                          'View',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primary.withValues(
-                            alpha: isDark ? 0.2 : 0.1,
-                          ),
-                          foregroundColor: primary,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          minimumSize: const Size(0, 34),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: BorderSide(
-                              color: primary.withValues(alpha: 0.3),
-                              width: 1,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 
