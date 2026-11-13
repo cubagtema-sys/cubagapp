@@ -2540,7 +2540,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                         tooltip: 'View Receipt',
                         icon: const Icon(Icons.receipt_rounded, size: 20, color: _kPrimary),
                         onPressed: () async {
-                          final resolved = ApiService.resolveImageUrl(rawReceipt);
+                          final resolved = await ApiService.signedDocumentUrl(ApiService.resolveImageUrl(rawReceipt));
                           final uri = Uri.parse(resolved);
                           if (await canLaunchUrl(uri)) {
                             await launchUrl(uri, mode: LaunchMode.externalApplication);

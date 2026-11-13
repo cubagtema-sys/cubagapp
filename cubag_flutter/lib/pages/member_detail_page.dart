@@ -577,7 +577,7 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
             IconButton(
               icon: const Icon(Icons.open_in_new_rounded, size: 20),
               tooltip: 'Open in new tab',
-              onPressed: () => launchUrl(Uri.parse(fullUrl), mode: LaunchMode.externalApplication),
+              onPressed: () async => launchUrl(Uri.parse(await ApiService.signedDocumentUrl(fullUrl)), mode: LaunchMode.externalApplication),
             ),
             IconButton(
               tooltip: 'Close',

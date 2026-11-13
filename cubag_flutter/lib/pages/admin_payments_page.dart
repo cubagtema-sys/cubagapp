@@ -210,15 +210,18 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     );
   }
 
-  void _showReceiptDialog(
+  Future<void> _showReceiptDialog(
     String receiptUrl,
     String memberName,
     double amount,
     String date, {
     dynamic txId,
     bool isPending = false,
-  }) {
+  }) async {
     final fullUrl = _resolveReceiptUrl(receiptUrl);
+    // SEC-04: receipts live in private storage; view through a signed link.
+    final signedUrl = await ApiService.signedDocumentUrl(fullUrl);
+    if (!mounted) return;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? _kCardBg : Colors.white;
     final textColor = isDark ? CubagColors.sand : CubagColors.ink;
@@ -273,7 +276,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
             IconButton(
               icon: const Icon(Icons.open_in_new_rounded, size: 20),
               tooltip: 'Open in new tab',
-              onPressed: () => launchUrl(Uri.parse(fullUrl), mode: LaunchMode.externalApplication),
+              onPressed: () async => launchUrl(Uri.parse(await ApiService.signedDocumentUrl(fullUrl)), mode: LaunchMode.externalApplication),
             ),
           ],
         ),
@@ -295,7 +298,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                     minScale: 0.8,
                     maxScale: 4.0,
                     child: Image.network(
-                      fullUrl,
+                      signedUrl,
                       fit: BoxFit.contain,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;

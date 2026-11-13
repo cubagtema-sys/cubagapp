@@ -112,6 +112,38 @@ def get_db():
         return PooledConnection(fallback_conn, None)
 
 
+def _lock_public_tables(conn):
+    """SEC-10: keep every public table closed to Supabase's public API roles.
+
+    The server connects as `postgres` (BYPASSRLS), so enabling row-level
+    security with no policies and revoking anon/authenticated grants only
+    shuts the PostgREST door that the public anon key opens. Runs on every
+    start so tables created later are covered. No-op where those roles do
+    not exist (local/test Postgres).
+    """
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) AS n FROM pg_roles WHERE rolname IN ('anon', 'authenticated')")
+            row = cur.fetchone()
+            n = row['n'] if isinstance(row, dict) else row[0]
+            if n < 2:
+                return
+            cur.execute("""
+                DO $$ DECLARE r record; BEGIN
+                  FOR r IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP
+                    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', r.tablename);
+                    EXECUTE format('REVOKE ALL ON TABLE public.%I FROM anon, authenticated', r.tablename);
+                  END LOOP;
+                END $$;
+                REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated;
+            """)
+        conn.commit()
+        logger.info("[OK] Public tables locked to the Supabase anon/authenticated roles.")
+    except Exception as e:
+        conn.rollback()
+        logger.warning("Could not lock public tables (SEC-10): %s", e)
+
+
 def init_db():
     """Initialize the database tables if they don't exist.
 
@@ -1154,6 +1186,7 @@ def init_db():
 
         conn.commit()
         logger.info("[OK] Database tables initialised successfully.")
+        _lock_public_tables(conn)
     except Exception as e:
         logger.exception("[ERROR] DB init error: %s", e)
     finally:

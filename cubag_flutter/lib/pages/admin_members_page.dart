@@ -6,6 +6,7 @@ import '../components/app_layout.dart';
 import '../components/custom_dropdown.dart';
 import '../components/admin_components.dart';
 import '../components/trend_line.dart';
+import '../components/cors_image_widget.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../components/fetch_error_view.dart';
@@ -1660,10 +1661,10 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        CachedNetworkImage(
-                          imageUrl: receiptUrl,
+                        CorsImageWidget(
+                          url: receiptUrl,
                           fit: BoxFit.cover,
-                          errorWidget: (_, _, _) => const Icon(Icons.broken_image, size: 24, color: Colors.grey),
+                          errorWidget: const Icon(Icons.broken_image, size: 24, color: Colors.grey),
                         ),
                         Container(
                           color: Colors.black26,
@@ -1857,11 +1858,11 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
               const Divider(),
               Expanded(
                 child: InteractiveViewer(
-                  child: CachedNetworkImage(
-                    imageUrl: fullUrl,
+                  child: CorsImageWidget(
+                    url: fullUrl,
                     fit: BoxFit.contain,
-                    placeholder: (_, _) => const Center(child: CircularProgressIndicator(color: CubagColors.action)),
-                    errorWidget: (_, _, _) => const Center(child: Text('Failed to load deposit slip image.')),
+                    placeholder: const Center(child: CircularProgressIndicator(color: CubagColors.action)),
+                    errorWidget: const Center(child: Text('Could not load the deposit slip.')),
                   ),
                 ),
               ),

@@ -1123,7 +1123,8 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
   void _openFile(String? urlStr) async {
     if (urlStr == null || urlStr.isEmpty) return;
     try {
-      final uri = Uri.parse(urlStr);
+      // SEC-04: private documents open through a short-lived signed link.
+      final uri = Uri.parse(await ApiService.signedDocumentUrl(urlStr));
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
