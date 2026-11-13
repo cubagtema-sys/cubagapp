@@ -840,7 +840,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'GRA Customs Division accredited tariff classification and brokerage certification cohorts',
+                          'Accredited tariff classification and brokerage certification cohorts',
                           style: TextStyle(
                             fontSize: 12,
                             color: textMuted,

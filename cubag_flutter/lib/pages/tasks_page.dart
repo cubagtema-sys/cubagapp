@@ -731,7 +731,7 @@ class _TasksPageState extends State<TasksPage> {
                                     const Icon(Icons.check_circle_rounded, size: 16, color: _kGreen),
                                     const SizedBox(width: 6),
                                     Text(
-                                      'Filing Completed',
+                                      'Completed',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 13,
@@ -756,7 +756,7 @@ class _TasksPageState extends State<TasksPage> {
                                         Icon(Icons.lock_clock_rounded, size: 16, color: _kMuted),
                                         const SizedBox(width: 6),
                                         Text(
-                                          'Awaiting Secretariat Review',
+                                          'Review',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w600,
                                             fontSize: 12.5,

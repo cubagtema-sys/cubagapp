@@ -1,120 +1,26 @@
 import 'package:flutter/material.dart';
 
-class InAppLegalViewer {
-  static void show(BuildContext context, {required String title, required String subtitle, required List<Map<String, String>> sections}) {
-    final screenSize = MediaQuery.of(context).size;
-    final dialogWidth = screenSize.width > 680 ? 640.0 : screenSize.width * 0.94;
-    final dialogHeight = screenSize.height * 0.85;
+import '../design/cubag_design.dart';
 
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: Colors.white,
-        child: Container(
-          width: dialogWidth,
-          height: dialogHeight,
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF5000).withAlpha(25),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.verified_user_rounded, color: Color(0xFFFF5000), size: 24),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            color: const Color(0xFF1A0F0A),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: const Color(0xFF64748b),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Close',
-                    icon: const Icon(Icons.close_rounded, color: Color(0xFF64748b)),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-              const Divider(height: 24),
-              Expanded(
-                child: ListView.separated(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  itemCount: sections.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 18),
-                  itemBuilder: (context, index) {
-                    final section = sections[index];
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          section['heading'] ?? '',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1A0F0A),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        SelectableText(
-                          section['body'] ?? '',
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            height: 1.6,
-                            color: const Color(0xFF475569),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A0F0A),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
-                  ),
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(
-                    'Close',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+/// Privacy policy and terms of service, shown as a full reading page.
+///
+/// A legal text is read, not glanced at: a full screen with one comfortable
+/// column (about 65 characters wide), numbered sections because the
+/// documents really are ordered clauses, and the date it last changed.
+class InAppLegalViewer {
+  static const _updated = 'November 2026';
+  static const _supportEmail = 'support@cubag.org.gh';
+
+  static void show(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required List<Map<String, String>> sections,
+  }) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (_) => _LegalPage(title: title, subtitle: subtitle, sections: sections),
       ),
     );
   }
@@ -122,32 +28,54 @@ class InAppLegalViewer {
   static void showPrivacyPolicy(BuildContext context) {
     show(
       context,
-      title: 'Privacy Policy',
-      subtitle: 'Customs Brokers Association of Ghana (CUBAG) • Last Updated 2026',
-      sections: [
+      title: 'Privacy policy',
+      subtitle: 'How the Customs Brokers Association of Ghana handles your personal information. '
+          'Last updated $_updated.',
+      sections: const [
         {
-          'heading': '1. Introduction & Commitment',
-          'body': 'The Customs Brokers Association of Ghana ("CUBAG", "we", "our") respects your privacy and is committed to protecting your personal data in strict adherence with international data protection standards and the Data Protection Act. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile and web applications.'
+          'heading': 'Who we are',
+          'body': 'The Customs Brokers Association of Ghana ("CUBAG", "we") runs this app for its members '
+              'and applicants. We handle your personal data in line with the Data Protection Act, 2012 '
+              '(Act 843). This policy explains what we collect, why, and the choices you have.',
         },
         {
-          'heading': '2. Information We Collect',
-          'body': '• Personal Identification: Full name, email address, phone number, and company name.\n• Professional & Regulatory Credentials: Customs license numbers, membership numbers, and company classification (SME / Large Corporate).\n• Compliance & Supporting Documents: GRA tax clearance certificates, custom brokerage permits, and identity documents.\n• Transactional & Financial Records: Mobile Money numbers, bank transfer receipts, and payment references processed securely via PCI-DSS compliant gateways.'
+          'heading': 'What we collect',
+          'body': '• Who you are: your name, email address, phone number and company.\n'
+              '• Your professional details: licence and membership numbers, company classification '
+              'and the district you work in.\n'
+              '• Documents you upload: for example tax clearance certificates, brokerage permits and '
+              'identity documents.\n'
+              '• Payments: the amount, purpose, reference and receipt of each payment, and the Mobile '
+              'Money number or bank details you pay from.',
         },
         {
-          'heading': '3. How We Use Your Information',
-          'body': 'We use your information strictly to:\n• Process membership registrations and vet compliance applications.\n• Issue official digital membership cards, cryptographic QR verifications, and annual renewal licenses.\n• Facilitate secure dues payments, CTI course enrollments, and professional development programs.\n• Send real-time push notifications regarding document reviews, payment approvals, and port advisories.'
+          'heading': 'How we use it',
+          'body': 'Only to run your membership:\n'
+              '• to review your application and your compliance documents;\n'
+              '• to issue your membership card, verification code and licence;\n'
+              '• to record and confirm your dues and course payments;\n'
+              '• to send you notices about your documents, payments and the association.\n'
+              'We do not sell your information.',
         },
         {
-          'heading': '4. Data Security & PCI-DSS Compliance',
-          'body': 'We implement robust technical and organizational security measures—including TLS 1.3 encryption, AES-256 data storage, and secure token authentication—to protect your data from unauthorized access, alteration, or disclosure.'
+          'heading': 'Who can see it',
+          'body': 'Authorised staff of the CUBAG Secretariat. Payment providers receive only what they need '
+              'to process a payment. Your name, company and membership status may appear in the member '
+              'directory and when someone scans your verification code.',
         },
         {
-          'heading': '5. Your Rights',
-          'body': 'You have the right to request access to, correction of, or deletion of your personal data by contacting the National Secretariat through your member portal.'
+          'heading': 'Keeping it safe',
+          'body': 'Your data travels over encrypted connections, and access is limited to Secretariat staff '
+              'who need it.',
         },
         {
-          'heading': '6. Contact Secretariat',
-          'body': 'Customs Brokers Association of Ghana (CUBAG)\nNational Secretariat • Tema Port & KIA Chapters • Ghana\nEmail: support@cubag.org'
+          'heading': 'Your rights',
+          'body': 'You can ask to see the information we hold about you, to correct it, or to delete your '
+              'account. Use Settings in the app, or email the Secretariat.',
+        },
+        {
+          'heading': 'Contact',
+          'body': 'CUBAG National Secretariat, Ghana\nEmail: $_supportEmail',
         },
       ],
     );
@@ -156,30 +84,117 @@ class InAppLegalViewer {
   static void showTermsOfService(BuildContext context) {
     show(
       context,
-      title: 'Terms of Service',
-      subtitle: 'Official CUBAG Platform Usage Agreement',
-      sections: [
+      title: 'Terms of service',
+      subtitle: 'The rules for using the CUBAG app. Last updated $_updated.',
+      sections: const [
         {
-          'heading': '1. Acceptance of Terms',
-          'body': 'By downloading, registering, or accessing the CUBAG Mobile Platform, you agree to be bound by these Terms of Service and all applicable association bylaws.'
+          'heading': 'Agreeing to these terms',
+          'body': 'By creating an account or using the CUBAG app you agree to these terms and to the '
+              'bylaws of the association.',
         },
         {
-          'heading': '2. Membership & Licensing Obligations',
-          'body': 'Members must maintain valid customs brokerage credentials, comply with Ghana Revenue Authority (GRA) customs procedures, and keep their professional documentation up to date in the Compliance Centre.'
+          'heading': 'Your membership and licence',
+          'body': 'Keep your customs brokerage credentials valid, follow the customs procedures that apply '
+              'to your work, and keep your documents in the app up to date.',
         },
         {
-          'heading': '3. Financial Dues & Payments',
-          'body': 'Annual renewal dues, registration fees, and entrance packages must be paid in accordance with official CUBAG tariff schedules. All payments submitted via Mobile Money or Bank Transfer receipts are subject to secretariat verification.'
+          'heading': 'Dues and payments',
+          'body': 'Registration fees, membership dues and annual renewal dues are set by CUBAG. Payments '
+              'made by Mobile Money or bank transfer count once the Secretariat has confirmed them.',
         },
         {
-          'heading': '4. Account Suspension & Termination',
-          'body': 'Violation of association bylaws, fraudulent submissions, or lapse in statutory compliance may result in suspension of good standing or revocation of membership privileges.'
+          'heading': 'Honest information',
+          'body': 'Everything you submit must be true and your own. False documents or payment slips can '
+              'lead to suspension.',
         },
         {
-          'heading': '5. Secretariat Support',
-          'body': 'For inquiries or assistance, please contact the CUBAG Secretariat directly through the member engagement portal.'
+          'heading': 'Suspension and termination',
+          'body': 'Breaking the bylaws, submitting false information, or letting your compliance lapse may '
+              'lead to suspension of good standing or loss of membership.',
+        },
+        {
+          'heading': 'Help',
+          'body': 'For questions, use Support in the app or email $_supportEmail.',
         },
       ],
+    );
+  }
+}
+
+class _LegalPage extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final List<Map<String, String>> sections;
+  const _LegalPage({required this.title, required this.subtitle, required this.sections});
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    return Scaffold(
+      backgroundColor: CubagColors.paper,
+      appBar: AppBar(
+        backgroundColor: CubagColors.paper,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0.5,
+        leading: IconButton(
+          tooltip: 'Close',
+          icon: const Icon(Icons.close_rounded, color: CubagColors.ink),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(title, style: CubagType.headline),
+      ),
+      body: SelectionArea(
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(CubagSpace.lg, CubagSpace.md, CubagSpace.lg, CubagSpace.xxxl + bottom),
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 640),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: CubagType.display),
+                    const SizedBox(height: CubagSpace.sm),
+                    Text(subtitle, style: CubagType.body.copyWith(color: CubagColors.muted)),
+                    const SizedBox(height: CubagSpace.lg),
+                    const Divider(height: 1, color: CubagColors.line),
+                    for (var i = 0; i < sections.length; i++) _section(i + 1, sections[i]),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _section(int n, Map<String, String> s) {
+    return Padding(
+      padding: const EdgeInsets.only(top: CubagSpace.xl),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 32,
+            child: Text('$n.', style: CubagType.title.copyWith(color: CubagColors.action)),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(s['heading'] ?? '', style: CubagType.title),
+                const SizedBox(height: CubagSpace.sm),
+                Text(
+                  s['body'] ?? '',
+                  style: CubagType.body.copyWith(color: CubagColors.inkSoft, height: 1.6),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

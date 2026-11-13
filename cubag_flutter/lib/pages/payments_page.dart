@@ -1851,17 +1851,13 @@ class _PaymentsPageState extends State<PaymentsPage>
               final packageAmtStr = _packageFeeStr.isNotEmpty ? _packageFeeStr : '1620.00';
 
               const renewalTitle = 'Annual Renewal Dues';
-              final renewalAmtStr =
-                  _renewalFeeAmount != null && _renewalFeeAmount! > 0
-                  ? _renewalFeeAmount!.toStringAsFixed(2)
-                  : '2170.00';
 
               final List<DropdownItem<String>> dropdownItems = [];
               if (!_isRegFeePaid) {
                 dropdownItems.add(
                   DropdownItem<String>(
                     value: regTitle,
-                    label: '$regTitle · GH₵ $regAmtStr',
+                    label: regTitle,
                   ),
                 );
               }
@@ -1869,7 +1865,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                 dropdownItems.add(
                   DropdownItem<String>(
                     value: 'New Membership Dues',
-                    label: '$packageTitle · GH₵ $packageAmtStr',
+                    label: packageTitle,
                   ),
                 );
               }
@@ -1880,8 +1876,8 @@ class _PaymentsPageState extends State<PaymentsPage>
                   DropdownItem<String>(
                     value: 'Annual Renewal Dues',
                     label: _renewalFeeAmount != null && _renewalFeeAmount! > 0
-                        ? '$renewalTitle · GH₵ $renewalAmtStr'
-                        : '$renewalTitle (Bill Pending Approval)',
+                        ? renewalTitle
+                        : '$renewalTitle (bill not issued yet)',
                   ),
                 );
               }
@@ -1916,7 +1912,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   dropdownItems.add(
                     DropdownItem<String>(
                       value: label,
-                      label: '$label · GH₵ ${_formatFeeAmount(f['amount'])}',
+                      label: label,
                     ),
                   );
                 }
@@ -1933,13 +1929,13 @@ class _PaymentsPageState extends State<PaymentsPage>
               if (_reason.isNotEmpty &&
                   !dropdownItems.any((it) => it.value == _reason)) {
                 String labelText =
-                    '$_reason · GH₵ ${_amountCtrl.text.isNotEmpty ? _amountCtrl.text : "0.00"}';
+                    _reason;
                 if (_reason.toLowerCase().contains('registration')) {
                   if (_isRegFeePaid) {
                     _reason = 'New Membership Dues';
                   } else {
                     _reason = regTitle;
-                    labelText = '$regTitle · GH₵ $regAmtStr';
+                    labelText = regTitle;
                     dropdownItems.insert(
                       0,
                       DropdownItem<String>(value: regTitle, label: labelText),
@@ -1947,7 +1943,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   }
                 } else if (_reason.toLowerCase().contains('new member') || _reason.toLowerCase().contains('package') || _reason.toLowerCase().contains('entrance')) {
                   _reason = 'New Membership Dues';
-                  labelText = '$packageTitle · GH₵ $packageAmtStr';
+                  labelText = packageTitle;
                   dropdownItems.insert(
                     0,
                     DropdownItem<String>(value: 'New Membership Dues', label: labelText),
@@ -1957,8 +1953,8 @@ class _PaymentsPageState extends State<PaymentsPage>
                     _reason = 'New Membership Dues';
                   } else {
                     labelText = _renewalFeeAmount != null && _renewalFeeAmount! > 0
-                        ? '$renewalTitle · GH₵ ${_renewalFeeAmount!.toStringAsFixed(2)}'
-                        : '$renewalTitle (Bill Pending Approval)';
+                        ? renewalTitle
+                        : '$renewalTitle (bill not issued yet)';
                     dropdownItems.insert(
                       0,
                       DropdownItem<String>(value: _reason, label: labelText),
