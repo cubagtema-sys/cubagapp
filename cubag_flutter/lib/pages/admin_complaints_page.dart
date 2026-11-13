@@ -191,7 +191,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Update Grievance Case', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)),
+                      Text('Update complaint', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)),
                       Text(item['complaint_id']?.toString() ?? '', style: TextStyle(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.bold)),
                     ],
                   ),
@@ -218,11 +218,11 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                           dropdownColor: dialogBg,
                           style: TextStyle(color: textColor, fontSize: 13),
                           items: const [
-                            DropdownMenuItem(value: 'Received', child: Text('Received (Logged into Registry)')),
-                            DropdownMenuItem(value: 'Under Review', child: Text('Under Review (Assessment)')),
-                            DropdownMenuItem(value: 'Investigating', child: Text('Investigating (Port Verification)')),
-                            DropdownMenuItem(value: 'Resolved', child: Text('Resolved (Resolution Notice Issued)')),
-                            DropdownMenuItem(value: 'Closed', child: Text('Closed (Finalized)')),
+                            DropdownMenuItem(value: 'Received', child: Text('Received')),
+                            DropdownMenuItem(value: 'Under Review', child: Text('Under review')),
+                            DropdownMenuItem(value: 'Investigating', child: Text('Investigating')),
+                            DropdownMenuItem(value: 'Resolved', child: Text('Resolved')),
+                            DropdownMenuItem(value: 'Closed', child: Text('Closed')),
                           ],
                           onChanged: (v) {
                             if (v != null) setModalState(() => status = v);
@@ -233,7 +233,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                     const SizedBox(height: 12),
 
                     // Priority
-                    Text('Priority Level', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textColor)),
+                    Text('Priority', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textColor)),
                     const SizedBox(height: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -245,9 +245,9 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                           dropdownColor: dialogBg,
                           style: TextStyle(color: textColor, fontSize: 13),
                           items: const [
-                            DropdownMenuItem(value: 'Normal', child: Text('Normal Priority')),
-                            DropdownMenuItem(value: 'High', child: Text('High Priority')),
-                            DropdownMenuItem(value: 'Urgent', child: Text('Urgent Disciplinary Priority')),
+                            DropdownMenuItem(value: 'Normal', child: Text('Normal')),
+                            DropdownMenuItem(value: 'High', child: Text('High')),
+                            DropdownMenuItem(value: 'Urgent', child: Text('Urgent')),
                           ],
                           onChanged: (v) {
                             if (v != null) setModalState(() => priority = v);
@@ -258,7 +258,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                     const SizedBox(height: 12),
 
                     // Assigned Handler
-                    Text('Assigned Committee / Officer', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textColor)),
+                    Text('Assigned to', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textColor)),
                     const SizedBox(height: 4),
                     TextField(
                       controller: assignedCtrl,
@@ -275,14 +275,14 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                     const SizedBox(height: 12),
 
                     // Resolution Directives
-                    Text('Official Resolution Notes & Directives', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textColor)),
+                    Text('Resolution notes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: textColor)),
                     const SizedBox(height: 4),
                     TextField(
                       controller: notesCtrl,
                       maxLines: 3,
                       style: TextStyle(fontSize: 13, color: textColor),
                       decoration: InputDecoration(
-                        hintText: 'Enter formal Secretariat findings, hearing dates, or corrective directives...',
+                        hintText: 'Findings, hearing dates or next steps',
                         hintStyle: TextStyle(fontSize: 12, color: subTextColor),
                         filled: true,
                         fillColor: fieldBg,
@@ -324,7 +324,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   backgroundColor: _kGreen,
-                                  content: Text('Complaint status and directives updated successfully.'),
+                                  content: Text('Complaint updated.'),
                                 ),
                               );
                             }
@@ -345,7 +345,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                 ),
                 child: saving
                     ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text('Save Updates', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    : Text('Save', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
               ),
             ],
           );
@@ -399,7 +399,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                 children: [
                   Row(
                     children: [
-                      Text('Grievance Record', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)),
+                      Text('Complaint', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)),
                       const SizedBox(width: 8),
                       InkWell(
                         onTap: () {
@@ -506,7 +506,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                 SelectableText(item['subject']?.toString() ?? 'No Subject', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textColor)),
                 const SizedBox(height: 8),
 
-                Text('Details / grievance description', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: subTextColor, letterSpacing: 0.5)),
+                Text('Details', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: subTextColor, letterSpacing: 0.5)),
                 const SizedBox(height: 4),
                 Container(
                   width: double.infinity,
@@ -522,7 +522,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                   const SizedBox(height: 6),
                 ],
                 if (resolutionNotes.isNotEmpty) ...[
-                  Text('Official resolution directives', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: _kGreen, letterSpacing: 0.5)),
+                  Text('Resolution', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: _kGreen, letterSpacing: 0.5)),
                   const SizedBox(height: 4),
                   Container(
                     width: double.infinity,
@@ -546,7 +546,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
               _openUpdateDialog(item);
             },
             icon: const Icon(Icons.edit_note_rounded, size: 16),
-            label: Text('Update Case', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+            label: Text('Update', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
             style: ElevatedButton.styleFrom(
               backgroundColor: _kOrange,
               foregroundColor: Colors.white,
@@ -581,8 +581,8 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
             children: [
               // Header
               AdminHeader(
-                title: 'Dispute & Complaint Investigations',
-                subtitle: 'Investigate, assign, and resolve trade disputes and member conduct complaints.',
+                title: 'Complaints',
+                subtitle: 'Complaints from members and the public: assign, investigate and resolve.',
                 actions: [
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
@@ -629,7 +629,7 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                                 onChanged: (_) => setState(() {}),
                                 style: TextStyle(fontSize: 13.5, color: textColor),
                                 decoration: InputDecoration(
-                                  hintText: 'Search by ID, name, phone, subject, port, entity...',
+                                  hintText: 'Search complaints',
                                   hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
                                   prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
                                   filled: true,
@@ -713,9 +713,9 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
                                 child: const Icon(Icons.gavel_rounded, size: 28, color: _kOrange),
                               ),
                               const SizedBox(height: 12),
-                              Text('No complaints found matching criteria', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
+                              Text('No complaints found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
                               const SizedBox(height: 4),
-                              Text('Logged grievances and disputes will appear here.', style: TextStyle(fontSize: 12.5, color: subTextColor)),
+                              Text('New complaints appear here.', style: TextStyle(fontSize: 12.5, color: subTextColor)),
                             ],
                           ),
                         ),

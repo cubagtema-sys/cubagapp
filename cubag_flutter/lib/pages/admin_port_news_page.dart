@@ -141,10 +141,10 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                           initialValue: status,
                           decoration: const InputDecoration(labelText: 'Status'),
                           items: const [
-                            DropdownMenuItem(value: 'Operational', child: Text('Operational (Green)')),
-                            DropdownMenuItem(value: 'Normal', child: Text('Normal (Green)')),
-                            DropdownMenuItem(value: 'Maintenance', child: Text('Maintenance (Orange)')),
-                            DropdownMenuItem(value: 'Restricted', child: Text('Restricted (Red)')),
+                            DropdownMenuItem(value: 'Operational', child: Text('Operational')),
+                            DropdownMenuItem(value: 'Normal', child: Text('Normal')),
+                            DropdownMenuItem(value: 'Maintenance', child: Text('Maintenance')),
+                            DropdownMenuItem(value: 'Restricted', child: Text('Restricted')),
                           ],
                           onChanged: (val) {
                             if (val == null) return;
@@ -262,7 +262,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: Text('Archive Port Bulletin?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: Text('Archive this update?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         content: Text('Remove "${bulletin['port_name']}" bulletin from public view?', style: TextStyle(fontSize: 13)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
@@ -330,7 +330,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
     final bulletins = _filteredBulletins;
 
     return AppLayout(
-      title: 'Port Operational News',
+      title: 'News',
       scrollable: true,
       child: Center(
         child: ConstrainedBox(
@@ -343,8 +343,8 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                 children: [
                   // Header
                   AdminHeader(
-                    title: 'Port Bulletins & Status Updates',
-                    subtitle: 'Live operational notices and harbor clearance advisories across Ghana ports.',
+                    title: 'Port news',
+                    subtitle: 'Status updates for Ghana\'s ports, shown to members.',
                     actions: [
                       OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
@@ -368,7 +368,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                         ),
                         onPressed: () => _showBulletinDialog(),
                         icon: const Icon(Icons.add_rounded, size: 18),
-                        label: Text('Post Bulletin', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        label: Text('New update', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                       ),
                     ],
                   ),
@@ -396,7 +396,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                               onChanged: (v) => setState(() => _searchQuery = v.trim()),
                               style: TextStyle(fontSize: 13.5, color: textColor),
                               decoration: InputDecoration(
-                                hintText: 'Search by port, terminal code, or operational notice...',
+                                hintText: 'Search port news',
                                 hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
                                 prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
                                 filled: true,
@@ -466,7 +466,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                           children: [
                             Icon(Icons.anchor_rounded, size: 36, color: subTextColor),
                             const SizedBox(height: 8),
-                            Text('No port bulletins found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
+                            Text('No port updates yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
                           ],
                         ),
                       ),
@@ -575,7 +575,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                         border: Border.all(color: badgeColor.withValues(alpha: 0.3)),
                       ),
                       child: Text(
-                        statusStr.toUpperCase(),
+                        statusStr.isEmpty ? statusStr : statusStr[0].toUpperCase() + statusStr.substring(1).toLowerCase(),
                         style: TextStyle(
                           color: badgeColor,
                           fontWeight: FontWeight.w800,
@@ -635,7 +635,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
                   );
                 },
                 icon: const Icon(Icons.copy_rounded, size: 14),
-                label: Text('Copy Notice', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
+                label: Text('Copy', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -677,9 +677,9 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 650;
         final cards = [
-          _kpiCard('Total Bulletins', '$total', Icons.feed_outlined, _kBlue, _filterTab == 0, () => setState(() => _filterTab = 0), isDark, cardBg, borderCol, textColor, subTextColor),
-          _kpiCard('Active Live', '$active', Icons.check_circle_outline_rounded, _kGreen, _filterTab == 1, () => setState(() => _filterTab = 1), isDark, cardBg, borderCol, textColor, subTextColor),
-          _kpiCard('Archived / Hidden', '$inactive', Icons.pause_circle_outline_rounded, _kSlate, _filterTab == 2, () => setState(() => _filterTab = 2), isDark, cardBg, borderCol, textColor, subTextColor),
+          _kpiCard('Total', '$total', Icons.feed_outlined, _kBlue, _filterTab == 0, () => setState(() => _filterTab = 0), isDark, cardBg, borderCol, textColor, subTextColor),
+          _kpiCard('Live', '$active', Icons.check_circle_outline_rounded, _kGreen, _filterTab == 1, () => setState(() => _filterTab = 1), isDark, cardBg, borderCol, textColor, subTextColor),
+          _kpiCard('Archived', '$inactive', Icons.pause_circle_outline_rounded, _kSlate, _filterTab == 2, () => setState(() => _filterTab = 2), isDark, cardBg, borderCol, textColor, subTextColor),
         ];
 
         if (isWide) {

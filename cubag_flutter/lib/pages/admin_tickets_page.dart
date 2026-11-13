@@ -180,7 +180,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: Text('Archive Support Ticket', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: Text('Archive this ticket?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         content: Text(
           'Are you sure you want to archive Ticket #$ticketId?',
           style: TextStyle(fontSize: 13),
@@ -279,7 +279,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
     final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
     return AppLayout(
-      title: 'Support Tickets',
+      title: 'Tickets',
       scrollable: true,
       child: Center(
         child: ConstrainedBox(
@@ -289,8 +289,8 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
             children: [
               // Header
               AdminHeader(
-                title: 'Support Tickets & Helpdesk',
-                subtitle: 'Track, manage, and respond to member inquiries and compliance issues.',
+                title: 'Tickets',
+                subtitle: 'Questions and problems members send to the Secretariat.',
                 actions: [
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
@@ -338,8 +338,8 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 700;
         final cards = [
-          _buildCompactMetric('Total Cases', '$_total', Icons.confirmation_number_outlined, _kIndigo, 'all', cardBg, border, textPrimary, textMuted),
-          _buildCompactMetric('Open Inbox', '$_openCount', Icons.mark_email_unread_outlined, _kOrange, 'inbox', cardBg, border, textPrimary, textMuted),
+          _buildCompactMetric('Total', '$_total', Icons.confirmation_number_outlined, _kIndigo, 'all', cardBg, border, textPrimary, textMuted),
+          _buildCompactMetric('Open', '$_openCount', Icons.mark_email_unread_outlined, _kOrange, 'inbox', cardBg, border, textPrimary, textMuted),
           _buildCompactMetric('In Progress', '$_pendingCount', Icons.pending_actions_rounded, _kAmber, 'pending', cardBg, border, textPrimary, textMuted),
           _buildCompactMetric('Resolved', '$_resolvedCount', Icons.check_circle_outline_rounded, _kGreen, 'resolved', cardBg, border, textPrimary, textMuted),
         ];
@@ -462,7 +462,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                       onChanged: _onSearchChanged,
                       style: TextStyle(fontSize: 13.5, color: textPrimary),
                       decoration: InputDecoration(
-                        hintText: 'Search by ID, subject, member name, company...',
+                        hintText: 'Search tickets',
                         hintStyle: TextStyle(fontSize: 12.5, color: textMuted),
                         prefixIcon: Icon(Icons.search_rounded, size: 16, color: textMuted),
                         filled: true,
@@ -564,8 +564,8 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                       ),
                       columns: const [
                         DataColumn(label: Text('ID')),
-                        DataColumn(label: Text('Member & company')),
-                        DataColumn(label: Text('Subject & preview')),
+                        DataColumn(label: Text('Member')),
+                        DataColumn(label: Text('Subject')),
                         DataColumn(label: Text('Status')),
                         DataColumn(label: Text('Date')),
                         DataColumn(label: Text('Action')),
@@ -720,7 +720,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                                       elevation: 0,
                                     ),
-                                    child: Text('Respond', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                    child: Text('Reply', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
                                   ),
                                   const SizedBox(width: 4),
                                   PopupMenuButton<String>(
@@ -736,11 +736,11 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                                     },
                                     itemBuilder: (ctx) => [
                                       if (status != 'open')
-                                        PopupMenuItem(value: 'open', child: Text('Mark Open', style: TextStyle(fontSize: 13))),
+                                        PopupMenuItem(value: 'open', child: Text('Mark open', style: TextStyle(fontSize: 13))),
                                       if (status != 'pending')
-                                        PopupMenuItem(value: 'pending', child: Text('Mark In Progress', style: TextStyle(fontSize: 13))),
+                                        PopupMenuItem(value: 'pending', child: Text('Mark in progress', style: TextStyle(fontSize: 13))),
                                       if (status != 'resolved')
-                                        PopupMenuItem(value: 'resolved', child: Text('Mark Resolved', style: TextStyle(fontSize: 13, color: _kGreen, fontWeight: FontWeight.bold))),
+                                        PopupMenuItem(value: 'resolved', child: Text('Mark resolved', style: TextStyle(fontSize: 13, color: _kGreen, fontWeight: FontWeight.bold))),
                                       const PopupMenuDivider(),
                                       if (status != 'archived')
                                         PopupMenuItem(value: 'archive', child: Text('Archive', style: TextStyle(fontSize: 13, color: _kRed))),
@@ -1009,7 +1009,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                   maxLines: 3,
                   style: TextStyle(fontSize: 13.5, color: textPrimary),
                   decoration: InputDecoration(
-                    hintText: 'Type administrative response or instructions...',
+                    hintText: 'Write your reply',
                     hintStyle: TextStyle(fontSize: 12.5, color: textMuted),
                     filled: true,
                     fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
@@ -1039,7 +1039,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       ),
-                      child: Text('Reply & Resolve', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: Text('Reply and resolve', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton.icon(

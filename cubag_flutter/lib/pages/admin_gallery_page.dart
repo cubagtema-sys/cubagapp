@@ -542,7 +542,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Archive Gallery Item?'),
+        title: const Text('Archive this photo?'),
         content: Text(
           'Are you sure you want to remove "${item['title']}" from the public gallery?',
         ),
@@ -601,15 +601,15 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
     final active = _items.where((i) => i['is_active'] == true).length;
 
     return AppLayout(
-      title: 'Gallery Management',
+      title: 'Gallery',
       scrollable: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AdminHeader(
-            title: 'Photo Gallery & Media Attachments',
+            title: 'Gallery',
             subtitle:
-                'Upload photo attachments with captions across Conferences, Port Operations, Education & Leadership.',
+                'Photos shown to members in the app, grouped by topic.',
             actions: [
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
@@ -643,7 +643,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
             children: [
               Expanded(
                 child: AdminStatCard(
-                  label: 'Total Photos',
+                  label: 'Photos',
                   value: '$total',
                   icon: Icons.photo_library_outlined,
                   color: kAdminBlue,
@@ -652,7 +652,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: AdminStatCard(
-                  label: 'Active Live',
+                  label: 'Live',
                   value: '$active',
                   icon: Icons.check_circle_outline_rounded,
                   color: kAdminGreen,
@@ -673,7 +673,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
 
           // Category Chips & Search Bar
           AdminToolbar(
-            searchHint: 'Search gallery items by title or category...',
+            searchHint: 'Search photos',
             onSearchChanged: (v) => setState(() => _searchQuery = v),
             filters: _categories.map((cat) {
               final isSel = _categoryFilter == cat;
