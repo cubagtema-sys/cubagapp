@@ -435,7 +435,9 @@ class _AppLayoutState extends State<AppLayout> {
               ],
             ),
           ),
-          offset: const Offset(0, 48),
+          // Drop down directly under the icon, like a standard app menu.
+          position: PopupMenuPosition.under,
+          offset: const Offset(0, 6),
           color: dropdownBg,
           surfaceTintColor: Colors.transparent,
           elevation: 12,
@@ -805,7 +807,9 @@ class _AppLayoutState extends State<AppLayout> {
           ),
         ),
       ),
-      offset: const Offset(0, 48),
+      // Drop down directly under the icon, like a standard app menu.
+      position: PopupMenuPosition.under,
+      offset: const Offset(0, 6),
       color: dropdownBg,
       surfaceTintColor: Colors.transparent,
       elevation: 12,
