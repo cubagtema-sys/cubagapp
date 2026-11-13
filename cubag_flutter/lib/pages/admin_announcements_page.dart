@@ -140,7 +140,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
               child: const Icon(Icons.archive_outlined, color: _kRed, size: 20),
             ),
             const SizedBox(width: 10),
-            Text('Archive Circular', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Archive', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Text(
@@ -439,7 +439,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text('Edit Announcement', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textCol)),
+                          child: Text('Edit announcement', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textCol)),
                         ),
                         IconButton(
                           tooltip: 'Close',
@@ -546,7 +546,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                           icon: saving
                               ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                               : const Icon(Icons.check_rounded, size: 15),
-                          label: Text('Save Changes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                          label: Text('Save', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                         ),
                       ],
                     ),
@@ -600,7 +600,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
     final isLoading = _tab == 'active' ? _loadingActive : _loadingArchived;
 
     return AppLayout(
-      title: 'Announcements & Circulars',
+      title: 'Announcements',
       scrollable: true,
       child: Container(
         color: bg,
@@ -643,7 +643,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                           ),
                         ),
                         Text(
-                          'Publish official customs notices, port advisories, and member circulars.',
+                          'Notices sent to every member in the app.',
                           style: TextStyle(
                             fontSize: 12.5,
                             color: textMuted,
@@ -678,7 +678,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                     ),
                     onPressed: _showCreateDialog,
                     icon: const Icon(Icons.add_rounded, size: 16),
-                    label: Text('New Announcement', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    label: Text('New announcement', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   ),
                 ],
               ),
@@ -722,7 +722,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                 children: [
                   Row(
                     children: [
-                      _buildTabButton('Active Feed', 'active', _totalActive, Icons.sensors_rounded, isDark),
+                      _buildTabButton('Live', 'active', _totalActive, Icons.sensors_rounded, isDark),
                       const SizedBox(width: 8),
                       _buildTabButton('Archived', 'archived', _totalArchived, Icons.archive_outlined, isDark),
                       const Spacer(),
@@ -744,7 +744,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                             onChanged: (v) => setState(() => _searchQuery = v),
                             style: TextStyle(fontSize: 13, color: textPrimary),
                             decoration: InputDecoration(
-                              hintText: 'Search by title, subject or content...',
+                              hintText: 'Search announcements',
                               hintStyle: TextStyle(fontSize: 12.5, color: textMuted),
                               prefixIcon: Icon(Icons.search_rounded, size: 16, color: textMuted),
                               border: InputBorder.none,
@@ -771,13 +771,13 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                       children: [
                         _buildCategoryChip('All', 'All', isDark),
                         const SizedBox(width: 6),
-                        _buildCategoryChip('Urgent Alerts', 'Urgent Alert', isDark, activeColor: _kRed),
+                        _buildCategoryChip('Urgent', 'Urgent Alert', isDark, activeColor: _kRed),
                         const SizedBox(width: 6),
-                        _buildCategoryChip('Regulatory & Port Advisory', 'Regulatory & Port Advisory', isDark, activeColor: _kIndigo),
+                        _buildCategoryChip('Regulatory', 'Regulatory & Port Advisory', isDark, activeColor: _kIndigo),
                         const SizedBox(width: 6),
-                        _buildCategoryChip('System Maintenance', 'System Maintenance', isDark, activeColor: _kAmber),
+                        _buildCategoryChip('Maintenance', 'System Maintenance', isDark, activeColor: _kAmber),
                         const SizedBox(width: 6),
-                        _buildCategoryChip('Events & News', 'Event', isDark, activeColor: _kPurple),
+                        _buildCategoryChip('Events', 'Event', isDark, activeColor: _kPurple),
                         const SizedBox(width: 6),
                         _buildCategoryChip('General', 'General', isDark, activeColor: _kBlue),
                       ],
@@ -816,14 +816,14 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      _tab == 'archived' ? 'No archived circulars found' : 'No active announcements found',
+                      _tab == 'archived' ? 'No archived circulars found' : 'No announcements yet',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       _tab == 'archived'
                           ? 'Archived circulars will be stored here.'
-                          : 'Create your first broadcast to notify all members.',
+                          : 'Write one to notify every member.',
                       style: TextStyle(fontSize: 13, color: textMuted),
                     ),
                     if (_tab == 'active') ...[
@@ -838,7 +838,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                           elevation: 0,
                         ),
                         icon: const Icon(Icons.add_rounded, size: 15),
-                        label: Text('Create Announcement', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        label: Text('New announcement', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                       ),
                     ],
                   ],

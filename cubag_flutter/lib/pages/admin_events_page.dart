@@ -430,7 +430,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Archive Event?'),
+        title: const Text('Archive this event?'),
         content: Text('Are you sure you want to archive "${event['title']}"?'),
         actions: [
           TextButton(
@@ -510,15 +510,15 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
     final pastCount = total - upcomingCount;
 
     return AppLayout(
-      title: 'Events & Meetings',
+      title: 'Events',
       scrollable: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AdminHeader(
-            title: 'Events & Executive Meetings',
+            title: 'Events',
             subtitle:
-                'Schedule meetings, track attendee check-in registrations, and manage event rosters.',
+                'Meetings and events, who is coming, and check-in on the day.',
             actions: [
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
@@ -546,7 +546,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                 },
                 icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
                 label: Text(
-                  'Scan Check-in QR',
+                  'Scan tickets',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
@@ -569,7 +569,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                 onPressed: () => _showEventDialog(),
                 icon: const Icon(Icons.add_rounded, size: 18),
                 label: Text(
-                  'Create Event',
+                  'New event',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
@@ -585,7 +585,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
             children: [
               Expanded(
                 child: AdminStatCard(
-                  label: 'Total Events',
+                  label: 'Total',
                   value: '$total',
                   icon: Icons.event_note_outlined,
                   color: kAdminBlue,
@@ -594,7 +594,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: AdminStatCard(
-                  label: 'Upcoming Events',
+                  label: 'Upcoming',
                   value: '$upcomingCount',
                   icon: Icons.upcoming_outlined,
                   color: kAdminGreen,
@@ -603,7 +603,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: AdminStatCard(
-                  label: 'Past Events',
+                  label: 'Past',
                   value: '$pastCount',
                   icon: Icons.history_rounded,
                   color: kAdminOrange,
@@ -615,10 +615,10 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
 
           // ── Search Bar & Filter Tabs ─────────────────────────────────────────
           AdminToolbar(
-            searchHint: 'Search events by title, venue, or description...',
+            searchHint: 'Search events',
             onSearchChanged: (v) => setState(() => _searchQuery = v),
             filters: [
-              _filterChip('All Events', 'all'),
+              _filterChip('All', 'all'),
               _filterChip('Upcoming', 'upcoming'),
               _filterChip('Past', 'past'),
             ],
@@ -696,9 +696,9 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                           dataRowMinHeight: 64,
                           dataRowMaxHeight: 76,
                           columns: const [
-                            DataColumn(label: Text('Event / title')),
+                            DataColumn(label: Text('Event')),
                             DataColumn(label: Text('Date & time')),
-                            DataColumn(label: Text('Venue / location')),
+                            DataColumn(label: Text('Venue')),
                             DataColumn(label: Text('Attendees')),
                             DataColumn(label: Text('Status')),
                             DataColumn(label: Text('Actions')),

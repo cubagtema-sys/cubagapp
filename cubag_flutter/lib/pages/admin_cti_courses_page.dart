@@ -267,8 +267,8 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
         children: [
           // Header
           AdminHeader(
-            title: 'CUBAG Training Institute (CTI)',
-            subtitle: 'Manage professional training courses, curricula, and student enrollment registries.',
+            title: 'Courses',
+            subtitle: 'Training courses from the CUBAG Training Institute, and who has enrolled.',
             actions: [
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
@@ -292,7 +292,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                 ),
                 onPressed: () => _showCourseDialog(),
                 icon: const Icon(Icons.add_rounded, size: 18),
-                label: Text('New Course', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                label: Text('New course', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
               ),
             ],
           ),
@@ -319,15 +319,15 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
               tabs: [
                 Tab(
                   icon: const Icon(Icons.school_rounded, size: 16),
-                  text: 'Course Catalog ($total)',
+                  text: 'Courses ($total)',
                 ),
                 Tab(
                   icon: const Icon(Icons.people_alt_rounded, size: 16),
-                  text: 'Member Enrolled (${_enrollments.length})',
+                  text: 'Members (${_enrollments.length})',
                 ),
                 Tab(
                   icon: const Icon(Icons.person_pin_rounded, size: 16),
-                  text: 'Guest Enrolled & Paid (${_guestEnrollments.length})',
+                  text: 'Guests (${_guestEnrollments.length})',
                 ),
               ],
             ),
@@ -366,10 +366,10 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 750;
         final cards = [
-          _kpiStat('Total Courses', '$total', Icons.school_outlined, _kIndigo, cardBg, borderColor, textColor, subTextColor),
-          _kpiStat('Active Catalog', '$active', Icons.check_circle_outline_rounded, _kGreen, cardBg, borderColor, textColor, subTextColor),
-          _kpiStat('Member Enrolled', '${_enrollments.length}', Icons.people_alt_outlined, _kBlue, cardBg, borderColor, textColor, subTextColor),
-          _kpiStat('Guest Enrolled', '${_guestEnrollments.length}', Icons.person_pin_circle_outlined, _kOrange, cardBg, borderColor, textColor, subTextColor),
+          _kpiStat('Courses', '$total', Icons.school_outlined, _kIndigo, cardBg, borderColor, textColor, subTextColor),
+          _kpiStat('Active', '$active', Icons.check_circle_outline_rounded, _kGreen, cardBg, borderColor, textColor, subTextColor),
+          _kpiStat('Members', '${_enrollments.length}', Icons.people_alt_outlined, _kBlue, cardBg, borderColor, textColor, subTextColor),
+          _kpiStat('Guests', '${_guestEnrollments.length}', Icons.person_pin_circle_outlined, _kOrange, cardBg, borderColor, textColor, subTextColor),
         ];
 
         if (isWide) {
@@ -471,7 +471,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                     onChanged: (v) => setState(() => _searchQuery = v.trim()),
                     style: TextStyle(fontSize: 13.5, color: textColor),
                     decoration: InputDecoration(
-                      hintText: 'Search courses by title, mode, or keywords...',
+                      hintText: 'Search courses',
                       hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
                       prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
                       filled: true,
@@ -718,7 +718,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                         onChanged: (v) => setState(() => _enrollmentSearchQuery = v.trim()),
                         style: TextStyle(fontSize: 13.5, color: textColor),
                         decoration: InputDecoration(
-                          hintText: 'Search enrolled students by name, company, email, ref...',
+                          hintText: 'Search members',
                           hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
                           prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
                           filled: true,
@@ -892,7 +892,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                         onChanged: (v) => setState(() => _guestSearchQuery = v.trim()),
                         style: TextStyle(fontSize: 13.5, color: textColor),
                         decoration: InputDecoration(
-                          hintText: 'Search guest name, phone, email, CTI reference...',
+                          hintText: 'Search guests',
                           hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
                           prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
                           filled: true,
@@ -1244,7 +1244,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
                     onChanged: (v) => setDlgState(() => studentFilter = v.trim()),
                     style: TextStyle(fontSize: 13, color: textPrimary),
                     decoration: InputDecoration(
-                      hintText: 'Search students by name, email, or company...',
+                      hintText: 'Search students',
                       hintStyle: TextStyle(fontSize: 12.5, color: textMuted),
                       prefixIcon: const Icon(Icons.search_rounded, size: 16),
                       filled: true,

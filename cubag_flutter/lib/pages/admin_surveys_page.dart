@@ -528,7 +528,7 @@ class _State extends State<AdminSurveysPage>
       );
     }
     return AppLayout(
-      title: 'Surveys',
+      title: 'Polls',
       scrollable: false,
       child: SingleChildScrollView(
         controller: _scrollController,
@@ -536,9 +536,9 @@ class _State extends State<AdminSurveysPage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AdminHeader(
-              title: 'Surveys & Association Elections Hub',
+              title: 'Polls',
               subtitle:
-                  'Launch executive elections, governance referendums, member satisfaction surveys, and inspect encrypted real-time balloting results.',
+                  'Run elections, surveys and quick polls, and see results as votes come in.',
               actions: [
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
@@ -582,7 +582,7 @@ class _State extends State<AdminSurveysPage>
                   label: Text(
                     _tab == 'create'
                         ? 'View Active Polls'
-                        : 'New Poll / Ballot',
+                        : 'New poll',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
@@ -601,37 +601,16 @@ class _State extends State<AdminSurveysPage>
                 final historyCount = _totalHistory > 0 ? _totalHistory : _historySurveys.length;
                 final totalCount = activeCount + historyCount;
 
-                return isWide
-                    ? Row(
-                        children: [
-                          Expanded(child: _buildMetricTile('Active Ballots', '$activeCount', 'Currently open for voting', Icons.how_to_vote_rounded, _kGreen, cardBg, borderColor, textColor, subTextColor)),
-                          const SizedBox(width: 12),
-                          Expanded(child: _buildMetricTile('Archived History', '$historyCount', 'Closed surveys & ballots', Icons.history_edu_rounded, _kIndigo, cardBg, borderColor, textColor, subTextColor)),
-                          const SizedBox(width: 12),
-                          Expanded(child: _buildMetricTile('Total Polls Created', '$totalCount', 'Association-wide total', Icons.bar_chart_rounded, _kOrange, cardBg, borderColor, textColor, subTextColor)),
-                          const SizedBox(width: 12),
-                          Expanded(child: _buildMetricTile('Encrypted Audit', '100% Secure', 'Anonymized cryptographic hash', Icons.verified_user_rounded, _kPurple, cardBg, borderColor, textColor, subTextColor)),
-                        ],
-                      )
-                    : Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(child: _buildMetricTile('Active Ballots', '$activeCount', 'Currently open', Icons.how_to_vote_rounded, _kGreen, cardBg, borderColor, textColor, subTextColor)),
-                              const SizedBox(width: 10),
-                              Expanded(child: _buildMetricTile('Archived History', '$historyCount', 'Closed polls', Icons.history_edu_rounded, _kIndigo, cardBg, borderColor, textColor, subTextColor)),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(child: _buildMetricTile('Total Polls', '$totalCount', 'Association-wide', Icons.bar_chart_rounded, _kOrange, cardBg, borderColor, textColor, subTextColor)),
-                              const SizedBox(width: 10),
-                              Expanded(child: _buildMetricTile('Audit Status', 'Verified', 'Cryptographic', Icons.verified_user_rounded, _kPurple, cardBg, borderColor, textColor, subTextColor)),
-                            ],
-                          ),
-                        ],
-                      );
+                // Three plain counts (no security claims the system cannot back).
+                return Row(
+                  children: [
+                    Expanded(child: _buildMetricTile('Open', '$activeCount', isWide ? 'Taking votes now' : 'Now', Icons.how_to_vote_rounded, _kGreen, cardBg, borderColor, textColor, subTextColor)),
+                    SizedBox(width: isWide ? 12 : 10),
+                    Expanded(child: _buildMetricTile('Closed', '$historyCount', isWide ? 'Finished polls' : 'Done', Icons.history_edu_rounded, _kIndigo, cardBg, borderColor, textColor, subTextColor)),
+                    SizedBox(width: isWide ? 12 : 10),
+                    Expanded(child: _buildMetricTile('Total', '$totalCount', isWide ? 'All polls' : 'All', Icons.bar_chart_rounded, _kOrange, cardBg, borderColor, textColor, subTextColor)),
+                  ],
+                );
               },
             ),
             const SizedBox(height: 16),
@@ -650,7 +629,7 @@ class _State extends State<AdminSurveysPage>
                   const SizedBox(width: 6),
                   _buildTabPill('history', 'History (${_totalHistory > 0 ? _totalHistory : _historySurveys.length})', Icons.archive_outlined, _kIndigo, textColor, subTextColor),
                   const SizedBox(width: 6),
-                  _buildTabPill('create', '+ New Poll', Icons.add_chart_rounded, _kOrange, textColor, subTextColor),
+                  _buildTabPill('create', 'New poll', Icons.add_chart_rounded, _kOrange, textColor, subTextColor),
                 ],
               ),
             ),
@@ -805,7 +784,7 @@ class _State extends State<AdminSurveysPage>
             ),
             const SizedBox(height: 6),
             Text(
-              'Create a new poll using the "New Poll" tab.',
+              'Use New poll to start a survey, election or quick poll.',
               style: TextStyle(fontSize: 16, color: subTextColor),
             ),
           ],
@@ -2192,15 +2171,15 @@ class _State extends State<AdminSurveysPage>
             items: const [
               DropdownItem(
                 value: 'both',
-                label: '🌐 Both Parties (Members & General Public Guests)',
+                label: 'Everyone (members and public)',
               ),
               DropdownItem(
                 value: 'members',
-                label: '🔒 Members Only (Member Portal Only)',
+                label: 'Members only',
               ),
               DropdownItem(
                 value: 'guests',
-                label: '👥 General Public / Guests Only (Homepage Only)',
+                label: 'Public only',
               ),
             ],
             onChanged: (v) => setState(() => _targetAudience = v),
