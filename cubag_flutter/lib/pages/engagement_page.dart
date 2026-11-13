@@ -16,7 +16,7 @@ class _EngagementPageState extends State<EngagementPage> {
   bool _loading = false;
   bool _sent = false;
   String? _newTicketId;
-  String _subject = 'General Inquiry';
+  String _subject = 'General question';
   final _msgCtrl = TextEditingController();
   List<dynamic> _tickets = [];
   Map<String, dynamic>? _selectedTicket;
@@ -28,28 +28,28 @@ class _EngagementPageState extends State<EngagementPage> {
 
   final _subjects = [
     {
-      'title': 'General Inquiry',
-      'desc': 'Questions about CUBAG services, processes, or membership',
+      'title': 'General question',
+      'desc': 'CUBAG services, processes or membership',
     },
     {
-      'title': 'License Support',
-      'desc': 'Assistance with activations, renewals, or key management',
+      'title': 'Licence help',
+      'desc': 'Activation, renewal or your licence details',
     },
     {
-      'title': 'Payment Issue',
-      'desc': 'Help with invoices, billing cycles, or transaction errors',
+      'title': 'Payment problem',
+      'desc': 'A bill, receipt or failed payment',
     },
     {
-      'title': 'Event Registration',
-      'desc': 'Troubleshoot sign-ups or attendee information',
+      'title': 'Event sign-up',
+      'desc': 'Registering for an event or your attendance',
     },
     {
-      'title': 'Technical Problem',
-      'desc': 'Bugs, system errors, or accessibility difficulties',
+      'title': 'Problem with the app',
+      'desc': 'Something not working, or hard to use',
     },
     {
       'title': 'Complaint',
-      'desc': 'Formal feedback regarding service quality or experience',
+      'desc': 'Formal feedback about a service you received',
     },
   ];
 
@@ -167,7 +167,7 @@ class _EngagementPageState extends State<EngagementPage> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'New Inquiry',
+                            'New request',
                             style: TextStyle(
                               color: _tab == 0 ? Colors.white : text,
                               fontWeight: FontWeight.w600,
@@ -202,7 +202,7 @@ class _EngagementPageState extends State<EngagementPage> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'Archives (${_tickets.length})',
+                            'My requests (${_tickets.length})',
                             style: TextStyle(
                               color: _tab == 1 ? Colors.white : text,
                               fontWeight: FontWeight.w600,
@@ -247,7 +247,7 @@ class _EngagementPageState extends State<EngagementPage> {
             const Icon(Icons.check_circle_outline_rounded, color: _kGreen, size: 48),
             const SizedBox(height: 12),
             Text(
-              'Inquiry Recorded',
+              'Request sent',
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 18,
@@ -266,7 +266,7 @@ class _EngagementPageState extends State<EngagementPage> {
                   border: Border.all(color: border, width: 1.0),
                 ),
                 child: Text(
-                  'CASE #$_newTicketId',
+                  'Reference #$_newTicketId',
                   style: const TextStyle(
                     color: _kBrown,
                     fontWeight: FontWeight.w700,
@@ -276,7 +276,7 @@ class _EngagementPageState extends State<EngagementPage> {
                 ),
               ),
             Text(
-              'CUBAG Secretariat will review and respond within 24 hours.',
+              'The CUBAG Secretariat will reply here, and you will get a notification.',
               style: TextStyle(color: muted, fontSize: 13.5),
               textAlign: TextAlign.center,
             ),
@@ -294,7 +294,7 @@ class _EngagementPageState extends State<EngagementPage> {
                       ),
                     ),
                     child: Text(
-                      'Log Another',
+                      'Send another',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         color: text,
@@ -316,7 +316,7 @@ class _EngagementPageState extends State<EngagementPage> {
                       ),
                     ),
                     child: const Text(
-                      'View Archives',
+                      'See my requests',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -343,7 +343,7 @@ class _EngagementPageState extends State<EngagementPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Lodge Inquiry',
+            'How can we help?',
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 16,
@@ -353,12 +353,12 @@ class _EngagementPageState extends State<EngagementPage> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Direct communication with CUBAG executive officers and compliance desk.',
+            'Your message goes to the CUBAG Secretariat.',
             style: TextStyle(fontSize: 13, color: muted),
           ),
           const SizedBox(height: 18),
           Text(
-            'Subject Matter',
+            'Topic',
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 13,
@@ -367,8 +367,8 @@ class _EngagementPageState extends State<EngagementPage> {
           ),
           const SizedBox(height: 6),
           CustomDropdown<String>(
-            value: _subject.isNotEmpty ? _subject : 'General Inquiry',
-            hint: 'Select a subject',
+            value: _subject.isNotEmpty ? _subject : 'General question',
+            hint: 'Choose a topic',
             items: _subjects
                 .map((s) => DropdownItem<String>(
                       value: s['title'] as String,
@@ -379,7 +379,7 @@ class _EngagementPageState extends State<EngagementPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Description / Particulars',
+            'Your message',
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 13,
@@ -393,7 +393,7 @@ class _EngagementPageState extends State<EngagementPage> {
             onChanged: (_) => setState(() {}),
             style: TextStyle(color: text, fontSize: 14),
             decoration: InputDecoration(
-              hintText: 'Provide details, consignment or reference numbers if applicable...',
+              hintText: 'Describe what you need. Add any reference or consignment numbers.',
               hintStyle: TextStyle(fontSize: 13.5, color: muted.withValues(alpha: 0.7)),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 14,
@@ -438,7 +438,7 @@ class _EngagementPageState extends State<EngagementPage> {
                       ),
                     )
                   : const Text(
-                      'Submit Request',
+                      'Send request',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -470,7 +470,7 @@ class _EngagementPageState extends State<EngagementPage> {
               TextButton.icon(
                 onPressed: () => setState(() => _selectedTicket = null),
                 icon: const Icon(Icons.arrow_back_rounded, size: 16),
-                label: const Text('Back to Archives'),
+                label: const Text('Back to my requests'),
                 style: TextButton.styleFrom(
                   foregroundColor: _kBrown,
                   textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
@@ -591,7 +591,7 @@ class _EngagementPageState extends State<EngagementPage> {
                             Row(
                               children: [
                                 Text(
-                                  isAdmin ? 'CUBAG SECRETARIAT' : '${r['author']}'.toUpperCase(),
+                                  isAdmin ? 'CUBAG Secretariat' : '${r['author']}',
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: isAdmin ? _kBrown : muted,
@@ -640,7 +640,7 @@ class _EngagementPageState extends State<EngagementPage> {
             Icon(Icons.inbox_outlined, size: 40, color: muted),
             const SizedBox(height: 10),
             Text(
-              'No active inquiries or archives logged.',
+              'You have not sent any requests yet.',
               style: TextStyle(color: muted, fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ],
@@ -743,7 +743,7 @@ class _EngagementPageState extends State<EngagementPage> {
                       ),
                     ),
                     child: Text(
-                      'View Details',
+                      'Open',
                       style: TextStyle(
                         fontSize: 12.5,
                         color: text,

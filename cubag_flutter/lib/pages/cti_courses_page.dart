@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../components/app_layout.dart';
+import '../components/filter_tabs.dart';
 import '../services/api_service.dart';
 import '../services/calendar_service.dart';
 import '../components/shimmer_loader.dart';
@@ -802,83 +803,20 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── CTI SYLLABUS HEADER ─────────────────────────────────────────────
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: border, width: 1.0),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: border, width: 1.0),
-                    ),
-                    child: const Icon(Icons.school_outlined, color: _kBrown, size: 18),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Courses',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: textPrimary,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Accredited training in tariff classification and brokerage.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // ── TABS ──────────────────────────────────────────────────────
-            Container(
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: border, width: 1.0),
-              ),
-              child: TabBar(
-                controller: _tabController,
-                indicatorColor: _kOrange,
-                labelColor: _kOrange,
-                unselectedLabelColor: textMuted,
-                indicatorWeight: 2.5,
-                labelStyle: TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.bold,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+            Text('Accredited training in tariff classification and brokerage.', style: CubagType.body),
+            const SizedBox(height: CubagSpace.md),
+            AnimatedBuilder(
+              animation: _tabController,
+              builder: (context, _) => FilterTabs(
                 tabs: [
-                  Tab(text: 'Catalog (${_courses.length})'),
-                  Tab(text: 'My Enrolled (${_myEnrollments.length})'),
+                  ('0', 'All courses · ${_courses.length}'),
+                  ('1', 'My courses · ${_myEnrollments.length}'),
                 ],
+                selected: '${_tabController.index}',
+                onSelected: (k) => _tabController.animateTo(int.parse(k)),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: CubagSpace.md),
 
             // ── TAB VIEWS ─────────────────────────────────────────────────
             AnimatedBuilder(
@@ -904,93 +842,35 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 1. Dedicated Search Bar
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: border, width: 1.0),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.search_rounded, size: 18, color: textMuted),
-              const SizedBox(width: 10),
-              Expanded(
-                child: TextField(
-                  controller: _searchCtrl,
-                  onChanged: (v) {
-                    _onSearchChanged(v);
-                    setState(() {});
-                  },
-                  style: TextStyle(fontSize: 14, color: textPrimary),
-                  decoration: InputDecoration(
-                    hintText: 'Search courses',
-                    hintStyle: TextStyle(fontSize: 13, color: textMuted),
-                    isDense: true,
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                ),
-              ),
-              if (_searchCtrl.text.isNotEmpty)
-                IconButton(
-                  tooltip: 'Close',
-                  icon: const Icon(Icons.close_rounded, size: 18),
-                  color: textMuted,
-                  onPressed: () {
-                    _searchCtrl.clear();
-                    _onSearchChanged('');
-                    setState(() {});
-                  },
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-            ],
+        TextField(
+          controller: _searchCtrl,
+          onChanged: (v) {
+            _onSearchChanged(v);
+            setState(() {});
+          },
+          decoration: InputDecoration(
+            hintText: 'Search courses',
+            prefixIcon: const Icon(Icons.search_rounded, color: CubagColors.muted),
+            suffixIcon: _searchCtrl.text.isNotEmpty
+                ? IconButton(
+                    tooltip: 'Clear search',
+                    icon: const Icon(Icons.close_rounded, color: CubagColors.muted),
+                    onPressed: () {
+                      _searchCtrl.clear();
+                      _onSearchChanged('');
+                      setState(() {});
+                    },
+                  )
+                : null,
           ),
         ),
-        const SizedBox(height: 10),
-
-        // 2. Dedicated Filter Chips Row
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: modes.map((mode) {
-              final isSelected = (_selectedMode == null && mode == 'All') || (_selectedMode == mode);
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: InkWell(
-                  onTap: () {
-                    setState(() {
-                      _selectedMode = mode == 'All' ? null : mode;
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isSelected ? _kOrange : (isDark ? const Color(0xFF281710) : Colors.white),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: isSelected ? _kOrange : border,
-                        width: 1.0,
-                      ),
-                    ),
-                    child: Text(
-                      mode == 'All' ? 'All' : mode,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                        color: isSelected ? Colors.white : textPrimary,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
+        const SizedBox(height: CubagSpace.sm),
+        FilterTabs(
+          tabs: [for (final m in modes) (m, m)],
+          selected: _selectedMode ?? 'All',
+          onSelected: (m) => setState(() => _selectedMode = m == 'All' ? null : m),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: CubagSpace.md),
 
         if (_loading)
           ListView.separated(
@@ -1001,13 +881,12 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
             itemBuilder: (_, index) => const ShimmerListTile(),
           )
         else if (list.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(10), border: Border.all(color: border, width: 1.0)),
-            child: Center(
-              child: Text('No courses found.', style: TextStyle(fontSize: 14, color: textMuted)),
-            ),
+          EmptyMessage(
+            icon: Icons.school_outlined,
+            title: _searchCtrl.text.isNotEmpty || _selectedMode != null ? 'No courses match' : 'No courses open yet',
+            message: _searchCtrl.text.isNotEmpty || _selectedMode != null
+                ? 'Try another search or show all courses.'
+                : 'New CTI courses are listed here when enrolment opens.',
           )
         else
           ListView.separated(

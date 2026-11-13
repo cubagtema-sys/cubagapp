@@ -169,7 +169,7 @@ class _LiveDataPageState extends State<LiveDataPage> {
                         const _BlinkingDot(color: _kGreen),
                         const SizedBox(width: 6),
                         const Text(
-                          'Live intelligence stream',
+                          'Updated automatically',
                           style: TextStyle(
                             fontSize: 11.5,
                             color: _kGreen,
@@ -225,8 +225,8 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                     Expanded(
                                       child: Text(
                                         _forexIsSample
-                                            ? 'Forex Rates (sample)'
-                                            : 'Official Customs Forex Rates',
+                                            ? 'Exchange rates (sample)'
+                                            : 'Customs exchange rates',
                                         style: TextStyle(
                                           fontWeight: FontWeight.w700,
                                           fontSize: 15.5,
@@ -369,7 +369,7 @@ class _LiveDataPageState extends State<LiveDataPage> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Maritime & Customs Intelligence',
+                                'Shipping and customs news',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -449,7 +449,7 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                             border: Border.all(color: border, width: 1.0),
                                           ),
                                           child: Text(
-                                            (news['source'] ?? '').toUpperCase(),
+                                            (news['source'] ?? '').toString(),
                                             style: const TextStyle(
                                               fontSize: 10.5,
                                               color: _kBrown,

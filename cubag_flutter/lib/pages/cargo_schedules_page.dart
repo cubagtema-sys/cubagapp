@@ -292,108 +292,68 @@ class _CargoSchedulesPageState extends State<CargoSchedulesPage> {
     }
 
     return AppLayout(
-      title: 'Logistics Hub',
+      title: 'Cargo schedules',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Status Bar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Theme.of(context).dividerColor),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Live tracking only: say honestly whether the feed is connected.
+          if (isLive) ...[
+            Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: isLive
-                            ? (isConnected
-                                  ? CubagColors.valid
-                                  : Colors.grey)
-                            : CubagColors.valid,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      isLive
-                          ? (isConnected
-                                ? 'LIVE AIS LINK ACTIVE'
-                                : 'AIS LINK CONNECTING...')
-                          : 'LIVE SATELLITE LINK ACTIVE',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: isLive
-                            ? (isConnected
-                                  ? CubagColors.valid
-                                  : Colors.grey)
-                            : CubagColors.valid,
-                      ),
-                    ),
-                  ],
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: isConnected ? CubagColors.valid : CubagColors.lineStrong,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: CubagSpace.xs),
+                Expanded(
+                  child: Text(
+                    isConnected ? 'Live vessel feed connected' : 'Connecting to the live vessel feed…',
+                    style: CubagType.small,
+                  ),
                 ),
                 Text(
-                  isLive
-                      ? (isMMSI
-                            ? '1 vessel tracked'
-                            : '${filteredVessels.length} vessels in range')
-                      : 'Satellite connection active',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  isMMSI ? '1 vessel tracked' : '${filteredVessels.length} in range',
+                  style: CubagType.caption,
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: CubagSpace.sm),
+          ],
 
           // Tabs
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Theme.of(context).dividerColor),
-            ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
             child: Row(
-              children: ['cargo schedules', 'unloading', 'live tracking'].map((
-                t,
-              ) {
-                bool active = _activeTab == t;
-                return Expanded(
-                  child: InkWell(
-                    onTap: () => _onTabChanged(t),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: active
-                            ? Theme.of(context).primaryColor
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
+              children: [
+                for (final t in const [
+                  ('cargo schedules', 'Schedules'),
+                  ('unloading', 'Unloading'),
+                  ('live tracking', 'Live tracking'),
+                ])
+                  Padding(
+                    padding: const EdgeInsets.only(right: CubagSpace.xs),
+                    child: ChoiceChip(
+                      label: Text(t.$2),
+                      selected: _activeTab == t.$1,
+                      showCheckmark: false,
+                      labelStyle: CubagType.label.copyWith(
+                        color: _activeTab == t.$1 ? CubagColors.onCocoa : CubagColors.inkSoft,
                       ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        t.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: active ? Colors.white : Colors.grey,
-                        ),
-                      ),
+                      selectedColor: CubagColors.cocoa,
+                      backgroundColor: CubagColors.paper,
+                      side: BorderSide(color: _activeTab == t.$1 ? CubagColors.cocoa : CubagColors.line),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                      onSelected: (_) => _onTabChanged(t.$1),
                     ),
                   ),
-                );
-              }).toList(),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: CubagSpace.sm),
 
           // Search Box
           TextField(
@@ -1171,11 +1131,22 @@ class _CargoSchedulesPageState extends State<CargoSchedulesPage> {
                 ),
                 child: Column(
                   children: [
-                    const Icon(Icons.search_off, size: 48, color: Colors.grey),
-                    const SizedBox(height: 8),
+                    const Icon(Icons.inventory_2_outlined, size: 32, color: CubagColors.cocoa),
+                    const SizedBox(height: CubagSpace.sm),
                     Text(
-                      'No $_activeTab schedules found.',
-                      style: const TextStyle(color: Colors.grey),
+                      _searchQuery.isNotEmpty
+                          ? 'Nothing matches "$_searchQuery"'
+                          : (_activeTab == 'unloading' ? 'No unloading scheduled' : 'No cargo schedules yet'),
+                      style: CubagType.headline,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: CubagSpace.xxs),
+                    Text(
+                      _searchQuery.isNotEmpty
+                          ? 'Try a container number or vessel name.'
+                          : 'CUBAG posts vessel arrivals and unloading times here when they are published.',
+                      style: CubagType.small,
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),

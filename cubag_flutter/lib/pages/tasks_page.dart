@@ -222,211 +222,64 @@ class _TasksPageState extends State<TasksPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Top Header Panel ──────────────────────────────────
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: _kCardBg,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: _kBorder, width: 1.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(_isDark ? 30 : 6),
-                          blurRadius: 12,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: statusBadgeColor.withAlpha(25),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                isAllApproved
-                                    ? Icons.verified_user_rounded
-                                    : (hasUnderReview
-                                        ? Icons.hourglass_top_rounded
-                                        : Icons.assignment_outlined),
-                                color: statusBadgeColor,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Your documents and tasks',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                      color: _kBrown,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Tasks',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w800,
-                                      color: _kText,
-                                      letterSpacing: -0.3,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        // Status badge chip
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: statusBadgeColor.withAlpha(20),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: statusBadgeColor.withAlpha(50), width: 1),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 7,
-                                height: 7,
-                                decoration: BoxDecoration(
-                                  color: statusBadgeColor,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 7),
-                              Flexible(
-                                child: Text(
-                                  statusBadgeText,
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w800,
-                                    color: statusBadgeColor,
-                                    letterSpacing: 0.3,
-                                    fontFeatures: const [FontFeature.tabularFigures()],
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                  // ── Progress: one line and a bar, no panel ──
+                  Text(
+                    'Upload the documents your licence needs, then finish any open tasks.',
+                    style: CubagType.body,
+                  ),
+                  const SizedBox(height: CubagSpace.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          statusBadgeText,
+                          style: CubagType.label.copyWith(
+                            color: statusBadgeColor,
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child: LinearProgressIndicator(
-                            value: progressValue,
-                            minHeight: 8,
-                            backgroundColor: _kSurfaceRaised,
-                            valueColor: AlwaysStoppedAnimation<Color>(statusBadgeColor),
-                          ),
-                        ),
-                      ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: CubagSpace.xs),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: LinearProgressIndicator(
+                      value: progressValue,
+                      minHeight: 6,
+                      backgroundColor: CubagColors.line,
+                      valueColor: AlwaysStoppedAnimation<Color>(statusBadgeColor),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: CubagSpace.lg),
 
-                  // ── Segmented Tab Selector ─────────────────────────────
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: _kSurfaceRaised,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _kBorder, width: 1),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => setState(() => _activeTab = 'documents'),
-                            borderRadius: BorderRadius.circular(9),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              decoration: BoxDecoration(
-                                color: _activeTab == 'documents' ? _kBrown : Colors.transparent,
-                                borderRadius: BorderRadius.circular(9),
-                              ),
-                              child: Center(
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.description_outlined,
-                                      size: 16,
-                                      color: _activeTab == 'documents' ? Colors.white : _kMuted,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      _docsTotal > 0
-                                          ? 'Documents ($_docsUploaded/$_docsTotal)'
-                                          : 'Documents',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: _activeTab == 'documents' ? Colors.white : _kMuted,
-                                        fontFeatures: const [FontFeature.tabularFigures()],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                  // ── Tabs ──
+                  Row(
+                    children: [
+                      for (final t in [
+                        ('documents', _docsTotal > 0 ? 'Documents · $_docsUploaded/$_docsTotal' : 'Documents'),
+                        ('tasks', 'Tasks · ${pendingTasks.length}'),
+                      ])
+                        Padding(
+                          padding: const EdgeInsets.only(right: CubagSpace.xs),
+                          child: ChoiceChip(
+                            label: Text(t.$2),
+                            selected: _activeTab == t.$1,
+                            showCheckmark: false,
+                            labelStyle: CubagType.label.copyWith(
+                              color: _activeTab == t.$1 ? CubagColors.onCocoa : CubagColors.inkSoft,
+                              fontFeatures: const [FontFeature.tabularFigures()],
                             ),
+                            selectedColor: CubagColors.cocoa,
+                            backgroundColor: CubagColors.paper,
+                            side: BorderSide(color: _activeTab == t.$1 ? CubagColors.cocoa : CubagColors.line),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                            onSelected: (_) => setState(() => _activeTab = t.$1),
                           ),
                         ),
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => setState(() => _activeTab = 'tasks'),
-                            borderRadius: BorderRadius.circular(9),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              decoration: BoxDecoration(
-                                color: _activeTab == 'tasks' ? _kBrown : Colors.transparent,
-                                borderRadius: BorderRadius.circular(9),
-                              ),
-                              child: Center(
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.task_alt_rounded,
-                                      size: 16,
-                                      color: _activeTab == 'tasks' ? Colors.white : _kMuted,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Tasks (${pendingTasks.length})',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: _activeTab == 'tasks' ? Colors.white : _kMuted,
-                                        fontFeatures: const [FontFeature.tabularFigures()],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: CubagSpace.md),
 
                   // ── Tab Body Content ──────────────────────────────────
                   if (_activeTab == 'documents')
@@ -756,7 +609,7 @@ class _TasksPageState extends State<TasksPage> {
                                         Icon(Icons.lock_clock_rounded, size: 16, color: _kMuted),
                                         const SizedBox(width: 6),
                                         Text(
-                                          'Review',
+                                          'Being checked',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w600,
                                             fontSize: 12.5,
@@ -766,29 +619,18 @@ class _TasksPageState extends State<TasksPage> {
                                       ],
                                     ),
                                   )
-                                : ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: isRejected ? _kRed : _kOrange,
-                                      foregroundColor: Colors.white,
-                                      minimumSize: const Size(0, 40),
-                                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                      elevation: 0,
-                                    ),
-                                    onPressed: () => _uploadDocument(key, label),
-                                    icon: Icon(
-                                      isRejected ? Icons.refresh_rounded : Icons.upload_file_rounded,
-                                      size: 16,
-                                      color: Colors.white,
-                                    ),
-                                    label: Text(
-                                      isRejected ? 'Upload again' : 'Upload',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
+                                : (isRejected
+                                    ? FilledButton.icon(
+                                        style: FilledButton.styleFrom(backgroundColor: CubagColors.lapsed),
+                                        onPressed: () => _uploadDocument(key, label),
+                                        icon: const Icon(Icons.refresh_rounded, size: 18),
+                                        label: const Text('Upload again'),
+                                      )
+                                    : OutlinedButton.icon(
+                                        onPressed: () => _uploadDocument(key, label),
+                                        icon: const Icon(Icons.upload_file_rounded, size: 18),
+                                        label: const Text('Upload'),
+                                      )),
                   ),
                 ],
               ),

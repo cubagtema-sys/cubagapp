@@ -373,7 +373,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 title: Text(
-                  'Change Password',
+                  'Change password',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
@@ -412,7 +412,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   ),
                   title: Text(
-                    'Biometric / Face ID Sign-In',
+                    'Sign in with Face ID or fingerprint',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
@@ -486,7 +486,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 title: Text(
-                  'Push Notifications',
+                  'Notifications on this phone',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
@@ -613,7 +613,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 title: Text(
-                  'Privacy Policy',
+                  'Privacy policy',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
@@ -648,7 +648,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 title: Text(
-                  'Terms of Service',
+                  'Terms of service',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
@@ -857,7 +857,7 @@ class _SettingsPageState extends State<SettingsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Change Password',
+            'Change password',
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 16,

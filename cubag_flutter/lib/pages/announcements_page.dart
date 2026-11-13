@@ -365,8 +365,8 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Filter Chips
-                    SingleChildScrollView(
+                    // Filter chips: only worth showing when there is a choice.
+                    if (categories.length > 2) SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       physics: const BouncingScrollPhysics(),
                       child: Row(
@@ -383,7 +383,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                       children: [
                         Text(
                           searchQuery.isNotEmpty
-                              ? 'SEARCH RESULTS (${filtered.length})'
+                              ? 'Search results (${filtered.length})'
                               : 'Latest (${filtered.length})',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,

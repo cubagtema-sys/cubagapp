@@ -399,14 +399,10 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                   return Container(
                     width: double.infinity,
                     padding: EdgeInsets.all(isNarrow ? 20 : 28),
+                    // Same cocoa licence surface as Home and Licence & receipts.
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF381F14), Color(0xFF1E110A)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFF5A3522), width: 1.0),
+                      color: CubagColors.cocoa,
+                      borderRadius: BorderRadius.circular(CubagRadius.hero),
                     ),
                     child: isNarrow
                         ? Column(
@@ -484,7 +480,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                       Text(
                                         'Membership ID',
                                         style: TextStyle(
-                                          color: AppColors.accentOrangeText,
+                                          color: CubagColors.onCocoaMuted,
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -509,7 +505,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         Text(
                                           'Classification',
                                           style: TextStyle(
-                                            color: AppColors.accentOrangeText,
+                                            color: CubagColors.onCocoaMuted,
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -554,7 +550,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                                 height: 20,
                                                 child: CircularProgressIndicator(
                                                   strokeWidth: 2,
-                                                  color: _kOrange,
+                                                  color: CubagColors.onCocoaMuted,
                                                 ),
                                               ),
                                             ),
@@ -569,7 +565,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         Text(
                                           'Verification code',
                                           style: TextStyle(
-                                            color: AppColors.accentOrangeText,
+                                            color: CubagColors.onCocoaMuted,
                                             fontSize: 12,
                                             fontWeight: FontWeight.w800,
                                           ),
@@ -669,7 +665,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                             Text(
                                               'Membership ID',
                                               style: TextStyle(
-                                                color: AppColors.accentOrangeText,
+                                                color: CubagColors.onCocoaMuted,
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.bold,
                                               ),
@@ -694,7 +690,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                               Text(
                                                 'Classification',
                                                 style: TextStyle(
-                                                  color: AppColors.accentOrangeText,
+                                                  color: CubagColors.onCocoaMuted,
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.bold,
                                                 ),
@@ -743,7 +739,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                                 height: 26,
                                                 child: CircularProgressIndicator(
                                                   strokeWidth: 2,
-                                                  color: _kOrange,
+                                                  color: CubagColors.onCocoaMuted,
                                                 ),
                                               ),
                                             ),

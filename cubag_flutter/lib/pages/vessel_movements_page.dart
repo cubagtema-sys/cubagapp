@@ -281,7 +281,7 @@ class _VesselMovementsPageState extends State<VesselMovementsPage> {
           ),
           const SizedBox(width: 8),
           Text(
-            isConnected ? 'Live AIS Stream Connected' : 'Connecting to AIS Feed...',
+            isConnected ? 'Live vessel feed connected' : 'Connecting to the live vessel feed…',
             style: TextStyle(
               color: isConnected ? text : muted,
               fontWeight: FontWeight.w600,
@@ -743,7 +743,7 @@ class _VesselMovementsPageState extends State<VesselMovementsPage> {
                               Icon(Icons.directions_boat_outlined, size: 40, color: muted),
                               const SizedBox(height: 12),
                               Text(
-                                'No Vessels In Range',
+                                _search.isNotEmpty ? 'No vessels match' : 'No vessels in range right now',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 16,
@@ -753,8 +753,8 @@ class _VesselMovementsPageState extends State<VesselMovementsPage> {
                               const SizedBox(height: 6),
                               Text(
                                 _search.isNotEmpty
-                                    ? 'Try modifying your search keywords.'
-                                    : 'Waiting for live AIS telemetry in Ghana territorial waters...',
+                                    ? 'Try a vessel name, MMSI number or port.'
+                                    : 'Ships near Ghana\'s ports appear here as their positions come in.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(fontSize: 13, color: muted),
                               ),

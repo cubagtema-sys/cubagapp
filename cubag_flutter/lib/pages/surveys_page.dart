@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../components/app_layout.dart';
+import '../components/filter_tabs.dart';
 import '../components/cors_image_widget.dart';
 import '../components/shimmer_loader.dart';
 import '../services/api_service.dart';
@@ -180,115 +181,33 @@ class _SurveysPageState extends State<SurveysPage> {
     final filteredList = _filterList(currentList);
 
     return AppLayout(
-      title: 'Surveys',
+      title: 'Polls',
       child: Container(
         color: bg,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (_answering != null)
               _buildAnswerForm(isDark, cardBg, border, textPrimary, textMuted)
             else ...[
-              // Simple Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Surveys', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: textPrimary)),
-                      const SizedBox(height: 2),
-                      Text('Votes and surveys from the association.', style: TextStyle(fontSize: 13, color: textMuted)),
-                    ],
-                  ),
-                ],
+              Text('Votes and short surveys from CUBAG. Your answers help decide what happens next.', style: CubagType.body),
+              const SizedBox(height: CubagSpace.md),
+              FilterTabs(
+                tabs: [('active', 'Open · ${_active.length}'), ('past', 'Closed · ${_past.length}')],
+                selected: _tab,
+                onSelected: (t) => setState(() => _tab = t),
               ),
-              const SizedBox(height: 14),
-
-              // Simple Tabs
-              Container(
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: border, width: 1.0),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _tab = 'active'),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 9),
-                          decoration: BoxDecoration(
-                            color: _tab == 'active' ? _kOrange.withAlpha(20) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'Active (${_active.length})',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.bold,
-                                color: _tab == 'active' ? _kOrange : textMuted,
-                                fontFeatures: const [FontFeature.tabularFigures()],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _tab = 'past'),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 9),
-                          decoration: BoxDecoration(
-                            color: _tab == 'past' ? _kOrange.withAlpha(20) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'Past (${_past.length})',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.bold,
-                                color: _tab == 'past' ? _kOrange : textMuted,
-                                fontFeatures: const [FontFeature.tabularFigures()],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+              const SizedBox(height: CubagSpace.sm),
+              TextField(
+                controller: _searchCtrl,
+                onChanged: _onSearchChanged,
+                decoration: const InputDecoration(
+                  hintText: 'Search polls',
+                  prefixIcon: Icon(Icons.search_rounded, color: CubagColors.muted),
                 ),
               ),
-              const SizedBox(height: 14),
-
-              // Search bar
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: border, width: 1.0),
-                ),
-                child: TextField(
-                  controller: _searchCtrl,
-                  onChanged: _onSearchChanged,
-                  style: TextStyle(fontSize: 14, color: textPrimary),
-                  decoration: InputDecoration(
-                    hintText: 'Search surveys',
-                    hintStyle: TextStyle(fontSize: 13, color: textMuted),
-                    prefixIcon: Icon(Icons.search_rounded, size: 16, color: textMuted),
-                    isDense: true,
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
+              const SizedBox(height: CubagSpace.md),
 
               if (_loading && filteredList.isEmpty)
                 ListView.separated(
@@ -299,13 +218,12 @@ class _SurveysPageState extends State<SurveysPage> {
                   itemBuilder: (_, index) => const ShimmerListTile(),
                 )
               else if (filteredList.isEmpty)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(10), border: Border.all(color: border, width: 1.0)),
-                  child: Center(
-                    child: Text('No surveys found.', style: TextStyle(fontSize: 14, color: textMuted)),
-                  ),
+                EmptyMessage(
+                  icon: Icons.how_to_vote_outlined,
+                  title: _tab == 'active' ? 'No polls open right now' : 'No closed polls yet',
+                  message: _tab == 'active'
+                      ? 'When CUBAG opens a vote, it appears here and on your Home screen.'
+                      : 'Polls you could vote in are kept here after they close.',
                 )
               else
                 ListView.separated(

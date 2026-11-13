@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../components/app_layout.dart';
 import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
@@ -383,69 +384,32 @@ class _MessagingPageState extends State<MessagingPage> {
   Widget _buildList(Color primary, {required bool isWide}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF1E120B) : Colors.white;
-    final inputBg = isDark ? const Color(0xFF281710) : const Color(0xFFF4EEE6);
-    final borderCol = isDark ? const Color(0xFF3E2417) : const Color(0xFFE5DDD3);
     final textCol = isDark ? Colors.white : CubagColors.ink;
     final subTextCol = isDark ? Colors.white70 : CubagColors.muted;
     final hintCol = isDark ? Colors.white54 : const Color(0xFF5F6B7E);
 
     return Container(
-      color: cardBg,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+      // On phones the list sits on the page itself, not in a second panel.
+      color: isWide ? cardBg : Colors.transparent,
+      padding: isWide ? const EdgeInsets.fromLTRB(16, 16, 16, 10) : EdgeInsets.zero,
       child: Column(
         children: [
-          // Search box
-          Container(
-            height: 44,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: inputBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderCol, width: 1.0),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.search_rounded,
-                  color: hintCol,
-                  size: 20,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: TextField(
-                    controller: _searchCtrl,
-                    onChanged: (v) => setState(() => _applySearch(v)),
-                    decoration: InputDecoration(
-                      hintText: 'Search messages',
-                      hintStyle: TextStyle(
-                        color: hintCol,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    style: TextStyle(
-                      color: textCol,
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                if (_search.isNotEmpty)
-                  Semantics(button: true, label: 'Clear search', child: GestureDetector(
-                    onTap: () {
-                      _searchCtrl.clear();
-                      setState(() => _applySearch(''));
-                    },
-                    child: Icon(
-                      Icons.cancel_rounded,
-                      color: hintCol,
-                      size: 18,
-                    ),
-                  )),
-              ],
+          TextField(
+            controller: _searchCtrl,
+            onChanged: (v) => setState(() => _applySearch(v)),
+            decoration: InputDecoration(
+              hintText: 'Search messages',
+              prefixIcon: const Icon(Icons.search_rounded, color: CubagColors.muted),
+              suffixIcon: _search.isNotEmpty
+                  ? IconButton(
+                      tooltip: 'Clear search',
+                      icon: const Icon(Icons.close_rounded, color: CubagColors.muted),
+                      onPressed: () {
+                        _searchCtrl.clear();
+                        setState(() => _applySearch(''));
+                      },
+                    )
+                  : null,
             ),
           ),
           const SizedBox(height: 14),
@@ -460,38 +424,29 @@ class _MessagingPageState extends State<MessagingPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: primary.withAlpha(15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.chat_bubble_outline_rounded,
-                          color: primary,
-                          size: 24,
-                        ),
+                        width: 64,
+                        height: 64,
+                        decoration: const BoxDecoration(color: CubagColors.paper, shape: BoxShape.circle),
+                        child: const Icon(Icons.chat_bubble_outline_rounded, color: CubagColors.cocoa, size: 28),
                       ),
-                      const SizedBox(height: 14),
-                      Text(
-                        _search.isEmpty ? 'No messages yet' : 'No results found',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                          color: textCol,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: CubagSpace.md),
+                      Text(_search.isEmpty ? 'No messages yet' : 'Nothing matches', style: CubagType.headline),
+                      const SizedBox(height: CubagSpace.xxs),
                       Text(
                         _search.isEmpty
-                            ? 'Start a conversation from the members directory.'
-                            : 'Try searching by a different name or keyword.',
+                            ? 'Message another member from their profile in the directory.'
+                            : 'Try a different name or word.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: subTextCol,
-                          fontSize: 13,
-                        ),
+                        style: CubagType.small,
                       ),
+                      if (_search.isEmpty) ...[
+                        const SizedBox(height: CubagSpace.lg),
+                        FilledButton.icon(
+                          onPressed: () => context.go('/networking'),
+                          icon: const Icon(Icons.people_alt_outlined, size: 18),
+                          label: const Text('Find a member'),
+                        ),
+                      ],
                     ],
                   ),
                 ),
