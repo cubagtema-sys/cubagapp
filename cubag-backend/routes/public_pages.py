@@ -31,255 +31,113 @@ _BASE_PAGE_HEAD = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }} - Customs Brokers Association Ghana (CUBAG)</title>
     <link rel="icon" type="image/jpeg" href="/logo.jpeg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,600&display=swap" rel="stylesheet">
     <style>
+        /* CUBAG design tokens (same as the app: lib/design/cubag_design.dart) */
         :root {
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --primary: #1A0F0A;
-            --accent: #FF5000;
-            --accent-hover: #e04700;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --border-color: #e2e8f0;
-            --success: #10b981;
-            --danger: #ef4444;
-            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --paper: #ffffff;
+            --sand: #F7F3EF;
+            --ink: #2A1810;
+            --ink-soft: #4A3A31;
+            --muted: #6E625B;
+            --line: #E8DED6;
+            --cocoa: #5C3421;
+            --accent: #C2410C;
+            --accent-hover: #9A3412;
+            --accent-tint: #FFF4ED;
+            --danger: #B42318;
+            --danger-tint: #FEF3F2;
+            --success: #067647;
+            --sans: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --serif: "Source Serif 4", Georgia, serif;
         }
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            font-family: var(--font-family);
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            padding-bottom: 60px;
-        }
-        .header {
-            background-color: var(--primary);
-            color: #ffffff;
-            padding: 20px 24px;
-            border-bottom: 3px solid var(--accent);
-        }
-        .header-content {
-            max-width: 900px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            text-decoration: none;
-            color: #ffffff;
-        }
-        .brand img {
-            width: 44px;
-            height: 44px;
-            border-radius: 8px;
-            object-fit: cover;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-        }
-        .brand-text h1 {
-            font-size: 18px;
-            font-weight: 800;
-            letter-spacing: -0.2px;
-            color: #ffffff;
-        }
-        .brand-text p {
-            font-size: 12px;
-            color: #94a3b8;
-            font-weight: 500;
-        }
-        .nav-links {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .nav-links a {
-            color: #cbd5e1;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 600;
-            padding: 6px 12px;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-        }
-        .nav-links a:hover, .nav-links a.active {
-            color: #ffffff;
-            background-color: rgba(255, 255, 255, 0.12);
-        }
-        .container {
-            max-width: 900px;
-            margin: 32px auto 0 auto;
-            padding: 0 20px;
-        }
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-            padding: 36px 32px;
-        }
-        @media (max-width: 640px) {
-            .card {
-                padding: 24px 18px;
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --paper: #1E120C; --sand: #160D09; --ink: #F5EDE7; --ink-soft: #E2D6CD;
+                --muted: #B3A69D; --line: #3A2A20; --accent: #FB8A4C; --accent-hover: #FDA56F;
+                --accent-tint: #2B1910; --danger: #F97066; --danger-tint: #2A1414;
             }
         }
-        .badge {
-            display: inline-block;
-            background-color: rgba(255, 80, 0, 0.1);
-            color: var(--accent);
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            padding: 4px 10px;
-            border-radius: 6px;
-            margin-bottom: 12px;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: var(--sans);
+            background: var(--sand);
+            color: var(--ink);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            padding-bottom: 64px;
         }
+        a { color: var(--accent); }
+        a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible {
+            outline: 3px solid var(--accent); outline-offset: 2px;
+        }
+        .header { background: var(--paper); border-bottom: 1px solid var(--line); padding: 14px 16px; }
+        .header-content {
+            max-width: 720px; margin: 0 auto; display: flex; align-items: center;
+            justify-content: space-between; flex-wrap: wrap; gap: 12px;
+        }
+        .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink); }
+        .brand img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+        .brand-text h1 { font-family: var(--serif); font-size: 17px; font-weight: 600; line-height: 1.2; }
+        .brand-text p { font-size: 12.5px; color: var(--muted); }
+        .nav-links { display: flex; gap: 4px; flex-wrap: wrap; }
+        .nav-links a {
+            color: var(--ink-soft); text-decoration: none; font-size: 14px; font-weight: 600;
+            padding: 8px 12px; border-radius: 8px;
+        }
+        .nav-links a:hover { background: var(--sand); }
+        .nav-links a.active { color: var(--accent); background: var(--accent-tint); }
+        .container { max-width: 720px; margin: 32px auto 0; padding: 0 16px; }
+        .card {
+            background: var(--paper); border: 1px solid var(--line); border-radius: 14px;
+            padding: 40px 40px 32px;
+        }
+        @media (max-width: 640px) { .card { padding: 24px 18px; } .container { margin-top: 16px; } }
+        /* The old uppercase eyebrow label: kept as quiet sentence-case text. */
+        .badge { display: block; color: var(--muted); font-size: 14px; font-weight: 600; margin-bottom: 6px; }
         h2.title {
-            font-size: 28px;
-            font-weight: 800;
-            color: var(--primary);
-            letter-spacing: -0.5px;
-            margin-bottom: 8px;
+            font-family: var(--serif); font-size: 34px; font-weight: 600; line-height: 1.15;
+            color: var(--ink); margin-bottom: 10px;
         }
         .subtitle {
-            font-size: 14px;
-            color: var(--text-muted);
-            margin-bottom: 24px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border-color);
+            font-size: 15px; color: var(--muted); margin-bottom: 28px;
+            padding-bottom: 24px; border-bottom: 1px solid var(--line);
         }
-        .section {
-            margin-bottom: 28px;
+        .section { margin-bottom: 32px; }
+        .section h3 { font-family: var(--serif); font-size: 21px; font-weight: 600; color: var(--ink); margin-bottom: 10px; }
+        .section p, .section ul, .section ol { font-size: 16px; color: var(--ink-soft); line-height: 1.7; margin-bottom: 12px; max-width: 66ch; }
+        .section ul, .section ol { padding-left: 22px; }
+        .section li { margin-bottom: 6px; }
+        .section strong { color: var(--ink); }
+        .info-box, .danger-box {
+            padding: 16px 18px; border-radius: 10px; margin: 16px 0; font-size: 15px;
         }
-        .section h3 {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 10px;
-        }
-        .section p, .section ul {
-            font-size: 15px;
-            color: #334155;
-            line-height: 1.7;
-            margin-bottom: 12px;
-        }
-        .section ul {
-            padding-left: 24px;
-        }
-        .section li {
-            margin-bottom: 6px;
-        }
-        .info-box {
-            background-color: #f1f5f9;
-            border-left: 4px solid var(--accent);
-            padding: 16px;
-            border-radius: 0 8px 8px 0;
-            margin: 16px 0;
-            font-size: 14px;
-            color: #1e293b;
-        }
-        .danger-box {
-            background-color: #fef2f2;
-            border-left: 4px solid var(--danger);
-            padding: 16px;
-            border-radius: 0 8px 8px 0;
-            margin: 16px 0;
-            font-size: 14px;
-            color: #991b1b;
-        }
-        .footer {
-            margin-top: 40px;
-            text-align: center;
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-        /* Form controls */
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .form-group label {
-            display: block;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            color: var(--primary);
-        }
-        .form-group .hint {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-        }
+        .info-box { background: var(--accent-tint); border: 1px solid var(--line); color: var(--ink-soft); }
+        .danger-box { background: var(--danger-tint); border: 1px solid var(--danger); color: var(--danger); }
+        .footer { margin-top: 32px; text-align: center; font-size: 13px; color: var(--muted); }
+        /* Form controls (account deletion) */
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 15px; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
+        .form-group .hint { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
         .form-control {
-            width: 100%;
-            padding: 12px 14px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 15px;
-            font-family: inherit;
-            transition: border-color 0.2s;
+            width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px;
+            font-size: 16px; font-family: inherit; background: var(--paper); color: var(--ink);
         }
-        .form-control:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(255, 80, 0, 0.15);
-        }
-        textarea.form-control {
-            resize: vertical;
-            min-height: 90px;
-        }
-        .checkbox-label {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            font-size: 14px;
-            color: #334155;
-            cursor: pointer;
-            margin: 16px 0;
-        }
-        .checkbox-label input {
-            margin-top: 4px;
-            accent-color: var(--accent);
-            width: 16px;
-            height: 16px;
-        }
+        .form-control:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
+        textarea.form-control { resize: vertical; min-height: 96px; }
+        .checkbox-label { display: flex; align-items: flex-start; gap: 10px; font-size: 15px; color: var(--ink-soft); cursor: pointer; margin: 16px 0; }
+        .checkbox-label input { margin-top: 4px; accent-color: var(--accent); width: 18px; height: 18px; }
         .btn {
-            display: inline-block;
-            background-color: var(--accent);
-            color: #ffffff;
-            font-weight: 700;
-            font-size: 15px;
-            padding: 14px 24px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            text-decoration: none;
-            transition: background-color 0.2s;
-            text-align: center;
+            display: inline-block; background: var(--accent); color: #ffffff; font-weight: 700; font-size: 16px;
+            padding: 14px 24px; border-radius: 10px; border: none; cursor: pointer; text-decoration: none; text-align: center;
         }
-        .btn:hover {
-            background-color: var(--accent-hover);
-        }
-        .btn-danger {
-            background-color: var(--danger);
-        }
-        .btn-danger:hover {
-            background-color: #dc2626;
-        }
-        .btn-block {
-            display: block;
-            width: 100%;
-        }
+        .btn:hover { background: var(--accent-hover); }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { filter: brightness(0.92); }
+        .btn-block { display: block; width: 100%; }
+        @media print { .header, .nav-links, .footer { display: none; } body { background: #fff; } .card { border: 0; } }
     </style>
 </head>
 <body>
@@ -288,14 +146,14 @@ _BASE_PAGE_HEAD = """
             <a href="/" class="brand">
                 <img src="/logo.jpeg" alt="CUBAG Logo" onerror="this.style.display='none'">
                 <div class="brand-text">
-                    <h1>CUBAG</h1>
-                    <p>Customs Brokers Association of Ghana</p>
+                    <h1>Customs Brokers Association of Ghana</h1>
+                    <p>Honesty and Efficiency</p>
                 </div>
             </a>
             <nav class="nav-links">
-                <a href="/privacy" class="{% if active_tab == 'privacy' %}active{% endif %}">Privacy Policy</a>
-                <a href="/terms" class="{% if active_tab == 'terms' %}active{% endif %}">Terms of Service</a>
-                <a href="/delete-account" class="{% if active_tab == 'delete' %}active{% endif %}">Account Deletion</a>
+                <a href="/privacy" class="{% if active_tab == 'privacy' %}active{% endif %}">Privacy</a>
+                <a href="/terms" class="{% if active_tab == 'terms' %}active{% endif %}">Terms</a>
+                <a href="/delete-account" class="{% if active_tab == 'delete' %}active{% endif %}">Delete account</a>
             </nav>
         </div>
     </header>
@@ -305,7 +163,7 @@ _BASE_PAGE_HEAD = """
 _BASE_PAGE_FOOT = """
         <div class="footer">
             <p>&copy; {{ current_year }} Customs Brokers Association of Ghana (CUBAG). All rights reserved.</p>
-            <p style="margin-top: 4px;">National Secretariat • Tema Port &amp; Kotoka International Airport (KIA) Chapters • Accra, Ghana</p>
+            <p style="margin-top: 4px;">National Secretariat, Accra, Ghana</p>
         </div>
     </main>
 </body>

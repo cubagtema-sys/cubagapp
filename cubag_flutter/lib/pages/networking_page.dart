@@ -762,7 +762,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
     final surfaceRaised = isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
 
     return AppLayout(
-      title: 'Member Directory',
+      title: 'Directory',
       hideSearch: false,
       scrollable: true,
       child: Center(

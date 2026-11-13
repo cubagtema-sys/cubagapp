@@ -180,7 +180,7 @@ class _SurveysPageState extends State<SurveysPage> {
     final filteredList = _filterList(currentList);
 
     return AppLayout(
-      title: 'Surveys & Elections',
+      title: 'Surveys',
       child: Container(
         color: bg,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -197,7 +197,7 @@ class _SurveysPageState extends State<SurveysPage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Surveys & Elections', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: textPrimary)),
+                      Text('Surveys', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: textPrimary)),
                       const SizedBox(height: 2),
                       Text('Official trade ballots and industry consultations', style: TextStyle(fontSize: 13, color: textMuted)),
                     ],

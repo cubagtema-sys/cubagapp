@@ -528,7 +528,7 @@ class _State extends State<AdminSurveysPage>
       );
     }
     return AppLayout(
-      title: 'Surveys & Elections',
+      title: 'Surveys',
       scrollable: false,
       child: SingleChildScrollView(
         controller: _scrollController,

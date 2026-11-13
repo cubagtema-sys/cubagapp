@@ -794,7 +794,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
     final textMuted = isDark ? const Color(0xFFC8ADA0) : CubagColors.muted;
 
     return AppLayout(
-      title: 'CTI Courses',
+      title: 'Courses',
       scrollable: true,
       child: Container(
         color: bg,

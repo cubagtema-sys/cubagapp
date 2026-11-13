@@ -645,7 +645,7 @@ class _VesselMovementsPageState extends State<VesselMovementsPage> {
     }
 
     return AppLayout(
-      title: 'Vessel Movements',
+      title: 'Vessels',
       scrollable: false,
       child: RefreshIndicator(
         onRefresh: _fetch,

@@ -301,7 +301,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final surfaceRaised = isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
 
     return AppLayout(
-      title: 'Account Settings',
+      title: 'Settings',
       scrollable: false,
       child: Align(
         alignment: Alignment.topCenter,

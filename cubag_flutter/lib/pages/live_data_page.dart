@@ -150,7 +150,7 @@ class _LiveDataPageState extends State<LiveDataPage> {
         .toList();
 
     return AppLayout(
-      title: 'Intelligence Hub',
+      title: 'Insights',
       scrollable: false,
       child: Center(
         child: ConstrainedBox(

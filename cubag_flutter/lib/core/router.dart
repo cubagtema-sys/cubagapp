@@ -1056,7 +1056,7 @@ class _AdminUnavailableBodyState extends State<_AdminUnavailableBody> {
                                 )
                               : const Icon(Icons.logout_rounded, size: 20),
                           label: Text(
-                            _loggingOut ? 'Signing out...' : 'Sign Out',
+                            _loggingOut ? 'Signing out...' : 'Sign out',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,

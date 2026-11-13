@@ -592,7 +592,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (_isLoading) {
       return AppLayout(
-        title: 'My Profile',
+        title: 'Profile',
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -627,7 +627,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final portStr = _formatPortAbbreviation(portRaw);
 
     return AppLayout(
-      title: 'My Profile',
+      title: 'Profile',
       scrollable: false,
       child: RefreshIndicator(
         onRefresh: () => _fetchUser(forceRefresh: true),

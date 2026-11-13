@@ -698,7 +698,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         items: const [
                           Shortcut(Icons.payments_outlined, 'Pay dues', '/payments'),
                           Shortcut(Icons.receipt_long_outlined, 'Statement', '/payment-history'),
-                          Shortcut(Icons.school_outlined, 'CTI courses', '/courses'),
+                          Shortcut(Icons.school_outlined, 'Courses', '/courses'),
                           Shortcut(Icons.groups_outlined, 'Member network', '/networking'),
                           Shortcut(Icons.how_to_vote_outlined, 'Polls', '/surveys'),
                           Shortcut(Icons.support_agent_outlined, 'Support', '/engagement'),

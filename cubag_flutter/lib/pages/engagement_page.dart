@@ -133,7 +133,7 @@ class _EngagementPageState extends State<EngagementPage> {
     final surfaceRaised = isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0);
 
     return AppLayout(
-      title: 'Support & Inquiries',
+      title: 'Support',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

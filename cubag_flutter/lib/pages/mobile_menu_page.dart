@@ -50,7 +50,7 @@ class MobileMenuPage extends StatelessWidget {
             '/admin/port-news',
           ),
           _MenuItem(
-            'Intelligence Hub',
+            'Insights',
             Icons.cell_tower_rounded,
             '/admin/intelligence',
           ),
@@ -65,7 +65,7 @@ class MobileMenuPage extends StatelessWidget {
             '/admin/complaints',
           ),
           _MenuItem(
-            'Messaging',
+            'Messages',
             Icons.chat_rounded,
             '/admin/messages',
           ),
@@ -106,7 +106,7 @@ class MobileMenuPage extends StatelessWidget {
             '/admin/gallery',
           ),
           _MenuItem(
-            'Surveys & Elections',
+            'Surveys',
             Icons.how_to_vote_rounded,
             '/admin/surveys',
           ),
@@ -159,7 +159,7 @@ class MobileMenuPage extends StatelessWidget {
         ],
         'intelligence': [
           _MenuItem(
-            'Intelligence Hub',
+            'Insights',
             Icons.cell_tower_rounded,
             '/admin/intelligence',
           ),
@@ -177,7 +177,7 @@ class MobileMenuPage extends StatelessWidget {
           ),
         ],
         'messaging': [
-          _MenuItem('Messaging', Icons.chat_rounded, '/admin/messages'),
+          _MenuItem('Messages', Icons.chat_rounded, '/admin/messages'),
           _MenuItem('Reported Messages', Icons.flag_rounded, '/admin/message-reports'),
         ],
         'notifications': [
@@ -219,7 +219,7 @@ class MobileMenuPage extends StatelessWidget {
         ],
         'surveys': [
           _MenuItem(
-            'Surveys & Elections',
+            'Surveys',
             Icons.how_to_vote_rounded,
             '/admin/surveys',
           ),
@@ -288,52 +288,52 @@ class MobileMenuPage extends StatelessWidget {
           ]),
           _buildSection(context, 'Services', [
             _MenuItem(
-              'Membership Hub',
+              'Membership',
               Icons.card_membership_rounded,
               '/membership-services',
             ),
             _MenuItem(
-              'Compliance Centre',
+              'Compliance',
               Icons.verified_user_rounded,
               '/compliance',
             ),
             _MenuItem(
-              'CTI Courses',
+              'Courses',
               Icons.school_rounded,
               '/courses',
             ),
             _MenuItem(
-              'Payment Records',
+              'Payments',
               Icons.receipt_long_rounded,
               '/payment-history',
             ),
-            _MenuItem('Tasks & Compliance', Icons.task_alt_rounded, '/tasks'),
+            _MenuItem('Tasks', Icons.task_alt_rounded, '/tasks'),
             _MenuItem(
-              'Member Directory',
+              'Directory',
               Icons.people_alt_rounded,
               '/networking',
             ),
             _MenuItem(
-              'Messaging',
+              'Messages',
               Icons.chat_bubble_outline_rounded,
               '/messaging',
             ),
             _MenuItem('Events', Icons.event_rounded, '/events'),
             _MenuItem(
-              'Surveys & Elections',
+              'Surveys',
               Icons.how_to_vote_rounded,
               '/surveys',
             ),
             _MenuItem(
-              'Support & Inquiries',
+              'Support',
               Icons.support_agent_rounded,
               '/engagement',
             ),
           ]),
           _buildSection(context, 'Resources', [
-            _MenuItem('Intelligence Hub', Icons.analytics_rounded, '/live-data'),
+            _MenuItem('Insights', Icons.analytics_rounded, '/live-data'),
             _MenuItem(
-              'Vessel Movements',
+              'Vessels',
               Icons.directions_boat_rounded,
               '/vessel-movements',
             ),
@@ -363,7 +363,7 @@ class MobileMenuPage extends StatelessWidget {
                         : '/settings',
                   ),
                 _MenuItem(
-                  'Sign Out',
+                  'Sign out',
                   Icons.logout_rounded,
                   '/login',
                   isLogout: true,

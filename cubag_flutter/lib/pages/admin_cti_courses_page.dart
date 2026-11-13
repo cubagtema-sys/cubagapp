@@ -260,7 +260,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
     final active = _courses.where((c) => c['is_active'] == true).length;
 
     return AppLayout(
-      title: 'CTI Courses',
+      title: 'Courses',
       scrollable: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -912,7 +912,7 @@ class _EventsPageState extends State<EventsPage> {
     final primary = Theme.of(context).primaryColor;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return AppLayout(
-      title: 'Events & Workshops',
+      title: 'Events',
       scrollable: false,
       child: Center(
         child: ConstrainedBox(

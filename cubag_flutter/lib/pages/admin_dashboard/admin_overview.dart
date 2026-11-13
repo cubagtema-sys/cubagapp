@@ -12,15 +12,9 @@ class AdminOverview extends StatelessWidget {
   final String adminName;
   final ValueChanged<String> onOpen;
 
-  const AdminOverview({
-    super.key,
-    required this.dashboard,
-    required this.adminName,
-    required this.onOpen,
-  });
+  const AdminOverview({super.key, required this.dashboard, required this.adminName, required this.onOpen});
 
-  Map<String, dynamic> _map(String k) =>
-      dashboard[k] is Map ? Map<String, dynamic>.from(dashboard[k] as Map) : {};
+  Map<String, dynamic> _map(String k) => dashboard[k] is Map ? Map<String, dynamic>.from(dashboard[k] as Map) : {};
 
   static String money(num v) {
     final s = v.round().toString();
@@ -39,47 +33,53 @@ class AdminOverview extends StatelessWidget {
     final h = DateTime.now().hour;
     final greeting = h < 12 ? 'Good morning' : (h < 17 ? 'Good afternoon' : 'Good evening');
 
-    return LayoutBuilder(builder: (context, box) {
-      final wide = box.maxWidth >= 1000;
-      final waiting = _WaitingList(queue: queue, onOpen: onOpen);
-      final figures = _Figures(kpis: kpis, queue: queue, wide: box.maxWidth >= 700);
-      final revenue = _RevenueChart(rows: (dashboard['revenue_by_month'] as List?) ?? const []);
-      final members = _MembersByStatus(counts: _map('status_counts'));
+    return LayoutBuilder(
+      builder: (context, box) {
+        final wide = box.maxWidth >= 1000;
+        final waiting = _WaitingList(queue: queue, onOpen: onOpen);
+        final figures = _Figures(kpis: kpis, queue: queue, wide: box.maxWidth >= 700, onOpen: onOpen);
+        final revenue = _RevenueChart(rows: (dashboard['revenue_by_month'] as List?) ?? const []);
+        final members = _MembersByStatus(counts: _map('status_counts'));
 
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('$greeting${adminName.isEmpty ? '' : ', $adminName'}', style: CubagType.display),
-          const SizedBox(height: CubagSpace.xxs),
-          const Text('Here is what needs your attention today.', style: CubagType.body),
-          const SizedBox(height: CubagSpace.xl),
-          figures,
-          const SizedBox(height: CubagSpace.xl),
-          if (wide)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(flex: 5, child: waiting),
-                const SizedBox(width: CubagSpace.xl),
-                Expanded(
-                  flex: 7,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [revenue, const SizedBox(height: CubagSpace.xl), members],
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('$greeting${adminName.isEmpty ? '' : ', $adminName'}', style: CubagType.display),
+            const SizedBox(height: CubagSpace.xxs),
+            const Text('Here is what needs your attention today.', style: CubagType.body),
+            const SizedBox(height: CubagSpace.xl),
+            figures,
+            const SizedBox(height: CubagSpace.xl),
+            if (wide)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 5, child: waiting),
+                  const SizedBox(width: CubagSpace.xl),
+                  Expanded(
+                    flex: 7,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        revenue,
+                        const SizedBox(height: CubagSpace.xl),
+                        members,
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            )
-          else ...[
-            waiting,
-            const SizedBox(height: CubagSpace.xl),
-            revenue,
-            const SizedBox(height: CubagSpace.xl),
-            members,
+                ],
+              )
+            else ...[
+              waiting,
+              const SizedBox(height: CubagSpace.xl),
+              revenue,
+              const SizedBox(height: CubagSpace.xl),
+              members,
+            ],
           ],
-        ],
-      );
-    });
+        );
+      },
+    );
   }
 }
 
@@ -118,12 +118,36 @@ class _WaitingList extends StatelessWidget {
   const _WaitingList({required this.queue, required this.onOpen});
 
   static const _rows = [
-    ('documents', 'Applications to check', 'Members with documents waiting for review', '/admin/documents', Icons.folder_shared_rounded),
-    ('payments', 'Payments to verify', 'Bank slips waiting for confirmation', '/admin/payments', Icons.account_balance_wallet_rounded),
-    ('compliance', 'Compliance applications', 'Renewals and licence applications in review', '/admin/compliance', Icons.verified_user_rounded),
-    ('reported_messages', 'Reported messages', 'Member reports to review', '/admin/message-reports', Icons.flag_rounded),
+    (
+      'documents',
+      'Applications to check',
+      'Members with documents waiting for review',
+      '/admin/documents',
+      Icons.folder_shared_rounded,
+    ),
+    (
+      'payments',
+      'Payments to verify',
+      'Bank slips waiting for confirmation',
+      '/admin/payments',
+      Icons.account_balance_wallet_rounded,
+    ),
+    (
+      'compliance',
+      'Compliance applications',
+      'Renewals and licence applications in review',
+      '/admin/compliance',
+      Icons.verified_user_rounded,
+    ),
+    (
+      'reported_messages',
+      'Reports',
+      'Member reports to review',
+      '/admin/message-reports',
+      Icons.flag_rounded,
+    ),
     ('complaints', 'Open complaints', 'Public complaints not yet resolved', '/admin/complaints', Icons.gavel_rounded),
-    ('tickets', 'Support tickets', 'Open member support requests', '/admin/tickets', Icons.support_agent_rounded),
+    ('tickets', 'Tickets', 'Open member support requests', '/admin/tickets', Icons.support_agent_rounded),
   ];
 
   @override
@@ -136,21 +160,16 @@ class _WaitingList extends StatelessWidget {
         Row(
           children: [
             const Expanded(child: Text('Waiting for you', style: CubagType.headline)),
-            if (shown.isNotEmpty)
-              Text(total == 0 ? 'All clear' : '$total in total', style: CubagType.small),
+            if (shown.isNotEmpty) Text(total == 0 ? 'All clear' : '$total in total', style: CubagType.small),
           ],
         ),
         const SizedBox(height: CubagSpace.xs),
         if (shown.isEmpty)
-          const HomeGroup(children: [
-            QuietRow(icon: Icons.check_circle_rounded, text: 'Nothing is waiting for you.'),
-          ])
+          const HomeGroup(
+            children: [QuietRow(icon: Icons.check_circle_rounded, text: 'Nothing is waiting for you.')],
+          )
         else
-          HomeGroup(
-            children: [
-              for (final r in shown) _row(r, (queue[r.$1] as num?)?.toInt() ?? 0),
-            ],
-          ),
+          HomeGroup(children: [for (final r in shown) _row(r, (queue[r.$1] as num?)?.toInt() ?? 0)]),
       ],
     );
   }
@@ -179,13 +198,12 @@ class _WaitingList extends StatelessWidget {
                 ? Container(
                     constraints: const BoxConstraints(minWidth: 32),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: CubagColors.action,
-                      borderRadius: BorderRadius.circular(999),
+                    decoration: BoxDecoration(color: CubagColors.action, borderRadius: BorderRadius.circular(999)),
+                    child: Text(
+                      '$count',
+                      textAlign: TextAlign.center,
+                      style: CubagType.label.copyWith(color: Colors.white),
                     ),
-                    child: Text('$count',
-                        textAlign: TextAlign.center,
-                        style: CubagType.label.copyWith(color: Colors.white)),
                   )
                 : const Text('None', style: CubagType.small),
             const SizedBox(width: CubagSpace.xs),
@@ -202,39 +220,54 @@ class _Figures extends StatelessWidget {
   final Map<String, dynamic> kpis;
   final Map<String, dynamic> queue;
   final bool wide;
-  const _Figures({required this.kpis, required this.queue, required this.wide});
+  final ValueChanged<String> onOpen;
+  const _Figures({required this.kpis, required this.queue, required this.wide, required this.onOpen});
 
   num _n(String k) => num.tryParse(kpis[k]?.toString() ?? '') ?? 0;
 
   @override
   Widget build(BuildContext context) {
     final items = [
-      ('Active members', '${_n('active_members')}', 'of ${_n('total_members')} registered'),
-      ('Pending applications', '${_n('pending_members')}', 'awaiting approval'),
-      ('Revenue received', AdminOverview.money(_n('revenue')), 'confirmed payments'),
-      ('Awaiting verification', AdminOverview.money(_n('pending_revenue')), 'payments not yet confirmed'),
+      ('Members', '${_n('active_members')}', 'active of ${_n('total_members')}', '/admin/members'),
+      ('Applications', '${_n('pending_members')}', 'to approve', '/admin/documents'),
+      ('Revenue', AdminOverview.money(_n('revenue')), 'confirmed', '/admin/analytics'),
+      ('To verify', AdminOverview.money(_n('pending_revenue')), 'not confirmed', '/admin/payments'),
     ];
     final tiles = [
       for (final i in items)
-        Container(
-          padding: const EdgeInsets.all(CubagSpace.md),
-          decoration: BoxDecoration(
-            color: CubagColors.paper,
+        Material(
+          color: CubagColors.paper,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(CubagRadius.card),
-            border: Border.all(color: CubagColors.line),
+            side: const BorderSide(color: CubagColors.line),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(i.$1, style: CubagType.small),
-              const SizedBox(height: 4),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(i.$2, style: CubagType.title.copyWith(fontFeatures: const [FontFeature.tabularFigures()])),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => onOpen(i.$4),
+            child: Padding(
+              padding: const EdgeInsets.all(CubagSpace.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(i.$1, style: CubagType.small),
+                  const SizedBox(height: 4),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      i.$2,
+                      style: CubagType.title.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Expanded(child: Text(i.$3, style: CubagType.caption)),
+                      const Icon(Icons.chevron_right_rounded, size: 16, color: CubagColors.muted),
+                    ],
+                  ),
+                ],
               ),
-              Text(i.$3, style: CubagType.caption),
-            ],
+            ),
           ),
         ),
     ];
@@ -285,10 +318,7 @@ class _RevenueChart extends StatelessWidget {
       for (final r in rows)
         if (r is Map) r['month']?.toString(): (num.tryParse(r['total']?.toString() ?? '') ?? 0).toDouble(),
     };
-    final values = [
-      for (final m in months)
-        byKey['${m.year}-${m.month.toString().padLeft(2, '0')}'] ?? 0.0,
-    ];
+    final values = [for (final m in months) byKey['${m.year}-${m.month.toString().padLeft(2, '0')}'] ?? 0.0];
     final maxV = values.fold<double>(0, (a, b) => b > a ? b : a);
     final total = values.fold<double>(0, (a, b) => a + b);
 
@@ -326,22 +356,23 @@ class _RevenueChart extends StatelessWidget {
                   barTouchData: BarTouchData(
                     touchTooltipData: BarTouchTooltipData(
                       getTooltipColor: (_) => CubagColors.ink,
-                      getTooltipItem: (g, gi, rod, ri) => BarTooltipItem(
-                        AdminOverview.money(rod.toY),
-                        CubagType.label.copyWith(color: Colors.white),
-                      ),
+                      getTooltipItem: (g, gi, rod, ri) =>
+                          BarTooltipItem(AdminOverview.money(rod.toY), CubagType.label.copyWith(color: Colors.white)),
                     ),
                   ),
                   barGroups: [
                     for (var i = 0; i < values.length; i++)
-                      BarChartGroupData(x: i, barRods: [
-                        BarChartRodData(
-                          toY: values[i],
-                          width: 28,
-                          color: i == values.length - 1 ? CubagColors.action : CubagColors.cocoa,
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-                        ),
-                      ]),
+                      BarChartGroupData(
+                        x: i,
+                        barRods: [
+                          BarChartRodData(
+                            toY: values[i],
+                            width: 28,
+                            color: i == values.length - 1 ? CubagColors.action : CubagColors.cocoa,
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),
@@ -389,8 +420,11 @@ class _MembersByStatus extends StatelessWidget {
                   ),
                   SizedBox(
                     width: 56,
-                    child: Text('${values[r.$1]}',
-                        textAlign: TextAlign.right, style: CubagType.figure.copyWith(fontSize: 15)),
+                    child: Text(
+                      '${values[r.$1]}',
+                      textAlign: TextAlign.right,
+                      style: CubagType.figure.copyWith(fontSize: 15),
+                    ),
                   ),
                 ],
               ),

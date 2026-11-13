@@ -287,16 +287,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             subTextColor,
                           );
                           final counter = _buildCounterPaymentActionCard(context, isDark);
-                          if (constraints.maxWidth >= 1000) {
-                            return Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(flex: 7, child: approvals),
-                                const SizedBox(width: CubagSpace.xl),
-                                Expanded(flex: 4, child: counter),
-                              ],
-                            );
-                          }
+                          // Always stacked: the applications table needs ~700 px
+                          // and collided with the counter card when side by side.
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [approvals, const SizedBox(height: CubagSpace.xl), counter],

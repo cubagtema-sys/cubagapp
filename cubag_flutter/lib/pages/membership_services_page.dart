@@ -380,7 +380,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
         authService.membershipStatus == 'active';
 
     return AppLayout(
-      title: 'Membership Hub',
+      title: 'Membership',
       hideSearch: false,
       scrollable: true,
       child: Center(

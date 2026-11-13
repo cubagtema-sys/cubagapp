@@ -211,7 +211,7 @@ class _TasksPageState extends State<TasksPage> {
     }
 
     return AppLayout(
-      title: 'Tasks & Compliance',
+      title: 'Tasks',
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Center(

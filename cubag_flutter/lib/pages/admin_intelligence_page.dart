@@ -307,7 +307,7 @@ class _State extends State<AdminIntelligencePage> {
     final subTextColor = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
     return AppLayout(
-      title: 'Intelligence Hub',
+      title: 'Insights',
       scrollable: true,
       child: Center(
         child: ConstrainedBox(

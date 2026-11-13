@@ -1222,7 +1222,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                                       size: 16,
                                     ),
                                     label: Text(
-                                      'Sign Out',
+                                      'Sign out',
                                       style: _outfit(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 14,

@@ -959,7 +959,7 @@ class _AppLayoutState extends State<AppLayout> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'My Profile',
+                      'Profile',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16.5,
@@ -1042,7 +1042,7 @@ class _AppLayoutState extends State<AppLayout> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Sign Out',
+                    'Sign out',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16.5,
@@ -1482,8 +1482,8 @@ class _AppLayoutState extends State<AppLayout> {
                 // Navigation actions
                 _buildSheetActionTile(
                   icon: Icons.person_outline_rounded,
-                  title: 'My Profile',
-                  subtitle: 'Personal, contact & company info',
+                  title: 'Profile',
+                  subtitle: 'Your details',
                   textColor: textColor,
                   subTextColor: subTextColor,
                   borderCol: borderCol,
@@ -1497,8 +1497,8 @@ class _AppLayoutState extends State<AppLayout> {
 
                 _buildSheetActionTile(
                   icon: Icons.shield_outlined,
-                  title: 'Compliance Centre',
-                  subtitle: 'Annual renewals & statutory status',
+                  title: 'Compliance',
+                  subtitle: 'Renewals and status',
                   textColor: textColor,
                   subTextColor: subTextColor,
                   borderCol: borderCol,
@@ -1513,7 +1513,7 @@ class _AppLayoutState extends State<AppLayout> {
                 _buildSheetActionTile(
                   icon: Icons.settings_outlined,
                   title: 'Settings',
-                  subtitle: 'Security, password & preferences',
+                  subtitle: 'Password and preferences',
                   textColor: textColor,
                   subTextColor: subTextColor,
                   borderCol: borderCol,
@@ -1550,7 +1550,7 @@ class _AppLayoutState extends State<AppLayout> {
                     },
                     icon: const Icon(Icons.logout_rounded, size: 18),
                     label: Text(
-                      'Sign Out',
+                      'Sign out',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
@@ -1953,7 +1953,7 @@ class _AppLayoutState extends State<AppLayout> {
               child: Semantics(button: true, label: 'Profile', child: GestureDetector(
                 onTap: () => context.go('/profile'),
                 child: Tooltip(
-                  message: authService.userName ?? 'My Profile',
+                  message: authService.userName ?? 'Profile',
                   child: Container(
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
@@ -2073,7 +2073,7 @@ class _AppLayoutState extends State<AppLayout> {
                   ),
                   const SizedBox(width: 4),
                   Tooltip(
-                    message: 'Sign Out',
+                    message: 'Sign out',
                     child: IconButton(
                       tooltip: 'Sign out',
                       icon: const Icon(
@@ -2121,34 +2121,34 @@ class _AppLayoutState extends State<AppLayout> {
         _buildSection(context, 'Members', currentRoute, [
           _NavItemData('Members', Icons.people_alt_rounded, '/admin/members'),
           _NavItemData('Applications', Icons.folder_shared_rounded, '/admin/documents'),
-          _NavItemData('Compliance & renewals', Icons.verified_user_rounded, '/admin/compliance'),
+          _NavItemData('Compliance', Icons.verified_user_rounded, '/admin/compliance'),
         ]),
         _buildSection(context, 'Money', currentRoute, [
           _NavItemData('Payments', Icons.account_balance_wallet_rounded, '/admin/payments'),
-          _NavItemData('Revenue reports', Icons.insights_rounded, '/admin/analytics'),
+          _NavItemData('Revenue', Icons.insights_rounded, '/admin/analytics'),
           _NavItemData('Fees', Icons.receipt_rounded, '/admin/fees'),
-          _NavItemData('Payment settings', Icons.tune_rounded, '/admin/payment-settings'),
+          _NavItemData('Bank accounts', Icons.tune_rounded, '/admin/payment-settings'),
         ]),
         _buildSection(context, 'Communication', currentRoute, [
           _NavItemData('Announcements', Icons.campaign_rounded, '/admin/announcements'),
           _NavItemData('Messages', Icons.chat_rounded, '/admin/messages'),
-          _NavItemData('Reported messages', Icons.flag_rounded, '/admin/message-reports'),
-          _NavItemData('Support tickets', Icons.support_agent_rounded, '/admin/tickets'),
+          _NavItemData('Reports', Icons.flag_rounded, '/admin/message-reports'),
+          _NavItemData('Tickets', Icons.support_agent_rounded, '/admin/tickets'),
           _NavItemData('Complaints', Icons.gavel_rounded, '/admin/complaints'),
         ]),
         _buildSection(context, 'Events & content', currentRoute, [
           _NavItemData('Events', Icons.event_rounded, '/admin/events'),
-          _NavItemData('CTI courses', Icons.school_rounded, '/admin/cti-courses'),
+          _NavItemData('Courses', Icons.school_rounded, '/admin/cti-courses'),
           _NavItemData('Polls', Icons.how_to_vote_rounded, '/admin/surveys'),
           _NavItemData('Gallery', Icons.photo_library_rounded, '/admin/gallery'),
-          _NavItemData('Port news', Icons.newspaper_rounded, '/admin/port-news'),
-          _NavItemData('Intelligence hub', Icons.cell_tower_rounded, '/admin/intelligence'),
+          _NavItemData('News', Icons.newspaper_rounded, '/admin/port-news'),
+          _NavItemData('Insights', Icons.cell_tower_rounded, '/admin/intelligence'),
         ]),
         _buildSection(context, 'Setup', currentRoute, [
-          _NavItemData('Document rules', Icons.rule_folder_rounded, '/admin/document-rules'),
-          _NavItemData('Ports & districts', Icons.anchor_rounded, '/admin/ports'),
-          _NavItemData('Sub-admins', Icons.admin_panel_settings_rounded, '/admin/sub-admins'),
-          _NavItemData('Audit log', Icons.history_rounded, '/admin/audit-log'),
+          _NavItemData('Requirements', Icons.rule_folder_rounded, '/admin/document-rules'),
+          _NavItemData('Ports', Icons.anchor_rounded, '/admin/ports'),
+          _NavItemData('Admins', Icons.admin_panel_settings_rounded, '/admin/sub-admins'),
+          _NavItemData('Audit', Icons.history_rounded, '/admin/audit-log'),
         ]),
       ];
     } else if (role == 'sub_admin') {
@@ -2190,7 +2190,7 @@ class _AppLayoutState extends State<AppLayout> {
         ],
         'intelligence': [
           _NavItemData(
-            'Intelligence Hub',
+            'Insights',
             Icons.cell_tower_rounded,
             '/admin/intelligence',
           ),
@@ -2208,7 +2208,7 @@ class _AppLayoutState extends State<AppLayout> {
           ),
         ],
         'messaging': [
-          _NavItemData('Messaging', Icons.chat_rounded, '/admin/messages'),
+          _NavItemData('Messages', Icons.chat_rounded, '/admin/messages'),
           _NavItemData(
             'Reported Messages',
             Icons.flag_rounded,
@@ -2258,7 +2258,7 @@ class _AppLayoutState extends State<AppLayout> {
         ],
         'surveys': [
           _NavItemData(
-            'Surveys & Elections',
+            'Surveys',
             Icons.how_to_vote_rounded,
             '/admin/surveys',
           ),
@@ -2332,54 +2332,54 @@ class _AppLayoutState extends State<AppLayout> {
           ]),
           _buildSection(context, 'Services', currentRoute, [
             _NavItemData(
-              'Membership Hub',
+              'Membership',
               Icons.card_membership_rounded,
               '/membership-services',
             ),
             _NavItemData(
-              'Compliance Centre',
+              'Compliance',
               Icons.verified_user_rounded,
               '/compliance',
             ),
             _NavItemData(
-              'CTI Courses',
+              'Courses',
               Icons.school_rounded,
               '/courses',
             ),
             _NavItemData(
-              'Payment Records',
+              'Payments',
               Icons.receipt_long_rounded,
               '/payment-history',
             ),
             _NavItemData(
-                'Tasks & Compliance', Icons.task_alt_rounded, '/tasks'),
+                'Tasks', Icons.task_alt_rounded, '/tasks'),
             _NavItemData(
-              'Member Directory',
+              'Directory',
               Icons.people_alt_rounded,
               '/networking',
             ),
             _NavItemData(
-              'Messaging',
+              'Messages',
               Icons.chat_bubble_outline_rounded,
               '/messaging',
             ),
             _NavItemData('Events', Icons.event_rounded, '/events'),
             _NavItemData(
-              'Surveys & Elections',
+              'Surveys',
               Icons.how_to_vote_rounded,
               '/surveys',
             ),
             _NavItemData(
-              'Support & Inquiries',
+              'Support',
               Icons.support_agent_rounded,
               '/engagement',
             ),
           ]),
           _buildSection(context, 'Resources', currentRoute, [
             _NavItemData(
-                'Intelligence Hub', Icons.analytics_rounded, '/live-data'),
+                'Insights', Icons.analytics_rounded, '/live-data'),
             _NavItemData(
-              'Vessel Movements',
+              'Vessels',
               Icons.directions_boat_rounded,
               '/vessel-movements',
             ),
@@ -2401,7 +2401,7 @@ class _AppLayoutState extends State<AppLayout> {
         if (isPending)
           _navTile(
             context,
-            'Sign Out',
+            'Sign out',
             Icons.logout_rounded,
             '/login',
             currentRoute,

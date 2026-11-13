@@ -1079,7 +1079,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     final titleCol = isDark ? _kOrange : _kBrown;
 
     return AppLayout(
-      title: 'Payment History',
+      title: 'Payment history',
       hideSearch: false,
       scrollable: true,
       child: Center(
