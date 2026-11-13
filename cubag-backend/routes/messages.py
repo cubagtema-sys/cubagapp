@@ -121,14 +121,24 @@ def get_messages(other_id):
             """, (user_id, other_id))
             conn.commit()
 
+            # Speed: newest page only (default 50); older pages via ?before_id=.
+            try:
+                limit = max(1, min(int(request.args.get('limit', 50)), 200))
+            except (TypeError, ValueError):
+                limit = 50
+            before_id = request.args.get('before_id', type=int)
             cursor.execute("""
                 SELECT id, sender_id, receiver_id, message, created_at, read_at
                 FROM messages
-                WHERE (sender_id = %s AND receiver_id = %s)
-                   OR (sender_id = %s AND receiver_id = %s)
-                ORDER BY created_at ASC
-            """, (user_id, other_id, other_id, user_id))
+                WHERE ((sender_id = %s AND receiver_id = %s)
+                    OR (sender_id = %s AND receiver_id = %s))
+                  AND (%s::int IS NULL OR id < %s::int)
+                ORDER BY id DESC
+                LIMIT %s
+            """, (user_id, other_id, other_id, user_id, before_id, before_id, limit + 1))
             msgs = cursor.fetchall()
+            has_more = len(msgs) > limit
+            msgs = list(reversed(msgs[:limit]))
             
             formatted = []
             for m in msgs:
@@ -140,7 +150,7 @@ def get_messages(other_id):
                     'read_at': m['read_at'].strftime('%b %d, %I:%M %p') if m.get('read_at') else None,
                 })
             
-            return jsonify({'items': formatted, 'total': len(formatted)}), 200
+            return jsonify({'items': formatted, 'total': len(formatted), 'has_more': has_more}), 200
     except Exception as e:
         logger.exception('[messages] %s', e)
         return jsonify({'message': 'Messaging is temporarily unavailable'}), 500

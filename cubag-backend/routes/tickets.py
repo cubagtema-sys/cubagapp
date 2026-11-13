@@ -26,15 +26,20 @@ def get_user_tickets():
             def format_date(dt, fmt):
                 return dt.strftime(fmt) if dt else 'N/A'
 
-            # Get replies for each ticket
-            for t in tickets:
+            # Speed: all replies in one query instead of one query per ticket.
+            by_ticket = {}
+            ids = [t['id'] for t in tickets]
+            if ids:
                 cursor.execute("""
-                    SELECT author, message, created_at
+                    SELECT ticket_id, author, message, created_at
                     FROM ticket_replies
-                    WHERE ticket_id = %s
+                    WHERE ticket_id = ANY(%s)
                     ORDER BY created_at ASC
-                """, (t['id'],))
-                replies = cursor.fetchall()
+                """, (ids,))
+                for r in cursor.fetchall():
+                    by_ticket.setdefault(r['ticket_id'], []).append(r)
+            for t in tickets:
+                replies = by_ticket.get(t['id'], [])
                 t['replies'] = [{
                     'author': r['author'],
                     'message': r['message'],

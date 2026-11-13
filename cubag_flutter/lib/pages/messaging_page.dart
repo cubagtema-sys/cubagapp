@@ -29,6 +29,10 @@ class _MessagingPageState extends State<MessagingPage> {
   String _search = '';
   Map<String, dynamic>? _activeChat;
   List<dynamic> _messages = [];
+  // Older pages loaded with "Earlier messages"; kept when the newest page refreshes.
+  List<dynamic> _older = [];
+  bool _hasMore = false;
+  bool _loadingOlder = false;
   final _msgCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
   final _searchCtrl = TextEditingController();
@@ -121,8 +125,15 @@ class _MessagingPageState extends State<MessagingPage> {
   }
 
   Future<void> _openChat(Map<String, dynamic> target) async {
+    final switching = _activeChat?['id'] != target['id'];
     setState(() {
       _activeChat = target;
+      if (switching) {
+        // A different conversation: drop the previous one's pages.
+        _messages = [];
+        _older = [];
+        _hasMore = false;
+      }
     });
     await _loadMessages(showLoading: _messages.isEmpty);
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
@@ -140,12 +151,8 @@ class _MessagingPageState extends State<MessagingPage> {
         final res = await ApiService().get('/messages/$chatId');
         if (!mounted || _activeChat?['id'] != chatId) return;
         if (res.statusCode == 200) {
-          final rawData = res.data;
-          List<dynamic> msgs = (rawData is Map && rawData.containsKey('items'))
-              ? List<dynamic>.from((rawData['items'] as List?) ?? [])
-              : ApiService.ensureList(rawData);
           setState(() {
-            _messages = msgs;
+            _applyLatest(res.data);
             _loadingChat = false;
           });
           WidgetsBinding.instance.addPostFrameCallback(
@@ -162,14 +169,8 @@ class _MessagingPageState extends State<MessagingPage> {
       }) {
         if (!mounted || _activeChat?['id'] != chatId) return;
         if (data != null) {
-          List<dynamic> msgs;
-          if (data is Map && data.containsKey('items')) {
-            msgs = List<dynamic>.from((data['items'] as List?) ?? []);
-          } else {
-            msgs = ApiService.ensureList(data);
-          }
           setState(() {
-            _messages = msgs;
+            _applyLatest(data);
             _loadingChat = false;
           });
           WidgetsBinding.instance.addPostFrameCallback(
@@ -181,6 +182,38 @@ class _MessagingPageState extends State<MessagingPage> {
       AppLogger.error('messaging_page', e, st);
     }
     if (mounted) setState(() => _loadingChat = false);
+  }
+
+  /// Newest page from the server, with any earlier pages kept in front.
+  void _applyLatest(dynamic data) {
+    final items = (data is Map && data.containsKey('items'))
+        ? List<dynamic>.from((data['items'] as List?) ?? [])
+        : ApiService.ensureList(data);
+    final ids = items.map((m) => m['id']).toSet();
+    _messages = [..._older.where((m) => !ids.contains(m['id'])), ...items];
+    if (_older.isEmpty) _hasMore = data is Map && data['has_more'] == true;
+  }
+
+  Future<void> _loadOlder() async {
+    if (_activeChat == null || _loadingOlder || _messages.isEmpty) return;
+    final chatId = _activeChat!['id'];
+    final firstId = _messages.first['id'];
+    setState(() => _loadingOlder = true);
+    try {
+      final res = await ApiService().get('/messages/$chatId?before_id=$firstId&limit=50');
+      if (!mounted || _activeChat?['id'] != chatId) return;
+      if (res.statusCode == 200 && res.data is Map) {
+        final page = List<dynamic>.from((res.data['items'] as List?) ?? []);
+        setState(() {
+          _older = [...page, ..._older];
+          _messages = [...page, ..._messages];
+          _hasMore = res.data['has_more'] == true;
+        });
+      }
+    } catch (e, st) {
+      AppLogger.error('messaging_page', e, st);
+    }
+    if (mounted) setState(() => _loadingOlder = false);
   }
 
   Future<void> _send() async {
@@ -878,8 +911,20 @@ class _MessagingPageState extends State<MessagingPage> {
                           horizontal: 16,
                           vertical: 16,
                         ),
-                        itemCount: _messages.length,
-                        itemBuilder: (ctx, i) {
+                        itemCount: _messages.length + (_hasMore ? 1 : 0),
+                        itemBuilder: (ctx, idx) {
+                          if (_hasMore && idx == 0) {
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: TextButton(
+                                  onPressed: _loadingOlder ? null : _loadOlder,
+                                  child: Text(_loadingOlder ? 'Loading…' : 'Earlier messages'),
+                                ),
+                              ),
+                            );
+                          }
+                          final i = _hasMore ? idx - 1 : idx;
                           final msg = _messages[i];
                           final isMe = msg['from'] == 'me';
                           return Padding(

@@ -13,8 +13,15 @@ announcements_bp = Blueprint('announcements', __name__)
 def get_announcements():
     user_id = get_jwt_identity()
     
+    # Speed: honour ?page=&limit= (the app sends them); default 50 newest.
+    try:
+        page = max(1, int(request.args.get('page', 1)))
+        limit = max(1, min(int(request.args.get('limit', 50)), 100))
+    except (TypeError, ValueError):
+        page, limit = 1, 50
+
     # Per-user 30s cache — announcements are user-specific (is_read flag)
-    cache_key = f'announcements_{user_id}'
+    cache_key = f'announcements_{user_id}_p{page}_l{limit}'
     cached = cache.get(cache_key)
     if cached is not None:
         return jsonify(cached), 200
@@ -22,6 +29,8 @@ def get_announcements():
     conn = get_db()
     try:
         with conn.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) AS n FROM announcements WHERE deleted_at IS NULL")
+            total = cursor.fetchone()['n']
             cursor.execute("""
                 SELECT a.*,
                        (ar.member_id IS NOT NULL) AS is_read
@@ -29,7 +38,8 @@ def get_announcements():
                 LEFT JOIN announcement_reads ar ON a.id = ar.announcement_id AND ar.member_id = %s
                 WHERE a.deleted_at IS NULL
                 ORDER BY a.created_at DESC
-            """, (user_id,))
+                LIMIT %s OFFSET %s
+            """, (user_id, limit, (page - 1) * limit))
             data = cursor.fetchall()
 
             # Stringify dates
@@ -37,7 +47,7 @@ def get_announcements():
                 if hasattr(item.get('created_at'), 'isoformat'):
                     item['created_at'] = item['created_at'].isoformat()
 
-        result = {'items': data, 'total': len(data)}
+        result = {'items': data, 'total': total, 'page': page, 'has_more': page * limit < total}
         cache.set(cache_key, result, timeout=30)
         return jsonify(result), 200
     except Exception as e:
@@ -71,7 +81,8 @@ def mark_read():
                 """, (user_id,))
             conn.commit()
         # Invalidate this user's announcements cache
-        cache.delete(f'announcements_{user_id}')
+        # Pages are cached separately; clear the common ones.
+        cache.delete_many(*[f'announcements_{user_id}_p{p}_l{l}' for p in range(1, 11) for l in (20, 50)])
         return jsonify({'message': 'Marked as read'}), 200
     except Exception as e:
         return jsonify({'message': str(e)}), 500

@@ -34,21 +34,57 @@ def get_member_directory():
     conn = get_db()
     try:
         from utils import eval_good_standing
+        # Speed: with ?page= the directory is paged and searched in SQL, and the
+        # per-member standing check (several queries each) runs only for the
+        # rows on the page. Without ?page= the old full list is returned.
+        paged = 'page' in request.args
+        where = [
+            "LOWER(COALESCE(status, '')) IN ('active', 'approved')",
+            "LOWER(COALESCE(role, '')) NOT IN ('admin', 'super_admin', 'sub_admin', 'staff', 'system')",
+        ]
+        params = []
+        q = (request.args.get('search') or '').strip().lower()
+        if q:
+            where.append("(LOWER(COALESCE(name,'')) LIKE %s OR LOWER(COALESCE(company,'')) LIKE %s"
+                         " OR LOWER(COALESCE(primary_port, port_of_operation, '')) LIKE %s)")
+            params += [f'%{q}%'] * 3
+        mtype = (request.args.get('type') or '').strip().lower()
+        if mtype and mtype != 'all':
+            where.append("LOWER(TRIM(COALESCE(member_type, ''))) = %s")
+            params.append(mtype)
+        where_sql = ' AND '.join(where)
         with conn.cursor() as cursor:
-            cursor.execute("""
+            total = None
+            limit_sql = ''
+            if paged:
+                try:
+                    page = max(1, int(request.args.get('page', 1)))
+                    limit = max(1, min(int(request.args.get('limit', 30)), 100))
+                except (TypeError, ValueError):
+                    page, limit = 1, 30
+                cursor.execute(f"SELECT COUNT(*) AS n FROM members WHERE {where_sql}", params)
+                total = cursor.fetchone()['n']
+                limit_sql = f" LIMIT {limit} OFFSET {(page - 1) * limit}"
+            cursor.execute(f"""
                 SELECT id, name, company, member_type,
                        COALESCE(primary_port, port_of_operation, 'Tema Port') as port_of_operation,
                        license_number, star_rating, compliance_score, role,
                        status, profile_photo, good_standing
                 FROM members
-                WHERE LOWER(COALESCE(status, '')) IN ('active', 'approved')
-                  AND LOWER(COALESCE(role, '')) NOT IN ('admin', 'super_admin', 'sub_admin', 'staff', 'system')
-                ORDER BY name ASC
-            """)
+                WHERE {where_sql}
+                ORDER BY name ASC{limit_sql}
+            """, params)
             raw_members = cursor.fetchall()
             for m in raw_members:
                 is_good, audit_reasons = eval_good_standing(m, cursor)
                 m['is_good_standing'] = is_good or (m.get('good_standing') is True)
+        if paged:
+            return jsonify({
+                'items': raw_members,
+                'total': total,
+                'page': page,
+                'has_more': (page * limit) < total,
+            }), 200
         return jsonify(raw_members), 200
     except Exception as e:
         logger.error(f"Error fetching member directory: {e}")
@@ -59,12 +95,19 @@ def get_member_directory():
 @members_bp.route('/public/members', methods=['GET'])
 def get_public_members():
     """Public Member Directory — strictly returns ONLY members in Good Standing."""
+    search = request.args.get('search', '').strip().lower()
+    port = request.args.get('port', '').strip().lower()
+    category = request.args.get('category', '').strip().lower()
+    status_filter = request.args.get('status', '').strip().lower()
+    # Speed: the standing check costs several queries per member and this
+    # endpoint needs no login, so identical searches are served from a
+    # 2-minute cache.
+    cache_key = f'public_members:{search}|{port}|{category}|{status_filter}'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return jsonify(cached), 200
     conn = get_db()
     try:
-        search = request.args.get('search', '').strip().lower()
-        port = request.args.get('port', '').strip().lower()
-        category = request.args.get('category', '').strip().lower()
-        status_filter = request.args.get('status', '').strip().lower()
 
         # Public directory search strictly requires Good Standing & active status and excludes admins/staff
         query = """
@@ -121,6 +164,7 @@ def get_public_members():
                     for private_key in ('email', 'phone', 'digital_address', 'tin', 'password_hash', 'fcm_token'):
                         m.pop(private_key, None)
                     good_members.append(m)
+        cache.set(cache_key, good_members, timeout=120)
         return jsonify(good_members), 200
     except Exception as e:
         logger.exception("Error in public members directory: %s", e)

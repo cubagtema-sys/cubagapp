@@ -26,6 +26,11 @@ class NetworkingPage extends StatefulWidget {
 class _NetworkingPageState extends State<NetworkingPage> {
   bool _loading = true;
   List<dynamic> _members = [];
+  // Paged directory (30 at a time, searched on the server).
+  int _page = 1;
+  int _total = 0;
+  bool _hasMore = false;
+  bool _loadingMore = false;
   String _search = '';
   String _filterType = 'All';
   final TextEditingController _searchCtrl = TextEditingController();
@@ -50,6 +55,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
     _debounce = Timer(const Duration(milliseconds: 300), () {
       if (mounted) {
         setState(() => _search = v);
+        _fetch();
       }
     });
   }
@@ -61,29 +67,58 @@ class _NetworkingPageState extends State<NetworkingPage> {
     super.dispose();
   }
 
-  Future<void> _fetch() async {
-    if (!_loading) setState(() => _loading = true);
-
+  Future<void> _fetch({bool more = false}) async {
+    if (more) {
+      if (_loadingMore || !_hasMore) return;
+      setState(() => _loadingMore = true);
+    } else if (!_loading) {
+      setState(() => _loading = true);
+    }
+    final page = more ? _page + 1 : 1;
+    final q = Uri.encodeQueryComponent(_search.trim());
+    final type = Uri.encodeQueryComponent(_filterType);
     try {
-      final res = await ApiService().get('/members');
-      if (mounted && res.data != null) {
-        final list = ApiService.ensureList(res.data);
-        if (list.isNotEmpty) {
-          setState(() {
-            _members = list;
-            _loading = false;
-          });
-          return;
-        }
+      final res = await ApiService().get('/members?page=$page&limit=30&search=$q&type=$type');
+      if (!mounted) return;
+      final data = res.data;
+      if (data is Map && data['items'] is List) {
+        final items = List<dynamic>.from(data['items'] as List);
+        setState(() {
+          _members = more ? [..._members, ...items] : items;
+          _page = page;
+          _total = (data['total'] as num?)?.toInt() ?? _members.length;
+          _hasMore = data['has_more'] == true;
+          _loading = false;
+          _loadingMore = false;
+        });
+        return;
+      }
+      // Older server: full list.
+      final list = ApiService.ensureList(data);
+      if (list.isNotEmpty) {
+        setState(() {
+          _members = list;
+          _total = list.length;
+          _hasMore = false;
+          _loading = false;
+          _loadingMore = false;
+        });
+        return;
       }
     } catch (_) {}
 
+    if (more) {
+      if (mounted) setState(() => _loadingMore = false);
+      return;
+    }
     try {
       final pubRes = await ApiService().getPublic('members/public/members');
       if (mounted) {
         final pubList = ApiService.ensureList(pubRes);
         setState(() {
           _members = pubList;
+          _total = pubList.length;
+          _hasMore = false;
           _loading = false;
         });
       }
@@ -112,7 +147,10 @@ class _NetworkingPageState extends State<NetworkingPage> {
         : (isDark ? const Color(0xFF3D261C) : CubagColors.line);
 
     return GestureDetector(
-      onTap: () => setState(() => _filterType = value),
+      onTap: () {
+        setState(() => _filterType = value);
+        _fetch();
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
@@ -174,11 +212,14 @@ class _NetworkingPageState extends State<NetworkingPage> {
             if (_search.isNotEmpty || _filterType != 'All') ...[
               const SizedBox(height: 20),
               OutlinedButton(
-                onPressed: () => setState(() {
-                  _searchCtrl.clear();
-                  _search = '';
-                  _filterType = 'All';
-                }),
+                onPressed: () {
+                  setState(() {
+                    _searchCtrl.clear();
+                    _search = '';
+                    _filterType = 'All';
+                  });
+                  _fetch();
+                },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: _kBrown,
                   side: const BorderSide(color: _kBrown),
@@ -852,10 +893,13 @@ class _NetworkingPageState extends State<NetworkingPage> {
                                 color: _kMuted,
                                 size: 16,
                               ),
-                              onPressed: () => setState(() {
-                                _searchCtrl.clear();
-                                _search = '';
-                              }),
+                              onPressed: () {
+                                setState(() {
+                                  _searchCtrl.clear();
+                                  _search = '';
+                                });
+                                _fetch();
+                              },
                             )
                           : null,
                       border: InputBorder.none,
@@ -885,7 +929,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Text(
-                      '${filtered.length} active ${filtered.length == 1 ? 'member' : 'members'}',
+                      '${_total > filtered.length ? _total : filtered.length} active ${(_total > filtered.length ? _total : filtered.length) == 1 ? 'member' : 'members'}',
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 12,
@@ -955,6 +999,15 @@ class _NetworkingPageState extends State<NetworkingPage> {
                       }
                     },
                   ),
+                if (_hasMore && !_loading) ...[
+                  const SizedBox(height: 16),
+                  Center(
+                    child: OutlinedButton(
+                      onPressed: _loadingMore ? null : () => _fetch(more: true),
+                      child: Text(_loadingMore ? 'Loading…' : 'Load more'),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
               ],
             ),
