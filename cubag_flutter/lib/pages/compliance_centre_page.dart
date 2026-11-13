@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../components/cubag_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
@@ -468,7 +469,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
         .length;
 
     return AppLayout(
-      title: 'Compliance Centre',
+      title: 'Compliance',
       scrollable: false,
       child: RefreshIndicator(
         onRefresh: () => _fetch(forceRefresh: true),
@@ -484,8 +485,28 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ── Header ─────────────────────────────────────────────
-                  _SectionHeader(isDark: isDark),
-                  const SizedBox(height: 28),
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.end,
+                    spacing: CubagSpace.md,
+                    runSpacing: CubagSpace.md,
+                    children: [
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: const PageIntro(
+                          'Compliance',
+                          subtitle: 'Your licence and renewal applications, and the documents each one needs.',
+                        ),
+                      ),
+                      if (_applications.isNotEmpty)
+                        FilledButton.icon(
+                          onPressed: _showNewApplicationDialog,
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: const Text('Start an application'),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: CubagSpace.lg),
 
                   // ── Revision Alert ──────────────────────────────────────
                   if (revisionCount > 0) ...[
@@ -497,43 +518,6 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                     ),
                     const SizedBox(height: 16),
                   ],
-
-                  // ── Applications List ───────────────────────────────────
-                  Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 12,
-                    runSpacing: 10,
-                    children: [
-                      Text(
-                        'My Applications',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : _kTextDark,
-                        ),
-                      ),
-                      if (_applications.isNotEmpty)
-                        ElevatedButton.icon(
-                          onPressed: _showNewApplicationDialog,
-                          icon: const Icon(Icons.add_rounded, size: 16),
-                          label: const Text('Start Application'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _kOrange,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            elevation: 0,
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
 
                   if (_applications.isNotEmpty && !_loading) ...[
                     // Segmented Filter Bar
@@ -550,7 +534,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                       child: Row(
                         children: [
                           _buildFilterTab('all', 'All', _applications.length, isDark),
-                          _buildFilterTab('in_progress', 'In Progress', inProgressApps.length, isDark),
+                          _buildFilterTab('in_progress', 'In progress', inProgressApps.length, isDark),
                           _buildFilterTab('completed', 'Completed', completedApps.length, isDark),
                         ],
                       ),
@@ -1709,64 +1693,6 @@ class _StatusViewPage extends StatelessWidget {
 // Shared sub-widgets
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _SectionHeader extends StatelessWidget {
-  final bool isDark;
-  const _SectionHeader({required this.isDark});
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(22),
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [Color(0xFF381F14), Color(0xFF1E110A)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: const Color(0xFF5A3522), width: 1.0),
-    ),
-    child: Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: _kPrimary.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: _kPrimary.withValues(alpha: 0.4), width: 1.0),
-          ),
-          child: const Icon(
-            Icons.shield_outlined,
-            color: _kPrimary,
-            size: 24,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Compliance & statutory centre',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Manage statutory vetting records, annual renewals, and compliance certification',
-                style: TextStyle(
-                  color: Colors.white.withAlpha(200),
-                  fontSize: 13.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
 
 class _AlertBanner extends StatelessWidget {
   final IconData icon;
@@ -2587,7 +2513,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'No Active Compliance Applications',
+              'No applications yet',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -2598,7 +2524,7 @@ class _EmptyState extends StatelessWidget {
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Text(
-                'Start a renewal or customs license application to upload statutory documents and track vetting progress.',
+                'Start a renewal or licence application to upload your documents and follow its review.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -2612,7 +2538,7 @@ class _EmptyState extends StatelessWidget {
               onPressed: onStartApplication,
               icon: const Icon(Icons.add_rounded, size: 18),
               label: Text(
-                'Start Application Now',
+                'Start an application',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
