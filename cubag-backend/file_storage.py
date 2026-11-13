@@ -47,6 +47,11 @@ from typing import Optional
 
 # Cached connectivity state — avoids hammering a dead endpoint on every upload.
 _supabase_ok: Optional[bool] = None  # None = not yet tested
+_supabase_checked_at: float = 0.0
+# A failed check is only trusted briefly: previously one network blip marked
+# storage "down" for the life of the process, and every later upload went to
+# the (deploy-wiped) local disk.
+_RECHECK_FAILED_AFTER_S = 60
 
 
 def _test_supabase() -> bool:
@@ -71,9 +76,12 @@ def _test_supabase() -> bool:
 
 
 def supabase_available() -> bool:
-    """Return (cached) Supabase availability."""
-    global _supabase_ok
-    if _supabase_ok is None:
+    """Return (cached) Supabase availability; failures are re-tested after a minute."""
+    global _supabase_ok, _supabase_checked_at
+    import time
+    now = time.monotonic()
+    if _supabase_ok is None or (not _supabase_ok and now - _supabase_checked_at > _RECHECK_FAILED_AFTER_S):
+        _supabase_checked_at = now
         _test_supabase()
     return bool(_supabase_ok)
 
@@ -137,6 +145,10 @@ def _save_local(file_bytes: bytes, subfolder: str, filename: str) -> str:
     return f"/static/uploads/{subfolder}/{filename}"
 
 
+class UploadStorageError(RuntimeError):
+    """Cloud storage failed and saving to local disk would not be durable."""
+
+
 def save_file(
     file_bytes: bytes,
     original_filename: str,
@@ -171,13 +183,25 @@ def save_file(
     safe_filename = f"{prefix}{unique_id}.{ext}"
     cloud_path = f"{subfolder}/{safe_filename}"
 
-    # Try Supabase first
-    url = _upload_to_supabase(file_bytes, cloud_path, content_type, bucket=_bucket_for(subfolder))
+    # Try Supabase (twice: a single network blip should not lose a file)
+    bucket = _bucket_for(subfolder)
+    url = _upload_to_supabase(file_bytes, cloud_path, content_type, bucket=bucket)
+    if not url:
+        global _supabase_ok
+        _supabase_ok = None  # force a fresh connectivity check for the retry
+        url = _upload_to_supabase(file_bytes, cloud_path, content_type, bucket=bucket)
     if url:
         logger.info("[FileStorage] Saved to Supabase: %s", cloud_path)
         return url
 
-    # Permanent local fallback
+    # On the live server the local disk is wiped on every deploy, so a
+    # "local fallback" silently loses the file later (15 files were lost this
+    # way). Fail loudly instead so the member can retry the upload.
+    if os.getenv('FLY_APP_NAME') or os.getenv('REQUIRE_CLOUD_STORAGE', '').lower() in ('1', 'true', 'yes'):
+        logger.error("[FileStorage] Cloud upload failed; refusing ephemeral local save: %s", cloud_path)
+        raise UploadStorageError('File storage is unavailable. Please try the upload again.')
+
+    # Local fallback (development only)
     url = _save_local(file_bytes, subfolder, safe_filename)
     logger.info("[FileStorage] Saved locally: %s", url)
     return url

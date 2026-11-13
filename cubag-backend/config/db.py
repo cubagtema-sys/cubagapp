@@ -908,6 +908,9 @@ def init_db():
                     FOREIGN KEY (submission_id) REFERENCES task_submissions(id)
                 )
             """)
+            # Task attachments live in cloud storage (the server disk is wiped
+            # on every deploy); this is the file's storage URL.
+            cursor.execute("ALTER TABLE task_submission_files ADD COLUMN IF NOT EXISTS storage_url TEXT")
 
             # News / Blog
             cursor.execute("""

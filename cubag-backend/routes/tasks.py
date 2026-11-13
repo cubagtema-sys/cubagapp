@@ -1,10 +1,11 @@
 import os
-from flask import Blueprint, jsonify, request, send_from_directory, current_app
+from flask import Blueprint, jsonify, request, send_from_directory, current_app, redirect
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
 from config.db import get_db
 from routes.admin import log_admin_action
 from utils import admin_required, sub_admin_required
+from file_storage import save_file
 
 tasks_bp = Blueprint('tasks', __name__)
 
@@ -505,13 +506,19 @@ def submit_task(task_id):
             for f in files:
                 if f and f.filename and allowed_file(f.filename):
                     safe_name = f"{submission_id}_{secure_filename(f.filename)}"
-                    path = os.path.join(UPLOAD_FOLDER, safe_name)
-                    f.save(path)
-                    file_size = os.path.getsize(path)
+                    data = f.read()
+                    # Cloud storage, not the server disk (wiped on every deploy).
+                    storage_url = save_file(
+                        data,
+                        original_filename=f.filename,
+                        subfolder=f'task_submissions/{submission_id}',
+                        prefix=f'{submission_id}_',
+                    )
+                    file_size = len(data)
                     cursor.execute("""
-                        INSERT INTO task_submission_files (submission_id, filename, original_name, file_type, file_size)
-                        VALUES (%s, %s, %s, %s, %s)
-                    """, (submission_id, safe_name, f.filename, f.content_type, file_size))
+                        INSERT INTO task_submission_files (submission_id, filename, original_name, file_type, file_size, storage_url)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (submission_id, safe_name, f.filename, f.content_type, file_size, storage_url))
                     saved.append(f.filename)
 
             # Mark task as submitted (done = TRUE pending admin verify)
@@ -547,8 +554,17 @@ def serve_file(filename):
                 """, (filename, member_id))
                 if not cursor.fetchone():
                     return jsonify({'message': 'Unauthorised'}), 403
+            cursor.execute(
+                "SELECT storage_url FROM task_submission_files WHERE filename = %s ORDER BY id DESC LIMIT 1",
+                (filename,),
+            )
+            row = cursor.fetchone()
+            storage_url = (row or {}).get('storage_url') if row else None
     finally:
         conn.close()
+    if storage_url and str(storage_url).startswith('http'):
+        from config.file_access import signed_url_for
+        return redirect(signed_url_for(storage_url))
     return send_from_directory(UPLOAD_FOLDER, filename)
 
 
