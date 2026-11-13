@@ -407,48 +407,8 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
     );
   }
 
-  Widget _buildFilterTab(String key, String label, int count, bool isDark) {
-    final isSel = _filter == key;
-    return Expanded(
-      child: InkWell(
-        onTap: () => setState(() => _filter = key),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: isSel ? (isDark ? _kPrimary : Colors.white) : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: isSel && !isDark
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(10),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Center(
-            child: Text(
-              '$label ($count)',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                color: isSel
-                    ? (isDark ? Colors.white : _kTextDark)
-                    : (isDark ? Colors.white60 : CubagColors.muted),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     final completedApps = _applications.where((a) {
       final s = (a['status'] ?? '').toString();
       return s == 'approved' || s == 'payment_confirmed' || s == 'completed';
@@ -520,22 +480,32 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                   ],
 
                   if (_applications.isNotEmpty && !_loading) ...[
-                    // Segmented Filter Bar
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF281710) : const Color(0xFFF1EBE4),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isDark ? _kBorderDark : const Color(0xFFE2D6CB),
-                          width: 1,
-                        ),
-                      ),
+                    // Filter chips (same pattern as Payment history)
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          _buildFilterTab('all', 'All', _applications.length, isDark),
-                          _buildFilterTab('in_progress', 'In progress', inProgressApps.length, isDark),
-                          _buildFilterTab('completed', 'Completed', completedApps.length, isDark),
+                          for (final f in [
+                            ('all', 'All', _applications.length),
+                            ('in_progress', 'In progress', inProgressApps.length),
+                            ('completed', 'Completed', completedApps.length),
+                          ])
+                            Padding(
+                              padding: const EdgeInsets.only(right: CubagSpace.xs),
+                              child: ChoiceChip(
+                                label: Text('${f.$2} · ${f.$3}'),
+                                selected: _filter == f.$1,
+                                showCheckmark: false,
+                                labelStyle: CubagType.label.copyWith(
+                                  color: _filter == f.$1 ? CubagColors.onCocoa : CubagColors.inkSoft,
+                                ),
+                                selectedColor: CubagColors.cocoa,
+                                backgroundColor: CubagColors.paper,
+                                side: BorderSide(color: _filter == f.$1 ? CubagColors.cocoa : CubagColors.line),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                                onSelected: (_) => setState(() => _filter = f.$1),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -586,64 +556,55 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                       ),
                     )
                   else if (_error != null)
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        child: Text(
-                          _error!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: _kRed,
-                            fontWeight: FontWeight.w600,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: CubagSpace.xxl),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.cloud_off_rounded, size: 32, color: CubagColors.muted),
+                          const SizedBox(height: CubagSpace.sm),
+                          Text('Could not load your applications', style: CubagType.headline, textAlign: TextAlign.center),
+                          const SizedBox(height: CubagSpace.xxs),
+                          Text(_error!, style: CubagType.small, textAlign: TextAlign.center),
+                          const SizedBox(height: CubagSpace.md),
+                          OutlinedButton(
+                            onPressed: () => _fetch(forceRefresh: true),
+                            child: const Text('Try again'),
                           ),
-                        ),
+                        ],
                       ),
                     )
                   else if (_applications.isEmpty)
                     _EmptyState(onStartApplication: _showNewApplicationDialog)
                   else if (displayedApps.isEmpty)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(32),
-                      decoration: BoxDecoration(
-                        color: isDark ? _kCardDark : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: isDark ? _kBorderDark : CubagColors.line),
-                      ),
-                      child: Center(
-                        child: Column(
-                          children: [
-                            Icon(
-                              _filter == 'completed'
-                                  ? Icons.assignment_turned_in_outlined
-                                  : Icons.hourglass_empty_rounded,
-                              size: 36,
-                              color: isDark ? Colors.white54 : CubagColors.muted,
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              _filter == 'completed'
-                                  ? 'No completed applications yet.'
-                                  : 'No applications in progress.',
-                              style: TextStyle(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : _kTextDark,
-                              ),
-                            ),
-                          ],
-                        ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: CubagSpace.xxl),
+                      child: Text(
+                        _filter == 'completed' ? 'No completed applications yet.' : 'Nothing in progress right now.',
+                        style: CubagType.small,
+                        textAlign: TextAlign.center,
                       ),
                     )
                   else
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: displayedApps.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
-                      itemBuilder: (_, i) => _ApplicationCard(
-                        app: displayedApps[i],
-                        onTap: () => _openExisting(displayedApps[i]),
+                    Container(
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(
+                        color: CubagColors.paper,
+                        borderRadius: BorderRadius.circular(CubagRadius.card),
+                      ),
+                      foregroundDecoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(CubagRadius.card),
+                        border: Border.all(color: CubagColors.line),
+                      ),
+                      child: Column(
+                        children: [
+                          for (var i = 0; i < displayedApps.length; i++) ...[
+                            if (i > 0) const Divider(height: 1, indent: 68, color: CubagColors.line),
+                            _ApplicationCard(
+                              app: displayedApps[i],
+                              onTap: () => _openExisting(displayedApps[i]),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   const SizedBox(height: 40),
@@ -1736,130 +1697,71 @@ class _ApplicationCard extends StatelessWidget {
   const _ApplicationCard({required this.app, required this.onTap});
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final status = app['status']?.toString() ?? '';
     final type = app['type']?.toString() ?? '';
     final typeLabel = type == 'renewal_national'
-        ? 'National Renewal'
+        ? 'National renewal'
         : (type == 'renewal_district'
-            ? 'District Clearance'
-            : (type.contains('renewal') ? 'Membership Renewal' : 'Member ID Application'));
-    final color = _statusColor(status);
+            ? 'District clearance'
+            : (type.contains('renewal') ? 'Membership renewal' : 'Member ID application'));
     final uploaded = (app['docs_uploaded'] as num?)?.toInt() ?? 0;
     final total = (app['docs_total'] as num?)?.toInt() ?? 0;
+    final kind = switch (status) {
+      'approved' || 'payment_confirmed' || 'completed' => StatusKind.good,
+      'rejected' => StatusKind.bad,
+      'revision_requested' || 'payment_submitted' || 'submitted' || 'under_review' => StatusKind.pending,
+      _ => StatusKind.neutral,
+    };
+    final (fg, bg) = switch (kind) {
+      StatusKind.good => (CubagColors.valid, CubagColors.validTint),
+      StatusKind.bad => (CubagColors.lapsed, CubagColors.lapsedTint),
+      StatusKind.pending => (CubagColors.due, CubagColors.dueTint),
+      StatusKind.neutral => (CubagColors.inkSoft, CubagColors.sand),
+    };
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: isDark ? _kCardDark : Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: status == 'revision_requested'
-                ? _kAmber.withValues(alpha: 0.5)
-                : (isDark ? _kBorderDark : CubagColors.line),
-            width: 1.0,
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
+    return Material(
+      color: status == 'revision_requested' ? CubagColors.dueTint.withAlpha(110) : CubagColors.paper,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(CubagSpace.md, 14, CubagSpace.sm, 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+                child: Icon(
+                  type.contains('renewal') ? Icons.autorenew_rounded : Icons.badge_outlined,
+                  color: fg,
+                  size: 20,
+                ),
               ),
-              child: Icon(
-                type.contains('renewal')
-                    ? Icons.autorenew_rounded
-                    : Icons.badge_outlined,
-                color: color,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    typeLabel,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                      color: isDark ? Colors.white : _kTextDark,
+              const SizedBox(width: CubagSpace.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(typeLabel, style: CubagType.bodyStrong, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 2),
+                    Text(
+                      total > 0
+                          ? 'Started ${_fmtDate(app['created_at']?.toString())} · $uploaded of $total documents'
+                          : 'Started ${_fmtDate(app['created_at']?.toString())}',
+                      style: CubagType.small.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '${_fmtDate(app['created_at']?.toString())} • Docs: $uploaded/$total',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w500,
-                            color: isDark ? Colors.white60 : CubagColors.muted,
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: color.withValues(alpha: 0.28), width: 1),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              status == 'approved'
-                                  ? Icons.check_circle_rounded
-                                  : status == 'payment_submitted'
-                                      ? Icons.hourglass_top_rounded
-                                      : status == 'payment_confirmed'
-                                          ? Icons.verified_rounded
-                                          : status == 'revision_requested'
-                                              ? Icons.edit_note_rounded
-                                              : status == 'rejected'
-                                                  ? Icons.cancel_rounded
-                                                  : Icons.circle,
-                              size: status == 'payment_submitted' ? 12 : 8,
-                              color: color,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _statusLabel(status),
-                              style: TextStyle(
-                                color: color,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                    const SizedBox(height: 6),
+                    StatusChip(_statusLabel(status), kind: kind),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 6),
-            const Icon(Icons.chevron_right_rounded, color: Color(0xFF5F6B7E), size: 18),
-          ],
+              const Padding(
+                padding: EdgeInsets.only(top: 10),
+                child: Icon(Icons.chevron_right_rounded, color: CubagColors.muted, size: 22),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -2493,72 +2395,34 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: _kOrange.withAlpha(20),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.folder_open_rounded,
-                size: 44,
-                color: _kOrange,
-              ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: CubagSpace.xxl),
+      child: Column(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: const BoxDecoration(color: CubagColors.paper, shape: BoxShape.circle),
+            child: const Icon(Icons.folder_open_outlined, size: 30, color: CubagColors.cocoa),
+          ),
+          const SizedBox(height: CubagSpace.md),
+          Text('No applications yet', style: CubagType.headline, textAlign: TextAlign.center),
+          const SizedBox(height: CubagSpace.xxs),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: Text(
+              'When it is time to renew, start here. You upload your documents, CUBAG reviews them, then you pay.',
+              textAlign: TextAlign.center,
+              style: CubagType.small,
             ),
-            const SizedBox(height: 16),
-            Text(
-              'No applications yet',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : CubagColors.ink,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Text(
-                'Start a renewal or licence application to upload your documents and follow its review.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isDark ? Colors.white60 : CubagColors.muted,
-                  height: 1.5,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: onStartApplication,
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: Text(
-                'Start an application',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kOrange,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 22,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: CubagSpace.lg),
+          FilledButton.icon(
+            onPressed: onStartApplication,
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: const Text('Start an application'),
+          ),
+        ],
       ),
     );
   }

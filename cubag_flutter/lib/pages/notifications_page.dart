@@ -7,7 +7,6 @@ import '../services/cache_service.dart';
 import '../services/notification_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
-import '../utils/app_colors.dart';
 import '../design/cubag_design.dart';
 
 const _kOrange = CubagColors.action;
@@ -216,37 +215,20 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   Widget _buildFilterChip(String value, String label) {
     final isSelected = _filter == value;
-    return GestureDetector(
-      onTap: () => setState(() => _filter = value),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        margin: const EdgeInsets.only(right: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? _kOrange : CubagColors.sand,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? _kOrange : CubagColors.line,
-            width: 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: _kOrange.withAlpha(30),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
+    return Padding(
+      padding: const EdgeInsets.only(right: CubagSpace.xs),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: isSelected,
+        showCheckmark: false,
+        labelStyle: CubagType.label.copyWith(
+          color: isSelected ? CubagColors.onCocoa : CubagColors.inkSoft,
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : CubagColors.inkSoft,
-            fontWeight: FontWeight.w800,
-            fontSize: 14,
-          ),
-        ),
+        selectedColor: CubagColors.cocoa,
+        backgroundColor: CubagColors.paper,
+        side: BorderSide(color: isSelected ? CubagColors.cocoa : CubagColors.line),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+        onSelected: (_) => setState(() => _filter = value),
       ),
     );
   }
@@ -259,37 +241,25 @@ class _NotificationsPageState extends State<NotificationsPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: CubagColors.sand,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.notifications_none_rounded,
-                size: 48,
-                color: CubagColors.lineStrong,
-              ),
+              width: 64,
+              height: 64,
+              decoration: const BoxDecoration(color: CubagColors.paper, shape: BoxShape.circle),
+              child: const Icon(Icons.notifications_none_rounded, size: 30, color: CubagColors.cocoa),
             ),
             const SizedBox(height: 16),
             Text(
-              'No Notifications',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: CubagColors.inkSoft,
-              ),
+              searchQuery.isNotEmpty || _filter != 'all' ? 'Nothing here' : 'You are all caught up',
+              style: CubagType.headline,
             ),
             const SizedBox(height: 8),
             Text(
               searchQuery.isNotEmpty
-                  ? 'Try refining your keywords or clearing the search query.'
-                  : 'You are all caught up! No active notifications found.',
+                  ? 'Try other words, or clear the search.'
+                  : (_filter != 'all'
+                      ? 'No notifications in this list.'
+                      : 'Payment, renewal and event updates will appear here.'),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 15,
-                color: Color(0xFF5F6B7E),
-                height: 1.4,
-              ),
+              style: CubagType.small,
             ),
             if (searchQuery.isNotEmpty || _filter != 'all') ...[
               const SizedBox(height: 20),
@@ -503,24 +473,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Widget _buildNotificationCard(Map<String, dynamic> n) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final cat = _categories[n['type']] ?? _categories['system']!;
-    final color = cat['color'] as Color;
     final isRead = n['read'] == true || n['read_at'] != null;
-    final dateStr = _formatDate(
-      n['created_at']?.toString() ?? n['time']?.toString(),
-    );
+    final dateStr = _formatDate(n['created_at']?.toString() ?? n['time']?.toString());
     final label = (cat['label'] ?? 'System').toString();
-
-    final cardBg = isDark
-        ? (isRead ? CubagColors.ink : const Color(0xFF241610))
-        : Colors.white;
-    final borderColor = isDark
-        ? (isRead ? const Color(0xFF2E1D14) : color.withAlpha(110))
-        : (isRead ? const Color(0xFFE7ECF3) : color.withAlpha(85));
-    final accentColor = isRead
-        ? (isDark ? const Color(0xFF3A2A20) : CubagColors.line)
-        : color;
 
     return Dismissible(
       key: ValueKey('notif_${n['id']}'),
@@ -529,177 +485,82 @@ class _NotificationsPageState extends State<NotificationsPage> {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 22),
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: CubagColors.lapsed,
-          borderRadius: BorderRadius.circular(16),
-        ),
+        color: CubagColors.lapsed,
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Text(
-              'Delete',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-              ),
-            ),
+            Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
             SizedBox(width: 6),
             Icon(Icons.delete_outline_rounded, color: Colors.white, size: 20),
           ],
         ),
       ),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderColor, width: isRead ? 1 : 1.4),
-          boxShadow: [
-            BoxShadow(
-              color: isDark
-                  ? Colors.black26
-                  : CubagColors.ink.withAlpha(isRead ? 8 : 18),
-              blurRadius: isRead ? 6 : 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => _showNotificationDetail(n),
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(width: 4, color: accentColor),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
-                      child: Row(
+      child: Material(
+        color: isRead ? CubagColors.paper : CubagColors.actionTint.withAlpha(140),
+        child: InkWell(
+          onTap: () => _showNotificationDetail(n),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(CubagSpace.md, 14, CubagSpace.md, 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: isRead ? CubagColors.sand : CubagColors.paper,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(cat['icon'] as IconData, color: CubagColors.cocoa, size: 18),
+                ),
+                const SizedBox(width: CubagSpace.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: color.withAlpha(isDark ? 45 : 22),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              cat['icon'] as IconData,
-                              color: color,
-                              size: 21,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        n['title']?.toString() ?? '',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: isRead
-                                              ? FontWeight.w600
-                                              : FontWeight.w800,
-                                          color: isDark
-                                              ? Colors.white
-                                              : CubagColors.ink,
-                                        ),
-                                      ),
-                                    ),
-                                    if (!isRead)
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                          left: 6,
-                                          top: 5,
-                                        ),
-                                        width: 8,
-                                        height: 8,
-                                        decoration: const BoxDecoration(
-                                          color: _kOrange,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  n['message']?.toString() ?? '',
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 13.5,
-                                    height: 1.35,
-                                    color: isDark
-                                        ? Colors.white70
-                                        : CubagColors.inkSoft,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 3,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: color.withAlpha(isDark ? 40 : 18),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        label,
-                                        style: TextStyle(
-                                          fontSize: 10.5,
-                                          fontWeight: FontWeight.w800,
-                                          color: color,
-                                        ),
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    if (dateStr.isNotEmpty) ...[
-                                      Icon(
-                                        Icons.schedule_rounded,
-                                        size: 13,
-                                        color: isDark
-                                            ? Colors.white38
-                                            : const Color(0xFF5F6B7E),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        dateStr,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                          color: isDark
-                                              ? Colors.white60
-                                              : const Color(0xFF5F6B7E),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ],
+                            child: Text(
+                              n['title']?.toString() ?? '',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: isRead
+                                  ? CubagType.body.copyWith(color: CubagColors.ink)
+                                  : CubagType.bodyStrong,
                             ),
                           ),
+                          if (!isRead)
+                            Semantics(
+                              label: 'Unread',
+                              child: Container(
+                                margin: const EdgeInsets.only(left: 8, top: 8),
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(color: CubagColors.action, shape: BoxShape.circle),
+                              ),
+                            ),
                         ],
                       ),
-                    ),
+                      if ((n['message']?.toString() ?? '').isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          n['message'].toString(),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: CubagType.small.copyWith(color: CubagColors.inkSoft),
+                        ),
+                      ],
+                      const SizedBox(height: 6),
+                      Text(
+                        dateStr.isEmpty ? label : '$label · $dateStr',
+                        style: CubagType.caption,
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -709,7 +570,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final unread = _notifications.where((n) => n['read'] != true && n['read_at'] == null).length;
     final searchQuery = _searchCtrl.text.toLowerCase().trim();
 
@@ -740,9 +600,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 800),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(CubagSpace.lg, CubagSpace.lg, CubagSpace.lg, CubagSpace.xxxl),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Header: title, unread count and the one bulk action.
                     Row(
@@ -766,53 +626,22 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     const SizedBox(height: CubagSpace.lg),
 
                     // Search input
-                    Container(
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF241610)
-                            : CubagColors.sand,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isDark
-                              ? const Color(0xFF3A2A20)
-                              : CubagColors.line,
-                        ),
-                      ),
-                      child: TextFormField(
-                        controller: _searchCtrl,
-                        onChanged: (val) => setState(() {}),
-                        decoration: InputDecoration(
-                          hintText:
-                              'Search notifications',
-                          hintStyle: const TextStyle(
-                            color: Color(0xFF5F6B7E),
-                            fontSize: 16,
-                          ),
-                          prefixIcon: const Icon(
-                            Icons.search_rounded,
-                            color: Color(0xFF5F6B7E),
-                          ),
-                          suffixIcon: _searchCtrl.text.isNotEmpty
-                              ? IconButton(
-                                  tooltip: 'Clear',
-                                  icon: const Icon(
-                                    Icons.clear_rounded,
-                                    color: Color(0xFF5F6B7E),
-                                  ),
-                                  onPressed: () => setState(() {
-                                    _searchCtrl.clear();
-                                  }),
-                                )
-                              : null,
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                        ),
+                    TextField(
+                      controller: _searchCtrl,
+                      onChanged: (val) => setState(() {}),
+                      decoration: InputDecoration(
+                        hintText: 'Search notifications',
+                        prefixIcon: const Icon(Icons.search_rounded, color: CubagColors.muted),
+                        suffixIcon: _searchCtrl.text.isNotEmpty
+                            ? IconButton(
+                                tooltip: 'Clear search',
+                                icon: const Icon(Icons.close_rounded, color: CubagColors.muted),
+                                onPressed: () => setState(() => _searchCtrl.clear()),
+                              )
+                            : null,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: CubagSpace.sm),
 
                     // Filter chips
                     SingleChildScrollView(
@@ -833,60 +662,20 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: CubagSpace.md),
 
-                    // Section header row
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            searchQuery.isNotEmpty
-                                ? 'Search results (${filtered.length})'
-                                : 'Latest updates (${filtered.length})',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 13,
-                              color: isDark
-                                  ? Colors.white70
-                                  : CubagColors.muted,
-                            ),
-                          ),
+                    if (_filter != 'all' || searchQuery.isNotEmpty)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () => setState(() {
+                            _searchCtrl.clear();
+                            _filter = 'all';
+                          }),
+                          child: const Text('Show all'),
                         ),
-                        if (_filter != 'all' || searchQuery.isNotEmpty)
-                          InkWell(
-                            borderRadius: BorderRadius.circular(8),
-                            onTap: () => setState(() {
-                              _searchCtrl.clear();
-                              _filter = 'all';
-                            }),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.filter_alt_off_rounded,
-                                    size: 15,
-                                    color: _kOrange,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Clear',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.accentOrangeText,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
+                      ),
+                    const SizedBox(height: CubagSpace.xs),
 
                     // Feed Items
                     if (_loading)
@@ -901,16 +690,24 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     else if (filtered.isEmpty)
                       _buildEmptyState(searchQuery)
                     else
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: filtered.length,
-                        separatorBuilder: (ctx, i) =>
-                            const SizedBox.shrink(),
-                        itemBuilder: (ctx, i) {
-                          final n = filtered[i];
-                          return _buildNotificationCard(n);
-                        },
+                      Container(
+                        clipBehavior: Clip.antiAlias,
+                        decoration: BoxDecoration(
+                          color: CubagColors.paper,
+                          borderRadius: BorderRadius.circular(CubagRadius.card),
+                        ),
+                        foregroundDecoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(CubagRadius.card),
+                          border: Border.all(color: CubagColors.line),
+                        ),
+                        child: Column(
+                          children: [
+                            for (var i = 0; i < filtered.length; i++) ...[
+                              if (i > 0) const Divider(height: 1, color: CubagColors.line),
+                              _buildNotificationCard(filtered[i]),
+                            ],
+                          ],
+                        ),
                       ),
                   ],
                 ),

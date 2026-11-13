@@ -90,74 +90,39 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                 child: !isActive && !_loading && _history.isEmpty
                     ? _buildLockedView(primary)
                     : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // ── Active License Banner ──
-                          if (isLicenseBlocked && !_loading)
-                            _buildActiveLicenseBanner(
-                              expiryDate,
-                              renewalOpenDate,
-                            ),
-
-                          // ── Status Timeline ──
-                          if (!_loading && _history.isNotEmpty) ...[
-                            _buildStatusTimeline(primary, user),
-                            const SizedBox(height: 32),
-                          ],
-
                           if (_loading)
                             ListView.separated(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               itemCount: 3,
-                              separatorBuilder: (ctx, i) =>
-                                  const SizedBox(height: 16),
+                              separatorBuilder: (ctx, i) => const SizedBox(height: 16),
                               itemBuilder: (ctx, i) => const ShimmerListTile(),
                             )
                           else if (_history.isEmpty)
                             _buildEmptyState(primary)
                           else ...[
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                left: 4.0,
-                                bottom: 16.0,
-                              ),
-                              child: Text(
-                                'Membership history',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color:
-                                      Theme.of(context).brightness ==
-                                          Brightness.dark
-                                      ? Colors.white
-                                      : CubagColors.ink,
-                                ),
-                              ),
-                            ),
-                            ..._history
-                                .asMap()
-                                .map(
-                                  (i, rec) => MapEntry(
-                                    i,
-                                    _buildRecordCard(rec, primary, yr),
-                                  ),
-                                )
-                                .values,
+                            // The current licence: the page's one bold surface.
+                            _buildRecordCard(_history.first, primary, yr),
+                            if (isLicenseBlocked)
+                              _buildActiveLicenseBanner(expiryDate, renewalOpenDate),
+                            const SizedBox(height: CubagSpace.xl),
+                            _buildStatusTimeline(primary, user),
+                            if (_history.length > 1) ...[
+                              const SizedBox(height: CubagSpace.xxl),
+                              Text('Earlier licences', style: CubagType.headline),
+                              const SizedBox(height: CubagSpace.sm),
+                              for (final rec in _history.skip(1))
+                                _buildRecordCard(rec, primary, yr),
+                            ],
                           ],
 
-                          const SizedBox(height: 32),
+                          const SizedBox(height: CubagSpace.xxl),
                           Center(
                             child: TextButton(
                               onPressed: () => context.go('/engagement'),
-                              child: Text(
-                                'Need help? Contact Support',
-                                style: TextStyle(
-                                  color: primary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
+                              child: const Text('Need help? Contact support'),
                             ),
                           ),
                         ],
@@ -213,7 +178,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
         children: [
           Row(
             children: [
-              const Expanded(child: Text('Renewal progress', style: CubagType.title)),
+              Expanded(child: Text("This year's renewal", style: CubagType.headline)),
               StatusChip(chipLabel, kind: chipKind),
             ],
           ),
@@ -275,64 +240,33 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
 
 
   Widget _buildActiveLicenseBanner(DateTime expiry, DateTime renewalOpens) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final expiryStr =
-        '${_monthName(expiry.month)} ${expiry.day}, ${expiry.year}';
-    final renewalStr =
-        '${_monthName(renewalOpens.month)} ${renewalOpens.day}, ${renewalOpens.year}';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: CubagColors.valid.withAlpha(isDark ? 25 : 18),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: CubagColors.valid.withAlpha(80)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: CubagColors.valid.withAlpha(40),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.verified_rounded,
-              color: CubagColors.valid,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Licence active: nothing to pay',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: CubagColors.valid,
-                  ),
+    final renewalStr = '${renewalOpens.day} ${_monthName(renewalOpens.month)} ${renewalOpens.year}';
+    return Padding(
+      padding: const EdgeInsets.only(top: CubagSpace.md),
+      child: Container(
+        padding: const EdgeInsets.all(CubagSpace.md),
+        decoration: BoxDecoration(
+          color: CubagColors.validTint,
+          borderRadius: BorderRadius.circular(CubagRadius.card),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.check_circle_rounded, color: CubagColors.valid, size: 20),
+            const SizedBox(width: CubagSpace.sm),
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(text: 'Nothing to pay now. ', style: CubagType.label.copyWith(color: CubagColors.valid)),
+                    TextSpan(text: 'Renewal opens on $renewalStr, 30 days before your licence expires.'),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Your license is valid until $expiryStr. '
-                  'To prevent duplicate payments, renewal will open on $renewalStr (30 days before expiry).',
-                  style: TextStyle(
-                    fontSize: 13,
-                    height: 1.55,
-                    color: isDark
-                        ? const Color(0xFFa7f3d0)
-                        : const Color(0xFF065f46),
-                  ),
-                ),
-              ],
+                style: CubagType.small.copyWith(color: CubagColors.inkSoft),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -545,273 +479,122 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
   Widget _buildRecordCard(Map<String, dynamic> rec, Color primary, int yr) {
     final approved = rec['approved'] == true;
     final suspended = rec['status'] == 'suspended';
-    final statusColor = approved
-        ? CubagColors.valid
+    final (statusLabel, statusFg, statusBg) = approved
+        ? ('Active', CubagColors.valid, CubagColors.validTint)
         : suspended
-        ? CubagColors.lapsed
-        : CubagColors.due;
-    final statusLabel = approved
-        ? 'Active'
-        : suspended
-        ? 'Suspended'
-        : 'In Approval';
+            ? ('Suspended', CubagColors.lapsed, CubagColors.lapsedTint)
+            : ('Waiting for approval', CubagColors.due, CubagColors.dueTint);
+    final licenceNo = rec['license_number']?.toString();
+    final expiry = DateTime.tryParse((_memberInfo?['license_expiry_date'] ?? '').toString());
+    final expiryStr = expiry == null ? null : '${expiry.day} ${_monthName(expiry.month)} ${expiry.year}';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFF4D2D20)
-              : CubagColors.line,
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    Widget field(String label, String value, {bool figure = false}) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: CubagType.caption.copyWith(color: CubagColors.onCocoaMuted)),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: (figure ? CubagType.figure : CubagType.bodyStrong).copyWith(color: CubagColors.onCocoa),
+            ),
+          ],
+        );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: CubagSpace.md),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [primary, primary.withValues(alpha: 0.7)],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.card_membership_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Membership licence',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : CubagColors.ink,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  border: Border.all(color: statusColor.withValues(alpha: 0.3)),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  statusLabel,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: statusColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          ...([
-            {
-              'icon': Icons.verified_user_outlined,
-              'label': 'Licence number',
-              'val':
-                  rec['license_number'] ??
-                  (approved ? 'Active Standing' : 'Pending Approval'),
-            },
-            {
-              'icon': Icons.business_outlined,
-              'label': 'Organization',
-              'val': rec['company'],
-            },
-            {
-              'icon': Icons.location_on_outlined,
-              'label': 'District(s)',
-              'val': rec['port_of_operation'],
-            },
-          ].where((r) => r['val'] != null)).map(
-            (r) => Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? CubagColors.ink
-                    : Colors.grey.shade50,
-                border: Border.all(color: Theme.of(context).dividerColor),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
+          Container(
+            padding: const EdgeInsets.all(CubagSpace.xl),
+            decoration: BoxDecoration(
+              color: CubagColors.cocoa,
+              borderRadius: BorderRadius.circular(CubagRadius.hero),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'CUBAG membership licence',
+                        style: CubagType.caption.copyWith(color: CubagColors.onCocoaMuted, letterSpacing: 0.3),
+                      ),
                     ),
-                    child: Icon(
-                      r['icon'] as IconData,
-                      color: primary,
-                      size: 18,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(999)),
+                      child: Text(statusLabel, style: CubagType.caption.copyWith(color: statusFg, fontWeight: FontWeight.w700)),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          r['label'].toString().toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: const Color(0xFF6b6375),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          r['val'].toString(),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                ? Colors.white
-                                : CubagColors.ink,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+                const SizedBox(height: CubagSpace.md),
+                Text(
+                  rec['company']?.toString() ?? _memberInfo?['name']?.toString() ?? 'Member',
+                  style: CubagType.title.copyWith(color: CubagColors.onCocoa),
+                ),
+                const SizedBox(height: CubagSpace.lg),
+                Wrap(
+                  spacing: CubagSpace.xxl,
+                  runSpacing: CubagSpace.md,
+                  children: [
+                    field('Licence number', licenceNo ?? (approved ? 'Issued' : 'Not issued yet'), figure: true),
+                    if (expiryStr != null && approved) field('Valid until', expiryStr, figure: true),
+                    if (rec['port_of_operation'] != null) field('District', rec['port_of_operation'].toString()),
+                  ],
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: CubagSpace.sm),
           if (approved)
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: FilledButton.icon(
                     onPressed: () => _showCertificate(rec, yr),
-                    icon: const Icon(Icons.visibility_rounded, size: 16),
-                    label: Text(
-                      'View licence',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: primary,
-                      minimumSize: const Size(0, 52),
-                      side: BorderSide(color: primary, width: 1.5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
+                    icon: const Icon(Icons.badge_outlined, size: 18),
+                    label: const Text('View licence'),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: CubagSpace.sm),
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: OutlinedButton.icon(
                     onPressed: () {
                       final memberId = _memberInfo?['id'];
                       if (memberId == null) return;
-
                       String base = ApiService.baseUrl;
                       if (base.endsWith('/')) {
                         base = base.substring(0, base.length - 1);
                       }
-
                       final ts = DateTime.now().millisecondsSinceEpoch;
                       final url = '$base/members/$memberId/certificate-pdf?t=$ts';
-
                       InAppDocumentViewer.show(
                         context,
                         url: url,
-                        title: 'Certificate of Membership',
+                        title: 'Certificate of membership',
                         subtitle: 'Annual licence certificate',
                       );
                     },
-                    icon: const Icon(
-                      Icons.workspace_premium_rounded,
-                      size: 16,
-                      color: Colors.white,
-                    ),
-                    label: Text(
-                      'View Certificate',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primary,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(0, 52),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
+                    icon: const Icon(Icons.workspace_premium_outlined, size: 18),
+                    label: const Text('Certificate'),
                   ),
                 ),
               ],
             )
-          else
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-              decoration: BoxDecoration(
-                color: CubagColors.due.withValues(alpha: 0.1),
-                border: Border.all(
-                  color: CubagColors.due.withValues(alpha: 0.3),
+          else if (!suspended)
+            Row(
+              children: [
+                const Icon(Icons.schedule_rounded, size: 16, color: CubagColors.due),
+                const SizedBox(width: CubagSpace.xs),
+                Expanded(
+                  child: Text(
+                    'CUBAG is reviewing your licence. We will notify you when it is approved.',
+                    style: CubagType.small,
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.hourglass_empty_rounded,
-                    color: CubagColors.due,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Awaiting admin approval...',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: CubagColors.due,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ),
         ],
       ),

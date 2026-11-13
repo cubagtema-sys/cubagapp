@@ -135,106 +135,54 @@ class _EventsPageState extends State<EventsPage> {
   }
 
   Widget _buildFilterChip(String label, String value, Color primary) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = _selectedFilter == value;
-    return GestureDetector(
-      onTap: () {
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      showCheckmark: false,
+      labelStyle: CubagType.label.copyWith(
+        color: isSelected ? CubagColors.onCocoa : CubagColors.inkSoft,
+      ),
+      selectedColor: CubagColors.cocoa,
+      backgroundColor: CubagColors.paper,
+      side: BorderSide(color: isSelected ? CubagColors.cocoa : CubagColors.line),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      onSelected: (_) {
         if (_selectedFilter != value) {
-          setState(() {
-            _selectedFilter = value;
-          });
+          setState(() => _selectedFilter = value);
           _fetch(refresh: true);
         }
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected ? primary : (isDark ? const Color(0xFF281710) : Colors.white),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: isSelected
-                ? primary
-                : (isDark ? const Color(0xFF3D261C) : CubagColors.line),
-            width: 1.0,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : (isDark ? const Color(0xFFC8ADA0) : CubagColors.muted),
-            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-            fontSize: 13,
-          ),
-        ),
-      ),
     );
   }
 
   Widget _buildHeaderControls(Color primary, bool isDark) {
-    final cardBg = isDark ? const Color(0xFF1E130D) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-    final textColor = isDark ? const Color(0xFFFFF8F3) : CubagColors.ink;
-    final mutedColor = isDark ? const Color(0xFFC8ADA0) : CubagColors.muted;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Search bar
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: borderColor,
-              width: 1.0,
-            ),
-          ),
-          child: TextField(
-            controller: _searchCtrl,
-            style: TextStyle(
-              fontSize: 14.5,
-              color: textColor,
-              fontWeight: FontWeight.w600,
-            ),
-            decoration: InputDecoration(
-              hintText: 'Search events',
-              hintStyle: TextStyle(
-                color: mutedColor,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-              border: InputBorder.none,
-              icon: Icon(
-                Icons.search_rounded,
-                color: mutedColor,
-                size: 20,
-              ),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      tooltip: 'Clear',
-                      icon: Icon(
-                        Icons.clear_rounded,
-                        color: mutedColor,
-                        size: 18,
-                      ),
-                      onPressed: () {
-                        _searchCtrl.clear();
-                        setState(() => _searchQuery = '');
-                      },
-                    )
-                  : null,
-            ),
+        TextField(
+          controller: _searchCtrl,
+          decoration: InputDecoration(
+            hintText: 'Search events',
+            prefixIcon: const Icon(Icons.search_rounded, color: CubagColors.muted),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    tooltip: 'Clear search',
+                    icon: const Icon(Icons.close_rounded, color: CubagColors.muted),
+                    onPressed: () {
+                      _searchCtrl.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                  )
+                : null,
           ),
         ),
-        const SizedBox(height: 12),
-        // Filter Chips Row
+        const SizedBox(height: CubagSpace.sm),
         Row(
           children: [
-            _buildFilterChip('Upcoming Events', 'upcoming', primary),
-            const SizedBox(width: 8),
-            _buildFilterChip('Past Events', 'past', primary),
+            _buildFilterChip('Upcoming', 'upcoming', primary),
+            const SizedBox(width: CubagSpace.xs),
+            _buildFilterChip('Past', 'past', primary),
           ],
         ),
       ],
@@ -282,9 +230,9 @@ class _EventsPageState extends State<EventsPage> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 2),
-            decoration: BoxDecoration(
-              color: primary,
-              borderRadius: const BorderRadius.vertical(
+            decoration: const BoxDecoration(
+              color: CubagColors.cocoa,
+              borderRadius: BorderRadius.vertical(
                 top: Radius.circular(7),
               ),
             ),
@@ -326,9 +274,8 @@ class _EventsPageState extends State<EventsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withAlpha(25),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withAlpha(80), width: 1),
+        color: color.withAlpha(22),
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -338,12 +285,8 @@ class _EventsPageState extends State<EventsPage> {
             const SizedBox(width: 4),
           ],
           Text(
-            label.toUpperCase(),
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-            ),
+            label,
+            style: CubagType.caption.copyWith(color: color, fontWeight: FontWeight.w700),
           ),
         ],
       ),
@@ -666,49 +609,44 @@ class _EventsPageState extends State<EventsPage> {
     }).toList();
 
     if (filteredList.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 24),
-        alignment: Alignment.center,
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: CubagSpace.xxxl, horizontal: CubagSpace.lg),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: CubagColors.sand,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.event_busy_rounded,
-                size: 40,
-                color: Color(0xFF5F6B7E),
-              ),
+              width: 64,
+              height: 64,
+              decoration: const BoxDecoration(color: CubagColors.paper, shape: BoxShape.circle),
+              child: const Icon(Icons.event_outlined, size: 30, color: CubagColors.cocoa),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: CubagSpace.md),
             Text(
               _searchQuery.isNotEmpty
-                  ? 'No matching events found'
-                  : (_selectedFilter == 'upcoming'
-                        ? 'No Upcoming Events'
-                        : 'No Past Events'),
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 18,
-                color: const Color(0xFF281710),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              _searchQuery.isNotEmpty
-                  ? 'Try refining your search keyword.'
-                  : 'Check back later for meetings and seminars.',
+                  ? 'No events match your search'
+                  : (_selectedFilter == 'upcoming' ? 'No events scheduled yet' : 'No past events'),
+              style: CubagType.headline,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: CubagColors.muted,
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-              ),
             ),
+            const SizedBox(height: CubagSpace.xxs),
+            Text(
+              _searchQuery.isNotEmpty
+                  ? 'Try other words, or clear the search.'
+                  : (_selectedFilter == 'upcoming'
+                      ? 'Meetings, seminars and CTI sessions will appear here. You can add them to your calendar.'
+                      : 'Events you could attend will be listed here after they happen.'),
+              textAlign: TextAlign.center,
+              style: CubagType.small,
+            ),
+            if (_selectedFilter == 'upcoming' && _searchQuery.isEmpty) ...[
+              const SizedBox(height: CubagSpace.md),
+              TextButton(
+                onPressed: () {
+                  setState(() => _selectedFilter = 'past');
+                  _fetch(refresh: true);
+                },
+                child: const Text('See past events'),
+              ),
+            ],
           ],
         ),
       );
@@ -738,7 +676,7 @@ class _EventsPageState extends State<EventsPage> {
               isBlinking: true,
             );
           } else if (eventDay.isAfter(todayDate)) {
-            statusPill = _buildStatusPill('Upcoming', const Color(0xFF3b82f6));
+            statusPill = null;
           } else {
             statusPill = _buildStatusPill('Past', CubagColors.muted);
           }
@@ -754,16 +692,13 @@ class _EventsPageState extends State<EventsPage> {
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
             color: cardBg,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: borderColor,
-              width: 1.0,
-            ),
+            borderRadius: BorderRadius.circular(CubagRadius.card),
+            border: Border.all(color: borderColor),
           ),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(CubagRadius.card),
               onTap: () => _showEventDetails(context, e, date, primary),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -784,12 +719,8 @@ class _EventsPageState extends State<EventsPage> {
                               Expanded(
                                 child: Text(
                                   e['title']?.toString() ?? '',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 16.5,
-                                    color: textColor,
-                                  ),
-                                  maxLines: 1,
+                                  style: CubagType.bodyStrong.copyWith(color: textColor),
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -918,7 +849,7 @@ class _EventsPageState extends State<EventsPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+            padding: const EdgeInsets.fromLTRB(CubagSpace.lg, CubagSpace.lg, CubagSpace.lg, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

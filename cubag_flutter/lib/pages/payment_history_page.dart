@@ -16,14 +16,12 @@ import '../components/shimmer_loader.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../utils/app_logger.dart';
-import '../utils/app_colors.dart';
 import '../design/cubag_design.dart';
 
 // Balanced CUBAG Brand Palette
 const _kBrown = Color(0xFF6B3E26); // Primary Brown
 const _kOrange = CubagColors.action; // Primary Orange CTA
 const _kCream = CubagColors.sand; // Light Background Cream
-const _kWhite = Color(0xFFFFFFFF); // White Surfaces
 const _kText = CubagColors.ink; // Deep Body Text
 const _kMuted = CubagColors.muted; // Secondary Muted Text
 const _kBorder = CubagColors.line; // Soft Warm Border
@@ -1020,8 +1018,9 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     // Filter and search
     var list = _payments;
     if (_filter != 'all') {
+      final wanted = _filter == 'failed' ? const ['failed', 'overdue'] : [_filter];
       list = list
-          .where((p) => p['status']?.toString().toLowerCase() == _filter)
+          .where((p) => wanted.contains(p['status']?.toString().toLowerCase()))
           .toList();
     }
     if (_searchQuery.trim().isNotEmpty) {
@@ -1072,10 +1071,8 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final surfaceBg = isDark ? CubagColors.ink : _kCream;
     final borderCol = isDark ? const Color(0xFF4D2D20) : _kBorder;
     final textCol = isDark ? Colors.white : _kText;
-    final mutedCol = isDark ? Colors.white70 : _kMuted;
     final titleCol = isDark ? _kOrange : _kBrown;
 
     return AppLayout(
@@ -1105,12 +1102,14 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(
-                        onPressed: _fetch,
-                        tooltip: 'Refresh',
-                        icon: const Icon(Icons.refresh_rounded, color: CubagColors.inkSoft),
-                      ),
-                      const SizedBox(width: CubagSpace.xs),
+                      if (isTablet || isDesktop) ...[
+                        IconButton(
+                          onPressed: _fetch,
+                          tooltip: 'Refresh',
+                          icon: const Icon(Icons.refresh_rounded, color: CubagColors.inkSoft),
+                        ),
+                        const SizedBox(width: CubagSpace.xs),
+                      ],
                       FilledButton(
                         onPressed: () => context.go('/payments'),
                         child: const Text('Make a payment'),
@@ -1154,157 +1153,71 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
 
               const SizedBox(height: CubagSpace.lg),
 
-              // ── 3. Search and Category Filter Toolbar ──────────────────────
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: borderCol, width: 1.0),
+              // ── Search and filter: a field and a row of tabs ───────────────
+              TextField(
+                controller: _searchCtrl,
+                onChanged: _onSearchChanged,
+                style: CubagType.body.copyWith(color: CubagColors.ink),
+                decoration: InputDecoration(
+                  hintText: 'Search by description, reference or date',
+                  prefixIcon: const Icon(Icons.search_rounded, color: CubagColors.muted),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          tooltip: 'Clear search',
+                          icon: const Icon(Icons.close_rounded, color: CubagColors.muted),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            setState(() {
+                              _searchQuery = '';
+                              _page = 1;
+                            });
+                          },
+                        )
+                      : null,
                 ),
-                child: isDesktop
-                    ? Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: TextFormField(
-                              controller: _searchCtrl,
-                              onChanged: _onSearchChanged,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: textCol,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              decoration: InputDecoration(
-                                hintText:
-                                    'Search by reference, fee description, or date...',
-                                hintStyle: TextStyle(
-                                  color: mutedCol.withValues(alpha: 0.7),
-                                  fontSize: 13.5,
-                                ),
-                                prefixIcon: Icon(
-                                  Icons.search_rounded,
-                                  color: titleCol,
-                                  size: 18,
-                                ),
-                                suffixIcon: _searchQuery.isNotEmpty
-                                    ? IconButton(
-                                        tooltip: 'Clear',
-                                        icon: Icon(
-                                          Icons.clear_rounded,
-                                          size: 16,
-                                          color: mutedCol,
-                                        ),
-                                        onPressed: () {
-                                          _searchCtrl.clear();
-                                          setState(() {
-                                            _searchQuery = '';
-                                            _page = 1;
-                                          });
-                                        },
-                                      )
-                                    : null,
-                                filled: true,
-                                fillColor: surfaceBg,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(color: borderCol, width: 1.0),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(color: borderCol, width: 1.0),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(
-                                    color: _kBrown,
-                                    width: 1.5,
-                                  ),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 11,
-                                ),
-                              ),
+              ),
+              const SizedBox(height: CubagSpace.sm),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final f in [
+                      ('all', 'All', totalCount),
+                      ('paid', 'Paid', _countOf(const ['paid'])),
+                      ('pending', 'Waiting', _countOf(const ['pending'])),
+                      ('failed', 'Failed', _countOf(const ['failed', 'overdue'])),
+                    ])
+                      if (f.$1 == 'all' || f.$3 > 0 || _filter == f.$1)
+                        Padding(
+                          padding: const EdgeInsets.only(right: CubagSpace.xs),
+                          child: ChoiceChip(
+                            label: Text('${f.$2} · ${f.$3}'),
+                            selected: _filter == f.$1,
+                            showCheckmark: false,
+                            labelStyle: CubagType.label.copyWith(
+                              color: _filter == f.$1 ? CubagColors.onCocoa : CubagColors.inkSoft,
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            flex: 2,
-                            child: _buildDropdownFilter(isDark),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        children: [
-                          TextFormField(
-                            controller: _searchCtrl,
-                            onChanged: _onSearchChanged,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: textCol,
-                              fontWeight: FontWeight.w600,
+                            selectedColor: CubagColors.cocoa,
+                            backgroundColor: CubagColors.paper,
+                            side: BorderSide(
+                              color: _filter == f.$1 ? CubagColors.cocoa : CubagColors.line,
                             ),
-                            decoration: InputDecoration(
-                              hintText: 'Search transactions...',
-                              hintStyle: TextStyle(
-                                color: mutedCol.withValues(alpha: 0.7),
-                                fontSize: 13.5,
-                              ),
-                              prefixIcon: Icon(
-                                Icons.search_rounded,
-                                color: titleCol,
-                                size: 18,
-                              ),
-                              suffixIcon: _searchQuery.isNotEmpty
-                                  ? IconButton(
-                                      tooltip: 'Clear',
-                                      icon: Icon(
-                                        Icons.clear_rounded,
-                                        size: 16,
-                                        color: mutedCol,
-                                      ),
-                                      onPressed: () {
-                                        _searchCtrl.clear();
-                                        setState(() {
-                                          _searchQuery = '';
-                                          _page = 1;
-                                        });
-                                      },
-                                    )
-                                  : null,
-                              filled: true,
-                              fillColor: surfaceBg,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: borderCol, width: 1.0),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: borderCol, width: 1.0),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: _kBrown,
-                                  width: 1.5,
-                                ),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 11,
-                              ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
                             ),
+                            onSelected: (_) => setState(() {
+                              _filter = f.$1;
+                              _page = 1;
+                            }),
                           ),
-                          const SizedBox(height: 10),
-                          _buildDropdownFilter(isDark),
-                        ],
-                      ),
+                        ),
+                  ],
+                ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: CubagSpace.lg),
 
-              // ── 4. Transaction Ledger List ──────────────────────────────────
+              // ── Ledger: one grouped list; tap a row for its receipt ────────
               if (_loading && paginated.isEmpty)
                 ListView.separated(
                   shrinkWrap: true,
@@ -1314,407 +1227,61 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                   itemBuilder: (ctx, i) => const ShimmerListTile(),
                 )
               else if (paginated.isEmpty)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 48,
-                    horizontal: 20,
-                  ),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: cardBg,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: borderCol, width: 1.0),
-                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: CubagSpace.xxxl, horizontal: CubagSpace.lg),
                   child: Column(
                     children: [
                       Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: surfaceBg,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: borderCol, width: 1.0),
-                        ),
-                        child: Icon(
-                          Icons.receipt_long_rounded,
-                          size: 26,
-                          color: titleCol,
-                        ),
+                        width: 56,
+                        height: 56,
+                        decoration: const BoxDecoration(color: CubagColors.paper, shape: BoxShape.circle),
+                        child: const Icon(Icons.receipt_long_outlined, size: 26, color: CubagColors.muted),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: CubagSpace.md),
                       Text(
                         _searchQuery.isNotEmpty
-                            ? 'No transactions match "$_searchQuery"'
-                            : (_filter == 'all'
-                                  ? 'Your payment ledger is currently empty.'
-                                  : 'No $_filter transactions found.'),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: textCol,
-                          letterSpacing: -0.2,
-                        ),
+                            ? 'Nothing matches "$_searchQuery"'
+                            : (_filter == 'all' ? 'No payments yet' : 'No payments in this list'),
+                        style: CubagType.headline,
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: CubagSpace.xxs),
                       Text(
-                        'When you settle association dues or service invoices, receipts will appear here automatically.',
-                        style: TextStyle(fontSize: 13.5, color: mutedCol),
+                        _searchQuery.isNotEmpty || _filter != 'all'
+                            ? 'Try another search or show all payments.'
+                            : 'When you pay dues or fees, the receipt appears here.',
+                        style: CubagType.small,
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 18),
-                      ElevatedButton.icon(
-                        onPressed: () => context.go('/payments'),
-                        icon: const Icon(Icons.add_rounded, size: 15),
-                        label: const Text('Make a Payment'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _kOrange,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          textStyle: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13.5,
-                          ),
+                      if (_searchQuery.isEmpty && _filter == 'all') ...[
+                        const SizedBox(height: CubagSpace.lg),
+                        FilledButton(
+                          onPressed: () => context.go('/payments'),
+                          child: const Text('Make a payment'),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 )
               else
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: paginated.length,
-                  separatorBuilder: (ctx, i) => const SizedBox(height: 10),
-                  itemBuilder: (ctx, i) {
-                    final pay = paginated[i] as Map<String, dynamic>;
-                    final status =
-                        (pay['status']?.toString().toLowerCase()) ?? 'pending';
-                    final config =
-                        _statusConfigs[status] ?? _statusConfigs['pending']!;
-                    final amount =
-                        double.tryParse(pay['amount']?.toString() ?? '0') ??
-                        0.0;
-                    final dateStr = _formatDateTime(pay['created_at']);
-                    final desc =
-                        pay['description']?.toString() ??
-                        'General Association Dues';
-
-                    return Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: cardBg,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: borderCol, width: 1.0),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Header: Icon + Details + Amount
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  color: config['bg'] as Color,
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: (config['border'] as Color).withValues(alpha: 0.5),
-                                    width: 1.0,
-                                  ),
-                                ),
-                                child: Icon(
-                                  config['icon'] as IconData,
-                                  color: config['color'] as Color,
-                                  size: 19,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            desc,
-                                            style: TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w700,
-                                              color: textCol,
-                                              letterSpacing: -0.2,
-                                            ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'GH₵ ${_fmt(amount)}',
-                                          style: TextStyle(
-                                            fontSize: 16.5,
-                                            fontWeight: FontWeight.w700,
-                                            color: titleCol,
-                                            letterSpacing: -0.3,
-                                            fontFeatures: const [
-                                              FontFeature.tabularFigures(),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 7,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: config['bg'] as Color,
-                                            borderRadius: BorderRadius.circular(4),
-                                            border: Border.all(
-                                              color: (config['border'] as Color).withValues(alpha: 0.5),
-                                              width: 1.0,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            config['label'] as String,
-                                            style: TextStyle(
-                                              fontSize: 10.5,
-                                              fontWeight: FontWeight.w700,
-                                              color: config['color'] as Color,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 10),
-                          Divider(color: borderCol, height: 1.0),
-                          const SizedBox(height: 8),
-
-                          // Footer: Date on left, and actions on right
-                          Wrap(
-                            alignment: WrapAlignment.spaceBetween,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.calendar_today_rounded,
-                                    size: 12,
-                                    color: mutedCol,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    dateStr,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: mutedCol,
-                                      fontFeatures: const [
-                                        FontFeature.tabularFigures(),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 6,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                              if (status == 'pending') ...[
-                                InkWell(
-                                  onTap: _verifyingId == pay['id']
-                                      ? null
-                                      : () async {
-                                          setState(
-                                            () => _verifyingId = pay['id'],
-                                          );
-                                          try {
-                                            final res = await ApiService().get(
-                                              '/payments/verify/${pay['payment_ref']}',
-                                            );
-                                            if (res.data['status'] ==
-                                                'success') {
-                                              _fetch();
-                                            }
-                                          } catch (e, st) {
-                                            AppLogger.error(
-                                              'payment_history_page',
-                                              e,
-                                              st,
-                                            );
-                                          }
-                                          setState(
-                                            () => _verifyingId = null,
-                                          );
-                                        },
-                                  borderRadius: BorderRadius.circular(6),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 9,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _kOrange.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                        color: _kOrange.withValues(alpha: 0.4),
-                                        width: 1.0,
-                                      ),
-                                    ),
-                                    child: _verifyingId == pay['id']
-                                        ? const SizedBox(
-                                            width: 11,
-                                            height: 11,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: _kOrange,
-                                            ),
-                                          )
-                                        : const Text(
-                                            'Verify Status',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                              color: AppColors.accentOrangeText,
-                                            ),
-                                          ),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                              ],
-                              InkWell(
-                                onTap: () => _showReceiptDialog(context, pay),
-                                borderRadius: BorderRadius.circular(6),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 9,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: surfaceBg,
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color: borderCol, width: 1.0),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.receipt_rounded,
-                                        size: 12,
-                                        color: titleCol,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'Receipt',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: titleCol,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              InkWell(
-                                onTap: () async {
-                                  final status = (pay['status']?.toString().toLowerCase()) ?? 'pending';
-                                  final config = _statusConfigs[status] ?? _statusConfigs['pending']!;
-                                  final amount = double.tryParse(pay['amount']?.toString() ?? '0') ?? 0.0;
-                                  final ref = pay['payment_ref']?.toString() ?? 'TXN-${pay['id'] ?? '0000'}';
-                                  final dateStr = _formatDateTime(pay['created_at']);
-                                  final desc = pay['description']?.toString() ?? 'General Association Dues';
-                                  final momoTxId = pay['momo_tx_id']?.toString();
-                                  final paymentMethod = pay['payment_method']?.toString() ?? pay['channel']?.toString() ?? pay['network']?.toString();
-                                  final payerPhone = pay['phone']?.toString() ?? pay['payer_phone']?.toString();
-                                  final adminNote = pay['admin_note']?.toString();
-                                  final verifyUrl = 'https://cubag-api-server.fly.dev/#/verify-payment?ref=$ref&amount=${_fmt(amount)}';
-                                  final auth = Provider.of<AuthService>(context, listen: false);
-
-                                  await _generateAndDownloadPdfReceipt(
-                                    pay,
-                                    ref,
-                                    amount,
-                                    dateStr,
-                                    desc,
-                                    config['label'] as String,
-                                    paymentMethod,
-                                    payerPhone,
-                                    momoTxId,
-                                    adminNote,
-                                    verifyUrl,
-                                    auth.userName ?? '',
-                                    auth.userCompany ?? '',
-                                    auth.licenseNumber ?? '',
-                                  );
-                                },
-                                borderRadius: BorderRadius.circular(6),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 9,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: surfaceBg,
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color: borderCol, width: 1.0),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.download_rounded,
-                                        size: 12,
-                                        color: titleCol,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'PDF',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: titleCol,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                Container(
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: CubagColors.paper,
+                    borderRadius: BorderRadius.circular(CubagRadius.card),
+                  ),
+                  foregroundDecoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(CubagRadius.card),
+                    border: Border.all(color: CubagColors.line),
+                  ),
+                  child: Column(
+                    children: [
+                      for (var i = 0; i < paginated.length; i++) ...[
+                        if (i > 0) const Divider(height: 1, indent: 64, color: CubagColors.line),
+                        _paymentRow(paginated[i] as Map<String, dynamic>),
+                      ],
                     ],
                   ),
-                );
-                  },
                 ),
 
               // ── 5. Pagination Controls ─────────────────────────────────────
@@ -1778,6 +1345,139 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     );
   }
 
+  int _countOf(List<String> statuses) => _payments
+      .where((p) => statuses.contains(p['status']?.toString().toLowerCase()))
+      .length;
+
+  Widget _paymentRow(Map<String, dynamic> pay) {
+    final status = (pay['status']?.toString().toLowerCase()) ?? 'pending';
+    final amount = double.tryParse(pay['amount']?.toString() ?? '0') ?? 0.0;
+    final desc = pay['description']?.toString() ?? 'General association dues';
+    final (kind, icon, fg, bg) = switch (status) {
+      'paid' => (StatusKind.good, Icons.check_rounded, CubagColors.valid, CubagColors.validTint),
+      'failed' || 'overdue' => (StatusKind.bad, Icons.close_rounded, CubagColors.lapsed, CubagColors.lapsedTint),
+      _ => (StatusKind.pending, Icons.schedule_rounded, CubagColors.due, CubagColors.dueTint),
+    };
+    final label = (_statusConfigs[status] ?? _statusConfigs['pending']!)['label'] as String;
+    final checking = _verifyingId == pay['id'];
+
+    return InkWell(
+      onTap: () => _showReceiptDialog(context, pay),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(CubagSpace.md, 14, CubagSpace.md, 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+              child: Icon(icon, size: 18, color: fg),
+            ),
+            const SizedBox(width: CubagSpace.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(desc, style: CubagType.bodyStrong, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 2),
+                  Text(
+                    _formatDateTime(pay['created_at']),
+                    style: CubagType.small.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                  ),
+                  if (status != 'paid') ...[
+                    const SizedBox(height: 6),
+                    StatusChip(label, kind: kind),
+                  ],
+                  if (status == 'pending') ...[
+                    const SizedBox(height: CubagSpace.xs),
+                    SizedBox(
+                      height: 36,
+                      child: OutlinedButton(
+                        onPressed: checking ? null : () => _checkStatus(pay),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: CubagSpace.md),
+                          minimumSize: const Size(0, 36),
+                        ),
+                        child: checking
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: CubagColors.action),
+                              )
+                            : const Text('Check status'),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: CubagSpace.sm),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text('GH₵ ${_fmt(amount)}', style: CubagType.figure),
+                if (status == 'paid')
+                  IconButton(
+                    tooltip: 'Download PDF receipt',
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    onPressed: () => _downloadPdf(pay),
+                    icon: const Icon(Icons.file_download_outlined, size: 20, color: CubagColors.action),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _checkStatus(Map<String, dynamic> pay) async {
+    setState(() => _verifyingId = pay['id']);
+    try {
+      final res = await ApiService().get('/payments/verify/${pay['payment_ref']}');
+      if (res.data['status'] == 'success') {
+        _fetch();
+      }
+    } catch (e, st) {
+      AppLogger.error('payment_history_page', e, st);
+    }
+    if (mounted) setState(() => _verifyingId = null);
+  }
+
+  Future<void> _downloadPdf(Map<String, dynamic> pay) async {
+    final status = (pay['status']?.toString().toLowerCase()) ?? 'pending';
+    final config = _statusConfigs[status] ?? _statusConfigs['pending']!;
+    final amount = double.tryParse(pay['amount']?.toString() ?? '0') ?? 0.0;
+    final ref = pay['payment_ref']?.toString() ?? 'TXN-${pay['id'] ?? '0000'}';
+    final dateStr = _formatDateTime(pay['created_at']);
+    final desc = pay['description']?.toString() ?? 'General Association Dues';
+    final momoTxId = pay['momo_tx_id']?.toString();
+    final paymentMethod = pay['payment_method']?.toString() ?? pay['channel']?.toString() ?? pay['network']?.toString();
+    final payerPhone = pay['phone']?.toString() ?? pay['payer_phone']?.toString();
+    final adminNote = pay['admin_note']?.toString();
+    final verifyUrl = 'https://cubag-api-server.fly.dev/#/verify-payment?ref=$ref&amount=${_fmt(amount)}';
+    final auth = Provider.of<AuthService>(context, listen: false);
+
+    await _generateAndDownloadPdfReceipt(
+      pay,
+      ref,
+      amount,
+      dateStr,
+      desc,
+      config['label'] as String,
+      paymentMethod,
+      payerPhone,
+      momoTxId,
+      adminNote,
+      verifyUrl,
+      auth.userName ?? '',
+      auth.userCompany ?? '',
+      auth.licenseNumber ?? '',
+    );
+  }
+
   Widget _summaryFigure(String label, String value, Color color) {
     return Expanded(
       child: Padding(
@@ -1798,114 +1498,4 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     );
   }
 
-  Widget _buildDropdownFilter(bool isDark) {
-    final totalCount = _payments.length;
-    final settledCount = _payments
-        .where((p) => p['status']?.toString().toLowerCase() == 'paid')
-        .length;
-    final pendingCount = _payments
-        .where((p) => p['status']?.toString().toLowerCase() == 'pending')
-        .length;
-    final failedCount = _payments
-        .where(
-          (p) => [
-            'failed',
-            'overdue',
-          ].contains(p['status']?.toString().toLowerCase()),
-        )
-        .length;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? CubagColors.ink : _kCream,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? const Color(0xFF4D2D20) : _kBorder),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _filter,
-          isExpanded: true,
-          icon: Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: isDark ? _kOrange : _kBrown,
-            size: 22,
-          ),
-          dropdownColor: isDark ? const Color(0xFF281710) : _kWhite,
-          borderRadius: BorderRadius.circular(14),
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: isDark ? Colors.white : _kText,
-          ),
-          onChanged: (String? val) {
-            if (val != null) {
-              setState(() {
-                _filter = val;
-                _page = 1;
-              });
-            }
-          },
-          items: [
-            DropdownMenuItem(
-              value: 'all',
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.list_alt_rounded,
-                    size: 16,
-                    color: isDark ? _kOrange : _kBrown,
-                  ),
-                  const SizedBox(width: 8),
-                  Text('All Transactions ($totalCount)'),
-                ],
-              ),
-            ),
-            DropdownMenuItem(
-              value: 'paid',
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.verified_rounded,
-                    size: 16,
-                    color: Color(0xFF059669),
-                  ),
-                  const SizedBox(width: 8),
-                  Text('Settled ($settledCount)'),
-                ],
-              ),
-            ),
-            DropdownMenuItem(
-              value: 'pending',
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.hourglass_top_rounded,
-                    size: 16,
-                    color: _kOrange,
-                  ),
-                  const SizedBox(width: 8),
-                  Text('Pending ($pendingCount)'),
-                ],
-              ),
-            ),
-            DropdownMenuItem(
-              value: 'failed',
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.cancel_rounded,
-                    size: 16,
-                    color: CubagColors.lapsed,
-                  ),
-                  const SizedBox(width: 8),
-                  Text('Failed ($failedCount)'),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

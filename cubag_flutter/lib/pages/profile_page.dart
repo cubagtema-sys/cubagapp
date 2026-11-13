@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../components/app_layout.dart';
+import '../components/cubag_ui.dart';
 import '../components/trend_line.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
@@ -17,7 +18,6 @@ import '../design/cubag_design.dart';
 const _kOrange = CubagColors.action;
 const _kGreen = CubagColors.valid;
 const _kRed = CubagColors.lapsed;
-const _kAmber = CubagColors.due;
 
 class StandingTier {
   final String label;
@@ -582,13 +582,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? CubagColors.ink : CubagColors.sand;
-    final cardBg = isDark ? CubagColors.ink : Colors.white;
-    final border = isDark ? const Color(0xFF281710) : CubagColors.line;
-    final textPrimary = isDark ? Colors.white : CubagColors.ink;
     final textMuted = isDark ? const Color(0xFF5F6B7E) : CubagColors.muted;
-    final tileBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F4);
-    final isMobile = MediaQuery.of(context).size.width < 600;
 
     if (_isLoading) {
       return AppLayout(
@@ -626,370 +620,263 @@ class _ProfilePageState extends State<ProfilePage> {
     final portRaw = (_user['port_of_operation'] ?? _user['port'] ?? 'Tema Port').toString();
     final portStr = _formatPortAbbreviation(portRaw);
 
+    final photo = _user['profile_photo']?.toString() ?? '';
+    final scoreGood = complianceScore >= 80;
+
     return AppLayout(
       title: 'Profile',
       scrollable: false,
-      child: RefreshIndicator(
+      child: PageBody(
         onRefresh: () => _fetchUser(forceRefresh: true),
-        color: _kOrange,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Container(
-            color: bg,
-            padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 20, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Identity: the one bold surface on the page ──
+          Container(
+            padding: const EdgeInsets.all(CubagSpace.xl),
+            decoration: BoxDecoration(
+              color: CubagColors.cocoa,
+              borderRadius: BorderRadius.circular(CubagRadius.hero),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-            // ── 1. SIMPLE HERO BANNER ─────────────────────────────────────
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(isMobile ? 16 : 24),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: border),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(isDark ? 30 : 8),
-                    blurRadius: 12,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Avatar with upload
-                  Semantics(button: true, label: 'Change profile photo', child: GestureDetector(
+                Semantics(
+                  button: true,
+                  label: 'Change profile photo',
+                  child: GestureDetector(
                     onTap: _uploadingPhoto ? null : _uploadAvatar,
                     child: Stack(
-                      alignment: Alignment.bottomRight,
+                      clipBehavior: Clip.none,
                       children: [
                         Container(
-                          width: 84,
-                          height: 84,
+                          width: 76,
+                          height: 76,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: _kOrange, width: 2.5),
+                            border: Border.all(color: CubagColors.onCocoaMuted.withAlpha(120), width: 2),
                           ),
                           child: ClipOval(
-                            child: _user['profile_photo'] != null && _user['profile_photo'].toString().isNotEmpty
+                            child: photo.isNotEmpty
                                 ? CachedNetworkImage(
-                                    imageUrl: ApiService.resolveImageUrl(_user['profile_photo'].toString()),
-                                    width: 84,
-                                    height: 84,
+                                    imageUrl: ApiService.resolveImageUrl(photo),
+                                    width: 76,
+                                    height: 76,
                                     fit: BoxFit.cover,
                                     errorWidget: (ctx, url, err) => _buildAvatarFallback(),
                                   )
                                 : _buildAvatarFallback(),
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                            color: _kOrange,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: cardBg, width: 2),
-                          ),
-                          child: _uploadingPhoto
-                              ? const SizedBox(width: 10, height: 10, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.camera_alt_rounded, size: 12, color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  )),
-                  const SizedBox(height: 12),
-                  Text(
-                    _user['name']?.toString() ?? 'Member',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: textPrimary),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _user['company']?.toString() ?? scaleLabel,
-                    style: TextStyle(fontSize: 14.5, color: textMuted, fontWeight: FontWeight.w500),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Status badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: (isGoodStanding ? _kGreen : _kAmber).withAlpha(20),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: (isGoodStanding ? _kGreen : _kAmber).withAlpha(60)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(isGoodStanding ? Icons.verified_rounded : Icons.pending_rounded, size: 14, color: isGoodStanding ? _kGreen : _kAmber),
-                        const SizedBox(width: 6),
-                        Text(
-                          isGoodStanding ? 'Active, in good standing' : 'Pending',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isGoodStanding ? _kGreen : _kAmber),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Actions
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _kOrange,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          elevation: 0,
-                        ),
-                        onPressed: () => _openDigitalIdDialog(tier, expiry, daysLeft, isGoodStanding, isPackagePending),
-                        icon: const Icon(Icons.badge_rounded, size: 16),
-                        label: Text('Digital ID', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      ),
-                      const SizedBox(width: 10),
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: textPrimary,
-                          side: BorderSide(color: border),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        onPressed: () => context.go('/compliance'),
-                        icon: const Icon(Icons.verified_user_outlined, size: 16, color: _kGreen),
-                        label: Text('Compliance', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // ── 2. EDITORIAL PARTICULARS CARD (RESPONSIVE & UNCOMPRESSED) ────────────────
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(isMobile ? 16 : 20),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 3,
-                            height: 16,
+                        Positioned(
+                          right: -2,
+                          bottom: -2,
+                          child: Container(
+                            width: 28,
+                            height: 28,
                             decoration: BoxDecoration(
-                              color: _kOrange,
-                              borderRadius: BorderRadius.circular(1.5),
+                              color: CubagColors.paper,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: CubagColors.cocoa, width: 2),
                             ),
+                            child: _uploadingPhoto
+                                ? const Padding(
+                                    padding: EdgeInsets.all(6),
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: CubagColors.action),
+                                  )
+                                : const Icon(Icons.photo_camera_outlined, size: 15, color: CubagColors.cocoa),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Your details',
-                            style: TextStyle(
-                              fontSize: 16.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.2,
-                              color: textPrimary,
-                            ),
-                          ),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: CubagSpace.lg),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _user['name']?.toString() ?? 'Member',
+                        style: CubagType.title.copyWith(color: CubagColors.onCocoa),
                       ),
-                      InkWell(
-                        onTap: _showEditProfileDialog,
-                        borderRadius: BorderRadius.circular(6),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: _kOrange.withAlpha(20),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: _kOrange.withAlpha(60)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.edit_outlined, size: 13, color: _kOrange),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Edit',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.accentOrangeText,
-                                ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _user['company']?.toString() ?? scaleLabel,
+                        style: CubagType.small.copyWith(color: CubagColors.onCocoaMuted),
+                      ),
+                      const SizedBox(height: CubagSpace.sm),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isGoodStanding ? CubagColors.validTint : CubagColors.dueTint,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isGoodStanding ? Icons.verified_rounded : Icons.schedule_rounded,
+                              size: 14,
+                              color: isGoodStanding ? CubagColors.valid : CubagColors.due,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              isGoodStanding ? 'In good standing' : 'Membership pending',
+                              style: CubagType.caption.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: isGoodStanding ? CubagColors.valid : CubagColors.due,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 3),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 11),
-                    child: Text(
-                      'Your membership and contact details.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: textMuted,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildParticularTile(
-                    context: context,
-                    label: 'Membership ID',
-                    value: _membershipId,
-                    icon: Icons.badge_outlined,
-                    textPrimary: textPrimary,
-                    textMuted: textMuted,
-                    tileBg: tileBg,
-                    border: border,
-                    isMono: true,
-                    trailingBadge: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                      decoration: BoxDecoration(
-                        color: _kOrange.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: _kOrange.withValues(alpha: 0.3)),
-                      ),
-                      child: Text(
-                        'Official ID',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.accentOrangeText,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  _buildParticularTile(
-                    context: context,
-                    label: 'Email Address',
-                    value: _user['email']?.toString() ?? '—',
-                    icon: Icons.email_outlined,
-                    textPrimary: textPrimary,
-                    textMuted: textMuted,
-                    tileBg: tileBg,
-                    border: border,
-                    onEdit: _showEditProfileDialog,
-                  ),
-                  const SizedBox(height: 10),
-                  _buildParticularTile(
-                    context: context,
-                    label: 'Phone Number',
-                    value: _user['phone']?.toString() ?? 'Not provided',
-                    icon: Icons.phone_outlined,
-                    textPrimary: textPrimary,
-                    textMuted: textMuted,
-                    tileBg: tileBg,
-                    border: border,
-                    onEdit: _showEditProfileDialog,
-                  ),
-                  const SizedBox(height: 10),
-                  _buildParticularTile(
-                    context: context,
-                    label: 'District(s)',
-                    value: _portFullName(portStr),
-                    icon: Icons.location_on_outlined,
-                    textPrimary: textPrimary,
-                    textMuted: textMuted,
-                    tileBg: tileBg,
-                    border: border,
-                    canCopy: false,
-                  ),
-                  const SizedBox(height: 10),
-                  _buildParticularTile(
-                    context: context,
-                    label: 'Compliance Score',
-                    value: '$complianceScore / 100',
-                    icon: Icons.speed_rounded,
-                    textPrimary: textPrimary,
-                    textMuted: textMuted,
-                    tileBg: tileBg,
-                    border: border,
-                    canCopy: false,
-                    trailingBadge: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                      decoration: BoxDecoration(
-                        color: (complianceScore >= 80 ? _kGreen : _kAmber).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: (complianceScore >= 80 ? _kGreen : _kAmber).withValues(alpha: 0.35),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            complianceScore >= 80 ? Icons.check_circle_rounded : Icons.info_outline_rounded,
-                            size: 11,
-                            color: complianceScore >= 80 ? _kGreen : _kAmber,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            complianceScore >= 80 ? 'EXCELLENT' : 'MONITORED',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: complianceScore >= 80 ? _kGreen : _kAmber,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-
-            // ── 3. TREND CHART ───────────────────────────────────────────
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(isMobile ? 16 : 20),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: border),
+          ),
+          const SizedBox(height: CubagSpace.md),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => _openDigitalIdDialog(tier, expiry, daysLeft, isGoodStanding, isPackagePending),
+                  icon: const Icon(Icons.qr_code_2_rounded, size: 18),
+                  label: const Text('Digital ID'),
+                ),
               ),
+              const SizedBox(width: CubagSpace.sm),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => context.go('/compliance'),
+                  icon: const Icon(Icons.verified_user_outlined, size: 18),
+                  label: const Text('Compliance'),
+                ),
+              ),
+            ],
+          ),
+
+          // ── Details ──
+          const SizedBox(height: CubagSpace.xxl),
+          Row(
+            children: [
+              Expanded(child: Text('Your details', style: CubagType.headline)),
+              TextButton.icon(
+                onPressed: _showEditProfileDialog,
+                icon: const Icon(Icons.edit_outlined, size: 16),
+                label: const Text('Edit'),
+              ),
+            ],
+          ),
+          const SizedBox(height: CubagSpace.xs),
+          _group([
+            _detailRow('Membership ID', _membershipId, copy: true, figure: true),
+            _detailRow('Email', _user['email']?.toString() ?? '—', copy: true),
+            _detailRow('Phone', _user['phone']?.toString() ?? 'Not provided', copy: _user['phone'] != null),
+            _detailRow('District', _portFullName(portStr)),
+          ]),
+
+          // ── Compliance ──
+          const SizedBox(height: CubagSpace.xxl),
+          Text('Compliance', style: CubagType.headline),
+          const SizedBox(height: CubagSpace.xs),
+          _group([
+            Padding(
+              padding: const EdgeInsets.all(CubagSpace.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '30-Day Compliance Trend',
-                    style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.bold, color: textPrimary),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '$complianceScore',
+                        style: CubagType.figure.copyWith(fontFamily: CubagType.serif, fontSize: 36, height: 1.1),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4, left: 4),
+                        child: Text('/ 100', style: CubagType.small),
+                      ),
+                      const Spacer(),
+                      StatusChip(
+                        scoreGood ? 'Excellent' : 'Being monitored',
+                        kind: scoreGood ? StatusKind.good : StatusKind.pending,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: CubagSpace.xxs),
+                  Text('Your compliance score over the last 30 days', style: CubagType.small),
+                  const SizedBox(height: CubagSpace.md),
                   TrendLineWidget(
                     points: (_user['rating_history'] as List?)
                             ?.map((h) => double.tryParse(h['compliance_score']?.toString() ?? '') ?? 100.0)
                             .toList() ??
                         [complianceScore.toDouble()],
-                    color: tier.color,
-                    height: 80,
+                    color: scoreGood ? CubagColors.valid : CubagColors.due,
+                    height: 72,
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ]),
+        ],
       ),
-    ),
-  ),
-);
+    );
+  }
+
+  /// White grouped list with hairlines between rows.
+  Widget _group(List<Widget> rows) {
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: CubagColors.paper,
+        borderRadius: BorderRadius.circular(CubagRadius.card),
+      ),
+      foregroundDecoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(CubagRadius.card),
+        border: Border.all(color: CubagColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0) const Divider(height: 1, indent: CubagSpace.md, color: CubagColors.line),
+            rows[i],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value, {bool copy = false, bool figure = false}) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(CubagSpace.md, 12, copy ? CubagSpace.xxs : CubagSpace.md, 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: CubagType.small),
+                const SizedBox(height: 2),
+                Text(value, style: figure ? CubagType.figure : CubagType.bodyStrong),
+              ],
+            ),
+          ),
+          if (copy)
+            IconButton(
+              tooltip: 'Copy $label',
+              icon: const Icon(Icons.copy_rounded, size: 18, color: CubagColors.muted),
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: value));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('$label copied')),
+                );
+              },
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _buildAvatarFallback() => CircleAvatar(
@@ -1001,141 +888,6 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       );
 
-  Widget _buildParticularTile({
-    required BuildContext context,
-    required String label,
-    required String value,
-    required IconData icon,
-    required Color textPrimary,
-    required Color textMuted,
-    required Color tileBg,
-    required Color border,
-    bool isMono = false,
-    bool canCopy = true,
-    Widget? trailingBadge,
-    VoidCallback? onEdit,
-  }) {
-    final hasValue = value != '—' && value != 'Not provided';
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: tileBg,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: border.withValues(alpha: 0.7), width: 1.0),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: _kOrange.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Center(
-                  child: Icon(icon, size: 12.5, color: _kOrange),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
-                    color: textMuted,
-                  ),
-                ),
-              ),
-              if (onEdit != null) ...[
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: onEdit,
-                    borderRadius: BorderRadius.circular(4),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.edit_outlined, size: 12, color: _kOrange),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Edit',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.accentOrangeText,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-              ],
-              if (trailingBadge != null)
-                trailingBadge
-              else if (canCopy && hasValue)
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () {
-                      Clipboard.setData(ClipboardData(text: value));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Copied $label: $value', style: TextStyle(fontWeight: FontWeight.w600)),
-                          duration: const Duration(seconds: 2),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(4),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.copy_rounded, size: 11.5, color: textMuted),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Copy',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 7),
-          SelectableText(
-            value,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: textPrimary,
-              letterSpacing: isMono ? 0.4 : -0.2,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── 4. DIGITAL IDENTITY CARD MODAL DIALOG ──────────────────────────────────
   Widget _buildDigitalIdCard(
     BuildContext dialogCtx,
     StandingTier tier,
