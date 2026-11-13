@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart' show Response, FormData, MultipartFile;
 import '../components/app_layout.dart';
 import '../components/custom_dropdown.dart';
+import '../components/cubag_ui.dart';
 import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../utils/app_logger.dart';
@@ -1529,20 +1530,9 @@ class _PaymentsPageState extends State<PaymentsPage>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
-                            Icons.verified_user_outlined,
-                            size: 14,
-                            color: Color(0xFF5F6B7E),
-                          ),
+                          const Icon(Icons.lock_outline_rounded, size: 14, color: CubagColors.muted),
                           const SizedBox(width: 6),
-                          Text(
-                            'Payments processed by WhitsunPay',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: CubagColors.muted,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                          Text('Secure payment by WhitsunPay', style: CubagType.caption),
                         ],
                       ),
                     ],
@@ -1561,9 +1551,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           width: 64,
                           height: 64,
                           decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [CubagColors.valid, Color(0xFF059669)],
-                            ),
+                            color: CubagColors.valid,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -1573,23 +1561,12 @@ class _PaymentsPageState extends State<PaymentsPage>
                           ),
                         ),
                         const SizedBox(height: 20),
-                        Text(
-                          'Payment Confirmed!',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: CubagColors.ink,
-                          ),
-                        ),
+                        Text('Payment received', style: CubagType.title, textAlign: TextAlign.center),
                         const SizedBox(height: 6),
-                        const Text(
-                          'Your transaction has been successfully processed.',
+                        Text(
+                          'Thank you. Your receipt is ready in Payment history.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: CubagColors.muted,
-                            fontSize: 15,
-                            height: 1.4,
-                          ),
+                          style: CubagType.body,
                         ),
                         if (_confirmedAmount.isNotEmpty) ...[
                           const SizedBox(height: 20),
@@ -1599,27 +1576,19 @@ class _PaymentsPageState extends State<PaymentsPage>
                             decoration: BoxDecoration(
                               color: CubagColors.validTint,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: const Color(0xFFbbf7d0),
-                              ),
+
                             ),
                             child: Column(
                               children: [
-                                Text(
-                                  'Amount paid',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: CubagColors.valid,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
+                                Text('Amount paid', style: CubagType.small.copyWith(color: CubagColors.valid)),
                                 const SizedBox(height: 4),
                                 Text(
                                   'GH₵ ${double.tryParse(_confirmedAmount)?.toStringAsFixed(2) ?? _confirmedAmount}',
-                                  style: TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF15803d),
+                                  style: CubagType.figure.copyWith(
+                                    fontFamily: CubagType.serif,
+                                    fontSize: 30,
+                                    height: 1.2,
+                                    color: CubagColors.valid,
                                   ),
                                 ),
                               ],
@@ -1660,12 +1629,12 @@ class _PaymentsPageState extends State<PaymentsPage>
                                     },
                                     child: Text(
                                       returnToApp
-                                          ? 'Return to Complete Your Application'
+                                          ? 'Continue your application'
                                           : (redirectUrl != null && (redirectUrl.contains('cti') || redirectUrl.contains('course'))
-                                              ? 'Return to CTI Courses'
+                                              ? 'Back to CTI courses'
                                               : (redirectUrl != null && redirectUrl.isNotEmpty
-                                                  ? 'Return to App'
-                                                  : 'View Payment History')),
+                                                  ? 'Continue'
+                                                  : 'View receipt')),
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
@@ -1823,15 +1792,8 @@ class _PaymentsPageState extends State<PaymentsPage>
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Payment category',
-            style: TextStyle(
-              fontSize: 13,
-              color: CubagColors.muted,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 8),
+          Text('What are you paying for?', style: CubagType.label),
+          const SizedBox(height: CubagSpace.xs),
           Builder(
             builder: (context) {
               final regTitle = 'Registration Fee';
@@ -2009,185 +1971,158 @@ class _PaymentsPageState extends State<PaymentsPage>
               );
             },
           ),
-          // ── 1. Renewal Coverage Scope Selector (Only for Annual Renewal) ──
-          if (_reason.toLowerCase().contains('renewal')) ...[
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                const Icon(Icons.alt_route_rounded, size: 15, color: _kOrange),
-                const SizedBox(width: 6),
-                Text(
-                  'What to renew',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: CubagColors.muted,
+          // ── 1. What to renew: one grouped list, hairline rows ──
+          // Once the year is paid there is nothing to choose.
+          if (_reason.toLowerCase().contains('renewal') && !_isRenewalFullyPaid) ...[
+            const SizedBox(height: CubagSpace.xl),
+            Text('What to renew', style: CubagType.label),
+            const SizedBox(height: CubagSpace.xs),
+            Container(
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: CubagColors.paper,
+                borderRadius: BorderRadius.circular(CubagRadius.card),
+              ),
+              foregroundDecoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(CubagRadius.card),
+                border: Border.all(color: CubagColors.line),
+              ),
+              child: Column(
+                children: [
+                  _buildRenewalScopeTile(
+                    scopeKey: 'combined',
+                    title: 'National and district',
+                    subtitle: 'Your full licence and district clearance',
+                    amount: _combinedRenewalTotal ?? (_renewalFeeAmount ?? 1383.0),
+                    isDark: isDark,
+                    isRecommended: true,
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            _buildRenewalScopeTile(
-              scopeKey: 'combined',
-              title: 'National and district',
-              subtitle: 'Your full licence and district clearance',
-              amount: _combinedRenewalTotal ?? (_renewalFeeAmount ?? 1383.0),
-              isDark: isDark,
-              isRecommended: true,
-            ),
-            const SizedBox(height: 8),
-            _buildRenewalScopeTile(
-              scopeKey: 'national',
-              title: 'National only',
-              subtitle: 'National dues, courses and legal audit',
-              amount: _nationalRenewalTotal ?? 1133.0,
-              isDark: isDark,
-            ),
-            const SizedBox(height: 8),
-            _buildRenewalScopeTile(
-              scopeKey: 'district',
-              title: 'District only',
-              subtitle: 'Clearance for your registered ports',
-              amount: _districtRenewalTotal ?? 250.0,
-              isDark: isDark,
+                  const Divider(height: 1, indent: 52, color: CubagColors.line),
+                  _buildRenewalScopeTile(
+                    scopeKey: 'national',
+                    title: 'National only',
+                    subtitle: 'National dues, courses and legal audit',
+                    amount: _nationalRenewalTotal ?? 1133.0,
+                    isDark: isDark,
+                  ),
+                  const Divider(height: 1, indent: 52, color: CubagColors.line),
+                  _buildRenewalScopeTile(
+                    scopeKey: 'district',
+                    title: 'District only',
+                    subtitle: 'Clearance for your registered ports',
+                    amount: _districtRenewalTotal ?? 250.0,
+                    isDark: isDark,
+                  ),
+                ],
+              ),
             ),
           ],
 
-          // ── 2. Unified Billing & Payment Mode Card ──
+          // ── 2. The bill: what is due now (or that it is settled) ──
           if (_reason.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: CubagSpace.xl),
             Container(
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
-                color: isDark ? CubagColors.ink : Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isDark ? Colors.white12 : CubagColors.line,
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(isDark ? 25 : 6),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+                color: _isRenewalFullyPaid ? CubagColors.validTint : CubagColors.sand,
+                borderRadius: BorderRadius.circular(CubagRadius.card),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Total Bill Due Hero Header
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Total bill due',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: CubagColors.muted,
-                              ),
-                            ),
-                            if (_isPartiallyPaid)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF059669).withAlpha(20),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  'Partially paid',
-                                  style: TextStyle(
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF059669),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            _cedis(_getCurrentBillTotal()),
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w900,
-                              color: isDark ? Colors.white : CubagColors.ink,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ),
-                        if (_renewalAmountPaid > 0 || _isPartiallyPaid) ...[
-                          const SizedBox(height: 10),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: (_getCurrentBillTotal() > 0)
-                                  ? (_renewalAmountPaid / (_renewalAmountPaid + _renewalBalanceDue)).clamp(0.0, 1.0)
-                                  : 0.0,
-                              minHeight: 6,
-                              backgroundColor: isDark ? Colors.white12 : CubagColors.line,
-                              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    padding: const EdgeInsets.fromLTRB(CubagSpace.lg, CubagSpace.lg, CubagSpace.lg, CubagSpace.md),
+                    child: _isRenewalFullyPaid
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Paid so far: ${_cedis(_renewalAmountPaid)}',
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF059669),
-                                ),
-                              ),
-                              Text(
-                                'Balance due: ${_cedis(_renewalBalanceDue)}',
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDark ? Colors.white70 : CubagColors.inkSoft,
+                              const Icon(Icons.check_circle_rounded, color: CubagColors.valid, size: 24),
+                              const SizedBox(width: CubagSpace.sm),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Paid in full for this year',
+                                        style: CubagType.headline.copyWith(color: CubagColors.valid)),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Nothing more is due on your renewal. Your receipts are in Payment history.',
+                                      style: CubagType.small.copyWith(color: CubagColors.inkSoft),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _isPartiallyPaid ? 'Balance to pay' : 'Amount due',
+                                      style: CubagType.small,
+                                    ),
+                                  ),
+                                  if (_isPartiallyPaid) const StatusChip('Part paid', kind: StatusKind.pending),
+                                ],
+                              ),
+                              const SizedBox(height: CubagSpace.xxs),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  _cedis(_getCurrentBillTotal()),
+                                  style: CubagType.figure.copyWith(
+                                    fontFamily: CubagType.serif,
+                                    fontSize: 36,
+                                    height: 44 / 36,
+                                    letterSpacing: -0.4,
+                                  ),
+                                ),
+                              ),
+                              if (_isPartiallyPaid && _renewalAmountPaid > 0) ...[
+                                const SizedBox(height: CubagSpace.sm),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(3),
+                                  child: LinearProgressIndicator(
+                                    value: (_renewalAmountPaid + _renewalBalanceDue) > 0
+                                        ? (_renewalAmountPaid / (_renewalAmountPaid + _renewalBalanceDue)).clamp(0.0, 1.0)
+                                        : 0.0,
+                                    minHeight: 6,
+                                    backgroundColor: CubagColors.line,
+                                    valueColor: const AlwaysStoppedAnimation<Color>(CubagColors.valid),
+                                  ),
+                                ),
+                                const SizedBox(height: CubagSpace.xs),
+                                Text(
+                                  '${_cedis(_renewalAmountPaid)} paid of ${_cedis(_renewalAmountPaid + _renewalBalanceDue)}',
+                                  style: CubagType.caption.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                                ),
+                              ],
+                            ],
                           ),
-                        ],
-                      ],
-                    ),
                   ),
 
                   // Payment Mode Selector (Full vs Installment)
-                  if (_allowInstallments &&
+                  if (!_isRenewalFullyPaid &&
+                      _allowInstallments &&
                       _installmentsAvailable &&
                       _getCurrentBillTotal() > 0) ...[
-                    Divider(height: 1, color: isDark ? Colors.white10 : CubagColors.sand),
+                    const Divider(height: 1, color: CubagColors.line),
                     Padding(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.fromLTRB(CubagSpace.lg, CubagSpace.md, CubagSpace.lg, CubagSpace.lg),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Payment option',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: CubagColors.muted,
-                            ),
-                          ),
+                          Text('How much to pay now', style: CubagType.label),
                           const SizedBox(height: 8),
                           Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: isDark ? CubagColors.ink : CubagColors.sand,
-                              borderRadius: BorderRadius.circular(10),
+                              color: CubagColors.line,
+                              borderRadius: BorderRadius.circular(CubagRadius.control),
                             ),
                             child: Row(
                               children: [
@@ -2202,7 +2137,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                     },
                                     child: AnimatedContainer(
                                       duration: const Duration(milliseconds: 180),
-                                      padding: const EdgeInsets.symmetric(vertical: 9),
+                                      padding: const EdgeInsets.symmetric(vertical: 10),
                                       decoration: BoxDecoration(
                                         color: !_isInstallmentMode
                                             ? (isDark ? const Color(0xFF281710) : Colors.white)
@@ -2220,11 +2155,9 @@ class _PaymentsPageState extends State<PaymentsPage>
                                       ),
                                       alignment: Alignment.center,
                                       child: Text(
-                                        'Full Payment',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: !_isInstallmentMode ? FontWeight.w800 : FontWeight.w600,
-                                          color: !_isInstallmentMode ? _kOrange : CubagColors.muted,
+                                        'Pay in full',
+                                        style: CubagType.label.copyWith(
+                                          color: !_isInstallmentMode ? CubagColors.ink : CubagColors.muted,
                                         ),
                                       ),
                                     ),
@@ -2246,7 +2179,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                     },
                                     child: AnimatedContainer(
                                       duration: const Duration(milliseconds: 180),
-                                      padding: const EdgeInsets.symmetric(vertical: 9),
+                                      padding: const EdgeInsets.symmetric(vertical: 10),
                                       decoration: BoxDecoration(
                                         color: _isInstallmentMode
                                             ? (isDark ? const Color(0xFF281710) : Colors.white)
@@ -2264,11 +2197,9 @@ class _PaymentsPageState extends State<PaymentsPage>
                                       ),
                                       alignment: Alignment.center,
                                       child: Text(
-                                        'Installment',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: _isInstallmentMode ? FontWeight.w800 : FontWeight.w600,
-                                          color: _isInstallmentMode ? _kOrange : CubagColors.muted,
+                                        'Pay part now',
+                                        style: CubagType.label.copyWith(
+                                          color: _isInstallmentMode ? CubagColors.ink : CubagColors.muted,
                                         ),
                                       ),
                                     ),
@@ -2412,7 +2343,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Itemized Fee Breakdown',
+                                  'What this covers',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
@@ -2747,7 +2678,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                           ),
                           icon: const Icon(Icons.lock_outline_rounded, size: 18),
                           label: Text(
-                            'Pay Annual Renewal Dues (Documents Required)',
+                            'Pay renewal dues (after your documents)',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14.5,
@@ -2777,7 +2708,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         ),
                         icon: const Icon(Icons.upload_file_rounded, size: 18),
                         label: Text(
-                          'Submit Renewal Documents (Step 1)',
+                          'Upload your renewal documents',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
@@ -2790,76 +2721,15 @@ class _PaymentsPageState extends State<PaymentsPage>
               }
 
               if (_isRenewalFullyPaid) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF064E3B).withAlpha(40) : CubagColors.validTint,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFF059669).withAlpha(100), width: 1.5),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF059669).withAlpha(25),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.verified_rounded, color: Color(0xFF059669), size: 24),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Annual renewal dues settled',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF059669),
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Your Annual Renewal Dues (National & District Clearance) have already been fully paid and confirmed for the current operational cycle. No further renewal payment or document submission is required at this time.',
-                                  style: TextStyle(
-                                    fontSize: 12.5,
-                                    color: isDark ? Colors.white70 : const Color(0xFF065F46),
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        onPressed: null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF059669),
-                          disabledBackgroundColor: const Color(0xFF059669).withAlpha(120),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 0,
-                        ),
-                        icon: Text(
-                          'Annual Renewal Already Settled',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
-                        ),
-                        label: const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
-                      ),
-                    ),
-                  ],
+                // The bill card above already says it is paid; offer the receipts.
+                return SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.go('/payment-history'),
+                    icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                    label: const Text('See receipts in Payment history'),
+                  ),
                 );
               }
 
@@ -4285,98 +4155,48 @@ class _PaymentsPageState extends State<PaymentsPage>
     bool isRecommended = false,
   }) {
     final isSelected = _renewalScope == scopeKey;
-    return InkWell(
-      onTap: () => _setRenewalScope(scopeKey),
-      borderRadius: BorderRadius.circular(12),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? CubagColors.actionTint
-              : CubagColors.paper,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? _kOrange
-                : CubagColors.lineStrong,
-            width: isSelected ? 1.8 : 1.0,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Semantics(
+      selected: isSelected,
+      button: true,
+      label: '$title, ${_cedis(amount)}${isRecommended ? ', recommended' : ''}',
+      excludeSemantics: true,
+      child: Material(
+        color: isSelected ? CubagColors.actionTint : CubagColors.paper,
+        child: InkWell(
+          onTap: () => _setRenewalScope(scopeKey),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(CubagSpace.md, 14, CubagSpace.md, 14),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
                   child: Icon(
                     isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                    color: isSelected ? _kOrange : const Color(0xFF5F6B7E),
-                    size: 20,
+                    color: isSelected ? CubagColors.action : CubagColors.lineStrong,
+                    size: 22,
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: [
-                          Text(
-                            title,
-                            style: TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                              color: isDark ? Colors.white : CubagColors.ink,
-                            ),
-                          ),
-                          if (isRecommended)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF059669).withAlpha(20),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'Recommended',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
-                                  color: const Color(0xFF059669),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: CubagColors.muted,
-                          height: 1.3,
-                        ),
-                      ),
+                      Text(title, style: CubagType.bodyStrong),
+                      const SizedBox(height: 2),
+                      Text(subtitle, style: CubagType.small),
+                      if (isRecommended) ...[
+                        const SizedBox(height: 6),
+                        const StatusChip('Recommended', kind: StatusKind.good),
+                      ],
                     ],
                   ),
                 ),
-                const SizedBox(width: 10),
-                Text(
-                  _cedis(amount),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: isSelected ? _kOrange : CubagColors.inkSoft,
-                  ),
-                ),
+                const SizedBox(width: CubagSpace.sm),
+                Text(_cedis(amount), style: CubagType.figure),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
