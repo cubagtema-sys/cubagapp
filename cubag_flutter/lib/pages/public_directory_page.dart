@@ -372,6 +372,14 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                       ],
                     ),
                   ),
+                  // Phones: just a back arrow (the full buttons overflowed).
+                  if (isMobile)
+                    IconButton(
+                      tooltip: 'Back',
+                      onPressed: () => context.canPop() ? context.pop() : context.go('/login'),
+                      icon: const Icon(Icons.arrow_back_rounded, color: _kBrown),
+                    )
+                  else
                   Row(
                     children: [
                       TextButton.icon(
@@ -382,7 +390,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                           color: _kBrown,
                         ),
                         label: Text(
-                          'Back to Portal',
+                          'Back',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: _kBrown,
@@ -404,7 +412,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                         ),
                         onPressed: () => context.go('/login'),
                         child: Text(
-                          'Member Portal',
+                          'Sign in',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
@@ -452,7 +460,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Official public directory',
+                              'Public directory',
                               style: TextStyle(
                                 color: AppColors.accentOrangeText,
                                 fontSize: 13,
@@ -464,7 +472,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Accredited Members in Ghana',
+                        'Accredited members in Ghana',
                         style: TextStyle(
                           fontSize: isMobile ? 28 : 40,
                           fontWeight: FontWeight.w900,
@@ -589,10 +597,14 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 8,
+                              runSpacing: 8,
                               children: [
                                 Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(
                                       Icons.tune_rounded,
@@ -601,7 +613,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      'Filter by Port of Operation',
+                                      'Filter by port',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 15,
@@ -620,7 +632,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    '${members.length} Accredited Members',
+                                    '${members.length} ${members.length == 1 ? 'member' : 'members'}',
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
@@ -637,7 +649,7 @@ class _PublicDirectoryPageState extends State<PublicDirectoryPage> {
                               children: _portsList.map((port) {
                                 final isSelected = _selectedPort == port;
                                 final label = port == 'all'
-                                    ? 'All Ports & Borders'
+                                    ? 'All ports'
                                     : port;
                                 return FilterChip(
                                   label: Text(label),

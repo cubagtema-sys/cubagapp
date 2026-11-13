@@ -65,14 +65,14 @@ def _query_license(conn, member_id):
                 is_expired = days_left < 0
                 tasks.append({
                     'id': 'sys_license_renewal',
-                    'title': f'🔴 License Expired ({abs(days_left)} days ago)' if is_expired else f'🟡 Annual License Renewal Window Open ({days_left} days left)',
-                    'description': f'Your license expired on {expiry_str}. Complete renewal immediately to maintain active standing.' if is_expired else f'Your annual license expires on {expiry_str}. The renewal window is now open.',
+                    'title': f'Licence expired {abs(days_left)} days ago' if is_expired else f'Renew your licence ({days_left} days left)',
+                    'description': f'Your licence expired on {expiry_str}. Renew now to become active again.' if is_expired else f'Your licence expires on {expiry_str}. You can renew now.',
                     'due_date': expiry_str or 'Immediate',
                     'priority': 'Urgent' if (is_expired or days_left <= 30) else 'High',
                     'category': 'License & Payments',
                     'done': False,
                     'action_url': '/compliance',
-                    'action_label': 'Renew License Now' if is_expired else 'Submit Renewal',
+                    'action_label': 'Renew now' if is_expired else 'Renew',
                     'is_system': True,
                     'system_type': 'renewal'
                 })

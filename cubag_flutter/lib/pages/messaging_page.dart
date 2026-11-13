@@ -383,7 +383,7 @@ class _MessagingPageState extends State<MessagingPage> {
                     controller: _searchCtrl,
                     onChanged: (v) => setState(() => _applySearch(v)),
                     decoration: InputDecoration(
-                      hintText: 'Search members or messages...',
+                      hintText: 'Search messages',
                       hintStyle: TextStyle(
                         color: hintCol,
                         fontSize: 14,
@@ -451,7 +451,7 @@ class _MessagingPageState extends State<MessagingPage> {
                       const SizedBox(height: 4),
                       Text(
                         _search.isEmpty
-                            ? 'Connect with members via the networking directory.'
+                            ? 'Start a conversation from the members directory.'
                             : 'Try searching by a different name or keyword.',
                         textAlign: TextAlign.center,
                         style: TextStyle(

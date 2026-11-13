@@ -824,7 +824,10 @@ class _DashboardPageState extends State<DashboardPage> {
     final due = DateTime.tryParse(task['due_date']?.toString() ?? '');
     final overdue = due != null && due.isBefore(DateTime.now());
     return TaskRow(
-      title: task['title']?.toString() ?? 'Task',
+      // Older servers prefix titles with status emoji (🔴 🟡); the row
+      // already shows status, so drop them.
+      title: (task['title']?.toString() ?? 'Task')
+          .replaceFirst(RegExp(r'^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\s]+', unicode: true), ''),
       due: due == null
           ? null
           : (overdue ? 'Overdue since ${formatLicenceDate(due)}' : 'Due ${formatLicenceDate(due)}'),

@@ -199,7 +199,7 @@ class _SurveysPageState extends State<SurveysPage> {
                     children: [
                       Text('Surveys', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: textPrimary)),
                       const SizedBox(height: 2),
-                      Text('Official trade ballots and industry consultations', style: TextStyle(fontSize: 13, color: textMuted)),
+                      Text('Votes and surveys from the association.', style: TextStyle(fontSize: 13, color: textMuted)),
                     ],
                   ),
                 ],
@@ -279,7 +279,7 @@ class _SurveysPageState extends State<SurveysPage> {
                   onChanged: _onSearchChanged,
                   style: TextStyle(fontSize: 14, color: textPrimary),
                   decoration: InputDecoration(
-                    hintText: 'Search consultations & ballots...',
+                    hintText: 'Search surveys',
                     hintStyle: TextStyle(fontSize: 13, color: textMuted),
                     prefixIcon: Icon(Icons.search_rounded, size: 16, color: textMuted),
                     isDense: true,

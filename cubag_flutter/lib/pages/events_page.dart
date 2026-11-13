@@ -199,7 +199,7 @@ class _EventsPageState extends State<EventsPage> {
               fontWeight: FontWeight.w600,
             ),
             decoration: InputDecoration(
-              hintText: 'Search events by title, description, location...',
+              hintText: 'Search events',
               hintStyle: TextStyle(
                 color: mutedColor,
                 fontSize: 14,

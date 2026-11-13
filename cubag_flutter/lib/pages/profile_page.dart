@@ -725,7 +725,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         Icon(isGoodStanding ? Icons.verified_rounded : Icons.pending_rounded, size: 14, color: isGoodStanding ? _kGreen : _kAmber),
                         const SizedBox(width: 6),
                         Text(
-                          isGoodStanding ? 'Active in Good Standing' : 'Status Pending',
+                          isGoodStanding ? 'Active, in good standing' : 'Pending',
                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isGoodStanding ? _kGreen : _kAmber),
                         ),
                       ],
@@ -795,7 +795,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'Profile Particulars',
+                            'Your details',
                             style: TextStyle(
                               fontSize: 16.5,
                               fontWeight: FontWeight.w800,
@@ -821,7 +821,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               const Icon(Icons.edit_outlined, size: 13, color: _kOrange),
                               const SizedBox(width: 4),
                               Text(
-                                'Update Info',
+                                'Edit',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -838,7 +838,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   Padding(
                     padding: const EdgeInsets.only(left: 11),
                     child: Text(
-                      'Official customs clearance credentials & verified member registry',
+                      'Your membership and contact details.',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w400,

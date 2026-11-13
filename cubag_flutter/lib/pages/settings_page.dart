@@ -344,7 +344,7 @@ class _SettingsPageState extends State<SettingsPage> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
                 child: Text(
-                  'Security & preferences',
+                  'Security',
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -420,7 +420,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   ),
                   subtitle: Text(
-                    'Authenticate via device hardware credentials',
+                    'Sign in with your face or fingerprint',
                     style: TextStyle(
                       fontSize: 12,
                       color: muted,
@@ -494,7 +494,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 subtitle: Text(
-                  'Regulatory notices and sitrep alerts',
+                  'Notices, payments and reminders',
                   style: TextStyle(
                     fontSize: 12,
                     color: muted,
@@ -519,7 +519,7 @@ class _SettingsPageState extends State<SettingsPage> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
                 child: Text(
-                  'Secretariat & liaison',
+                  'Contact',
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -530,7 +530,7 @@ class _SettingsPageState extends State<SettingsPage> {
               Divider(height: 1, color: border),
               _contactItem(
                 Icons.call_rounded,
-                'Secretariat Phone Desk',
+                'Call the Secretariat',
                 '+233 (0) 302 123 456',
                 () async {
                   final uri = Uri.parse('tel:+233302123456');
@@ -544,7 +544,7 @@ class _SettingsPageState extends State<SettingsPage> {
               Divider(height: 1, color: border),
               _contactItem(
                 Icons.mail_outline_rounded,
-                'Official Dispatch Email',
+                'Email',
                 'support@cubag.org.gh',
                 () async {
                   final uri = Uri.parse('mailto:support@cubag.org.gh');
@@ -558,8 +558,8 @@ class _SettingsPageState extends State<SettingsPage> {
               Divider(height: 1, color: border),
               _contactItem(
                 Icons.confirmation_number_outlined,
-                'Support & Inquiries Desk',
-                'Submit grievance or view past archives',
+                'Support',
+                'Ask a question or make a complaint',
                 () => context.go('/engagement'),
                 text,
                 muted,
@@ -584,7 +584,7 @@ class _SettingsPageState extends State<SettingsPage> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
                 child: Text(
-                  'Governance & statutes',
+                  'Legal',
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -680,7 +680,7 @@ class _SettingsPageState extends State<SettingsPage> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
                 child: Text(
-                  'Account decommissioning',
+                  'Account',
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -709,7 +709,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 title: const Text(
-                  'Delete Member Account',
+                  'Delete account',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
@@ -717,7 +717,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 subtitle: Text(
-                  'Permanently deactivate your CUBAG portal record',
+                  'Permanently close your CUBAG account',
                   style: TextStyle(
                     fontSize: 12,
                     color: muted,

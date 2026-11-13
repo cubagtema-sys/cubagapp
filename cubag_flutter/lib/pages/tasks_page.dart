@@ -194,9 +194,9 @@ class _TasksPageState extends State<TasksPage> {
       progressValue = 1.0;
     } else if (hasUnderReview) {
       if (_docsUploaded >= _docsTotal) {
-        statusBadgeText = '$_docsUploaded OF $_docsTotal UPLOADED • $_docsUnderReview UNDER REVIEW';
+        statusBadgeText = '$_docsUploaded of $_docsTotal uploaded · $_docsUnderReview in review';
       } else {
-        statusBadgeText = '$_docsApproved OF $_docsTotal VERIFIED • $_docsUnderReview UNDER REVIEW';
+        statusBadgeText = '$_docsApproved of $_docsTotal approved · $_docsUnderReview in review';
       }
       statusBadgeColor = _kAmber;
       progressValue = ((_docsApproved + (_docsUnderReview * 0.5)) / _docsTotal).clamp(0.08, 0.95);
@@ -205,7 +205,7 @@ class _TasksPageState extends State<TasksPage> {
       statusBadgeColor = _kRed;
       progressValue = (_docsApproved / _docsTotal).clamp(0.0, 1.0);
     } else {
-      statusBadgeText = '$_docsUploaded OF $_docsTotal FILED';
+      statusBadgeText = '$_docsUploaded of $_docsTotal uploaded';
       statusBadgeColor = _docsUploaded > 0 ? _kOrange : _kMuted;
       progressValue = (_docsUploaded / _docsTotal).clamp(0.0, 1.0);
     }
@@ -266,7 +266,7 @@ class _TasksPageState extends State<TasksPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Compliance & obligations',
+                                    'Your documents and tasks',
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w800,
@@ -275,7 +275,7 @@ class _TasksPageState extends State<TasksPage> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Filings & Statutory Tasks',
+                                    'Tasks',
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.w800,
@@ -542,10 +542,10 @@ class _TasksPageState extends State<TasksPage> {
           iconBg = _kOrange.withAlpha(20);
           iconColor = _kOrange;
           statusIcon = Icons.description_outlined;
-          statusPillText = 'Pending Upload';
+          statusPillText = 'Not uploaded';
           statusPillBg = _kSurfaceRaised;
           statusPillTextColor = _kMuted;
-          statusSubtext = 'Required filing for regulatory compliance.';
+          statusSubtext = 'Required for your licence.';
         }
 
         return Container(
@@ -782,7 +782,7 @@ class _TasksPageState extends State<TasksPage> {
                                       color: Colors.white,
                                     ),
                                     label: Text(
-                                      isRejected ? 'Replace Rejected Document' : 'Upload Document',
+                                      isRejected ? 'Upload again' : 'Upload',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 13,

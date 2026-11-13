@@ -830,7 +830,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Customs Training Institute (CTI) Syllabus',
+                          'Courses',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -840,7 +840,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Accredited tariff classification and brokerage certification cohorts',
+                          'Accredited training in tariff classification and brokerage.',
                           style: TextStyle(
                             fontSize: 12,
                             color: textMuted,
@@ -925,7 +925,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                   },
                   style: TextStyle(fontSize: 14, color: textPrimary),
                   decoration: InputDecoration(
-                    hintText: 'Search training courses, topics...',
+                    hintText: 'Search courses',
                     hintStyle: TextStyle(fontSize: 13, color: textMuted),
                     isDense: true,
                     border: InputBorder.none,
@@ -977,7 +977,7 @@ class _CtiCoursesPageState extends State<CtiCoursesPage> with SingleTickerProvid
                       ),
                     ),
                     child: Text(
-                      mode == 'All' ? 'All Formats' : mode,
+                      mode == 'All' ? 'All' : mode,
                       style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,

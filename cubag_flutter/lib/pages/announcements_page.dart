@@ -246,8 +246,8 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
   Widget _buildFilterChip(String category) {
     final isSelected = _filter == category;
     final displayName = category == 'All'
-        ? 'All Updates'
-        : category.toUpperCase();
+        ? 'All'
+        : category;
     return GestureDetector(
       onTap: () => setState(() => _filter = category),
       child: AnimatedContainer(
@@ -334,7 +334,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                         controller: _searchCtrl,
                         onChanged: (val) => setState(() {}),
                         decoration: InputDecoration(
-                          hintText: 'Search circulars by title or keyword...',
+                          hintText: 'Search announcements',
                           hintStyle: const TextStyle(
                             color: Color(0xFF5F6B7E),
                             fontSize: 18,
@@ -384,7 +384,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                         Text(
                           searchQuery.isNotEmpty
                               ? 'SEARCH RESULTS (${filtered.length})'
-                              : 'LATEST CIRCULARS (${filtered.length})',
+                              : 'Latest (${filtered.length})',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 17,
@@ -448,7 +448,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'No Circulars Found',
+                                'No announcements yet',
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w800,
@@ -459,7 +459,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                               Text(
                                 searchQuery.isNotEmpty
                                     ? 'Try refining your keywords or clearing the search query.'
-                                    : 'There are no active circulars posted in this category.',
+                                    : 'New notices from the Secretariat appear here.',
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   fontSize: 17,

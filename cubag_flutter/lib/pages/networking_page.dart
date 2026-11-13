@@ -283,7 +283,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                             border: Border.all(color: borderColor, width: 1.0),
                           ),
                           child: Text(
-                            mType.toUpperCase(),
+                            mType,
                             style: const TextStyle(
                               fontSize: 10.5,
                               color: _kBrown,
@@ -545,7 +545,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                       border: Border.all(color: color.withAlpha(60)),
                     ),
                     child: Text(
-                      (mType.isNotEmpty ? mType : 'MEMBER').toUpperCase(),
+                      (mType.isNotEmpty ? mType : 'Member'),
                       style: TextStyle(
                         fontSize: 11,
                         color: color,
@@ -801,7 +801,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'National Register of Accredited Members',
+                              'Members directory',
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 16,
@@ -833,7 +833,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                     ),
                     decoration: InputDecoration(
                       hintText:
-                          'Search members by name, company, or operating port...',
+                          'Search name, company or port',
                       hintStyle: TextStyle(
                         color: _kMuted.withValues(alpha: 0.7),
                         fontSize: 13.5,
@@ -874,7 +874,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                   physics: const BouncingScrollPhysics(),
                   child: Row(
                     children: [
-                      _buildFilterChip('All', 'All Members', isDark),
+                      _buildFilterChip('All', 'All', isDark),
                       _buildFilterChip('Corporate', 'Corporate', isDark),
                     ],
                   ),
@@ -885,7 +885,7 @@ class _NetworkingPageState extends State<NetworkingPage> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Text(
-                      'SHOWING ${filtered.length} ACTIVE PRACTITIONERS',
+                      '${filtered.length} active ${filtered.length == 1 ? 'member' : 'members'}',
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 12,

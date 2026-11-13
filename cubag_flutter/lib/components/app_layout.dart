@@ -1653,18 +1653,27 @@ class _AppLayoutState extends State<AppLayout> {
 
   /// Members on tablets / wide windows: the bottom bar's four destinations
   /// as a navigation rail (labels beside icons on very wide screens).
+  /// Which member tab owns a route. Pages opened from the Menu (membership,
+  /// history, profile, settings, courses…) highlight Menu, not Home.
+  static int _memberTabFor(String route) {
+    if (route == '/dashboard' || route == '/') return 0;
+    if (route.startsWith('/networking') || route.startsWith('/members-directory') || route.startsWith('/messaging')) {
+      return 1;
+    }
+    if (route.startsWith('/compliance') ||
+        route.startsWith('/payments') ||
+        route.startsWith('/license-renewal') ||
+        route.startsWith('/application-documents')) {
+      return 2;
+    }
+    return 3;
+  }
+
   List<Widget> _buildMemberRail(BuildContext context, String currentRoute, double width) {
     final authService = Provider.of<AuthService>(context, listen: false);
     final status = authService.membershipStatus.toLowerCase().trim();
     if (status != 'active' && status != 'approved') return const [];
-    var index = 0;
-    if (currentRoute.startsWith('/networking')) {
-      index = 1;
-    } else if (currentRoute.startsWith('/compliance') || currentRoute.startsWith('/payments')) {
-      index = 2;
-    } else if (currentRoute == '/menu') {
-      index = 3;
-    }
+    final index = _memberTabFor(currentRoute);
     const routes = ['/dashboard', '/networking', '/compliance', '/menu'];
     final extended = width >= 1200;
     return [
@@ -1733,14 +1742,7 @@ class _AppLayoutState extends State<AppLayout> {
         return const SizedBox.shrink();
       }
 
-      if (currentRoute.startsWith('/networking')) {
-        currentIndex = 1;
-      } else if (currentRoute.startsWith('/compliance') ||
-          currentRoute.startsWith('/payments')) {
-        currentIndex = 2;
-      } else if (currentRoute == '/menu') {
-        currentIndex = 3;
-      }
+      currentIndex = _memberTabFor(currentRoute);
     }
 
     void go(int index) {
