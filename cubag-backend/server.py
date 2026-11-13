@@ -592,6 +592,14 @@ def ping():
 def health():
     return {'status': 'CUBAG API is running'}, 200
 
+# Public CTI Courses aliases for WordPress / external web integration
+@app.route('/courses', methods=['GET'])
+@app.route('/api/courses', methods=['GET'])
+@app.route('/api/v1/courses', methods=['GET'])
+def public_courses_root_alias():
+    from routes.events_surveys import get_public_courses
+    return get_public_courses()
+
 @app.route('/api/vessels', methods=['GET'])
 @app.route('/api/v1/vessels', methods=['GET'])
 def get_vessels():
