@@ -32,6 +32,32 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 # ─── Shared Email Sender (Resend + SMTP Fallback) ───────────────────────────
+
+def renewal_cycle_start(comp_app, license_expiry):
+    """Start of the renewal cycle whose payments count towards the current bill.
+
+    With a renewal application: when it was opened. Without one: a year before
+    the licence expiry (the cycle the member last paid for), else a year ago.
+    """
+    from datetime import datetime, date, timedelta
+    opened = (comp_app or {}).get('created_at') if comp_app else None
+    if isinstance(opened, datetime):
+        return opened
+    if isinstance(opened, date):
+        return datetime(opened.year, opened.month, opened.day)
+    exp = license_expiry
+    if isinstance(exp, str):
+        try:
+            exp = datetime.strptime(exp[:10], '%Y-%m-%d').date()
+        except ValueError:
+            exp = None
+    if isinstance(exp, datetime):
+        exp = exp.date()
+    if isinstance(exp, date):
+        start = exp - timedelta(days=365)
+        return datetime(start.year, start.month, start.day)
+    return datetime.now() - timedelta(days=365)
+
 def _send_email(to_email: str, subject: str, body_text: str, body_html: str = None):
     """Send an email using Resend API or fallback to standard SMTP. Returns True on success."""
     sender_email = os.getenv('SMTP_USER', 'eaap2026@eventslabs.org')
@@ -1166,7 +1192,7 @@ def get_me():
 
                 # Check if there is a custom profile-specific bill issued by Admin in Compliance Centre or saved on member profile
                 cursor.execute("""
-                    SELECT id, type, status, payment_amount, payment_deadline, fee_breakdown, bill_title, admin_note
+                    SELECT id, type, status, payment_amount, payment_deadline, fee_breakdown, bill_title, admin_note, created_at
                     FROM compliance_applications
                     WHERE member_id = %s AND type = 'renewal'
                     ORDER BY (fee_breakdown IS NOT NULL AND fee_breakdown != '[]' AND fee_breakdown != 'null') DESC, updated_at DESC LIMIT 1
@@ -1174,7 +1200,7 @@ def get_me():
                 latest_comp_app = cursor.fetchone()
                 if not latest_comp_app:
                     cursor.execute("""
-                        SELECT id, type, status, payment_amount, payment_deadline, fee_breakdown, bill_title, admin_note
+                        SELECT id, type, status, payment_amount, payment_deadline, fee_breakdown, bill_title, admin_note, created_at
                         FROM compliance_applications
                         WHERE member_id = %s
                         ORDER BY updated_at DESC LIMIT 1
@@ -1267,13 +1293,21 @@ def get_me():
 
                 # Calculate installment financials and retrieve any linked payments
                 app_target_id = latest_comp_app['id'] if latest_comp_app else 0
+                # Only this renewal cycle counts towards "paid so far". Unlinked
+                # renewal payments used to be summed across every year, so past
+                # renewals made a new bill look fully paid (balance GH₵ 0).
+                cycle_start = renewal_cycle_start(latest_comp_app, result.get('license_expiry_date'))
                 cursor.execute("""
                     SELECT id, amount, status, payment_method, receipt_url, description, is_installment, installment_number, created_at, paid_at
                     FROM payments
-                    WHERE (application_id = %s OR (member_id = %s AND (LOWER(description) LIKE '%%renewal%%' OR LOWER(description) LIKE '%%annual dues%%')))
+                    WHERE (application_id = %s
+                           OR (member_id = %s
+                               AND application_id IS NULL
+                               AND created_at >= %s
+                               AND (LOWER(description) LIKE '%%renewal%%' OR LOWER(description) LIKE '%%annual dues%%')))
                       AND LOWER(status) IN ('paid', 'completed', 'success', 'successful', 'pending', 'submitted', 'processing')
                     ORDER BY created_at ASC
-                """, (app_target_id, member_id))
+                """, (app_target_id, member_id, cycle_start))
                 renewal_installments = [dict(r) for r in cursor.fetchall()]
                 for inst in renewal_installments:
                     if inst.get('created_at'):

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../components/cubag_ui.dart';
 import 'package:go_router/go_router.dart';
 import '../components/app_layout.dart';
 import '../components/app_logo.dart';
@@ -71,7 +72,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
         today.isBefore(renewalOpenDate);
 
     return AppLayout(
-      title: 'License & Receipts',
+      title: 'Licence & receipts',
       child: RefreshIndicator(
         onRefresh: _fetch,
         color: primary,
@@ -122,7 +123,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                 bottom: 16.0,
                               ),
                               child: Text(
-                                'Membership History',
+                                'Membership history',
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -172,256 +173,106 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
   // ── License Status Timeline ──
   Widget _buildStatusTimeline(Color primary, Map<String, dynamic> user) {
     final status = user['status']?.toString() ?? 'pending';
+    final paid = status != 'pending';
+    final verify = status == 'pending'
+        ? _StepState.pending
+        : status == 'suspended'
+            ? _StepState.error
+            : _StepState.done;
     final steps = [
       _TimelineStep('Application', 'Submitted', _StepState.done),
-      _TimelineStep(
-        'Payment',
-        'Dues Received',
-        status == 'pending' ? _StepState.active : _StepState.done,
-      ),
+      _TimelineStep('Payment', paid ? 'Paid' : 'Waiting for payment',
+          paid ? _StepState.done : _StepState.active),
       _TimelineStep(
         'Verification',
-        'Under Review',
-        status == 'pending'
-            ? _StepState.pending
-            : status == 'suspended'
-            ? _StepState.error
-            : _StepState.done,
+        switch (verify) {
+          _StepState.done => 'Approved',
+          _StepState.error => 'Suspended',
+          _ => 'Not started',
+        },
+        verify,
       ),
-      _TimelineStep(
-        'License',
-        'Issued',
-        status == 'active' ? _StepState.done : _StepState.pending,
-      ),
+      _TimelineStep('Licence', status == 'active' ? 'Issued' : 'Not yet issued',
+          status == 'active' ? _StepState.done : _StepState.pending),
     ];
+    final (chipLabel, chipKind) = switch (status) {
+      'active' => ('Active', StatusKind.good),
+      'suspended' => ('Suspended', StatusKind.bad),
+      _ => ('In progress', StatusKind.pending),
+    };
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(CubagSpace.lg),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: Theme.of(context).brightness == Brightness.dark
-              ? [CubagColors.ink, CubagColors.ink]
-              : [primary, primary.withValues(alpha: 0.85)],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFF4D2D20)
-              : Colors.white.withValues(alpha: 0.15),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: CubagColors.paper,
+        borderRadius: BorderRadius.circular(CubagRadius.card),
+        border: Border.all(color: CubagColors.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? primary.withValues(alpha: 0.15)
-                      : Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.timeline_rounded,
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? primary
-                      : Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Renewal Progress',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Track your membership renewal status',
-                      style: TextStyle(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? const Color(0xFF5F6B7E)
-                            : Colors.white.withValues(alpha: 0.75),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: status == 'active'
-                      ? CubagColors.valid.withValues(alpha: 0.2)
-                      : status == 'suspended'
-                      ? CubagColors.lapsed.withValues(alpha: 0.2)
-                      : Colors.amber.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: status == 'active'
-                        ? CubagColors.valid.withValues(alpha: 0.4)
-                        : status == 'suspended'
-                        ? CubagColors.lapsed.withValues(alpha: 0.4)
-                        : Colors.amber.withValues(alpha: 0.4),
-                  ),
-                ),
-                child: Text(
-                  status.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: status == 'active'
-                        ? CubagColors.valid
-                        : status == 'suspended'
-                        ? CubagColors.lapsed
-                        : Colors.amber,
-                  ),
-                ),
-              ),
+              const Expanded(child: Text('Renewal progress', style: CubagType.title)),
+              StatusChip(chipLabel, kind: chipKind),
             ],
           ),
-          const SizedBox(height: 28),
-          // Timeline row
+          const SizedBox(height: CubagSpace.lg),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: List.generate(steps.length, (i) {
-              final step = steps[i];
-              final isLast = i == steps.length - 1;
-              final Color nodeColor = _stepColor(step.state, primary);
-
-              return Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: nodeColor,
-                              shape: BoxShape.circle,
-                              border: step.state == _StepState.active
-                                  ? Border.all(
-                                      color:
-                                          Theme.of(context).brightness ==
-                                              Brightness.dark
-                                          ? primary
-                                          : Colors.white,
-                                      width: 2,
-                                    )
-                                  : null,
-                              boxShadow: step.state == _StepState.active
-                                  ? [
-                                      BoxShadow(
-                                        color: primary.withValues(alpha: 0.4),
-                                        blurRadius: 8,
-                                        spreadRadius: 2,
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Icon(
-                              step.state == _StepState.done
-                                  ? Icons.check_rounded
-                                  : step.state == _StepState.error
-                                  ? Icons.close_rounded
-                                  : step.state == _StepState.active
-                                  ? Icons.autorenew_rounded
-                                  : Icons.circle_outlined,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            step.title,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            step.subtitle,
-                            style: TextStyle(
-                              color:
-                                  Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? const Color(0xFF5F6B7E)
-                                  : Colors.white.withValues(alpha: 0.65),
-                              fontSize: 10,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (!isLast)
-                      Container(
-                        width: 24,
-                        height: 2.5,
-                        margin: const EdgeInsets.only(bottom: 40),
-                        decoration: BoxDecoration(
-                          color: step.state == _StepState.done
-                              ? CubagColors.valid
-                              : Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                  ],
-                ),
-              );
-            }),
+            children: [
+              for (var i = 0; i < steps.length; i++)
+                Expanded(child: _timelineNode(steps[i], i, i == steps.length - 1)),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Color _stepColor(_StepState state, Color primary) {
-    switch (state) {
-      case _StepState.done:
-        return CubagColors.valid;
-      case _StepState.active:
-        return primary;
-      case _StepState.error:
-        return CubagColors.lapsed;
-      case _StepState.pending:
-        return Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF4D2D20)
-            : Colors.white.withValues(alpha: 0.25);
-    }
+  Widget _timelineNode(_TimelineStep step, int i, bool last) {
+    final (bg, fg) = switch (step.state) {
+      _StepState.done => (CubagColors.valid, Colors.white),
+      _StepState.active => (CubagColors.action, Colors.white),
+      _StepState.error => (CubagColors.lapsed, Colors.white),
+      _StepState.pending => (CubagColors.sand, CubagColors.muted),
+    };
+    return Semantics(
+      label: '${step.title}: ${step.subtitle}',
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: i == 0
+                    ? const SizedBox()
+                    : Container(height: 2, color: step.state == _StepState.pending ? CubagColors.line : CubagColors.valid),
+              ),
+              Container(
+                width: 30,
+                height: 30,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+                child: switch (step.state) {
+                  _StepState.done => Icon(Icons.check_rounded, size: 18, color: fg),
+                  _StepState.error => Icon(Icons.close_rounded, size: 18, color: fg),
+                  _ => Text('${i + 1}', style: CubagType.label.copyWith(color: fg)),
+                },
+              ),
+              Expanded(
+                child: last ? const SizedBox() : Container(height: 2, color: CubagColors.line),
+              ),
+            ],
+          ),
+          const SizedBox(height: CubagSpace.sm),
+          Text(step.title, style: CubagType.label, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 2),
+          Text(step.subtitle, style: CubagType.caption, textAlign: TextAlign.center, maxLines: 2),
+        ],
+      ),
+    );
   }
+
 
   Widget _buildActiveLicenseBanner(DateTime expiry, DateTime renewalOpens) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -459,7 +310,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'License Active — No Payment Required',
+                  'Licence active: nothing to pay',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
@@ -748,7 +599,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Membership License',
+                  'Membership licence',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -769,7 +620,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  statusLabel.toUpperCase(),
+                  statusLabel,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -783,7 +634,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
           ...([
             {
               'icon': Icons.verified_user_outlined,
-              'label': 'License Number',
+              'label': 'Licence number',
               'val':
                   rec['license_number'] ??
                   (approved ? 'Active Standing' : 'Pending Approval'),
@@ -865,7 +716,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                     onPressed: () => _showCertificate(rec, yr),
                     icon: const Icon(Icons.visibility_rounded, size: 16),
                     label: Text(
-                      'View License',
+                      'View licence',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
@@ -901,7 +752,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                         context,
                         url: url,
                         title: 'Certificate of Membership',
-                        subtitle: 'Annual License Certificate',
+                        subtitle: 'Annual licence certificate',
                       );
                     },
                     icon: const Icon(
@@ -1246,7 +1097,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    'License Number:',
+                                    'Licence number:',
                                     style: TextStyle(
                                       fontSize: isMobile ? 9 : 10,
                                       color: CubagColors.muted,

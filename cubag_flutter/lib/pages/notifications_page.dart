@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../components/cubag_ui.dart';
 import 'package:provider/provider.dart';
 import '../components/app_layout.dart';
 import '../services/api_service.dart';
@@ -743,124 +744,26 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header
+                    // Header: title, unread count and the one bulk action.
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFFF7A33), _kOrange],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: _kOrange.withAlpha(isDark ? 60 : 45),
-                                blurRadius: 14,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.bolt_rounded,
-                            color: Colors.white,
-                            size: 26,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Activity Feed',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w800,
-                                  color: isDark
-                                      ? Colors.white
-                                      : CubagColors.ink,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Latest system alerts and personal notifications.',
-                                style: TextStyle(
-                                  color: isDark
-                                      ? Colors.white70
-                                      : CubagColors.muted,
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
+                          child: PageIntro(
+                            'Notifications',
+                            subtitle: unread > 0
+                                ? 'You have $unread unread notification${unread == 1 ? '' : 's'}.'
+                                : 'You are up to date.',
                           ),
                         ),
+                        if (unread > 0)
+                          TextButton(
+                            onPressed: _markAllRead,
+                            child: const Text('Mark all as read'),
+                          ),
                       ],
                     ),
-                    const SizedBox(height: 18),
-
-                    // Unread summary banner
-                    if (unread > 0)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _kOrange.withAlpha(isDark ? 30 : 16),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: _kOrange.withAlpha(isDark ? 90 : 60),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.mark_email_unread_rounded,
-                              color: _kOrange,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                'You have $unread unread notification${unread == 1 ? '' : 's'}',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDark
-                                      ? Colors.white
-                                      : const Color(0xFF7A2E00),
-                                ),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: _markAllRead,
-                              style: TextButton.styleFrom(
-                                foregroundColor: _kOrange,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                ),
-                                minimumSize: Size.zero,
-                                tapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                'Mark all',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    const SizedBox(height: CubagSpace.lg),
 
                     // Search input
                     Container(
@@ -880,7 +783,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         onChanged: (val) => setState(() {}),
                         decoration: InputDecoration(
                           hintText:
-                              'Search notifications by title or keyword...',
+                              'Search notifications',
                           hintStyle: const TextStyle(
                             color: Color(0xFF5F6B7E),
                             fontSize: 16,
@@ -917,16 +820,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       physics: const BouncingScrollPhysics(),
                       child: Row(
                         children: [
-                          _buildFilterChip('all', 'All Notifications'),
+                          _buildFilterChip('all', 'All'),
                           _buildFilterChip(
                             'unread',
-                            unread > 0 ? 'Unread ($unread)' : 'Unread Only',
+                            unread > 0 ? 'Unread ($unread)' : 'Unread',
                           ),
-                          _buildFilterChip('payment', 'Payment'),
-                          _buildFilterChip('meeting', 'Meeting'),
+                          _buildFilterChip('payment', 'Payments'),
+                          _buildFilterChip('meeting', 'Meetings'),
                           _buildFilterChip('compliance', 'Compliance'),
                           _buildFilterChip('system', 'System'),
-                          _buildFilterChip('announcement', 'Announcement'),
+                          _buildFilterChip('announcement', 'Announcements'),
                         ],
                       ),
                     ),

@@ -82,6 +82,11 @@ class _PaymentsPageState extends State<PaymentsPage>
   double? _districtRenewalTotal;
   double? _combinedRenewalTotal;
 
+  String _cedis(double v) {
+    final p = v.toStringAsFixed(2).split('.');
+    return 'GH₵ ${p[0].replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',')}.${p[1]}';
+  }
+
   void _setRenewalScope(String scope) {
     setState(() {
       _renewalScope = scope;
@@ -2149,7 +2154,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Paid: GH₵ ${_renewalAmountPaid.toStringAsFixed(2)}',
+                                'Paid so far: ${_cedis(_renewalAmountPaid)}',
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w600,
@@ -2157,7 +2162,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                 ),
                               ),
                               Text(
-                                'Balance Due: GH₵ ${_renewalBalanceDue.toStringAsFixed(2)}',
+                                'Balance due: ${_cedis(_renewalBalanceDue)}',
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w700,
