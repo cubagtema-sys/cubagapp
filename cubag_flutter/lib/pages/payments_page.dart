@@ -1219,6 +1219,8 @@ class _PaymentsPageState extends State<PaymentsPage>
   }
 
   Future<void> _handlePaymentSuccess() async {
+    // A firm tap confirms the payment went through.
+    HapticFeedback.mediumImpact();
     await ApiService.deleteCacheKeysMatching('auth/me');
     await ApiService.deleteCacheKeysMatching('tasks');
     await ApiService.deleteCacheKeysMatching('payments');

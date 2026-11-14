@@ -343,7 +343,7 @@ final GoRouter appRouter = GoRouter(
     // ── Member pages ─────────────────────────────────────────────────────────
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
-          UserShell(child: navigationShell),
+          UserShell(index: navigationShell.currentIndex, child: navigationShell),
       branches: [
         StatefulShellBranch(
           routes: [

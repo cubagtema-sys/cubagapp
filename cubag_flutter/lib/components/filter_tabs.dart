@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../design/cubag_design.dart';
 
@@ -31,7 +32,10 @@ class FilterTabs extends StatelessWidget {
                 backgroundColor: CubagColors.paper,
                 side: BorderSide(color: selected == t.$1 ? CubagColors.cocoa : CubagColors.line),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                onSelected: (_) => onSelected(t.$1),
+                onSelected: (_) {
+                  HapticFeedback.selectionClick();
+                  onSelected(t.$1);
+                },
               ),
             ),
         ],
