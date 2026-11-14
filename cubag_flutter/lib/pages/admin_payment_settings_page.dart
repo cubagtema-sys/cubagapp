@@ -147,7 +147,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
     final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
     return AppLayout(
-      title: 'Payment & Settlement Settings',
+      title: 'Bank accounts',
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -155,7 +155,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
           children: [
             // ── HEADER ──────────────────────────────────────────────────────
             AdminHeader(
-              title: 'Settlement Accounts & Banking Details',
+              title: 'Where members pay',
               subtitle:
                   'Configure official CUBAG recipient bank accounts, branch locations, and settlement instructions for wire transfers and member dues.',
               actions: [
@@ -163,7 +163,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                   onPressed: _addBank,
                   icon: const Icon(Icons.account_balance_rounded, size: 16),
                   label: Text(
-                    'Add Bank Account',
+                    'Add bank account',
                     style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -186,7 +186,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
               // ── OFFICIAL BANK ACCOUNTS SECTION ─────────────────────────
               _buildSectionHeader(
                 icon: Icons.account_balance_rounded,
-                title: 'Official Association Bank Accounts',
+                title: 'CUBAG bank accounts',
                 subtitle: 'Direct wire transfer and branch deposit receiving channels for invoices & member dues',
                 badgeText: '${_banks.length} Accounts',
                 badgeColor: _kOrange,
@@ -252,7 +252,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Enforce Security & Live Publication',
+                            'Publish changes',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
@@ -260,7 +260,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                             ),
                           ),
                           Text(
-                            'Changes reflect immediately across member payment checkout screens and invoice PDFs.',
+                            'Members see these accounts on the payment screens and on invoices as soon as you publish.',
                             style: TextStyle(fontSize: 16, color: textMuted),
                           ),
                         ],
@@ -277,7 +277,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                             )
                           : const Icon(Icons.save_rounded, size: 18),
                       label: Text(
-                        _loading ? 'Saving Settings...' : 'Save & Publish Settings',
+                        _loading ? 'Publishing…' : 'Publish',
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17.5),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -483,7 +483,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
                 ],
                 const Spacer(),
                 IconButton(
-                  tooltip: 'Remove Bank Account',
+                  tooltip: 'Remove bank account',
                   icon: const Icon(Icons.delete_outline_rounded, color: _kRed, size: 18),
                   onPressed: onDelete,
                 ),

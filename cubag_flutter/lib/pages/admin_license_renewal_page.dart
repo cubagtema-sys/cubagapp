@@ -305,8 +305,8 @@ class _State extends State<AdminLicenseRenewalPage> {
               ),
               child: Row(
                 children: [
-                  _tabBtn('pending', 'Pending Approvals'),
-                  _tabBtn('active', 'Active Licenses'),
+                  _tabBtn('pending', 'Waiting for approval'),
+                  _tabBtn('active', 'Active licences'),
                 ],
               ),
             ),
@@ -371,7 +371,7 @@ class _State extends State<AdminLicenseRenewalPage> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: _tab == id ? _kOrange : Colors.transparent,
+          color: _tab == id ? CubagColors.cocoa : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         alignment: Alignment.center,
@@ -488,7 +488,7 @@ class _State extends State<AdminLicenseRenewalPage> {
                           side: const BorderSide(color: _kOrange),
                         ),
                         child: const Text(
-                          'Verify Pay',
+                          'Check payment',
                           style: TextStyle(fontSize: 16),
                         ),
                       ),

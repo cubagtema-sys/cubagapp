@@ -625,11 +625,11 @@ class _State extends State<AdminSurveysPage>
               ),
               child: Row(
                 children: [
-                  _buildTabPill('active', 'Active (${_totalActive > 0 ? _totalActive : _activeSurveys.length})', Icons.play_circle_outline_rounded, _kGreen, textColor, subTextColor),
+                  _buildTabPill('active', 'Open (${_totalActive > 0 ? _totalActive : _activeSurveys.length})', Icons.play_circle_outline_rounded, CubagColors.cocoa, textColor, subTextColor),
                   const SizedBox(width: 6),
-                  _buildTabPill('history', 'History (${_totalHistory > 0 ? _totalHistory : _historySurveys.length})', Icons.archive_outlined, _kIndigo, textColor, subTextColor),
+                  _buildTabPill('history', 'History (${_totalHistory > 0 ? _totalHistory : _historySurveys.length})', Icons.archive_outlined, CubagColors.cocoa, textColor, subTextColor),
                   const SizedBox(width: 6),
-                  _buildTabPill('create', 'New poll', Icons.add_chart_rounded, _kOrange, textColor, subTextColor),
+                  _buildTabPill('create', 'New poll', Icons.add_chart_rounded, CubagColors.cocoa, textColor, subTextColor),
                 ],
               ),
             ),

@@ -1118,7 +1118,7 @@ class _State extends State<AdminIntelligencePage> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3b82f6),
+                    backgroundColor: CubagColors.action,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 18,
