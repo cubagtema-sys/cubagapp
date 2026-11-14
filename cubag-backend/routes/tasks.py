@@ -18,6 +18,16 @@ def allowed_file(filename):
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
+def _renewal_paid(conn, member_id, expiry):
+    """Renewal already paid for the current licence: no reminder to pay again."""
+    try:
+        from routes.auth import renewal_paid_this_cycle
+        with conn.cursor() as cursor:
+            return renewal_paid_this_cycle(cursor, member_id, expiry)
+    except Exception:
+        return False
+
+
 def _query_license(conn, member_id):
     """Fetch member license status for priority task synthesis."""
     tasks = []
@@ -61,7 +71,7 @@ def _query_license(conn, member_id):
                     'is_system': True,
                     'system_type': 'payment'
                 })
-            elif days_left is not None and days_left <= 90:
+            elif days_left is not None and days_left <= 90 and not _renewal_paid(conn, member_id, raw_expiry):
                 is_expired = days_left < 0
                 tasks.append({
                     'id': 'sys_license_renewal',

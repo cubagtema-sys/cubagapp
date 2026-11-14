@@ -33,6 +33,34 @@ from email.mime.multipart import MIMEMultipart
 
 # ─── Shared Email Sender (Resend + SMTP Fallback) ───────────────────────────
 
+def renewal_paid_this_cycle(cursor, member_id, license_expiry):
+    """True when a renewal payment covers the licence's current renewal.
+
+    Renewals are accepted from 30 days before expiry, so only a renewal
+    payment made on or after (expiry - 31 days) counts. Once CUBAG issues the
+    new licence the expiry moves a year on and older payments stop counting.
+    Without a known expiry, any renewal payment counts (previous behaviour).
+    """
+    from datetime import datetime, date, timedelta
+    exp = license_expiry
+    if isinstance(exp, str):
+        try:
+            exp = datetime.strptime(exp[:10], '%Y-%m-%d').date()
+        except ValueError:
+            exp = None
+    if isinstance(exp, datetime):
+        exp = exp.date()
+    since = (exp - timedelta(days=31)) if isinstance(exp, date) else date(1970, 1, 1)
+    cursor.execute("""
+        SELECT COUNT(*) as cnt FROM payments
+        WHERE member_id = %s
+          AND LOWER(status) IN ('completed', 'successful', 'paid', 'success')
+          AND LOWER(description) LIKE '%%renewal%%'
+          AND created_at >= %s
+    """, (member_id, since))
+    row = cursor.fetchone()
+    return bool(row and row['cnt'] > 0)
+
 def renewal_cycle_start(comp_app, license_expiry):
     """Start of the renewal cycle whose payments count towards the current bill.
 
@@ -588,17 +616,8 @@ def _complete_login(cursor, member):
         has_pkg_payment = (pkg_row['cnt'] > 0) if pkg_row else False
 
         # Check specifically for annual renewal payment
-        cursor.execute("""
-            SELECT COUNT(*) as cnt FROM payments
-            WHERE member_id = %s
-              AND LOWER(status) IN ('completed', 'successful', 'paid', 'success')
-              AND (
-                  LOWER(description) LIKE '%%renewal%%'
-                  OR LOWER(description) LIKE '%%annual renewal%%'
-              )
-        """, (member['id'],))
-        ren_row = cursor.fetchone()
-        has_renewal_payment = (ren_row['cnt'] > 0) if ren_row else False
+        # Only a renewal paid for the current licence counts (not any year's).
+        has_renewal_payment = renewal_paid_this_cycle(cursor, member['id'], member.get('license_expiry_date'))
 
         is_pkg_paid = (member.get('package_fee_paid') is True) or has_pkg_payment
         has_paid_fee = has_any_reg_payment or (member.get('registration_fee_paid') is True) or (member.get('application_fee_paid') is True)
@@ -1393,17 +1412,8 @@ def get_me():
                 has_pkg_payment = (pkg_row['cnt'] > 0) if pkg_row else False
 
                 # Check specifically for annual renewal payment
-                cursor.execute("""
-                    SELECT COUNT(*) as cnt FROM payments
-                    WHERE member_id = %s
-                      AND LOWER(status) IN ('completed', 'successful', 'paid', 'success')
-                      AND (
-                          LOWER(description) LIKE '%%renewal%%'
-                          OR LOWER(description) LIKE '%%annual renewal%%'
-                      )
-                """, (member_id,))
-                ren_row = cursor.fetchone()
-                has_renewal_payment = (ren_row['cnt'] > 0) if ren_row else False
+                # Only a renewal paid for the current licence counts.
+                has_renewal_payment = renewal_paid_this_cycle(cursor, member_id, result.get('license_expiry_date'))
 
                 is_pkg_paid = (result.get('package_fee_paid') is True) or has_pkg_payment
                 result['registration_fee_paid'] = has_any_reg_payment or (result.get('registration_fee_paid') is True)
