@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from config.db import get_db
+from utils import sub_admin_required
 
 notifications_bp = Blueprint('notifications', __name__)
 
@@ -178,5 +179,108 @@ def delete_notification(notification_id):
         return jsonify({'message': 'Notification deleted'}), 200
     except Exception as e:
         return jsonify({'message': str(e)}), 500
+    finally:
+        conn.close()
+
+
+# ── Admin: message a group of members ────────────────────────────────────────
+# Groups are worked out from live data at send time, so "Renewal due" never
+# includes someone who has already paid this year's renewal.
+MESSAGE_GROUPS = {
+    'renewal_due': 'Renewal due or overdue, not paid',
+    'expired': 'Licence already ended, not paid',
+    'pending': 'Applications not yet approved',
+    'all_active': 'All active members',
+}
+
+
+def group_members(cursor, group, today=None):
+    """Members (id, name, email, fcm_token) in a message group."""
+    from datetime import date, timedelta
+    from routes.auth import renewal_paid_this_cycle
+
+    today = today or date.today()
+    base = """SELECT id, name, email, fcm_token, license_expiry_date FROM members
+              WHERE COALESCE(role, 'member') = 'member'"""
+    if group == 'all_active':
+        cursor.execute(base + " AND status = 'active' ORDER BY id")
+        return cursor.fetchall()
+    if group == 'pending':
+        cursor.execute(base + " AND status IN ('pending', 'pending_review') ORDER BY id")
+        return cursor.fetchall()
+    if group in ('renewal_due', 'expired'):
+        limit = today + timedelta(days=30) if group == 'renewal_due' else today - timedelta(days=1)
+        cursor.execute(base + """ AND status IN ('active', 'suspended')
+                                  AND license_expiry_date IS NOT NULL
+                                  AND license_expiry_date <= %s ORDER BY id""", (limit,))
+        rows = cursor.fetchall()
+        return [r for r in rows if not renewal_paid_this_cycle(cursor, r['id'], r['license_expiry_date'])]
+    raise ValueError('unknown group')
+
+
+@notifications_bp.route('/admin/groups', methods=['GET'])
+@sub_admin_required('announcements')
+def admin_message_groups():
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            return jsonify({'groups': [
+                {'key': k, 'label': v, 'count': len(group_members(cursor, k))}
+                for k, v in MESSAGE_GROUPS.items()
+            ]}), 200
+    finally:
+        conn.close()
+
+
+@notifications_bp.route('/admin/send-group', methods=['POST'])
+@sub_admin_required('announcements')
+def admin_send_group():
+    from utils import send_push_notification, log_audit
+    from routes.auth import _send_email
+
+    data = request.get_json(silent=True) or {}
+    group = str(data.get('group') or '')
+    title = str(data.get('title') or '').strip()
+    message = str(data.get('message') or '').strip()
+    also_email = bool(data.get('email'))
+    if group not in MESSAGE_GROUPS:
+        return jsonify({'message': 'Choose who to send it to.'}), 400
+    if not title or not message:
+        return jsonify({'message': 'Add a title and a message.'}), 400
+    if len(title) > 120 or len(message) > 2000:
+        return jsonify({'message': 'The title or message is too long.'}), 400
+
+    conn = get_db()
+    sent = emailed = 0
+    try:
+        with conn.cursor() as cursor:
+            members = group_members(cursor, group)
+            for m in members:
+                cursor.execute(
+                    """INSERT INTO notifications (member_id, title, body, category, notification_type)
+                       VALUES (%s, %s, %s, %s, %s)""",
+                    (m['id'], title, message, 'Announcement', 'admin_message'),
+                )
+                sent += 1
+            conn.commit()
+        # Push and email after saving, so a slow provider never loses the in-app copy.
+        for m in members:
+            if m.get('fcm_token'):
+                try:
+                    send_push_notification(m['fcm_token'], title, message, data={'type': 'admin_message'})
+                except Exception:
+                    pass
+            if also_email and m.get('email'):
+                try:
+                    if _send_email(m['email'], title, message):
+                        emailed += 1
+                except Exception:
+                    pass
+        log_audit(get_jwt_identity(), 'Sent message', 'notification', None,
+                  f"{MESSAGE_GROUPS[group]}: {title}", f'{sent} members, {emailed} emails')
+        return jsonify({'sent': sent, 'emailed': emailed}), 200
+    except Exception:
+        conn.rollback()
+        return jsonify({'message': 'Could not send the message.'}), 500
     finally:
         conn.close()

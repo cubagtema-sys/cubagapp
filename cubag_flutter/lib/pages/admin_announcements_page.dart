@@ -301,6 +301,153 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
     );
   }
 
+  /// Send a notification (and optionally an email) to one group of members,
+  /// for example everyone whose renewal is due and not paid.
+  Future<void> _showGroupMessageDialog() async {
+    final titleCtrl = TextEditingController();
+    final bodyCtrl = TextEditingController();
+    List<Map<String, dynamic>> groups = [];
+    String? group;
+    bool email = true;
+    bool loading = true;
+    bool sending = false;
+    String? error;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) {
+          if (loading && groups.isEmpty && error == null) {
+            _api.get('/notifications/admin/groups').then((res) {
+              final list = (res.data is Map ? res.data['groups'] : null) as List? ?? [];
+              setD(() {
+                groups = list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+                group ??= groups.isNotEmpty ? groups.first['key'].toString() : null;
+                loading = false;
+              });
+            }).catchError((_) {
+              setD(() {
+                loading = false;
+                error = 'Could not load the groups. Close and try again.';
+              });
+            });
+          }
+          final chosen = groups.where((g) => g['key'] == group).firstOrNull;
+          final count = (chosen?['count'] as num?)?.toInt() ?? 0;
+
+          Future<void> send() async {
+            if (titleCtrl.text.trim().isEmpty || bodyCtrl.text.trim().isEmpty) {
+              setD(() => error = 'Add a title and a message.');
+              return;
+            }
+            final ok = await showDialog<bool>(
+              context: ctx,
+              builder: (c) => AlertDialog(
+                title: Text('Send to $count ${count == 1 ? 'member' : 'members'}?'),
+                content: Text(email
+                    ? 'They get it in the app, as a phone notification, and by email. This cannot be undone.'
+                    : 'They get it in the app and as a phone notification. This cannot be undone.'),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+                  FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Send')),
+                ],
+              ),
+            );
+            if (ok != true) return;
+            setD(() {
+              sending = true;
+              error = null;
+            });
+            try {
+              final res = await _api.post('/notifications/admin/send-group', data: {
+                'group': group,
+                'title': titleCtrl.text.trim(),
+                'message': bodyCtrl.text.trim(),
+                'email': email,
+              });
+              if (res.statusCode == 200) {
+                final sent = res.data['sent'] ?? 0;
+                final emailed = res.data['emailed'] ?? 0;
+                if (ctx.mounted) Navigator.pop(ctx);
+                _showToast(
+                  email ? 'Sent to $sent members ($emailed emails).' : 'Sent to $sent members.',
+                  _kGreen,
+                );
+                return;
+              }
+              setD(() => error = (res.data is Map ? res.data['message'] : null)?.toString() ?? 'Could not send.');
+            } catch (_) {
+              setD(() => error = 'Could not send. Check the connection and try again.');
+            }
+            setD(() => sending = false);
+          }
+
+          return AdminDialog(
+            title: 'Message a group',
+            subtitle: 'Groups are worked out when you send, so members who already paid are left out.',
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              FilledButton(
+                onPressed: sending || loading || group == null || count == 0 ? null : send,
+                child: Text(sending ? 'Sending…' : (count == 0 ? 'No one to send to' : 'Send to $count')),
+              ),
+            ],
+            children: [
+              AdminField(
+                label: 'Who gets it',
+                child: loading
+                    ? const LinearProgressIndicator()
+                    : RadioGroup<String>(
+                        groupValue: group,
+                        onChanged: (v) => setD(() => group = v),
+                        child: Column(
+                        children: [
+                          for (final g in groups)
+                            RadioListTile<String>(
+                              contentPadding: EdgeInsets.zero,
+                              value: g['key'].toString(),
+                              title: Text(g['label'].toString(), style: CubagType.bodyStrong),
+                              subtitle: Text('${g['count']} ${g['count'] == 1 ? 'member' : 'members'}', style: CubagType.caption),
+                            ),
+                        ],
+                        ),
+                      ),
+              ),
+              AdminField(
+                label: 'Title',
+                child: TextField(
+                  controller: titleCtrl,
+                  maxLength: 120,
+                  decoration: const InputDecoration(hintText: 'For example: Your renewal is due'),
+                ),
+              ),
+              AdminField(
+                label: 'Message',
+                child: TextField(
+                  controller: bodyCtrl,
+                  minLines: 4,
+                  maxLines: 10,
+                  maxLength: 2000,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(hintText: 'What you want them to know or do'),
+                ),
+              ),
+              AdminSwitchRow(
+                title: 'Also send by email',
+                subtitle: 'Reaches members whose phones do not show notifications.',
+                value: email,
+                onChanged: (v) => setD(() => email = v),
+              ),
+              if (error != null) Text(error!, style: CubagType.small.copyWith(color: CubagColors.lapsed)),
+            ],
+          );
+        },
+      ),
+    );
+    titleCtrl.dispose();
+    bodyCtrl.dispose();
+  }
+
   void _showToast(String msg, Color color) {
     setState(() {
       _toastMessage = msg;
@@ -361,6 +508,11 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                 title: 'Announcements',
                 subtitle: 'Notices every member sees on their Home screen. Archive one to take it down; you can restore it later.',
                 actions: [
+                  OutlinedButton.icon(
+                    onPressed: _showGroupMessageDialog,
+                    icon: const Icon(Icons.send_outlined, size: 18),
+                    label: const Text('Message a group'),
+                  ),
                   OutlinedButton.icon(
                     onPressed: () {
                       _clearCache();

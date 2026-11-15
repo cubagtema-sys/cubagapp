@@ -16,6 +16,7 @@ import '../components/shimmer_loader.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../utils/app_logger.dart';
+import '../utils/payment_statement.dart';
 import '../design/cubag_design.dart';
 
 // Balanced CUBAG Brand Palette
@@ -1151,6 +1152,14 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                 ),
               ),
 
+              if (statementYears(_payments).isNotEmpty) ...[
+                const SizedBox(height: CubagSpace.sm),
+                OutlinedButton.icon(
+                  onPressed: _downloadStatement,
+                  icon: const Icon(Icons.summarize_outlined, size: 20),
+                  label: const Text('Statement for a year (PDF)'),
+                ),
+              ],
               const SizedBox(height: CubagSpace.lg),
 
               // ── Search and filter: a field and a row of tabs ───────────────
@@ -1444,6 +1453,57 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
       AppLogger.error('payment_history_page', e, st);
     }
     if (mounted) setState(() => _verifyingId = null);
+  }
+
+  /// Year statement: every paid item in one PDF, for tax or company records.
+  Future<void> _downloadStatement() async {
+    final years = statementYears(_payments);
+    if (years.isEmpty) return;
+    var year = years.first;
+    if (years.length > 1) {
+      final picked = await showModalBottomSheet<int>(
+        context: context,
+        useSafeArea: true,
+        backgroundColor: CubagColors.paper,
+        builder: (ctx) => Padding(
+          padding: const EdgeInsets.fromLTRB(CubagSpace.lg, CubagSpace.lg, CubagSpace.lg, CubagSpace.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Which year?', style: CubagType.title),
+              const SizedBox(height: CubagSpace.md),
+              for (final y in years)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: CubagSpace.xs),
+                  child: OutlinedButton(onPressed: () => Navigator.pop(ctx, y), child: Text('$y')),
+                ),
+            ],
+          ),
+        ),
+      );
+      if (picked == null) return;
+      year = picked;
+    }
+    if (!mounted) return;
+    final auth = Provider.of<AuthService>(context, listen: false);
+    try {
+      final bytes = await buildYearStatement(
+        year: year,
+        lines: statementLines(_payments, year),
+        name: auth.userName ?? '',
+        company: auth.userCompany ?? '',
+        licenceNumber: auth.licenseNumber ?? '',
+      );
+      await Printing.sharePdf(bytes: bytes, filename: 'CUBAG_Statement_$year.pdf');
+    } catch (e, st) {
+      AppLogger.error('payment_statement', e, st);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not make the statement. Try again.')),
+        );
+      }
+    }
   }
 
   Future<void> _downloadPdf(Map<String, dynamic> pay) async {

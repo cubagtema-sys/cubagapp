@@ -4,9 +4,39 @@ from datetime import date, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from config.db import get_db
 from utils import send_push_notification, calculate_and_update_member_rating
-from routes.auth import renewal_paid_this_cycle
+from routes.auth import renewal_paid_this_cycle, _send_email
 
 logger = logging.getLogger(__name__)
+
+REMINDER_DAYS = (30, 14, 7, 3, 1)
+
+
+def reminder_due(days_left):
+    """True on the days a renewal reminder goes out."""
+    return days_left in REMINDER_DAYS
+
+
+def renewal_reminder_message(name, days_left, exp_date):
+    """Title, plain body and HTML for a renewal reminder (push, in-app and email)."""
+    first = (name or 'Member').split()[0]
+    when = exp_date.strftime('%d %B %Y').lstrip('0') if hasattr(exp_date, 'strftime') else str(exp_date)
+    day_word = 'day' if days_left == 1 else 'days'
+    title = f"Your CUBAG licence ends in {days_left} {day_word}"
+    body = (
+        f"Hello {first}, your CUBAG licence ends on {when}. "
+        "Open the CUBAG app and tap Pay dues to renew. "
+        "Renewing early does not lose any days: your new year starts when the current one ends."
+    )
+    html = (
+        f"<p>Hello {first},</p>"
+        f"<p>Your CUBAG licence ends on <strong>{when}</strong> ({days_left} {day_word} from today).</p>"
+        "<p>To renew, open the CUBAG app and tap <strong>Pay dues</strong>.</p>"
+        "<p>Renewing early does not lose any days: your new year starts when the current one ends.</p>"
+        "<p>If you have already paid, you can ignore this message.</p>"
+        "<p>CUBAG Secretariat</p>"
+    )
+    return title, body, html
+
 
 def check_expired_licenses():
     logger.info("[Jobs] Running expired license check...")
@@ -16,13 +46,13 @@ def check_expired_licenses():
             today = date.today()
             window_30d = today + timedelta(days=30)
 
-            # Find active members whose license expires within the next 30 days
+            # Active members whose licence ends within 30 days.
             cursor.execute("""
-                SELECT id, name, fcm_token, license_expiry_date 
-                FROM members 
-                WHERE status = 'active' 
+                SELECT id, name, email, fcm_token, license_expiry_date
+                FROM members
+                WHERE status = 'active'
                   AND license_expiry_date IS NOT NULL
-                  AND license_expiry_date > %s 
+                  AND license_expiry_date > %s
                   AND license_expiry_date <= %s
             """, (today, window_30d))
             expiring_members = cursor.fetchall()
@@ -31,43 +61,42 @@ def check_expired_licenses():
                 exp_date = m['license_expiry_date']
                 days_left = (exp_date - today).days
 
+                # Remind on set days only (30, 14, 7, 3, 1), not every day.
+                if not reminder_due(days_left):
+                    continue
                 # Already paid this year's renewal: nothing to remind them about.
                 if renewal_paid_this_cycle(cursor, m['id'], exp_date):
                     continue
 
-                # Prevent duplicate notification spam: only send if no renewal notification sent in last 24h
+                # The job can run more than once a day (restarts): one reminder per day at most.
                 cursor.execute("""
-                    SELECT COUNT(*) as cnt FROM notifications 
-                    WHERE member_id = %s 
-                      AND (title LIKE '%%Renewal%%' OR title LIKE '%%License Expiring%%')
-                      AND created_at > NOW() - INTERVAL '24 hours'
+                    SELECT COUNT(*) as cnt FROM notifications
+                    WHERE member_id = %s
+                      AND notification_type = 'reminder'
+                      AND created_at > NOW() - INTERVAL '20 hours'
                 """, (m['id'],))
-                already_notified = (cursor.fetchone()['cnt'] > 0)
+                if cursor.fetchone()['cnt'] > 0:
+                    continue
 
-                if not already_notified:
-                    if days_left <= 7:
-                        title = f"🔴 Urgent Renewal Notice: {days_left} Days Remaining"
-                    else:
-                        title = f"Urgent Renewal Reminder: {days_left} Days Remaining"
-
-                    body = (
-                        f"Hello {m['name']}, your CUBAG membership expires in {days_left} days on {exp_date}. "
-                        f"Renew today — all remaining {days_left} days will be preserved and added to your new 365-day validity!"
-                    )
-
-                    if m.get('fcm_token'):
-                        send_push_notification(m['fcm_token'], title, body, data={'type': 'license_warning'})
-
-                    cursor.execute("""
-                        INSERT INTO notifications (member_id, title, body, category, notification_type)
-                        VALUES (%s, %s, %s, %s, %s)
-                    """, (m['id'], title, body, 'Compliance', 'reminder'))
+                title, body, html = renewal_reminder_message(m.get('name'), days_left, exp_date)
+                if m.get('fcm_token'):
+                    send_push_notification(m['fcm_token'], title, body, data={'type': 'license_warning'})
+                cursor.execute("""
+                    INSERT INTO notifications (member_id, title, body, category, notification_type)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (m['id'], title, body, 'Compliance', 'reminder'))
+                # Email too: push does not reach every phone (iPhones until Apple push is set up).
+                if m.get('email'):
+                    try:
+                        _send_email(m['email'], title, body, html)
+                    except Exception as e:  # never let one email stop the run
+                        logger.error(f"[Jobs] Reminder email failed for member {m['id']}: {e}")
 
             # Find active members whose license has already expired
             cursor.execute("""
-                SELECT id, name, fcm_token 
-                FROM members 
-                WHERE status = 'active' 
+                SELECT id, name, email, fcm_token
+                FROM members
+                WHERE status = 'active'
                   AND license_expiry_date IS NOT NULL
                   AND license_expiry_date < %s
             """, (today,))
@@ -86,6 +115,17 @@ def check_expired_licenses():
                     INSERT INTO notifications (member_id, title, body, category, notification_type)
                     VALUES (%s, %s, %s, %s, %s)
                 """, (m['id'], "License Expired", "Account suspended due to license expiration. Please renew immediately.", 'Compliance', 'alert'))
+                if m.get('email'):
+                    first = (m.get('name') or 'Member').split()[0]
+                    try:
+                        _send_email(
+                            m['email'],
+                            'Your CUBAG licence has ended',
+                            f"Hello {first}, your CUBAG licence has ended and your membership is suspended. "
+                            "Open the CUBAG app and tap Pay dues to renew. Call the Secretariat if you need help.",
+                        )
+                    except Exception as e:
+                        logger.error(f"[Jobs] Expiry email failed for member {m['id']}: {e}")
 
             conn.commit()
 

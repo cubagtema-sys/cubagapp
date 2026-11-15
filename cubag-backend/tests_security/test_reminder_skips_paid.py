@@ -18,7 +18,7 @@ class _Cur:
 
     def execute(self, sql, params=None):
         s = ' '.join(sql.split())
-        if s.startswith('SELECT id, name, fcm_token, license_expiry_date'):
+        if s.startswith('SELECT id, name, email, fcm_token, license_expiry_date'):
             self._rows = self.members
         elif s.startswith('SELECT COUNT(*) as cnt FROM notifications'):
             self._rows = [{'cnt': 0}]
@@ -52,12 +52,13 @@ class _Conn:
 
 
 def test_paid_member_gets_no_reminder_unpaid_member_does(monkeypatch):
-    soon = date.today() + timedelta(days=10)
+    soon = date.today() + timedelta(days=14)
     cur = _Cur([
         {'id': 1, 'name': 'Paid', 'fcm_token': None, 'license_expiry_date': soon},
         {'id': 2, 'name': 'Unpaid', 'fcm_token': None, 'license_expiry_date': soon},
     ])
     monkeypatch.setattr(jobs, 'get_db', lambda: _Conn(cur))
     monkeypatch.setattr(jobs, 'renewal_paid_this_cycle', lambda c, mid, exp: mid == 1)
+    monkeypatch.setattr(jobs, '_send_email', lambda *a: True)
     jobs.check_expired_licenses()
     assert cur.inserted == [2]
