@@ -52,6 +52,7 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
     if (_filterDateFrom.isNotEmpty) params.add('date_from=$_filterDateFrom');
     if (_filterDateTo.isNotEmpty) params.add('date_to=$_filterDateTo');
     if (_filterActorId.isNotEmpty) params.add('actor_id=$_filterActorId');
+    if (_showAuto) params.add('include_auto=1');
     return params.join('&');
   }
 
@@ -110,6 +111,10 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
     });
     _fetchLogs();
   }
+
+  /// Automatic records of every change and every view of sensitive data.
+  /// Kept for security; hidden unless an admin asks to see them.
+  bool _showAuto = false;
 
   bool get _hasActiveFilters =>
       _filterTargetType.isNotEmpty ||
@@ -216,13 +221,13 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
     showDialog(
       context: context,
       builder: (ctx) => AdminDialog(
-        title: v('action').isEmpty ? 'Audit entry' : v('action'),
+        title: v('action').isEmpty ? 'Audit entry' : _readableAction(v('action')),
         subtitle: 'by $actor · $when',
         actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Done'))],
         children: [
           AdminDetailRow('Admin', '$actor ($roleLabel)'),
           AdminDetailRow('When', when),
-          AdminDetailRow('Action', v('action')),
+          AdminDetailRow('Action', _readableAction(v('action'))),
           if (type.isNotEmpty) AdminDetailRow('Record type', type[0].toUpperCase() + type.substring(1).replaceAll('_', ' ')),
           if (v('target_name').isNotEmpty) AdminDetailRow('Record', v('target_name')),
           if (v('details').isNotEmpty) ...[
@@ -361,6 +366,18 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
                     () => _pickDate(false),
                     Icons.event_available_rounded,
                   ),
+                  filter(
+                    'Show page views and raw requests',
+                    _showAuto,
+                    () {
+                      setState(() {
+                        _showAuto = !_showAuto;
+                        _offset = 0;
+                      });
+                      _fetchLogs();
+                    },
+                    Icons.visibility_outlined,
+                  ),
                   if (_hasActiveFilters)
                     TextButton(onPressed: _resetFilters, child: const Text('Clear filters')),
                 ],
@@ -436,10 +453,16 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
     return '${d.day} ${_months[d.month - 1]} ${d.year}';
   }
 
+  /// Older entries were saved with names like 'update_fees': show them as words.
+  String _readableAction(String raw) {
+    final t = raw.replaceAll('_', ' ').trim();
+    return t.isEmpty ? 'Action' : t[0].toUpperCase() + t.substring(1);
+  }
+
   Widget _logRow(Map<String, dynamic> log) {
     final actor = (log['admin_name'] ?? log['actor_name'] ?? 'Admin').toString();
     final role = (log['admin_role'] ?? log['actor_role'] ?? '').toString().toLowerCase();
-    final action = log['action']?.toString() ?? 'Action';
+    final action = _readableAction(log['action']?.toString() ?? 'Action');
     final targetType = log['target_type']?.toString() ?? '';
     final targetName = log['target_name']?.toString() ?? '';
     final ip = log['ip_address']?.toString() ?? '';

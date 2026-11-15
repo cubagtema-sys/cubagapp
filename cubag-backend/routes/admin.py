@@ -273,7 +273,8 @@ def get_audit_log():
     date_to = request.args.get('date_to', '').strip()
     actor_id = request.args.get('actor_id', '').strip()
 
-    cache_key = f'audit_log_{caller_id}_{limit}_{offset}_{target_type}_{action_type}_{date_from}_{date_to}_{actor_id}'
+    include_auto = request.args.get('include_auto', '').lower() in ('1', 'true', 'yes')
+    cache_key = f'audit_log_{caller_id}_{limit}_{offset}_{target_type}_{action_type}_{date_from}_{date_to}_{actor_id}_{include_auto}'
     cached = cache.get(cache_key)
     if cached is not None:
         return jsonify(cached), 200
@@ -295,9 +296,16 @@ def get_audit_log():
             if target_type:
                 conditions.append("LOWER(a.target_type) = LOWER(%s)")
                 params.append(target_type)
+            # Automatic request records ('Admin Action': every change and every view of
+            # sensitive data) are kept for security but hidden unless asked for.
+            if not include_auto:
+                conditions.append("a.action <> 'Admin Action'")
             if action_type:
-                conditions.append("LOWER(a.action) LIKE LOWER(%s)")
-                params.append(f"%{action_type}%")
+                # 'Updated' also finds 'update_fees' and 'Updated fees': match the word's stem.
+                import re as _re
+                stem = _re.sub(r'e?d$', '', action_type.strip().lower()) or action_type.lower()
+                conditions.append("LOWER(REPLACE(a.action, '_', ' ')) LIKE %s")
+                params.append(f"%{stem}%")
             if date_from:
                 conditions.append("a.created_at >= %s::date")
                 params.append(date_from)
@@ -511,7 +519,7 @@ def save_payment_codes():
                 ON CONFLICT (config_key) DO UPDATE SET config_value = EXCLUDED.config_value, updated_at = CURRENT_TIMESTAMP
             """, (SETTING_KEY, json.dumps(catalogue)))
             conn.commit()
-        log_admin_action(get_jwt_identity(), 'update_payment_codes', 'platform_settings', None, SETTING_KEY,
+        log_admin_action(get_jwt_identity(), 'Updated payment codes', 'platform_settings', None, SETTING_KEY,
                          {'codes': [c['code'] for c in catalogue]})
         return jsonify({'codes': catalogue}), 200
     except Exception:
@@ -632,7 +640,7 @@ def update_admin_fees():
 
             conn.commit()
             cache.clear()
-            log_admin_action(get_jwt_identity(), 'update_fees', 'platform_settings', None, 'cubag_fees_v2', {'fee_count': len(data)})
+            log_admin_action(get_jwt_identity(), 'Updated fees', 'platform_settings', None, 'cubag_fees_v2', {'fee_count': len(data)})
             try:
                 from socket_instance import socketio
                 socketio.emit('fees_updated', {'fee_count': len(data)})
@@ -678,7 +686,7 @@ def delete_admin_fee(fee_id):
 
             conn.commit()
             cache.clear()
-            log_admin_action(get_jwt_identity(), 'delete_fee', 'platform_settings', None, str(fee_id), {'deleted_fee_id': fee_id, 'remaining_count': len(updated_fees)})
+            log_admin_action(get_jwt_identity(), 'Deleted fee', 'platform_settings', None, str(fee_id), {'deleted_fee_id': fee_id, 'remaining_count': len(updated_fees)})
             try:
                 from socket_instance import socketio
                 socketio.emit('fees_updated', {'fee_count': len(updated_fees)})
@@ -745,6 +753,8 @@ def approve_member_application(member_id):
             """, (caller_id, 'approve_membership', 'member', member_id, m.get('company') or m.get('name'), old_val_json, new_val_json, formatted_details, ip_addr))
 
             conn.commit()
+            log_admin_action(caller_id, 'Approved membership', 'member', member_id,
+                             m.get('company') or m.get('name'), formatted_details)
             cache.clear()
 
             try:
@@ -848,7 +858,7 @@ def update_admin_port(port_id):
             if not updated:
                 return jsonify({'message': 'Port not found'}), 404
             
-            log_admin_action(caller_id, 'update_port_of_operation', 'port', port_id, updated['name'], f"Updated Port of Operation #{port_id}: active={is_active}")
+            log_admin_action(caller_id, 'Updated port', 'port', port_id, updated['name'], f"Updated Port of Operation #{port_id}: active={is_active}")
             conn.commit()
 
         return jsonify({'message': 'Port updated successfully!', 'port': updated}), 200
@@ -871,7 +881,7 @@ def delete_admin_port(port_id):
             port = cursor.fetchone()
             if not port:
                 return jsonify({'message': 'Port not found'}), 404
-            log_admin_action(caller_id, 'deactivate_port_of_operation', 'port', port_id, port['name'], f"Deactivated Port of Operation: {port['name']}")
+            log_admin_action(caller_id, 'Switched off port', 'port', port_id, port['name'], f"Deactivated Port of Operation: {port['name']}")
             conn.commit()
         return jsonify({'message': 'Port deactivated successfully!'}), 200
     except Exception as e:

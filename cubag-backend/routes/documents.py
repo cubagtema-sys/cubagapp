@@ -979,6 +979,7 @@ def admin_bulk_toggle_requirements():
             """, (is_active, member_type, app_type))
             updated_cnt = cursor.rowcount
             conn.commit()
+            log_admin_action(get_jwt_identity(), 'Switched all requirements ' + ('on' if is_active else 'off'), 'document_requirement', None, f'{member_type} / {app_type}')
 
             try:
                 from socket_instance import socketio

@@ -2,9 +2,9 @@ import copy
 import json
 import logging
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from config.db import get_db
-from utils import sub_admin_required
+from utils import sub_admin_required, log_admin_action
 from config.cache import cache
 
 logger = logging.getLogger(__name__)
@@ -121,4 +121,5 @@ def update_intelligence():
         return jsonify({"message": "Expected a JSON object"}), 400
     save_data(data)
     cache.clear()  # Invalidate intelligence cache on update
+    log_admin_action(get_jwt_identity(), 'Updated insights rates', 'intelligence', None, 'Exchange and duty rates')
     return jsonify({"message": "Intelligence data updated successfully"}), 200

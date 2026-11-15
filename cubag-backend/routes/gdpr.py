@@ -5,7 +5,7 @@ import logging
 from flask import Blueprint, jsonify, request, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from config.db import get_db
-from utils import admin_required, sub_admin_required
+from utils import admin_required, sub_admin_required, log_admin_action
 from config.gdpr_compliance import GDPRComplianceManager
 from config.audit_logging import get_data_access_logger
 
@@ -136,6 +136,7 @@ def request_data_deletion():
         success, message = gdpr_manager.request_member_data_deletion(member_id, admin_id)
         
         if success:
+            log_admin_action(admin_id, 'Requested account deletion', 'member', member_id, f'Member #{member_id}')
             return jsonify({'message': message}), 200
         else:
             return jsonify({'message': message}), 400
@@ -158,6 +159,8 @@ def approve_data_deletion(request_id):
         success, message = gdpr_manager.process_member_data_deletion(request_id, admin_id)
         
         if success:
+            log_admin_action(admin_id, 'Approved account deletion', 'deletion_request', request_id,
+                             f'Request #{request_id}')
             return jsonify({'message': message}), 200
         else:
             return jsonify({'message': message}), 400

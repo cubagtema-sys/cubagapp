@@ -129,6 +129,7 @@ def create_blog():
             ))
             new_id = cursor.fetchone()['id']
         conn.commit()
+        log_admin_action(get_jwt_identity(), 'Created news post', 'news', None, str(data.get('title') or '')[:120] if isinstance(data, dict) else None)
         try:
             from socket_instance import socketio
             socketio.emit('news_updated', {'id': new_id})
@@ -151,6 +152,7 @@ def delete_blog(id):
         with conn.cursor() as cursor:
             cursor.execute("UPDATE news_blog SET deleted_at = CURRENT_TIMESTAMP WHERE id = %s", (id,))
         conn.commit()
+        log_admin_action(get_jwt_identity(), 'Archived news post', 'news', id, f'Post #{id}')
         try:
             from socket_instance import socketio
             socketio.emit('news_updated', {'id': id, 'deleted': True})

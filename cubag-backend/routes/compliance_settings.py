@@ -1,7 +1,8 @@
 import logging
 from flask import Blueprint, jsonify, request
 from config.db import get_db
-from utils import admin_required, sub_admin_required
+from flask_jwt_extended import get_jwt_identity
+from utils import admin_required, sub_admin_required, log_admin_action
 
 logger = logging.getLogger(__name__)
 compliance_settings_bp = Blueprint('compliance_settings', __name__)
@@ -111,6 +112,7 @@ def update_settings():
                 target_id,
             ))
             conn.commit()
+            log_admin_action(get_jwt_identity(), 'Updated standing score weights', 'settings', None, 'Compliance scoring')
             
             # Recalculate for all members
             cursor.execute("SELECT id FROM members WHERE status IN ('active', 'pending')")

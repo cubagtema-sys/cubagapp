@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
 from config.db import get_db
 import json
-from utils import admin_required, sub_admin_required
+from utils import admin_required, sub_admin_required, log_admin_action
 from config.cache import cache
 
 settings_bp = Blueprint('settings', __name__)
@@ -164,6 +164,7 @@ def update_setting(key):
                     """, (f_id, sec, lbl, amt_val, desc))
 
             conn.commit()
+            log_admin_action(get_jwt_identity(), 'Updated setting', 'settings', None, key)
             cache.delete_memoized(get_setting)  # Invalidate stale cache on update
             cache.clear()  # Clear all cached settings
             try:

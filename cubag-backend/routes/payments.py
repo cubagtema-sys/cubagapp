@@ -2653,6 +2653,7 @@ def verify_receipt_public():
 def admin_approve_license(payment_id):
     try:
         _mark_payment_as_paid(payment_id)
+        log_admin_action(get_jwt_identity(), 'Approved licence', 'payment', payment_id, f'Payment #{payment_id}')
         return jsonify({'message': 'License approved and payment confirmed'}), 200
     except Exception as e:
         return jsonify({'message': str(e)}), 500

@@ -1423,6 +1423,7 @@ def mark_guest_enrollment_paid(ref):
             cursor.execute("UPDATE guest_payments SET status = 'paid', updated_at = NOW() WHERE reference_no = %s", (ref,))
             cursor.execute("UPDATE guest_service_requests SET status = 'paid', updated_at = NOW() WHERE reference_no = %s", (ref,))
             conn.commit()
+        log_admin_action(get_jwt_identity(), 'Marked guest payment paid', 'guest_payment', None, ref)
         return jsonify({'message': f'Enrollment {ref} marked as paid successfully'}), 200
     except Exception as e:
         logger.exception("Error in mark_guest_enrollment_paid: %s", e)
