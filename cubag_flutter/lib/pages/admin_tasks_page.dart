@@ -1,3 +1,6 @@
+import '../components/filter_tabs.dart';
+import '../components/cubag_ui.dart';
+import '../components/admin_list.dart';
 import 'package:flutter/material.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
@@ -6,11 +9,8 @@ import '../services/api_service.dart';
 import '../components/fetch_error_view.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
-import '../utils/app_colors.dart';
 import '../design/cubag_design.dart';
 
-const _kOrange = CubagColors.action;
-const _kGreen = CubagColors.valid;
 
 class AdminTasksPage extends StatefulWidget {
   const AdminTasksPage({super.key});
@@ -25,7 +25,7 @@ class _State extends State<AdminTasksPage> {
   bool _loading = true;
   bool _hasError = false;
   bool _loadingMore = false;
-  String _tab = 'submissions';
+  String _tab = 'submitted';
   String _message = '';
 
   int _page = 1;
@@ -192,550 +192,287 @@ class _State extends State<AdminTasksPage> {
 
   @override
   Widget build(BuildContext context) {
-    final tabs = [
-      {'id': 'submissions', 'label': 'Submissions'},
-      {'id': 'pending', 'label': 'Pending'},
-      {'id': 'verified', 'label': 'Verified'},
-      {'id': 'create', 'label': 'Assign New Task'},
-    ];
+    final creating = _tab == 'create';
     return AppLayout(
       title: 'Tasks',
       scrollable: false,
       child: SingleChildScrollView(
         controller: _scrollController,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AdminHeader(
-              title: 'Tasks',
-              subtitle:
-                  'Tasks you set for members, and the proof they send back.',
-              actions: [
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kAdminOrange,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  onPressed: () {
-                    if (_tab == 'create') {
-                      _onTabChanged('submissions');
-                    } else {
-                      _onTabChanged('create');
-                    }
-                  },
-                  icon: Icon(
-                    _tab == 'create'
-                        ? Icons.list_alt_rounded
-                        : Icons.add_task_rounded,
-                    size: 18,
-                  ),
-                  label: Text(
-                    _tab == 'create' ? 'View Submissions' : 'Assign New Task',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1000),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AdminHeader(
+                  title: 'Tasks',
+                  subtitle: 'Tasks you set for members, and the proof they send back. Check each submission, then mark it verified.',
+                  actions: [
+                    if (!creating)
+                      FilledButton.icon(
+                        onPressed: () => _onTabChanged('create'),
+                        icon: const Icon(Icons.add_task_rounded, size: 18),
+                        label: const Text('Assign a task'),
+                      ),
+                  ],
                 ),
+                if (_message.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: CubagSpace.md),
+                    padding: const EdgeInsets.all(CubagSpace.md),
+                    decoration: BoxDecoration(
+                      color: CubagColors.validTint,
+                      borderRadius: BorderRadius.circular(CubagRadius.card),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle_rounded, color: CubagColors.valid, size: 20),
+                        const SizedBox(width: CubagSpace.sm),
+                        Expanded(child: Text(_message, style: CubagType.label.copyWith(color: CubagColors.valid))),
+                      ],
+                    ),
+                  ),
+                if (creating) ...[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => _onTabChanged('submitted'),
+                      icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                      label: const Text('All tasks'),
+                    ),
+                  ),
+                  const SizedBox(height: CubagSpace.xs),
+                  _buildCreate(),
+                ] else ...[
+                  FilterTabs(
+                    tabs: const [
+                      ('submitted', 'To check'),
+                      ('pending', 'Waiting for member'),
+                      ('verified', 'Verified'),
+                      ('all', 'All'),
+                    ],
+                    selected: _tab,
+                    onSelected: _onTabChanged,
+                  ),
+                  const SizedBox(height: CubagSpace.md),
+                  _buildTaskList(),
+                ],
+                const SizedBox(height: CubagSpace.xl),
               ],
             ),
-            const SizedBox(height: 18),
-
-            // Tab bar
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFF281710)
-                    : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: tabs.map((t) {
-                  final active = _tab == t['id'];
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => _onTabChanged(t['id']!),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        decoration: BoxDecoration(
-                          color: active ? kAdminOrange : Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          t['label']!,
-                          style: TextStyle(
-                            color: active ? Colors.white : Colors.grey.shade600,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            if (_message.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: _kGreen.withAlpha(25),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  _message,
-                  style: const TextStyle(
-                    color: _kGreen,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-
-            if (_tab == 'create') _buildCreate(),
-            if (_tab != 'create') _buildTaskList(),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildCreate() => Container(
-    constraints: const BoxConstraints(maxWidth: 600),
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.grey.shade200),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'New Assignment',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-        ),
-        const SizedBox(height: 16),
-        const Text(
-          'Assign To',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-        ),
-        const SizedBox(height: 6),
-        CustomDropdown<String>(
-          value: _memberId,
-          hint: 'Select a member...',
-          items: [
-            const DropdownItem(value: 'all', label: 'All active members'),
-            ..._members.map(
-              (m) => DropdownItem<String>(
-                value: m['id'].toString(),
-                label: m['name'] ?? '',
-              ),
-            ),
-          ],
-          onChanged: (v) => setState(() => _memberId = v),
-        ),
-        const SizedBox(height: 14),
-        const Text(
-          'Task Title',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: _titleCtrl,
-          decoration: _deco(hint: 'Title...'),
-        ),
-        const SizedBox(height: 14),
-        const Text(
-          'Due Date',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-        ),
-        const SizedBox(height: 6),
-        GestureDetector(
-          onTap: () async {
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: DateTime.now().add(const Duration(days: 1)),
-              firstDate: DateTime.now(),
-              lastDate: DateTime(2099),
-            );
-            if (picked != null) {
-              setState(
-                () => _dueDate =
-                    '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}',
-              );
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300, width: 1.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-                const SizedBox(width: 8),
-                Text(
-                  _dueDate.isEmpty ? 'Pick date' : _dueDate,
-                  style: TextStyle(
-                    color: _dueDate.isEmpty
-                        ? Colors.grey.shade600
-                        : Colors.black,
-                    fontSize: 13,
+  Widget _fieldLabel(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: CubagSpace.xs, top: CubagSpace.md),
+        child: Text(text, style: CubagType.label),
+      );
+
+  Widget _buildCreate() => Align(
+        alignment: Alignment.topLeft,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 620),
+          padding: const EdgeInsets.all(CubagSpace.xl),
+          decoration: BoxDecoration(
+            color: CubagColors.paper,
+            borderRadius: BorderRadius.circular(CubagRadius.card),
+            border: Border.all(color: CubagColors.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Assign a task', style: CubagType.title),
+              const SizedBox(height: CubagSpace.xxs),
+              Text('The member sees it on their Tasks screen and is notified.', style: CubagType.small),
+              _fieldLabel('Who it is for'),
+              CustomDropdown<String>(
+                value: _memberId,
+                hint: 'Choose a member',
+                items: [
+                  const DropdownItem(value: 'all', label: 'All active members'),
+                  ..._members.map(
+                    (m) => DropdownItem<String>(value: m['id'].toString(), label: m['name'] ?? ''),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
-        const Text(
-          'Instructions',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: _descCtrl,
-          maxLines: 4,
-          decoration: _deco(hint: 'Task details...'),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton.icon(
-            onPressed: _loading ? null : _assignTask,
-            icon: const Icon(Icons.send),
-            label: const Text(
-              'Assign Now',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _kOrange,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                ],
+                onChanged: (v) => setState(() => _memberId = v),
               ),
-              elevation: 0,
-            ),
+              _fieldLabel('Title'),
+              TextField(
+                controller: _titleCtrl,
+                onChanged: (_) => setState(() {}),
+                decoration: const InputDecoration(hintText: 'For example: Upload your 2027 tax clearance'),
+              ),
+              _fieldLabel('Due date'),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(alignment: Alignment.centerLeft),
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now().add(const Duration(days: 1)),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime(2099),
+                  );
+                  if (picked != null) {
+                    setState(
+                      () => _dueDate =
+                          '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}',
+                    );
+                  }
+                },
+                icon: const Icon(Icons.calendar_today_rounded, size: 16),
+                label: Text(_dueDate.isEmpty ? 'Pick a date' : _dueDate),
+              ),
+              _fieldLabel('Instructions'),
+              TextField(
+                controller: _descCtrl,
+                minLines: 3,
+                maxLines: 6,
+                decoration: const InputDecoration(hintText: 'What the member must do, and what proof to send'),
+              ),
+              const SizedBox(height: CubagSpace.xl),
+              FilledButton.icon(
+                onPressed: _loading || _titleCtrl.text.trim().isEmpty || _dueDate.isEmpty || _memberId.isEmpty
+                    ? null
+                    : _assignTask,
+                icon: const Icon(Icons.send_rounded, size: 18),
+                label: const Text('Assign task'),
+              ),
+              if (_memberId.isEmpty || _titleCtrl.text.trim().isEmpty || _dueDate.isEmpty) ...[
+                const SizedBox(height: CubagSpace.xs),
+                Text('Choose a member, a title and a due date first.', style: CubagType.caption, textAlign: TextAlign.center),
+              ],
+            ],
           ),
         ),
-      ],
-    ),
-  );
+      );
 
   Widget _buildTaskList() {
     if (_loading) {
-      return ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: 8,
-        separatorBuilder: (ctx, i) => const SizedBox(height: 12),
-        itemBuilder: (ctx, i) => const ShimmerListTile(),
+      return Column(
+        children: List.generate(
+          6,
+          (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile()),
+        ),
       );
     }
     if (_hasError && _tasks.isEmpty) {
       return FetchErrorView(onRetry: () => _fetchTasks(refresh: true));
     }
     if (_tasks.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(48),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: const Center(
-          child: Text('No tasks yet', style: TextStyle(color: Colors.grey)),
-        ),
+      return EmptyMessage(
+        icon: Icons.task_alt_rounded,
+        title: switch (_tab) {
+          'submitted' => 'Nothing to check',
+          'all' => 'No tasks yet',
+          'verified' => 'No verified tasks yet',
+          _ => 'No tasks waiting',
+        },
+        message: switch (_tab) {
+          'submitted' => 'When a member sends proof for a task, it appears here.',
+          'all' => 'Use Assign a task to set one for a member or for everyone.',
+          'verified' => 'Tasks you verify are kept here.',
+          _ => 'Tasks members have not done yet appear here.',
+        },
       );
     }
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ..._tasks.map((task) {
-          final sid = task['submission_id'] as int?;
-          if (sid != null) {
-            _verifyCtrl.putIfAbsent(sid, () => TextEditingController());
-          }
-
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  color: task['admin_verified'] == true
-                      ? _kGreen.withAlpha(12)
-                      : (sid != null
-                            ? _kOrange.withAlpha(8)
-                            : Colors.grey.shade50),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              task['title'] ?? '',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.person_outline,
-                                  size: 14,
-                                  color: _kOrange,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  task['member_name'] ?? 'Unknown',
-                                  style: const TextStyle(
-                                    color: AppColors.accentOrangeText,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.calendar_today,
-                                  size: 12,
-                                  color: Colors.grey,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Due: ${task['due_date'] ?? ''}',
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (task['admin_verified'] == true)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _kGreen.withAlpha(25),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            'Verified',
-                            style: TextStyle(
-                              color: _kGreen,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 12,
-                            ),
-                          ),
-                        )
-                      else if (sid != null)
-                        ElevatedButton(
-                          onPressed: () => setState(
-                            () =>
-                                _verifyingId = _verifyingId == sid ? null : sid,
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _kOrange,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            'Verify',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        )
-                      else
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            'Pending',
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                if (task['completion_note'] != null &&
-                    task['completion_note'].toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Member note',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          task['completion_note'],
-                          style: const TextStyle(fontSize: 14, height: 1.5),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (_verifyingId == sid && sid != null)
-                  Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Admin Notes (optional)',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                          ),
-                        ),
-                        TextField(
-                          controller: _verifyCtrl[sid],
-                          maxLines: 2,
-                          onChanged: (v) => _verifyNotes[sid] = v,
-                          decoration: _deco(
-                            hint: 'Any notes for the member...',
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            ElevatedButton(
-                              onPressed: () => _verify(sid),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: _kGreen,
-                                foregroundColor: Colors.white,
-                                minimumSize: const Size(140, 52),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: const Text(
-                                'Confirm Verified',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            TextButton(
-                              onPressed: () =>
-                                  setState(() => _verifyingId = null),
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.grey,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text('Cancel'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          );
-        }),
+        AdminRowGroup(children: [for (final task in _tasks) _taskItem(task)]),
         if (_loadingMore)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator(),
-            ),
-          ),
-        if (!_loading && _total > 0)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 20),
-              child: Text(
-                '${_tasks.length} tasks shown${_total > 0 ? " of $_total" : ""}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ),
+          const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator())),
+        if (_total > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: CubagSpace.sm),
+            child: Text('${_tasks.length} of $_total shown', style: CubagType.caption, textAlign: TextAlign.center),
           ),
       ],
     );
   }
 
-  InputDecoration _deco({String? hint}) => InputDecoration(
-    hintText: hint,
-    hintStyle: const TextStyle(fontSize: 13, color: CubagColors.muted),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: _kOrange, width: 2),
-    ),
-    errorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: Colors.red, width: 1.5),
-    ),
-    focusedErrorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: Colors.red, width: 2),
-    ),
-  );
+  Widget _taskItem(dynamic task) {
+    final sid = task['submission_id'] as int?;
+    if (sid != null) _verifyCtrl.putIfAbsent(sid, () => TextEditingController());
+    final verified = task['admin_verified'] == true;
+    final member = (task['member_name'] ?? 'Unknown member').toString();
+    final note = task['completion_note']?.toString() ?? '';
+    final open = _verifyingId == sid && sid != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AdminListRow(
+          leading: AdminRowMark(initials: adminInitials(member)),
+          title: (task['title'] ?? '').toString(),
+          subtitle: member,
+          meta: 'Due ${task['due_date'] ?? '—'}',
+          status: verified
+              ? const StatusChip('Verified', kind: StatusKind.good)
+              : (sid != null
+                  ? const StatusChip('Sent proof', kind: StatusKind.pending)
+                  : const StatusChip('Not done yet')),
+          trailing: const SizedBox(width: CubagSpace.xs),
+        ),
+        if (note.isNotEmpty || (sid != null && !verified))
+          Padding(
+            padding: const EdgeInsets.fromLTRB(68, 0, CubagSpace.md, CubagSpace.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (note.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(CubagSpace.sm),
+                    decoration: BoxDecoration(
+                      color: CubagColors.sand,
+                      borderRadius: BorderRadius.circular(CubagRadius.control),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Member\'s note', style: CubagType.caption),
+                        const SizedBox(height: 2),
+                        Text(note, style: CubagType.body.copyWith(color: CubagColors.ink)),
+                      ],
+                    ),
+                  ),
+                if (sid != null && !verified && !open) ...[
+                  const SizedBox(height: CubagSpace.sm),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FilledButton(
+                      onPressed: () => setState(() => _verifyingId = sid),
+                      child: const Text('Verify'),
+                    ),
+                  ),
+                ],
+                if (open) ...[
+                  const SizedBox(height: CubagSpace.sm),
+                  TextField(
+                    controller: _verifyCtrl[sid],
+                    minLines: 2,
+                    maxLines: 4,
+                    onChanged: (v) => _verifyNotes[sid] = v,
+                    decoration: const InputDecoration(
+                      labelText: 'Note to the member (optional)',
+                    ),
+                  ),
+                  const SizedBox(height: CubagSpace.sm),
+                  Wrap(
+                    spacing: CubagSpace.xs,
+                    children: [
+                      FilledButton(onPressed: () => _verify(sid), child: const Text('Mark verified')),
+                      TextButton(onPressed: () => setState(() => _verifyingId = null), child: const Text('Cancel')),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
 }

@@ -1,3 +1,6 @@
+import '../components/filter_tabs.dart';
+import '../components/cubag_ui.dart';
+import '../components/admin_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../components/app_layout.dart';
@@ -562,347 +565,84 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final borderColor = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-    final textColor = isDark ? Colors.white : const Color(0xFF1F1612);
-    final subTextColor = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
-
     final complaints = _displayedComplaints;
+    final resolved = _countForStatus('Resolved') + _countForStatus('Closed');
+    AdminFigure fig(String label, String key, int n, {Color? color}) => AdminFigure(
+          label,
+          '$n',
+          color: n > 0 ? color : null,
+          selected: _selectedStatus.toLowerCase() == key.toLowerCase(),
+          onTap: () => setState(() => _selectedStatus = key),
+        );
 
     return AppLayout(
       title: 'Complaints',
       scrollable: true,
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1440),
+          constraints: const BoxConstraints(maxWidth: 1100),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header
               AdminHeader(
                 title: 'Complaints',
-                subtitle: 'Complaints from members and the public: assign, investigate and resolve.',
+                subtitle: 'Complaints from members and the public. Open one to read it, then update its status as you work on it.',
                 actions: [
                   OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: textColor,
-                      side: BorderSide(color: borderColor),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
                     onPressed: _fetchComplaints,
-                    icon: const Icon(Icons.refresh_rounded, size: 16),
-                    label: Text('Refresh', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    label: const Text('Refresh'),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-
-              // Preserved & Streamlined KPI Cards Row (User requested to keep KPI cards)
-              _buildKPIRow(isDark, cardBg, borderColor, textColor, subTextColor),
-              const SizedBox(height: 16),
-
-              // Main Complaints Table Section
-              Container(
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: borderColor),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.02), blurRadius: 6, offset: const Offset(0, 2)),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Search & Filter Toolbar
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: SizedBox(
-                              height: 38,
-                              child: TextField(
-                                controller: _searchCtrl,
-                                onChanged: (_) => setState(() {}),
-                                style: TextStyle(fontSize: 13.5, color: textColor),
-                                decoration: InputDecoration(
-                                  hintText: 'Search complaints',
-                                  hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
-                                  prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
-                                  filled: true,
-                                  fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
-                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
-                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange, width: 1.2)),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
-                                  suffixIcon: _searchCtrl.text.isNotEmpty
-                                      ? IconButton(
-                                          tooltip: 'Close',
-                                          icon: const Icon(Icons.close_rounded, size: 14),
-                                          onPressed: () {
-                                            _searchCtrl.clear();
-                                            setState(() {});
-                                          },
-                                        )
-                                      : null,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: [
-                                _buildFilterPill('All', 'all', borderColor, textColor),
-                                const SizedBox(width: 6),
-                                _buildFilterPill('Received', 'Received', borderColor, textColor),
-                                const SizedBox(width: 6),
-                                _buildFilterPill('Under Review', 'Under Review', borderColor, textColor),
-                                const SizedBox(width: 6),
-                                _buildFilterPill('Investigating', 'Investigating', borderColor, textColor),
-                                const SizedBox(width: 6),
-                                _buildFilterPill('Resolved', 'Resolved', borderColor, textColor),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1),
-
-                    // Content
-                    if (_loading)
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          children: List.generate(4, (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile())),
-                        ),
-                      )
-                    else if (_hasError)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              const Icon(Icons.error_outline_rounded, color: _kRed, size: 28),
-                              const SizedBox(height: 8),
-                              Text('Failed to load complaints', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textColor)),
-                              const SizedBox(height: 12),
-                              ElevatedButton(
-                                onPressed: _fetchComplaints,
-                                style: ElevatedButton.styleFrom(backgroundColor: _kOrange, foregroundColor: Colors.white),
-                                child: const Text('Retry'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    else if (complaints.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(color: _kOrange.withValues(alpha: 0.1), shape: BoxShape.circle),
-                                child: const Icon(Icons.gavel_rounded, size: 28, color: _kOrange),
-                              ),
-                              const SizedBox(height: 12),
-                              Text('No complaints found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
-                              const SizedBox(height: 4),
-                              Text('New complaints appear here.', style: TextStyle(fontSize: 12.5, color: subTextColor)),
-                            ],
-                          ),
-                        ),
-                      )
-                    else
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          const minWidth = 920.0;
-                          final tableWidth = constraints.maxWidth > minWidth ? constraints.maxWidth : minWidth;
-                          return SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(minWidth: tableWidth),
-                              child: DataTable(
-                                horizontalMargin: 16,
-                                columnSpacing: 18,
-                                headingRowHeight: 40,
-                                dataRowMinHeight: 52,
-                                dataRowMaxHeight: 58,
-                                headingRowColor: WidgetStateProperty.all(
-                                  isDark ? const Color(0xFF281710) : const Color(0xFFFAF6F0),
-                                ),
-                                headingTextStyle: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: subTextColor),
-                                dataTextStyle: TextStyle(fontSize: 13, color: textColor),
-                                columns: const [
-                                  DataColumn(label: Text('Tracking ID')),
-                                  DataColumn(label: Text('Complainant')),
-                                  DataColumn(label: Text('Subject & station')),
-                                  DataColumn(label: Text('Status')),
-                                  DataColumn(label: Text('Priority')),
-                                  DataColumn(label: Text('Actions')),
-                                ],
-                                rows: complaints.map((item) {
-                                  final id = item['complaint_id']?.toString() ?? '';
-                                  final name = item['name']?.toString() ?? 'Complainant';
-                                  final phone = item['phone']?.toString() ?? '';
-                                  final subject = item['subject']?.toString() ?? 'No Subject';
-                                  final port = item['port']?.toString() ?? 'Tema Port';
-                                  final category = item['category']?.toString() ?? 'Dispute';
-                                  final status = item['status']?.toString() ?? 'Received';
-                                  final priority = item['priority']?.toString() ?? 'Normal';
-                                  final statusCol = _statusColor(status);
-                                  final priorityCol = _priorityColor(priority);
-
-                                  return DataRow(
-                                    cells: [
-                                      // ID
-                                      DataCell(
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            InkWell(
-                                              onTap: () => _openViewDetailsDialog(item),
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                                decoration: BoxDecoration(color: _kBrown.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                                                child: SelectableText(id, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.accentOrangeText)),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            IconButton(
-                                              icon: const Icon(Icons.copy_rounded, size: 12),
-                                              color: subTextColor,
-                                              tooltip: 'Copy Tracking ID',
-                                              visualDensity: VisualDensity.compact,
-                                              padding: EdgeInsets.zero,
-                                              constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
-                                              onPressed: () {
-                                                Clipboard.setData(ClipboardData(text: id));
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text('Tracking ID $id copied to clipboard'),
-                                                    duration: const Duration(seconds: 2),
-                                                    behavior: SnackBarBehavior.floating,
-                                                  ),
-                                                );
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // Complainant
-                                      DataCell(
-                                        ConstrainedBox(
-                                          constraints: const BoxConstraints(maxWidth: 180),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              SelectableText(name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textColor), maxLines: 1),
-                                              if (phone.isNotEmpty) SelectableText(phone, style: TextStyle(fontSize: 11.5, color: subTextColor), maxLines: 1),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      // Subject & Station
-                                      DataCell(
-                                        ConstrainedBox(
-                                          constraints: const BoxConstraints(maxWidth: 280),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              SelectableText(subject, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textColor), maxLines: 1),
-                                              SelectableText('$port • $category', style: TextStyle(fontSize: 11.5, color: subTextColor), maxLines: 1),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      // Status
-                                      DataCell(
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                          decoration: BoxDecoration(
-                                            color: statusCol.withValues(alpha: 0.12),
-                                            borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(color: statusCol.withValues(alpha: 0.3)),
-                                          ),
-                                          child: Text(status.toUpperCase(), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: statusCol)),
-                                        ),
-                                      ),
-                                      // Priority
-                                      DataCell(
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                          decoration: BoxDecoration(
-                                            color: priorityCol.withValues(alpha: 0.12),
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: Text(priority.toUpperCase(), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: priorityCol)),
-                                        ),
-                                      ),
-                                      // Actions
-                                      DataCell(
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            ElevatedButton(
-                                              onPressed: () => _openViewDetailsDialog(item),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: isDark ? const Color(0xFF4D2D20) : CubagColors.sand,
-                                                foregroundColor: textColor,
-                                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                                                minimumSize: Size.zero,
-                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                                elevation: 0,
-                                              ),
-                                              child: Text('Case Details', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                                            ),
-                                            const SizedBox(width: 6),
-                                            ElevatedButton(
-                                              onPressed: () => _openUpdateDialog(item),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: _kOrange,
-                                                foregroundColor: Colors.white,
-                                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                                                minimumSize: Size.zero,
-                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                                elevation: 0,
-                                              ),
-                                              child: Text('Update', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-
-                    // Table Summary Footer
-                    const Divider(height: 1),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      child: Text(
-                        'Showing ${complaints.length} of ${_complaints.length} registered grievances',
-                        style: TextStyle(fontSize: 12, color: subTextColor),
-                      ),
-                    ),
-                  ],
-                ),
+              AdminFigureStrip(figures: [
+                fig('All', 'all', _complaints.length),
+                fig('New', 'Received', _countForStatus('Received'), color: CubagColors.due),
+                fig('Under review', 'Under Review', _countForStatus('Under Review'), color: CubagColors.due),
+                fig('Investigating', 'Investigating', _countForStatus('Investigating'), color: CubagColors.due),
+                fig('Resolved', 'Resolved', resolved, color: CubagColors.valid),
+              ]),
+              const SizedBox(height: CubagSpace.md),
+              AdminSearchField(
+                hint: 'Search name, subject, phone or tracking ID',
+                controller: _searchCtrl,
+                onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: CubagSpace.md),
+              if (_loading)
+                Column(
+                  children: List.generate(
+                    4,
+                    (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile()),
+                  ),
+                )
+              else if (_hasError)
+                EmptyMessage(
+                  icon: Icons.cloud_off_rounded,
+                  title: 'Could not load complaints',
+                  message: 'Check the connection and try again.',
+                  action: OutlinedButton(onPressed: _fetchComplaints, child: const Text('Try again')),
+                )
+              else if (complaints.isEmpty)
+                EmptyMessage(
+                  icon: Icons.gavel_rounded,
+                  title: _complaints.isEmpty ? 'No complaints yet' : 'No complaints match',
+                  message: _complaints.isEmpty
+                      ? 'Complaints sent from the app or the public form appear here.'
+                      : 'Try another filter, or clear the search.',
+                )
+              else ...[
+                AdminRowGroup(
+                  dividerIndent: 68,
+                  children: [for (final item in complaints) _complaintRow(item)],
+                ),
+                const SizedBox(height: CubagSpace.sm),
+                Text(
+                  'Showing ${complaints.length} of ${_complaints.length}',
+                  style: CubagType.caption,
+                ),
+              ],
+              const SizedBox(height: CubagSpace.xl),
             ],
           ),
         ),
@@ -910,142 +650,52 @@ class _AdminComplaintsPageState extends State<AdminComplaintsPage> {
     );
   }
 
-  Widget _buildKPIRow(
-    bool isDark,
-    Color cardBg,
-    Color borderColor,
-    Color textColor,
-    Color subTextColor,
-  ) {
-    final total = _complaints.length;
-    final received = _countForStatus('Received');
-    final underReview = _countForStatus('Under Review');
-    final investigating = _countForStatus('Investigating');
-    final resolved = _countForStatus('Resolved') + _countForStatus('Closed');
+  Widget _complaintRow(Map<String, dynamic> item) {
+    final id = item['complaint_id']?.toString() ?? '';
+    final name = item['name']?.toString() ?? 'Complainant';
+    final subject = item['subject']?.toString() ?? 'No subject';
+    final port = item['port']?.toString() ?? '';
+    final category = item['category']?.toString() ?? '';
+    final status = item['status']?.toString() ?? 'Received';
+    final priority = item['priority']?.toString() ?? 'Normal';
+    final norm = _normalizeStatus(status);
+    final kind = switch (norm) {
+      'resolved' || 'closed' => StatusKind.good,
+      'rejected' || 'dismissed' => StatusKind.bad,
+      _ => StatusKind.pending,
+    };
+    final label = norm == 'received' ? 'New' : (status.isEmpty ? 'New' : status[0].toUpperCase() + status.substring(1).toLowerCase());
+    final urgent = const {'high', 'urgent', 'critical'}.contains(priority.toLowerCase());
 
-    final cards = [
-      _buildKPICard('All Cases', '$total', Icons.inbox_rounded, _kBrown, 'all', isDark, cardBg, borderColor, textColor),
-      _buildKPICard('Received', '$received', Icons.flag_rounded, _kOrange, 'Received', isDark, cardBg, borderColor, textColor),
-      _buildKPICard('Under Review', '$underReview', Icons.assignment_outlined, _kBlue, 'Under Review', isDark, cardBg, borderColor, textColor),
-      _buildKPICard('Investigating', '$investigating', Icons.search_rounded, _kPurple, 'Investigating', isDark, cardBg, borderColor, textColor),
-      _buildKPICard('Resolved', '$resolved', Icons.check_circle_outline_rounded, _kGreen, 'Resolved', isDark, cardBg, borderColor, textColor),
-    ];
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 780;
-        if (isWide) {
-          return Row(
-            children: cards.map((c) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: c))).toList(),
-          );
-        }
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: cards.map((c) => Container(width: 155, margin: const EdgeInsets.only(right: 8), child: c)).toList(),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildKPICard(
-    String label,
-    String count,
-    IconData icon,
-    Color color,
-    String statusKey,
-    bool isDark,
-    Color cardBg,
-    Color borderColor,
-    Color textColor,
-  ) {
-    final isSelected = _selectedStatus.toLowerCase() == statusKey.toLowerCase();
-    return InkWell(
-      onTap: () {
-        setState(() => _selectedStatus = statusKey);
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: isDark ? 0.22 : 0.1) : cardBg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? color : borderColor,
-            width: isSelected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 16),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    count,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16,
-                      color: textColor,
-                    ).copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: isSelected ? color : Colors.grey,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+    return AdminListRow(
+      leading: AdminRowMark(
+        icon: Icons.gavel_rounded,
+        color: urgent ? CubagColors.lapsed : CubagColors.cocoa,
+        background: urgent ? CubagColors.lapsedTint : CubagColors.sand,
       ),
-    );
-  }
-
-  Widget _buildFilterPill(
-    String label,
-    String value,
-    Color borderColor,
-    Color textColor,
-  ) {
-    final isSelected = _selectedStatus.toLowerCase() == value.toLowerCase();
-    return InkWell(
-      onTap: () => setState(() => _selectedStatus = value),
-      borderRadius: BorderRadius.circular(6),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? _kBrown : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: isSelected ? _kBrown : borderColor),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            color: isSelected ? Colors.white : textColor,
-          ),
-        ),
+      title: subject,
+      subtitle: [name, if (port.isNotEmpty) port, if (category.isNotEmpty) category].join(' · '),
+      meta: [if (id.isNotEmpty) id, if (urgent) '${priority[0].toUpperCase()}${priority.substring(1).toLowerCase()} priority'].join(' · '),
+      status: StatusChip(label, kind: kind),
+      onTap: () => _openViewDetailsDialog(item),
+      trailing: PopupMenuButton<String>(
+        tooltip: 'More',
+        icon: const Icon(Icons.more_vert_rounded, color: CubagColors.muted),
+        onSelected: (v) {
+          if (v == 'update') _openUpdateDialog(item);
+          if (v == 'open') _openViewDetailsDialog(item);
+          if (v == 'copy') {
+            Clipboard.setData(ClipboardData(text: id));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Tracking ID $id copied'), behavior: SnackBarBehavior.floating),
+            );
+          }
+        },
+        itemBuilder: (_) => [
+          const PopupMenuItem(value: 'open', child: Text('Open')),
+          const PopupMenuItem(value: 'update', child: Text('Update status')),
+          if (id.isNotEmpty) const PopupMenuItem(value: 'copy', child: Text('Copy tracking ID')),
+        ],
       ),
     );
   }

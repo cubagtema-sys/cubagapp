@@ -1,3 +1,6 @@
+import '../components/filter_tabs.dart';
+import '../components/cubag_ui.dart';
+import '../components/admin_list.dart';
 import 'package:flutter/material.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
@@ -6,9 +9,7 @@ import '../utils/app_logger.dart';
 import '../design/cubag_design.dart';
 
 const _kOrange = CubagColors.action;
-const _kGreen = CubagColors.valid;
 const _kBlue = Color(0xFF3b82f6);
-const _kRed = CubagColors.lapsed;
 const _kPurple = Color(0xFF8b5cf6);
 const _kCardBg = Color(0xFF22140E);
 
@@ -36,7 +37,6 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
 
   List<String> _targetTypeOptions = [];
   List<Map<String, dynamic>> _actorsOptions = [];
-  bool _filtersVisible = true;
 
   @override
   void initState() {
@@ -434,574 +434,210 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
     }).toList();
   }
 
-  Color _actionBadgeColor(String action) {
-    final a = action.toLowerCase();
-    if (a.contains('create') || a.contains('add') || a.contains('publish')) {
-      return _kGreen;
-    }
-    if (a.contains('update') || a.contains('edit') || a.contains('save')) {
-      return _kBlue;
-    }
-    if (a.contains('delete') || a.contains('archive') || a.contains('reject') || a.contains('suspend')) {
-      return _kRed;
-    }
-    if (a.contains('approve') || a.contains('verified')) return _kPurple;
-    return _kOrange;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
-    final borderCol = isDark
-        ? const Color(0xFF3D261C)
-        : CubagColors.line;
-    final headerBg = isDark
-        ? CubagColors.ink
-        : const Color(0xFFFAF6F0);
-    final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
-    final subTextCol = isDark
-        ? const Color(0xFFB0A298)
-        : const Color(0xFF6B5E55);
-
     final displayLogs = _filteredLogs;
 
-    // Determine current actor filter label
     String currentActorLabel = 'All admins';
     if (_filterActorId.isNotEmpty) {
       final match = _actorsOptions.firstWhere(
         (a) => a['id']?.toString() == _filterActorId,
-        orElse: () => {'name': 'Actor #$_filterActorId'},
+        orElse: () => {'name': 'Admin #$_filterActorId'},
       );
-      currentActorLabel = match['name']?.toString() ?? 'Selected Actor';
+      currentActorLabel = match['name']?.toString() ?? 'Selected admin';
+    }
+
+    Widget filter(String label, bool active, VoidCallback onTap, IconData icon) => FilterChip(
+          avatar: Icon(icon, size: 16, color: active ? CubagColors.onCocoa : CubagColors.muted),
+          label: Text(label),
+          selected: active,
+          showCheckmark: false,
+          labelStyle: CubagType.label.copyWith(color: active ? CubagColors.onCocoa : CubagColors.inkSoft),
+          selectedColor: CubagColors.cocoa,
+          backgroundColor: CubagColors.paper,
+          side: BorderSide(color: active ? CubagColors.cocoa : CubagColors.line),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+          onSelected: (_) => onTap(),
+        );
+
+    // Group entries by day, newest first (the server already orders them).
+    final groups = <String, List<Map<String, dynamic>>>{};
+    for (final raw in displayLogs) {
+      final log = Map<String, dynamic>.from(raw as Map);
+      groups.putIfAbsent(_dayLabel(log['created_at']?.toString()), () => []).add(log);
     }
 
     return AppLayout(
       title: 'Audit',
       scrollable: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AdminHeader(
-            title: 'Audit',
-            subtitle:
-                'A record of what each admin did, and when.',
-            actions: [
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: kAdminOrange,
-                  side: const BorderSide(color: kAdminOrange),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1000),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AdminHeader(
+                title: 'Audit',
+                subtitle: 'What each admin did, and when. Entries cannot be edited from here.',
+                actions: [
+                  OutlinedButton.icon(
+                    onPressed: () => _fetchLogs(),
+                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    label: const Text('Refresh'),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                onPressed: () =>
-                    setState(() => _filtersVisible = !_filtersVisible),
-                icon: Icon(
-                  _filtersVisible
-                      ? Icons.filter_alt_off_rounded
-                      : Icons.filter_alt_rounded,
-                  size: 16,
-                ),
-                label: Text(
-                  _filtersVisible ? 'Hide filters' : 'Filter Log',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
+                ],
               ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kAdminOrange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  elevation: 0,
-                ),
-                onPressed: () => _fetchLogs(),
-                icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: Text(
-                  'Refresh',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
+              AdminSearchField(
+                hint: 'Search admin, action or record',
+                onChanged: (val) => setState(() => _searchQuery = val),
               ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // Metric Cards
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 700;
-              return isWide
-                  ? Row(
-                      children: [
-                        Expanded(
-                          child: AdminStatCard(
-                            label: 'Entries',
-                            value: '$_total',
-                            icon: Icons.history_rounded,
-                            color: kAdminBlue,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: AdminStatCard(
-                            label: 'Admins',
-                            value: '${_actorsOptions.isNotEmpty ? _actorsOptions.length : 1}',
-                            icon: Icons.admin_panel_settings_rounded,
-                            color: kAdminPurple,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: AdminStatCard(
-                            label: 'Logging',
-                            value: 'On',
-                            icon: Icons.verified_user_rounded,
-                            color: kAdminGreen,
-                          ),
-                        ),
-                      ],
-                    )
-                  : Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: AdminStatCard(
-                                label: 'Entries',
-                                value: '$_total',
-                                icon: Icons.history_rounded,
-                                color: kAdminBlue,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: AdminStatCard(
-                                label: 'Admins',
-                                value: '${_actorsOptions.isNotEmpty ? _actorsOptions.length : 1}',
-                                icon: Icons.admin_panel_settings_rounded,
-                                color: kAdminPurple,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        AdminStatCard(
-                          label: 'Logging',
-                          value: 'On',
-                          icon: Icons.verified_user_rounded,
-                          color: kAdminGreen,
-                        ),
-                      ],
-                    );
-            },
-          ),
-          const SizedBox(height: 14),
-
-          // Filters Toolbar
-          if (_filtersVisible)
-            Container(
-              padding: const EdgeInsets.all(14),
-              margin: const EdgeInsets.only(bottom: 14),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: borderCol),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: CubagSpace.sm),
+              Wrap(
+                spacing: CubagSpace.xs,
+                runSpacing: CubagSpace.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  // Search text input
-                  TextField(
-                    onChanged: (val) => setState(() => _searchQuery = val),
-                    style: TextStyle(fontSize: 14, color: textCol),
-                    decoration: InputDecoration(
-                      hintText: 'Search the audit log',
-                      hintStyle: TextStyle(fontSize: 13, color: subTextCol),
-                      prefixIcon: const Icon(Icons.search_rounded, size: 18, color: _kOrange),
-                      filled: true,
-                      fillColor: headerBg,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(color: borderCol),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(color: borderCol),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: _kOrange, width: 1.5),
-                      ),
-                    ),
+                  filter(currentActorLabel, _filterActorId.isNotEmpty, _showActorDialog, Icons.person_outline_rounded),
+                  filter(
+                    _filterTargetType.isEmpty ? 'All records' : _filterTargetType,
+                    _filterTargetType.isNotEmpty,
+                    () => _showOptionDialog('record type', ['', ..._targetTypeOptions], (v) {
+                      setState(() {
+                        _filterTargetType = v;
+                        _offset = 0;
+                      });
+                      _fetchLogs();
+                    }),
+                    Icons.category_outlined,
                   ),
-                  const SizedBox(height: 10),
-
-                  // Filter Chips
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
+                  filter(
+                    _filterActionType.isEmpty ? 'All actions' : _filterActionType,
+                    _filterActionType.isNotEmpty,
+                    () => _showOptionDialog(
+                      'action',
+                      ['', 'Created', 'Updated', 'Approved', 'Rejected', 'Deleted', 'Archived'],
+                      (v) {
+                        setState(() {
+                          _filterActionType = v;
+                          _offset = 0;
+                        });
+                        _fetchLogs();
+                      },
+                    ),
+                    Icons.touch_app_outlined,
+                  ),
+                  filter(
+                    _filterDateFrom.isEmpty ? 'From any date' : 'From $_filterDateFrom',
+                    _filterDateFrom.isNotEmpty,
+                    () => _pickDate(true),
+                    Icons.calendar_today_rounded,
+                  ),
+                  filter(
+                    _filterDateTo.isEmpty ? 'To any date' : 'To $_filterDateTo',
+                    _filterDateTo.isNotEmpty,
+                    () => _pickDate(false),
+                    Icons.event_available_rounded,
+                  ),
+                  if (_hasActiveFilters)
+                    TextButton(onPressed: _resetFilters, child: const Text('Clear filters')),
+                ],
+              ),
+              const SizedBox(height: CubagSpace.md),
+              if (_loading)
+                const Padding(
+                  padding: EdgeInsets.all(40),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (displayLogs.isEmpty)
+                EmptyMessage(
+                  icon: Icons.history_toggle_off_rounded,
+                  title: _hasActiveFilters ? 'No entries match' : 'No activity yet',
+                  message: _hasActiveFilters
+                      ? 'Try other filters, or clear them.'
+                      : 'Approvals, edits and deletions by admins are recorded here.',
+                )
+              else ...[
+                Text(
+                  _total == 1 ? '1 entry' : '$_total entries',
+                  style: CubagType.small.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                ),
+                for (final day in groups.entries) ...[
+                  AdminGroupLabel(day.key),
+                  AdminRowGroup(
+                    dividerIndent: 68,
+                    children: [for (final log in day.value) _logRow(log)],
+                  ),
+                  const SizedBox(height: CubagSpace.md),
+                ],
+                if (_total > _limit)
+                  Row(
                     children: [
-                      // Actor Filter (Super Admin / Sub-Admin)
-                      ActionChip(
-                        avatar: const Icon(Icons.person_pin_rounded, size: 15, color: _kPurple),
-                        label: Text(
-                          _filterActorId.isEmpty ? 'All admins' : 'Admin: $currentActorLabel',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                      Expanded(
+                        child: Text(
+                          '${_offset + 1}–${(_offset + _limit).clamp(0, _total)} of $_total',
+                          style: CubagType.caption.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
                         ),
-                        onPressed: _showActorDialog,
                       ),
-
-                      // Target Type chip
-                      ActionChip(
-                        avatar: const Icon(Icons.category_outlined, size: 15, color: _kOrange),
-                        label: Text(
-                          _filterTargetType.isEmpty ? 'All types' : 'Type: $_filterTargetType',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                        ),
-                        onPressed: () {
-                          _showOptionDialog(
-                            'Target Type',
-                            ['', ..._targetTypeOptions],
-                            (v) {
-                              setState(() {
-                                _filterTargetType = v;
-                                _offset = 0;
-                              });
-                              _fetchLogs();
-                            },
-                          );
-                        },
+                      IconButton(
+                        tooltip: 'Newer entries',
+                        icon: const Icon(Icons.chevron_left_rounded),
+                        onPressed: _offset > 0 ? _prevPage : null,
                       ),
-
-                      // Action Type chip
-                      ActionChip(
-                        avatar: const Icon(Icons.touch_app_outlined, size: 15, color: _kBlue),
-                        label: Text(
-                          _filterActionType.isEmpty ? 'All actions' : 'Action: $_filterActionType',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                        ),
-                        onPressed: () {
-                          _showOptionDialog(
-                            'Action Type',
-                            ['', 'Created', 'Updated', 'Approved', 'Rejected', 'Deleted', 'Archived'],
-                            (v) {
-                              setState(() {
-                                _filterActionType = v;
-                                _offset = 0;
-                              });
-                              _fetchLogs();
-                            },
-                          );
-                        },
+                      IconButton(
+                        tooltip: 'Older entries',
+                        icon: const Icon(Icons.chevron_right_rounded),
+                        onPressed: _offset + _limit < _total ? _nextPage : null,
                       ),
-
-                      // From Date
-                      ActionChip(
-                        avatar: const Icon(Icons.calendar_today_rounded, size: 14, color: _kGreen),
-                        label: Text(
-                          _filterDateFrom.isEmpty ? 'From: Any' : 'From: $_filterDateFrom',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                        ),
-                        onPressed: () => _pickDate(true),
-                      ),
-
-                      // To Date
-                      ActionChip(
-                        avatar: const Icon(Icons.event_available_rounded, size: 14, color: _kGreen),
-                        label: Text(
-                          _filterDateTo.isEmpty ? 'To: Any' : 'To: $_filterDateTo',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                        ),
-                        onPressed: () => _pickDate(false),
-                      ),
-
-                      if (_hasActiveFilters)
-                        TextButton.icon(
-                          onPressed: _resetFilters,
-                          icon: const Icon(Icons.clear_all_rounded, size: 16, color: _kRed),
-                          label: Text(
-                            'Reset',
-                            style: TextStyle(color: _kRed, fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                        ),
                     ],
                   ),
-                ],
-              ),
-            ),
-
-          // Audit Log Table
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.all(40),
-              child: Center(child: CircularProgressIndicator(color: _kOrange)),
-            )
-          else if (displayLogs.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(36),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: borderCol),
-              ),
-              child: Column(
-                children: [
-                  Icon(Icons.history_toggle_off_rounded, size: 40, color: subTextCol),
-                  const SizedBox(height: 10),
-                  Text(
-                    'No audit logs found.',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: textCol),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Try resetting filters or checking sub-admin activities.',
-                    style: TextStyle(fontSize: 13, color: subTextCol),
-                  ),
-                ],
-              ),
-            )
-          else
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: borderCol),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                        child: DataTable(
-                          headingRowColor: WidgetStateProperty.all(headerBg),
-                          headingTextStyle: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                            color: subTextCol,
-                          ),
-                          dataTextStyle: TextStyle(fontSize: 13, color: textCol),
-                          columnSpacing: 20,
-                          horizontalMargin: 18,
-                          dataRowMinHeight: 56,
-                          dataRowMaxHeight: 64,
-                          columns: const [
-                            DataColumn(label: Text('Timestamp')),
-                            DataColumn(label: Text('Actor / admin')),
-                            DataColumn(label: Text('Action')),
-                            DataColumn(label: Text('Target type')),
-                            DataColumn(label: Text('Details')),
-                            DataColumn(label: Text('Ip address')),
-                            DataColumn(label: Text('Details')),
-                          ],
-                          rows: displayLogs.map((log) {
-                            final actor = (log['admin_name'] ?? log['actor_name'] ?? 'Admin').toString();
-                            final role = (log['admin_role'] ?? log['actor_role'] ?? 'sub_admin').toString().toUpperCase();
-                            final ipAddress = log['ip_address']?.toString() ?? '127.0.0.1';
-                            final action = log['action']?.toString() ?? 'Action';
-                            final targetType = log['target_type']?.toString() ?? '—';
-                            final targetName = log['target_name']?.toString() ?? '—';
-                            final createdAt = log['created_at']?.toString() ?? '';
-                            final badgeColor = _actionBadgeColor(action);
-
-                            final isSuperAdmin = role.contains('SUPER');
-                            final isSubAdmin = role.contains('SUB');
-
-                            return DataRow(
-                              cells: [
-                                // 1. Timestamp
-                                DataCell(
-                                  Text(
-                                    createdAt.isNotEmpty
-                                        ? createdAt.replaceFirst('T', ' ').split('.').first
-                                        : '—',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: subTextCol,
-                                    ),
-                                  ),
-                                ),
-
-                                // 2. Actor / Admin
-                                DataCell(
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 13,
-                                        backgroundColor: (isSuperAdmin ? _kOrange : (isSubAdmin ? _kPurple : _kBlue)).withAlpha(35),
-                                        child: Text(
-                                          actor.isNotEmpty ? actor[0].toUpperCase() : 'A',
-                                          style: TextStyle(
-                                            color: isSuperAdmin ? _kOrange : (isSubAdmin ? _kPurple : _kBlue),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            actor,
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 13,
-                                              color: textCol,
-                                            ),
-                                          ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                            decoration: BoxDecoration(
-                                              color: (isSuperAdmin ? _kOrange : (isSubAdmin ? _kPurple : _kBlue)).withAlpha(20),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              role.replaceAll('_', ' '),
-                                              style: TextStyle(
-                                                fontSize: 9,
-                                                color: isSuperAdmin ? _kOrange : (isSubAdmin ? _kPurple : _kBlue),
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // 3. Action
-                                DataCell(
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: badgeColor.withAlpha(20),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: badgeColor.withAlpha(60)),
-                                    ),
-                                    child: Text(
-                                      action,
-                                      style: TextStyle(
-                                        color: badgeColor,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                // 4. Target Type
-                                DataCell(
-                                  Text(
-                                    targetType.toUpperCase(),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
-                                      color: subTextCol,
-                                    ),
-                                  ),
-                                ),
-
-                                // 5. Subject
-                                DataCell(
-                                  ConstrainedBox(
-                                    constraints: const BoxConstraints(maxWidth: 180),
-                                    child: Text(
-                                      targetName,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: textCol,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                // 6. IP Address
-                                DataCell(
-                                  Text(
-                                    ipAddress,
-                                    style: TextStyle(fontSize: 11, color: subTextCol),
-                                  ),
-                                ),
-
-                                // 7. Action Button
-                                DataCell(
-                                  IconButton(
-                                    icon: const Icon(Icons.open_in_new_rounded, size: 16, color: _kOrange),
-                                    tooltip: 'View Full Audit Record',
-                                    onPressed: () => _showLogDetailsModal(Map<String, dynamic>.from(log)),
-                                  ),
-                                ),
-                              ],
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          const SizedBox(height: 14),
-
-          // Pagination bar
-          if (_total > _limit)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Showing ${_offset + 1} - ${(_offset + _limit).clamp(0, _total)} of $_total entries',
-                  style: TextStyle(fontSize: 13, color: subTextCol),
-                ),
-                Row(
-                  children: [
-                    IconButton.outlined(
-                      tooltip: 'Previous page',
-                      icon: const Icon(Icons.chevron_left_rounded, size: 18),
-                      onPressed: _offset > 0 ? _prevPage : null,
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton.outlined(
-                      tooltip: 'Next page',
-                      icon: const Icon(Icons.chevron_right_rounded, size: 18),
-                      onPressed: _offset + _limit < _total ? _nextPage : null,
-                    ),
-                  ],
-                ),
               ],
-            ),
-          const SizedBox(height: 24),
-        ],
+              const SizedBox(height: CubagSpace.xl),
+            ],
+          ),
+        ),
       ),
+    );
+  }
+
+  static const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  String _dayLabel(String? raw) {
+    final d = DateTime.tryParse(raw ?? '')?.toLocal();
+    if (d == null) return 'Undated';
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(d.year, d.month, d.day);
+    final diff = today.difference(day).inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Yesterday';
+    return '${d.day} ${_months[d.month - 1]} ${d.year}';
+  }
+
+  Widget _logRow(Map<String, dynamic> log) {
+    final actor = (log['admin_name'] ?? log['actor_name'] ?? 'Admin').toString();
+    final role = (log['admin_role'] ?? log['actor_role'] ?? '').toString().toLowerCase();
+    final action = log['action']?.toString() ?? 'Action';
+    final targetType = log['target_type']?.toString() ?? '';
+    final targetName = log['target_name']?.toString() ?? '';
+    final ip = log['ip_address']?.toString() ?? '';
+    final d = DateTime.tryParse(log['created_at']?.toString() ?? '')?.toLocal();
+    final time = d == null ? '' : '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    final a = action.toLowerCase();
+    final kind = a.contains('delet') || a.contains('reject') || a.contains('suspend')
+        ? StatusKind.bad
+        : (a.contains('approv') || a.contains('verif') ? StatusKind.good : StatusKind.neutral);
+    final roleLabel = role.contains('super') ? 'Super admin' : (role.contains('sub') ? 'Sub-admin' : '');
+
+    return AdminListRow(
+      leading: AdminRowMark(initials: adminInitials(actor)),
+      title: actor,
+      subtitle: [
+        if (targetType.isNotEmpty) targetType[0].toUpperCase() + targetType.substring(1).replaceAll('_', ' '),
+        if (targetName.isNotEmpty && targetName != '—') targetName,
+      ].join(': '),
+      meta: [if (time.isNotEmpty) time, if (roleLabel.isNotEmpty) roleLabel, if (ip.isNotEmpty) ip].join(' · '),
+      status: StatusChip(action, kind: kind),
+      onTap: () => _showLogDetailsModal(log),
     );
   }
 }

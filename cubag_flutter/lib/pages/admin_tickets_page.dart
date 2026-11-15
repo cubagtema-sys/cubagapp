@@ -1,3 +1,6 @@
+import '../components/filter_tabs.dart';
+import '../components/cubag_ui.dart';
+import '../components/admin_list.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,15 +9,10 @@ import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
-import '../utils/app_colors.dart';
 import '../design/cubag_design.dart';
 
-const _kOrange = CubagColors.action;
 const _kGreen = CubagColors.valid;
-const _kAmber = CubagColors.due;
 const _kRed = CubagColors.lapsed;
-const _kBlue = Color(0xFF3B82F6);
-const _kIndigo = Color(0xFF6366F1);
 const _kSlate = CubagColors.muted;
 
 class AdminTicketsPage extends StatefulWidget {
@@ -224,26 +222,6 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
     );
   }
 
-  Color _statusColor(String s) {
-    switch (s.toLowerCase()) {
-      case 'open':
-        return _kOrange;
-      case 'pending':
-        return _kAmber;
-      case 'resolved':
-        return _kGreen;
-      case 'archived':
-        return _kSlate;
-      default:
-        return _kBlue;
-    }
-  }
-
-  String _statusLabel(String s) {
-    if (s.isEmpty) return 'Open';
-    return s[0].toUpperCase() + s.substring(1);
-  }
-
   List<dynamic> get _filteredTickets {
     var list = _tickets;
     if (_searchQuery.isNotEmpty) {
@@ -266,60 +244,47 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
     return list;
   }
 
-  int get _openCount => _tickets.where((t) => (t['status'] ?? 'open') == 'open').length;
-  int get _pendingCount => _tickets.where((t) => (t['status'] ?? '') == 'pending').length;
-  int get _resolvedCount => _tickets.where((t) => (t['status'] ?? '') == 'resolved').length;
+  (String, StatusKind) _statusView(String s) => switch (s.toLowerCase()) {
+        'pending' => ('In progress', StatusKind.pending),
+        'resolved' => ('Resolved', StatusKind.good),
+        'archived' => ('Archived', StatusKind.neutral),
+        _ => ('Open', StatusKind.pending),
+      };
+
+  void _copyId(String id) {
+    Clipboard.setData(ClipboardData(text: id));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Ticket #$id copied'), behavior: SnackBarBehavior.floating),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
-    final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
-
     return AppLayout(
       title: 'Tickets',
       scrollable: true,
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1440),
+          constraints: const BoxConstraints(maxWidth: 1100),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header
               AdminHeader(
                 title: 'Tickets',
-                subtitle: 'Questions and problems members send to the Secretariat.',
+                subtitle: 'Questions and problems members send to the Secretariat. Open one to read it and reply.',
                 actions: [
                   OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: isDark ? Colors.white : CubagColors.inkSoft,
-                      side: BorderSide(color: border),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
                     onPressed: () {
                       _clearCache();
                       _fetchTickets(page: 1);
                     },
-                    icon: const Icon(Icons.refresh_rounded, size: 16),
-                    label: Text('Refresh', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    label: const Text('Refresh'),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-
-              // Streamlined KPI Row
-              _buildKPIRow(isDark, cardBg, border, textPrimary, textMuted),
-              const SizedBox(height: 16),
-
-              // Active view: Conversation studio or Ticket table
-              if (_selectedTicket != null)
-                _buildConversationStudio(isDark, cardBg, border, textPrimary, textMuted)
-              else
-                _buildTableSection(isDark, cardBg, border, textPrimary, textMuted),
-              const SizedBox(height: 24),
+              if (_selectedTicket != null) _buildConversation() else ..._buildList(),
+              const SizedBox(height: CubagSpace.xl),
             ],
           ),
         ),
@@ -327,800 +292,298 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
     );
   }
 
-  Widget _buildKPIRow(
-    bool isDark,
-    Color cardBg,
-    Color border,
-    Color textPrimary,
-    Color textMuted,
-  ) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 700;
-        final cards = [
-          _buildCompactMetric('Total', '$_total', Icons.confirmation_number_outlined, _kIndigo, 'all', cardBg, border, textPrimary, textMuted),
-          _buildCompactMetric('Open', '$_openCount', Icons.mark_email_unread_outlined, _kOrange, 'inbox', cardBg, border, textPrimary, textMuted),
-          _buildCompactMetric('In Progress', '$_pendingCount', Icons.pending_actions_rounded, _kAmber, 'pending', cardBg, border, textPrimary, textMuted),
-          _buildCompactMetric('Resolved', '$_resolvedCount', Icons.check_circle_outline_rounded, _kGreen, 'resolved', cardBg, border, textPrimary, textMuted),
-        ];
-
-        if (isWide) {
-          return Row(
-            children: cards.map((c) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: c))).toList(),
-          );
-        }
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: cards.map((c) => Container(width: 160, margin: const EdgeInsets.only(right: 8), child: c)).toList(),
+  List<Widget> _buildList() {
+    final tickets = _filteredTickets;
+    return [
+      FilterTabs(
+        tabs: const [
+          ('inbox', 'Inbox'),
+          ('pending', 'In progress'),
+          ('resolved', 'Resolved'),
+          ('archived', 'Archived'),
+          ('all', 'All'),
+        ],
+        selected: _statusFilter,
+        onSelected: (key) {
+          if (_statusFilter != key) {
+            setState(() => _statusFilter = key);
+            _fetchTickets(page: 1);
+          }
+        },
+      ),
+      const SizedBox(height: CubagSpace.sm),
+      AdminSearchField(
+        hint: 'Search subject, member, company or ticket number',
+        controller: _searchCtrl,
+        onChanged: _onSearchChanged,
+      ),
+      const SizedBox(height: CubagSpace.md),
+      if (_loading)
+        Column(
+          children: List.generate(
+            4,
+            (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile()),
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildCompactMetric(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-    String filterKey,
-    Color bg,
-    Color border,
-    Color textPrimary,
-    Color textMuted,
-  ) {
-    final isSel = _statusFilter == filterKey;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return InkWell(
-      onTap: () {
-        setState(() => _statusFilter = filterKey);
-        _fetchTickets(page: 1);
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSel ? color.withValues(alpha: isDark ? 0.2 : 0.08) : bg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSel ? color : border,
-            width: isSel ? 1.5 : 1,
-          ),
+        )
+      else if (tickets.isEmpty)
+        EmptyMessage(
+          icon: Icons.inbox_rounded,
+          title: _searchQuery.isNotEmpty ? 'No tickets match' : 'Nothing here',
+          message: _searchQuery.isNotEmpty
+              ? 'Try other words, or clear the search.'
+              : (_statusFilter == 'inbox'
+                  ? 'No open tickets. Questions from members appear here.'
+                  : 'No tickets in this list.'),
+        )
+      else ...[
+        AdminRowGroup(
+          dividerIndent: 68,
+          children: [for (final t in tickets) _ticketRow(Map<String, dynamic>.from(t as Map))],
         ),
-        child: Row(
+        const SizedBox(height: CubagSpace.xs),
+        Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 16),
-            ),
-            const SizedBox(width: 10),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: textPrimary),
-                  ),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                      color: isSel ? color : textMuted,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+              child: Text(
+                'Page $_page · ${_tickets.length} shown of $_total',
+                style: CubagType.caption.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
+            ),
+            IconButton(
+              tooltip: 'Previous page',
+              icon: const Icon(Icons.chevron_left_rounded),
+              onPressed: _page > 1 ? () => _fetchTickets(page: _page - 1) : null,
+            ),
+            IconButton(
+              tooltip: 'Next page',
+              icon: const Icon(Icons.chevron_right_rounded),
+              onPressed: _hasMore ? () => _fetchTickets(page: _page + 1) : null,
             ),
           ],
         ),
-      ),
-    );
+      ],
+    ];
   }
 
-  Widget _buildTableSection(
-    bool isDark,
-    Color cardBg,
-    Color border,
-    Color textPrimary,
-    Color textMuted,
-  ) {
-    final tickets = _filteredTickets;
+  Widget _ticketRow(Map<String, dynamic> map) {
+    final id = map['id']?.toString() ?? '';
+    final subject = map['subject'] as String? ?? 'No subject';
+    final status = map['status'] as String? ?? 'open';
+    final memberName = map['member_name'] as String? ?? 'Member';
+    final company = map['company'] as String? ?? '';
+    final created = map['created_at']?.toString() ?? '';
+    final date = map['date'] as String? ?? (created.length >= 10 ? created.substring(0, 10) : created);
+    final replies = (map['replies'] as List?)?.length ?? 0;
+    final (label, kind) = _statusView(status);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: border),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.02), blurRadius: 6, offset: const Offset(0, 2)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Filter & Search Toolbar
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 38,
-                    child: TextField(
-                      controller: _searchCtrl,
-                      onChanged: _onSearchChanged,
-                      style: TextStyle(fontSize: 13.5, color: textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'Search tickets',
-                        hintStyle: TextStyle(fontSize: 12.5, color: textMuted),
-                        prefixIcon: Icon(Icons.search_rounded, size: 16, color: textMuted),
-                        filled: true,
-                        fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange, width: 1.2)),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
-                        suffixIcon: _searchQuery.isNotEmpty
-                            ? IconButton(
-                                tooltip: 'Close',
-                                icon: const Icon(Icons.close_rounded, size: 14),
-                                onPressed: () {
-                                  _searchCtrl.clear();
-                                  setState(() => _searchQuery = '');
-                                },
-                              )
-                            : null,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildStatusFilterChip('Inbox', 'inbox', activeColor: _kOrange),
-                      const SizedBox(width: 6),
-                      _buildStatusFilterChip('Archived', 'archived', activeColor: _kSlate),
-                      const SizedBox(width: 6),
-                      _buildStatusFilterChip('All', 'all', activeColor: _kIndigo),
-                    ],
-                  ),
-                ),
-              ],
+    return AdminListRow(
+      leading: AdminRowMark(initials: adminInitials(memberName)),
+      title: subject,
+      subtitle: [memberName, if (company.isNotEmpty) company].join(' · '),
+      meta: [
+        '#$id',
+        if (date.isNotEmpty) date,
+        if (replies > 0) replies == 1 ? '1 reply' : '$replies replies',
+      ].join(' · '),
+      status: StatusChip(label, kind: kind),
+      onTap: () => setState(() => _selectedTicket = map),
+      trailing: PopupMenuButton<String>(
+        tooltip: 'More',
+        icon: const Icon(Icons.more_vert_rounded, color: CubagColors.muted),
+        onSelected: (action) {
+          if (action == 'archive') {
+            _confirmArchiveTicket(id);
+          } else if (action == 'copy') {
+            _copyId(id);
+          } else {
+            _updateTicketStatus(id, action);
+          }
+        },
+        itemBuilder: (ctx) => [
+          if (status != 'open') const PopupMenuItem(value: 'open', child: Text('Mark open')),
+          if (status != 'pending') const PopupMenuItem(value: 'pending', child: Text('Mark in progress')),
+          if (status != 'resolved') const PopupMenuItem(value: 'resolved', child: Text('Mark resolved')),
+          const PopupMenuItem(value: 'copy', child: Text('Copy ticket number')),
+          if (status != 'archived') ...[
+            const PopupMenuDivider(),
+            PopupMenuItem(
+              value: 'archive',
+              child: Text('Archive', style: TextStyle(color: CubagColors.lapsed)),
             ),
-          ),
-          const Divider(height: 1),
-
-          // Table Content
-          if (_loading)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: List.generate(4, (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile())),
-              ),
-            )
-          else if (tickets.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: _kIndigo.withValues(alpha: 0.1), shape: BoxShape.circle),
-                    child: const Icon(Icons.inbox_rounded, size: 28, color: _kIndigo),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'No tickets found in this view',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textPrimary),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Member inquiries and helpdesk tickets will appear here.',
-                    style: TextStyle(fontSize: 12.5, color: textMuted),
-                  ),
-                ],
-              ),
-            )
-          else
-            LayoutBuilder(
-              builder: (context, constraints) {
-                const minWidth = 880.0;
-                final tableWidth = constraints.maxWidth > minWidth ? constraints.maxWidth : minWidth;
-                return SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minWidth: tableWidth),
-                    child: DataTable(
-                      horizontalMargin: 16,
-                      columnSpacing: 18,
-                      headingRowHeight: 40,
-                      dataRowMinHeight: 52,
-                      dataRowMaxHeight: 56,
-                      headingRowColor: WidgetStateProperty.all(
-                        isDark ? const Color(0xFF22140E) : const Color(0xFFFAF6F0),
-                      ),
-                      headingTextStyle: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        color: textMuted,
-                      ),
-                      dataTextStyle: TextStyle(
-                        fontSize: 13,
-                        color: textPrimary,
-                      ),
-                      columns: const [
-                        DataColumn(label: Text('ID')),
-                        DataColumn(label: Text('Member')),
-                        DataColumn(label: Text('Subject')),
-                        DataColumn(label: Text('Status')),
-                        DataColumn(label: Text('Date')),
-                        DataColumn(label: Text('Action')),
-                      ],
-                      rows: tickets.map((t) {
-                        final map = Map<String, dynamic>.from(t as Map);
-                        final id = map['id']?.toString() ?? '';
-                        final subject = map['subject'] as String? ?? 'No Subject';
-                        final message = map['message'] as String? ?? '';
-                        final status = map['status'] as String? ?? 'open';
-                        final memberName = map['member_name'] as String? ?? 'Member';
-                        final company = map['company'] as String? ?? '';
-                        final date = map['date'] as String? ?? (map['created_at']?.toString().substring(0, 10) ?? '');
-                        final replies = (map['replies'] as List?)?.length ?? 0;
-                        final statusCol = _statusColor(status);
-
-                        return DataRow(
-                          cells: [
-                            // ID
-                            DataCell(
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  InkWell(
-                                    onTap: () => setState(() => _selectedTicket = map),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: _kIndigo.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: SelectableText(
-                                        '#$id',
-                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _kIndigo),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  IconButton(
-                                    icon: const Icon(Icons.copy_rounded, size: 12),
-                                    color: textMuted,
-                                    tooltip: 'Copy ticket ID',
-                                    visualDensity: VisualDensity.compact,
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
-                                    onPressed: () {
-                                      Clipboard.setData(ClipboardData(text: id));
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Ticket #$id copied to clipboard'),
-                                          duration: const Duration(seconds: 2),
-                                          behavior: SnackBarBehavior.floating,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // Member
-                            DataCell(
-                              ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 180),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SelectableText(
-                                      memberName,
-                                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textPrimary),
-                                      maxLines: 1,
-                                    ),
-                                    if (company.isNotEmpty)
-                                      SelectableText(
-                                        company,
-                                        style: TextStyle(fontSize: 11.5, color: AppColors.accentOrangeText, fontWeight: FontWeight.w500),
-                                        maxLines: 1,
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            // Subject
-                            DataCell(
-                              ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 280),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: SelectableText(
-                                            subject,
-                                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary),
-                                            maxLines: 1,
-                                          ),
-                                        ),
-                                        if (replies > 0)
-                                          Container(
-                                            margin: const EdgeInsets.only(left: 4),
-                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                            decoration: BoxDecoration(
-                                              color: _kBlue.withValues(alpha: 0.12),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Text('$replies', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _kBlue)),
-                                          ),
-                                      ],
-                                    ),
-                                    SelectableText(
-                                      message,
-                                      style: TextStyle(fontSize: 11.5, color: textMuted),
-                                      maxLines: 1,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            // Status
-                            DataCell(
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: statusCol.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: statusCol.withValues(alpha: 0.3)),
-                                ),
-                                child: Text(
-                                  _statusLabel(status).toUpperCase(),
-                                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: statusCol),
-                                ),
-                              ),
-                            ),
-                            // Date
-                            DataCell(
-                              SelectableText(date, style: TextStyle(fontSize: 12, color: textMuted)),
-                            ),
-                            // Actions
-                            DataCell(
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  ElevatedButton(
-                                    onPressed: () => setState(() => _selectedTicket = map),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: _kOrange,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                      minimumSize: Size.zero,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                      elevation: 0,
-                                    ),
-                                    child: Text('Reply', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  PopupMenuButton<String>(
-                                    icon: Icon(Icons.more_vert_rounded, size: 16, color: textMuted),
-                                    color: cardBg,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                    onSelected: (action) {
-                                      if (action == 'archive') {
-                                        _confirmArchiveTicket(id);
-                                      } else {
-                                        _updateTicketStatus(id, action);
-                                      }
-                                    },
-                                    itemBuilder: (ctx) => [
-                                      if (status != 'open')
-                                        PopupMenuItem(value: 'open', child: Text('Mark open', style: TextStyle(fontSize: 13))),
-                                      if (status != 'pending')
-                                        PopupMenuItem(value: 'pending', child: Text('Mark in progress', style: TextStyle(fontSize: 13))),
-                                      if (status != 'resolved')
-                                        PopupMenuItem(value: 'resolved', child: Text('Mark resolved', style: TextStyle(fontSize: 13, color: _kGreen, fontWeight: FontWeight.bold))),
-                                      const PopupMenuDivider(),
-                                      if (status != 'archived')
-                                        PopupMenuItem(value: 'archive', child: Text('Archive', style: TextStyle(fontSize: 13, color: _kRed))),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                );
-              },
-            ),
-
-          // Pagination Footer
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Showing ${_tickets.length} of $_total (Page $_page)',
-                  style: TextStyle(fontSize: 12, color: textMuted),
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      tooltip: 'Previous page',
-                      icon: const Icon(Icons.chevron_left_rounded, size: 18),
-                      onPressed: _page > 1 ? () => _fetchTickets(page: _page - 1) : null,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    Text('$_page', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    IconButton(
-                      tooltip: 'Next page',
-                      icon: const Icon(Icons.chevron_right_rounded, size: 18),
-                      onPressed: _hasMore ? () => _fetchTickets(page: _page + 1) : null,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildStatusFilterChip(String label, String key, {Color? activeColor}) {
-    final isSel = _statusFilter == key;
-    final color = activeColor ?? _kOrange;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return InkWell(
-      onTap: () {
-        if (_statusFilter != key) {
-          setState(() => _statusFilter = key);
-          _fetchTickets(page: 1);
-        }
-      },
-      borderRadius: BorderRadius.circular(6),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSel ? color.withValues(alpha: isDark ? 0.25 : 0.12) : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: isSel ? color : (isDark ? const Color(0xFF3D261C) : CubagColors.line),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-            color: isSel ? color : (isDark ? Colors.white70 : CubagColors.inkSoft),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildConversationStudio(
-    bool isDark,
-    Color cardBg,
-    Color border,
-    Color textPrimary,
-    Color textMuted,
-  ) {
+  Widget _buildConversation() {
     final t = _selectedTicket!;
     final id = t['id']?.toString() ?? '';
-    final subject = t['subject'] as String? ?? 'No Subject';
+    final subject = t['subject'] as String? ?? 'No subject';
     final message = t['message'] as String? ?? '';
     final status = t['status'] as String? ?? 'open';
     final memberName = t['member_name'] as String? ?? 'Member';
     final company = t['company'] as String? ?? '';
-    final date = t['date'] as String? ?? (t['created_at']?.toString().substring(0, 10) ?? '');
+    final created = t['created_at']?.toString() ?? '';
+    final date = t['date'] as String? ?? (created.length >= 10 ? created.substring(0, 10) : created);
     final replies = (t['replies'] as List?) ?? [];
-    final statusCol = _statusColor(status);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Studio Header
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: () => setState(() => _selectedTicket = null),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: border),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  icon: const Icon(Icons.arrow_back_rounded, size: 14),
-                  label: Text('Back', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5)),
-                ),
-                const SizedBox(width: 10),
-                InkWell(
-                  onTap: () {
-                    Clipboard.setData(ClipboardData(text: id));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Ticket #$id copied to clipboard'), duration: const Duration(seconds: 2), behavior: SnackBarBehavior.floating),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: _kIndigo.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => setState(() => _selectedTicket = null),
+            icon: const Icon(Icons.arrow_back_rounded, size: 18),
+            label: const Text('All tickets'),
+          ),
+        ),
+        const SizedBox(height: CubagSpace.xs),
+        Container(
+          padding: const EdgeInsets.all(CubagSpace.lg),
+          decoration: BoxDecoration(
+            color: CubagColors.paper,
+            borderRadius: BorderRadius.circular(CubagRadius.card),
+            border: Border.all(color: CubagColors.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Wrap(
+                spacing: CubagSpace.sm,
+                runSpacing: CubagSpace.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                alignment: WrapAlignment.spaceBetween,
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 640),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('#$id', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _kIndigo)),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.copy_rounded, size: 11, color: _kIndigo),
+                        SelectableText(subject, style: CubagType.title),
+                        const SizedBox(height: 4),
+                        Text(
+                          [memberName, if (company.isNotEmpty) company, if (date.isNotEmpty) date].join(' · '),
+                          style: CubagType.small,
+                        ),
                       ],
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: SelectableText(
-                    subject,
-                    style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: textPrimary),
-                    maxLines: 1,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton(onPressed: () => _copyId(id), child: Text('#$id')),
+                      const SizedBox(width: CubagSpace.xs),
+                      DropdownMenu<String>(
+                        initialSelection: const ['open', 'pending', 'resolved', 'archived'].contains(status) ? status : 'open',
+                        label: const Text('Status'),
+                        width: 170,
+                        dropdownMenuEntries: const [
+                          DropdownMenuEntry(value: 'open', label: 'Open'),
+                          DropdownMenuEntry(value: 'pending', label: 'In progress'),
+                          DropdownMenuEntry(value: 'resolved', label: 'Resolved'),
+                          DropdownMenuEntry(value: 'archived', label: 'Archived'),
+                        ],
+                        onSelected: (val) {
+                          if (val != null && val != status) _updateTicketStatus(id, val);
+                        },
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                // Status selector
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: statusCol.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: statusCol.withValues(alpha: 0.3)),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: ['open', 'pending', 'resolved', 'archived'].contains(status) ? status : 'open',
-                      dropdownColor: cardBg,
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: statusCol),
-                      items: const [
-                        DropdownMenuItem(value: 'open', child: Text('Open')),
-                        DropdownMenuItem(value: 'pending', child: Text('In progress')),
-                        DropdownMenuItem(value: 'resolved', child: Text('Resolved')),
-                        DropdownMenuItem(value: 'archived', child: Text('Archived')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) _updateTicketStatus(id, val);
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-
-          // Member Info Strip
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            color: isDark ? CubagColors.ink.withValues(alpha: 0.5) : const Color(0xFFFAF6F0),
-            child: Row(
-              children: [
-                Text('From: ', style: TextStyle(fontSize: 12, color: textMuted)),
-                Text(memberName, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: textPrimary)),
-                if (company.isNotEmpty) ...[
-                  Text(' • ', style: TextStyle(fontSize: 12, color: textMuted)),
-                  Text(company, style: TextStyle(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.w600)),
                 ],
-                const Spacer(),
-                Text(date, style: TextStyle(fontSize: 11.5, color: textMuted)),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-
-          // Conversation Thread
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Original message bubble
-                _buildSimpleBubble(
-                  sender: memberName,
-                  tag: company.isNotEmpty ? company : 'Member',
-                  message: message,
-                  time: date,
-                  isAdmin: false,
-                  isDark: isDark,
-                  border: border,
-                  textPrimary: textPrimary,
-                  textMuted: textMuted,
-                ),
-
-                // Replies
-                ...replies.map((r) {
+              ),
+              const SizedBox(height: CubagSpace.lg),
+              const Divider(height: 1, color: CubagColors.line),
+              const SizedBox(height: CubagSpace.lg),
+              _bubble(sender: memberName, message: message, time: date, isAdmin: false),
+              for (final r in replies)
+                () {
                   final rMap = Map<String, dynamic>.from(r as Map);
                   final author = rMap['author'] as String? ?? 'Admin';
-                  final rMsg = rMap['message'] as String? ?? '';
-                  final rDate = rMap['date'] as String? ?? '';
-                  final isAdm = author.toLowerCase().contains('admin') || author.toLowerCase().contains('secretariat');
-
-                  return _buildSimpleBubble(
+                  final lower = author.toLowerCase();
+                  return _bubble(
                     sender: author,
-                    tag: isAdm ? 'Secretariat' : 'Member',
-                    message: rMsg,
-                    time: rDate,
-                    isAdmin: isAdm,
-                    isDark: isDark,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textMuted: textMuted,
+                    message: rMap['message'] as String? ?? '',
+                    time: rMap['date'] as String? ?? '',
+                    isAdmin: lower.contains('admin') || lower.contains('secretariat'),
                   );
-                }),
-
-                const SizedBox(height: 12),
-                const Divider(height: 1),
-                const SizedBox(height: 12),
-
-                // Reply Composer
-                Text(
-                  'Reply to member',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: _replyCtrl,
-                  maxLines: 3,
-                  style: TextStyle(fontSize: 13.5, color: textPrimary),
-                  decoration: InputDecoration(
-                    hintText: 'Write your reply',
-                    hintStyle: TextStyle(fontSize: 12.5, color: textMuted),
-                    filled: true,
-                    fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange, width: 1.2)),
-                    contentPadding: const EdgeInsets.all(10),
+                }(),
+              const SizedBox(height: CubagSpace.md),
+              Text('Your reply', style: CubagType.label),
+              const SizedBox(height: CubagSpace.xs),
+              TextField(
+                controller: _replyCtrl,
+                minLines: 3,
+                maxLines: 8,
+                decoration: const InputDecoration(hintText: 'Write to the member. They are notified in the app.'),
+              ),
+              const SizedBox(height: CubagSpace.sm),
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: CubagSpace.xs,
+                runSpacing: CubagSpace.xs,
+                children: [
+                  OutlinedButton(
+                    onPressed: _sendingReply
+                        ? null
+                        : () async {
+                            if (_replyCtrl.text.trim().isNotEmpty) {
+                              await _sendReply();
+                              await _updateTicketStatus(id, 'resolved');
+                            }
+                          },
+                    child: const Text('Send and mark resolved'),
                   ),
-                ),
-                const SizedBox(height: 8),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    OutlinedButton(
-                      onPressed: _sendingReply
-                          ? null
-                          : () async {
-                              if (_replyCtrl.text.trim().isNotEmpty) {
-                                await _sendReply();
-                                await _updateTicketStatus(id, 'resolved');
-                              }
-                            },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: _kGreen,
-                        side: BorderSide(color: _kGreen.withValues(alpha: 0.5)),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                      ),
-                      child: Text('Reply and resolve', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      onPressed: _sendingReply ? null : _sendReply,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _kOrange,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                        elevation: 0,
-                      ),
-                      icon: _sendingReply
-                          ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Icon(Icons.send_rounded, size: 14),
-                      label: Text(_sendingReply ? 'Sending...' : 'Send Reply', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  FilledButton.icon(
+                    onPressed: _sendingReply ? null : _sendReply,
+                    icon: _sendingReply
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.send_rounded, size: 16),
+                    label: Text(_sendingReply ? 'Sending' : 'Send reply'),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildSimpleBubble({
+  Widget _bubble({
     required String sender,
-    required String tag,
     required String message,
     required String time,
     required bool isAdmin,
-    required bool isDark,
-    required Color border,
-    required Color textPrimary,
-    required Color textMuted,
   }) {
-    final bubbleBg = isAdmin
-        ? (isDark ? const Color(0xFF4D2D20) : CubagColors.actionTint)
-        : (isDark ? CubagColors.ink : const Color(0xFFFAF6F0));
-    final bubbleBorder = isAdmin ? _kOrange.withValues(alpha: 0.4) : border;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: bubbleBg,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: bubbleBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Align(
+      alignment: isAdmin ? Alignment.centerRight : Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 620),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: CubagSpace.sm),
+          padding: const EdgeInsets.all(CubagSpace.md),
+          decoration: BoxDecoration(
+            color: isAdmin ? CubagColors.actionTint : CubagColors.sand,
+            borderRadius: BorderRadius.circular(CubagRadius.card),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                sender,
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: isAdmin ? _kOrange : textPrimary),
+                [isAdmin ? 'Secretariat' : sender, if (time.isNotEmpty) time].join(' · '),
+                style: CubagType.caption,
               ),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                decoration: BoxDecoration(
-                  color: (isAdmin ? _kOrange : _kIndigo).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  tag,
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isAdmin ? _kOrange : _kIndigo),
-                ),
-              ),
-              const Spacer(),
-              Text(time, style: TextStyle(fontSize: 11, color: textMuted)),
+              const SizedBox(height: 4),
+              SelectableText(message, style: CubagType.body.copyWith(color: CubagColors.ink)),
             ],
           ),
-          const SizedBox(height: 6),
-          SelectableText(
-            message,
-            style: TextStyle(fontSize: 13, color: textPrimary, height: 1.4),
-          ),
-        ],
+        ),
       ),
     );
   }

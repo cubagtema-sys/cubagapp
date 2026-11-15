@@ -5,7 +5,9 @@ import '../components/app_layout.dart';
 import '../components/fetch_error_view.dart';
 import '../components/message_report_card.dart';
 import '../services/api_service.dart';
-import '../utils/app_colors.dart';
+import '../components/admin_components.dart';
+import '../components/filter_tabs.dart';
+import '../design/cubag_design.dart';
 import '../utils/app_logger.dart';
 
 /// Moderation queue for member-to-member messaging (store UGC rules:
@@ -117,94 +119,54 @@ class _AdminMessageReportsPageState extends State<AdminMessageReportsPage> {
   @override
   Widget build(BuildContext context) {
     return AppLayout(
-      title: 'Reported Messages',
+      title: 'Reported messages',
       scrollable: true,
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 960),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'Members can report a conversation from the chat screen. '
-                  'Reporting also blocks the other member for the reporter. '
-                  'Review each report and take action on the member\'s '
-                  'profile if needed (for example, suspend the account).',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 13.5),
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final (value, label) in _statuses)
-                      ChoiceChip(
-                        label: Text(label),
-                        selected: _status == value,
-                        onSelected: (_) {
-                          if (_status == value) return;
-                          setState(() => _status = value);
-                          _load();
-                        },
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                if (_loading)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 48),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else if (_error != null)
-                  FetchErrorView(onRetry: _load, message: _error)
-                else if (_items.isEmpty)
-                  _EmptyState(status: _status)
-                else
-                  for (final r in _items)
-                    MessageReportCard(
-                      report: r,
-                      busy: _busy.contains(r['id']),
-                      onStatus: (s) => _setStatus(r, s),
-                      onOpenMember: () => context.push(
-                        '/member-detail/${r['reported_member_id']}',
-                      ),
-                    ),
-              ],
-            ),
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const AdminHeader(
+                title: 'Reported messages',
+                subtitle: 'Members can report a chat from the conversation screen, which also blocks the other member for them. '
+                    'Read each report, then resolve or dismiss it. To act on a member, open their profile.',
+              ),
+              FilterTabs(
+                tabs: _statuses,
+                selected: _status,
+                onSelected: (value) {
+                  if (_status == value) return;
+                  setState(() => _status = value);
+                  _load();
+                },
+              ),
+              const SizedBox(height: CubagSpace.md),
+              if (_loading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 48),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_error != null)
+                FetchErrorView(onRetry: _load, message: _error)
+              else if (_items.isEmpty)
+                EmptyMessage(
+                  icon: Icons.verified_user_outlined,
+                  title: _status == 'open' ? 'No open reports' : 'No reports here',
+                  message: _status == 'open' ? 'Reports from members appear here.' : null,
+                )
+              else
+                for (final r in _items)
+                  MessageReportCard(
+                    report: r,
+                    busy: _busy.contains(r['id']),
+                    onStatus: (s) => _setStatus(r, s),
+                    onOpenMember: () => context.push('/member-detail/${r['reported_member_id']}'),
+                  ),
+              const SizedBox(height: CubagSpace.xl),
+            ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final String status;
-  const _EmptyState({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 56),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.verified_user_outlined,
-            size: 40,
-            color: AppColors.textMuted,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            status == 'open' ? 'No open reports.' : 'No reports here.',
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ],
       ),
     );
   }

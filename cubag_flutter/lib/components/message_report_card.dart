@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../utils/app_colors.dart';
+import '../design/cubag_design.dart';
+import 'admin_list.dart';
+import 'cubag_ui.dart';
 
 /// Reasons a member can choose when reporting a chat (backend REPORT_REASONS).
 const messageReportReasonLabels = {
@@ -58,144 +60,82 @@ class MessageReportCard extends StatelessWidget {
     final message = report['message_text']?.toString().trim() ?? '';
     final details = report['details']?.toString().trim() ?? '';
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
+    return Container(
+      margin: const EdgeInsets.only(bottom: CubagSpace.sm),
+      padding: const EdgeInsets.all(CubagSpace.lg),
+      decoration: BoxDecoration(
+        color: CubagColors.paper,
+        borderRadius: BorderRadius.circular(CubagRadius.card),
+        border: Border.all(color: CubagColors.line),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.flag_rounded,
-                  size: 18,
-                  color: AppColors.accentOrangeText,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    reason,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: AppColors.textPrimary,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const AdminRowMark(icon: Icons.flag_outlined),
+              const SizedBox(width: CubagSpace.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(reason, style: CubagType.bodyStrong),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$reporter reported $reported · ${_date(report['created_at'])}',
+                      style: CubagType.small,
                     ),
-                  ),
-                ),
-                _StatusChip(status: status),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '$reporter reported $reported · ${_date(report['created_at'])}',
-              style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
-            ),
-            if (message.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.lightCream,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '“$message”',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
-                    height: 1.4,
-                  ),
+                  ],
                 ),
               ),
+              const SizedBox(width: CubagSpace.sm),
+              switch (status) {
+                'resolved' => const StatusChip('Resolved', kind: StatusKind.good),
+                'dismissed' => const StatusChip('Dismissed'),
+                _ => const StatusChip('Open', kind: StatusKind.pending),
+              },
             ],
-            if (details.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Text(
-                'Reporter\'s note: $details',
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  color: AppColors.textPrimary,
-                ),
+          ),
+          if (message.isNotEmpty) ...[
+            const SizedBox(height: CubagSpace.md),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(CubagSpace.md),
+              decoration: BoxDecoration(
+                color: CubagColors.sand,
+                borderRadius: BorderRadius.circular(CubagRadius.control),
               ),
-            ],
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: onOpenMember,
-                  icon: const Icon(Icons.person_search_rounded, size: 18),
-                  label: Text('View $reported'),
-                ),
-                if (busy)
-                  const Padding(
-                    padding: EdgeInsets.all(8),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  )
-                else if (status == 'open') ...[
-                  FilledButton(
-                    onPressed: () => onStatus('resolved'),
-                    child: const Text('Mark resolved'),
-                  ),
-                  TextButton(
-                    onPressed: () => onStatus('dismissed'),
-                    child: const Text('Dismiss'),
-                  ),
-                ] else
-                  TextButton(
-                    onPressed: () => onStatus('open'),
-                    child: const Text('Reopen'),
-                  ),
-              ],
+              child: Text('“$message”', style: CubagType.body.copyWith(color: CubagColors.ink)),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  final String status;
-  const _StatusChip({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final (label, fg, bg) = switch (status) {
-      'resolved' => (
-        'Resolved',
-        const Color(0xFF166534),
-        const Color(0xFFDCFCE7),
-      ),
-      'dismissed' => (
-        'Dismissed',
-        const Color(0xFF475569),
-        const Color(0xFFF1F5F9),
-      ),
-      _ => ('Open', const Color(0xFF9A3412), const Color(0xFFFFEDD5)),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: fg),
+          if (details.isNotEmpty) ...[
+            const SizedBox(height: CubagSpace.sm),
+            Text('Reporter\'s note: $details', style: CubagType.small.copyWith(color: CubagColors.inkSoft)),
+          ],
+          const SizedBox(height: CubagSpace.md),
+          Wrap(
+            spacing: CubagSpace.xs,
+            runSpacing: CubagSpace.xs,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (busy)
+                const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                )
+              else if (status == 'open') ...[
+                FilledButton(onPressed: () => onStatus('resolved'), child: const Text('Mark resolved')),
+                OutlinedButton(onPressed: () => onStatus('dismissed'), child: const Text('Dismiss')),
+              ] else
+                OutlinedButton(onPressed: () => onStatus('open'), child: const Text('Reopen')),
+              TextButton.icon(
+                onPressed: onOpenMember,
+                icon: const Icon(Icons.person_search_rounded, size: 18),
+                label: Text('View $reported'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
