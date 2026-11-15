@@ -183,14 +183,60 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
             ],
           ),
           const SizedBox(height: CubagSpace.lg),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var i = 0; i < steps.length; i++)
-                Expanded(child: _timelineNode(steps[i], i, i == steps.length - 1)),
-            ],
+          LayoutBuilder(
+            builder: (context, c) {
+              // Large text or a narrow phone: list the steps top to bottom
+              // instead of cutting their names off.
+              final scale = MediaQuery.textScalerOf(context).scale(1);
+              if (c.maxWidth / steps.length < 84 * scale) {
+                return Column(
+                  children: [for (var i = 0; i < steps.length; i++) _timelineRow(steps[i], i)],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var i = 0; i < steps.length; i++)
+                    Expanded(child: _timelineNode(steps[i], i, i == steps.length - 1)),
+                ],
+              );
+            },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _timelineRow(_TimelineStep step, int i) {
+    final (bg, fg) = switch (step.state) {
+      _StepState.done => (CubagColors.valid, Colors.white),
+      _StepState.active => (CubagColors.action, Colors.white),
+      _StepState.error => (CubagColors.lapsed, Colors.white),
+      _StepState.pending => (CubagColors.sand, CubagColors.muted),
+    };
+    return Semantics(
+      label: '${step.title}: ${step.subtitle}',
+      excludeSemantics: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+              child: switch (step.state) {
+                _StepState.done => Icon(Icons.check_rounded, size: 18, color: fg),
+                _StepState.error => Icon(Icons.close_rounded, size: 18, color: fg),
+                _ => Text('${i + 1}', style: CubagType.label.copyWith(color: fg)),
+              },
+            ),
+            const SizedBox(width: CubagSpace.sm),
+            Expanded(child: Text(step.title, style: CubagType.label)),
+            Text(step.subtitle, style: CubagType.small),
+          ],
+        ),
       ),
     );
   }
@@ -549,18 +595,13 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
           ),
           const SizedBox(height: CubagSpace.sm),
           if (approved)
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
+            Builder(builder: (context) {
+              final view = FilledButton.icon(
                     onPressed: () => _showCertificate(rec, yr),
                     icon: const Icon(Icons.badge_outlined, size: 18),
                     label: const Text('View licence'),
-                  ),
-                ),
-                const SizedBox(width: CubagSpace.sm),
-                Expanded(
-                  child: OutlinedButton.icon(
+                  );
+              final cert = OutlinedButton.icon(
                     onPressed: () {
                       final memberId = _memberInfo?['id'];
                       if (memberId == null) return;
@@ -579,10 +620,23 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
                     },
                     icon: const Icon(Icons.workspace_premium_outlined, size: 18),
                     label: const Text('Certificate'),
-                  ),
-                ),
-              ],
-            )
+                  );
+              // Older members often use large text: stack the buttons rather than squeeze them.
+              final stacked = MediaQuery.sizeOf(context).width / MediaQuery.textScalerOf(context).scale(1) < 360;
+              if (stacked) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [view, const SizedBox(height: CubagSpace.xs), cert],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: view),
+                  const SizedBox(width: CubagSpace.sm),
+                  Expanded(child: cert),
+                ],
+              );
+            })
           else if (!suspended)
             Row(
               children: [

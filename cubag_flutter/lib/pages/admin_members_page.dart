@@ -1,3 +1,4 @@
+import '../components/admin_list.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -657,49 +658,19 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
   // ── Redesigned list ───────────────────────────────────────────────────────
 
   Widget _summaryStrip(int total, int active, int pending, int suspended) {
-    Widget fig(String label, int v, String filter, {Color color = CubagColors.ink}) {
-      final selected = _filterStatus == filter;
-      return Expanded(
-        child: InkWell(
+    AdminFigure fig(String label, int v, String filter, {Color? color}) => AdminFigure(
+          label,
+          '$v',
+          color: v > 0 ? color : null,
+          selected: _filterStatus == filter,
           onTap: () => setState(() => _filterStatus = filter),
-          child: Container(
-            padding: const EdgeInsets.all(CubagSpace.md),
-            color: selected ? CubagColors.sand : null,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: CubagType.small, maxLines: 1, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 4),
-                Text('$v', style: CubagType.title.copyWith(color: color)),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: CubagColors.paper,
-        borderRadius: BorderRadius.circular(CubagRadius.card),
-        border: Border.all(color: CubagColors.line),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            fig('All', total, 'all'),
-            const VerticalDivider(width: 1, color: CubagColors.line),
-            fig('Active', active, 'active', color: CubagColors.valid),
-            const VerticalDivider(width: 1, color: CubagColors.line),
-            fig('Pending', pending, 'pending', color: pending > 0 ? CubagColors.due : CubagColors.ink),
-            const VerticalDivider(width: 1, color: CubagColors.line),
-            fig('Suspended', suspended, 'suspended', color: suspended > 0 ? CubagColors.lapsed : CubagColors.ink),
-          ],
-        ),
-      ),
-    );
+        );
+    return AdminFigureStrip(figures: [
+      fig('All', total, 'all'),
+      fig('Active', active, 'active', color: CubagColors.valid),
+      fig('Pending', pending, 'pending', color: CubagColors.due),
+      fig('Suspended', suspended, 'suspended', color: CubagColors.lapsed),
+    ]);
   }
 
   Widget _membersToolbar() {

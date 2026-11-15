@@ -132,7 +132,8 @@ class Shortcut {
   const Shortcut(this.icon, this.label, this.route);
 }
 
-/// Services as a plain icon row (three per line), not a grid of boxed cards.
+/// Services as large tiles, two per line, so they are easy to see and tap
+/// (many members are older). Each tile is a big icon with its name under it.
 class ShortcutGrid extends StatelessWidget {
   final List<Shortcut> items;
   final ValueChanged<String> onOpen;
@@ -142,9 +143,11 @@ class ShortcutGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, c) {
-        final perRow = c.maxWidth >= 520 ? 6 : 3;
-        final w = c.maxWidth / perRow;
+        const gap = CubagSpace.sm;
+        final w = (c.maxWidth - gap) / 2;
         return Wrap(
+          spacing: gap,
+          runSpacing: gap,
           children: [
             for (final s in items)
               SizedBox(
@@ -153,30 +156,42 @@ class ShortcutGrid extends StatelessWidget {
                   button: true,
                   label: s.label,
                   excludeSemantics: true,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(CubagRadius.card),
-                    onTap: () => onOpen(s.route),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: CubagColors.actionTint,
-                              borderRadius: BorderRadius.circular(CubagRadius.card),
-                            ),
-                            child: Icon(s.icon, color: CubagColors.action, size: 24),
+                  child: Material(
+                    color: CubagColors.paper,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(CubagRadius.card),
+                      side: const BorderSide(color: CubagColors.line),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: () => onOpen(s.route),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 132),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: CubagSpace.lg, horizontal: CubagSpace.sm),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  color: CubagColors.actionTint,
+                                  borderRadius: BorderRadius.circular(CubagRadius.card),
+                                ),
+                                child: Icon(s.icon, color: CubagColors.action, size: 34),
+                              ),
+                              const SizedBox(height: CubagSpace.sm),
+                              Text(
+                                s.label,
+                                style: CubagType.bodyStrong.copyWith(fontSize: 17, color: CubagColors.ink),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            s.label,
-                            style: CubagType.caption.copyWith(color: CubagColors.ink),
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),

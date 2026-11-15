@@ -1721,23 +1721,38 @@ class _AppLayoutState extends State<AppLayout> {
         selectedIndex: currentIndex,
         onDestinationSelected: go,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home_rounded),
             label: 'Home',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.groups_outlined),
-            selectedIcon: Icon(Icons.groups_rounded),
-            label: 'Network',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.verified_user_outlined),
-            selectedIcon: Icon(Icons.verified_user_rounded),
-            label: 'Compliance',
-          ),
-          NavigationDestination(
+          // Admins on a phone: the same tabs go to Members and Payments.
+          if (isAdmin)
+            const NavigationDestination(
+              icon: Icon(Icons.people_outline_rounded),
+              selectedIcon: Icon(Icons.people_rounded),
+              label: 'Members',
+            )
+          else
+            const NavigationDestination(
+              icon: Icon(Icons.groups_outlined),
+              selectedIcon: Icon(Icons.groups_rounded),
+              label: 'Network',
+            ),
+          if (isAdmin)
+            const NavigationDestination(
+              icon: Icon(Icons.payments_outlined),
+              selectedIcon: Icon(Icons.payments_rounded),
+              label: 'Payments',
+            )
+          else
+            const NavigationDestination(
+              icon: Icon(Icons.verified_user_outlined),
+              selectedIcon: Icon(Icons.verified_user_rounded),
+              label: 'Compliance',
+            ),
+          const NavigationDestination(
             icon: Icon(Icons.menu_rounded),
             selectedIcon: Icon(Icons.menu_open_rounded),
             label: 'Menu',

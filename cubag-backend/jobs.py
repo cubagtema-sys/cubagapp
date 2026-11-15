@@ -4,6 +4,7 @@ from datetime import date, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from config.db import get_db
 from utils import send_push_notification, calculate_and_update_member_rating
+from routes.auth import renewal_paid_this_cycle
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,10 @@ def check_expired_licenses():
             for m in expiring_members:
                 exp_date = m['license_expiry_date']
                 days_left = (exp_date - today).days
+
+                # Already paid this year's renewal: nothing to remind them about.
+                if renewal_paid_this_cycle(cursor, m['id'], exp_date):
+                    continue
 
                 # Prevent duplicate notification spam: only send if no renewal notification sent in last 24h
                 cursor.execute("""
