@@ -128,44 +128,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
   }
 
   Future<void> _archiveAnnouncement(int id) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: _kRed.withAlpha(25), borderRadius: BorderRadius.circular(8)),
-              child: const Icon(Icons.archive_outlined, color: _kRed, size: 20),
-            ),
-            const SizedBox(width: 10),
-            Text('Archive', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Text(
-          'Are you sure you want to archive this announcement? It will be moved from the live member broadcast feed.',
-          style: TextStyle(fontSize: 14, color: const Color(0xFF6B5E55), height: 1.4),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: TextStyle(color: const Color(0xFF6B5E55), fontWeight: FontWeight.w600)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _kRed,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: Text('Archive', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
+    final ok = await showAdminConfirm(context, title: 'Archive this announcement?', message: 'It comes off members\' Home screens. You can restore it later from Archived.', confirmLabel: 'Archive', destructive: true);
 
     if (ok != true) return;
 
@@ -340,19 +303,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
               setD(() => error = 'Add a title and a message.');
               return;
             }
-            final ok = await showDialog<bool>(
-              context: ctx,
-              builder: (c) => AlertDialog(
-                title: Text('Send to $count ${count == 1 ? 'member' : 'members'}?'),
-                content: Text(email
-                    ? 'They get it in the app, as a phone notification, and by email. This cannot be undone.'
-                    : 'They get it in the app and as a phone notification. This cannot be undone.'),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-                  FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Send')),
-                ],
-              ),
-            );
+            final ok = await showAdminConfirm(ctx, title: 'Send to $count ${count == 1 ? 'member' : 'members'}?', message: email ? 'They get it in the app, as a phone notification and by email. It cannot be taken back.' : 'They get it in the app and as a phone notification. It cannot be taken back.', confirmLabel: 'Send');
             if (ok != true) return;
             setD(() {
               sending = true;

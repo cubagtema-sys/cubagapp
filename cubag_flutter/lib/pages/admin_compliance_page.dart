@@ -712,37 +712,20 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
     _noteCtrl.clear();
     return showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Add a review note',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: TextField(
-          controller: _noteCtrl,
-          maxLines: 3,
-          decoration: InputDecoration(
-            hintText: hint,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-          style: const TextStyle(),
-        ),
+      builder: (ctx) => AdminDialog(
+        title: 'Add a note for the member',
+        subtitle: 'They see it with your decision.',
+        maxWidth: 480,
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, null),
-            child: Text('Cancel', style: const TextStyle()),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _kPrimary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            onPressed: () => Navigator.pop(ctx, _noteCtrl.text.trim()),
-            child: Text(
-              'Confirm',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+          TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, _noteCtrl.text.trim()), child: const Text('Continue')),
+        ],
+        children: [
+          TextField(
+            controller: _noteCtrl,
+            minLines: 3,
+            maxLines: 6,
+            decoration: InputDecoration(hintText: hint),
           ),
         ],
       ),
@@ -774,63 +757,38 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
 
     showDialog(
       context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          width: 900,
-          height: 680,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.description_outlined, color: CubagColors.cocoa, size: 22),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.open_in_new_rounded),
-                    onPressed: () async {
-                      final resolved = await ApiService.signedDocumentUrl(ApiService.resolveImageUrl(fileUrl));
-                      final uri = Uri.parse(resolved);
-                      if (await canLaunchUrl(uri)) {
-                        await launchUrl(uri, mode: LaunchMode.externalApplication);
-                      }
-                    },
-                    tooltip: 'Open in a new tab',
-                  ),
-                  IconButton(
-                    tooltip: 'Close',
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-              const Divider(),
-              Expanded(
-                child: isImage
-                    ? InteractiveViewer(
-                        child: CorsImageWidget(
-                          url: fileUrl,
-                          fit: BoxFit.contain,
-                          placeholder: const Center(
-                            child: CircularProgressIndicator(color: _kPrimary),
-                          ),
-                          errorWidget: const Center(
-                            child: Text('Could not show this file. Use Open in a new tab.'),
-                          ),
-                        ),
-                      )
-                    : doc_preview.buildDocPreview(fileUrl, 'modal_${title.hashCode}'),
-              ),
-            ],
+      builder: (ctx) => AdminDialog(
+        title: title,
+        maxWidth: 900,
+        actions: [
+          TextButton.icon(
+            onPressed: () async {
+              final resolved = await ApiService.signedDocumentUrl(ApiService.resolveImageUrl(fileUrl));
+              final uri = Uri.parse(resolved);
+              if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+            },
+            icon: const Icon(Icons.open_in_new_rounded, size: 18),
+            label: const Text('Open in a new tab'),
           ),
-        ),
+          FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Done')),
+        ],
+        children: [
+          Container(
+            height: MediaQuery.sizeOf(ctx).height * 0.6,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(color: CubagColors.sand, borderRadius: BorderRadius.circular(CubagRadius.card)),
+            child: isImage
+                ? InteractiveViewer(
+                    child: CorsImageWidget(
+                      url: fileUrl,
+                      fit: BoxFit.contain,
+                      placeholder: const Center(child: CircularProgressIndicator()),
+                      errorWidget: const Center(child: Text('Could not show this file. Use Open in a new tab.')),
+                    ),
+                  )
+                : doc_preview.buildDocPreview(fileUrl, 'modal_${title.hashCode}'),
+          ),
+        ],
       ),
     );
   }
@@ -906,36 +864,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
   }
 
   Future<void> _confirmBankPayment(dynamic paymentId) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.verified_rounded, color: _kGreen),
-            SizedBox(width: 8),
-            Text('Confirm bank payment'),
-          ],
-        ),
-        content: const Text(
-          'Only confirm after you have seen the money in the bank account. The payment is then marked as paid for this member.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _kGreen,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Confirm payment'),
-          ),
-        ],
-      ),
-    );
+    final confirmed = await showAdminConfirm(context, title: 'Confirm this bank payment?', message: 'Only confirm after you have seen the money in the bank account. The payment is then marked as paid for this member.', confirmLabel: 'Confirm payment');
 
     if (confirmed != true) return;
 

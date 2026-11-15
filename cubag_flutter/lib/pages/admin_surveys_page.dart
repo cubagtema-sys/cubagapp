@@ -1,3 +1,4 @@
+import '../components/admin_dialog.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -1079,57 +1080,15 @@ class _State extends State<AdminSurveysPage>
     Color textColor,
     Color subTextColor,
   ) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: cardBg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: borderColor),
-        ),
-        title: Text(
-          'Delete Poll',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
-        ),
-        content: Text(
-          'Are you sure you want to permanently delete "${s['title']}"? All responses will also be deleted.',
-          style: TextStyle(color: subTextColor),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                color: subTextColor,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _delete(s['id']);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _kRed,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              elevation: 0,
-            ),
-            child: Text(
-              'Delete',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
+    showAdminConfirm(
+      context,
+      title: 'Delete this poll?',
+      message: '"${s['title']}" and all its answers are deleted for good.',
+      confirmLabel: 'Delete poll',
+      destructive: true,
+    ).then((ok) {
+      if (ok) _delete(s['id']);
+    });
   }
 
   // ── Live Results View ────────────────────────────────────────

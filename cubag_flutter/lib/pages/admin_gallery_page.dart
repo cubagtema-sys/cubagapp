@@ -285,27 +285,7 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
   }
 
   Future<void> _deleteItem(dynamic item) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Archive this photo?'),
-        content: Text(
-          'Are you sure you want to remove "${item['title']}" from the public gallery?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Archive', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
+    final confirm = await showAdminConfirm(context, title: 'Archive this photo?', message: '"${item['title']}" is taken out of the gallery members see.', confirmLabel: 'Archive', destructive: true);
     if (confirm != true) return;
 
     try {

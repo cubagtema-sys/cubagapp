@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import '../components/settlement_report.dart';
 import '../components/admin_dialog.dart';
 import '../components/filter_tabs.dart';
@@ -357,42 +358,24 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
       if (mounted) {
         showDialog(
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Export $title'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Copy the spreadsheet data below:',
-                  style: TextStyle(fontSize: 16),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  height: 150,
-                  width: double.maxFinite,
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: SingleChildScrollView(
-                    child: SelectableText(
-                      csvContent,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'monospace',
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          builder: (ctx) => AdminDialog(
+            title: 'Copy the export',
+            subtitle: 'The file could not be downloaded here. Copy the text below and paste it into Excel.',
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
+                onPressed: () => Clipboard.setData(ClipboardData(text: csvContent)),
+                child: const Text('Copy'),
+              ),
+              FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Done')),
+            ],
+            children: [
+              Container(
+                height: 220,
+                padding: const EdgeInsets.all(CubagSpace.sm),
+                decoration: BoxDecoration(color: CubagColors.sand, borderRadius: BorderRadius.circular(CubagRadius.control)),
+                child: SingleChildScrollView(
+                  child: SelectableText(csvContent, style: CubagType.caption.copyWith(fontFamily: 'monospace')),
+                ),
               ),
             ],
           ),

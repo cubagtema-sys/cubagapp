@@ -1,5 +1,5 @@
+import '../components/admin_dialog.dart';
 import '../components/admin_list.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -33,14 +33,14 @@ class StandingTier {
   static StandingTier getFromStars(double stars) {
     if (stars >= 4.5) {
       return StandingTier(
-        label: 'Elite Standing',
+        label: 'Elite standing',
         color: const Color(0xFFD4AF37), // Gold
         icon: Icons.workspace_premium,
         badgeText: 'ELITE MEMBER',
       );
     } else if (stars >= 3.5) {
       return StandingTier(
-        label: 'Good Standing',
+        label: 'Good standing',
         color: CubagColors.valid, // Emerald Green
         icon: Icons.verified_user,
         badgeText: 'ACTIVE MEMBER',
@@ -423,11 +423,6 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
         .length;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? kAdminPaperDark : kAdminPaperLight;
-    final borderColor = isDark ? kAdminBorderDark : kAdminBorderLight;
-    final textColor = isDark ? Colors.white : kAdminInk;
-    final subTextColor =
-        isDark ? const Color(0xFF9E8F84) : const Color(0xFF6B5E55);
 
     final filtered = _members.where((m) {
       final q = _search.toLowerCase();
@@ -556,94 +551,65 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
 
           if (_selected != null)
             Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
-                child: GestureDetector(
-                  onTap: () => setState(() => _selected = null),
-                  child: Container(
-                    color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.4),
-                    alignment: Alignment.center,
-                    child: GestureDetector(
-                      onTap: () {},
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: double.infinity,
-                        margin: const EdgeInsets.all(24),
-                        constraints: const BoxConstraints(
-                          maxWidth: 580,
-                          maxHeight: 520,
+              child: GestureDetector(
+                onTap: () => setState(() => _selected = null),
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  alignment: Alignment.center,
+                  child: GestureDetector(
+                    onTap: () {},
+                    child: Container(
+                      width: double.infinity,
+                      margin: EdgeInsets.all(MediaQuery.sizeOf(context).width < 600 ? 0 : CubagSpace.xl),
+                      constraints: const BoxConstraints(maxWidth: 680),
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(
+                        color: CubagColors.paper,
+                        borderRadius: BorderRadius.circular(
+                          MediaQuery.sizeOf(context).width < 600 ? 0 : CubagRadius.hero,
                         ),
-                        decoration: BoxDecoration(
-                          color: cardBg,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: borderColor, width: 1.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(
-                                alpha: isDark ? 0.4 : 0.15,
-                              ),
-                              blurRadius: 24,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                left: 24,
-                                right: 16,
-                                top: 16,
-                                bottom: 6,
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Member Profile',
-                                    style: TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w800,
-                                      color: textColor,
-                                    ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(CubagSpace.xl, CubagSpace.lg, CubagSpace.sm, CubagSpace.md),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text((_selected!['name']?.toString() ?? 'Member'), style: CubagType.title),
+                                      const SizedBox(height: CubagSpace.xxs),
+                                      Text(
+                                        [
+                                          if ((_selected!['company'] ?? '').toString().isNotEmpty) _selected!['company'].toString(),
+                                          if ((_selected!['email'] ?? '').toString().isNotEmpty) _selected!['email'].toString(),
+                                        ].join(' · '),
+                                        style: CubagType.small,
+                                      ),
+                                    ],
                                   ),
-                                  IconButton(
-                                    tooltip: 'Close',
-                                    icon: Icon(
-                                      Icons.close,
-                                      color: subTextColor,
-                                      size: 20,
-                                    ),
-                                    onPressed: () =>
-                                        setState(() => _selected = null),
-                                    splashRadius: 20,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Divider(height: 1),
-                            Flexible(
-                              child: SingleChildScrollView(
-                                padding: const EdgeInsets.fromLTRB(
-                                  20,
-                                  16,
-                                  20,
-                                  20,
                                 ),
-                                child: _buildSheet(
-                                  primary,
-                                  isDark,
-                                  cardBg,
-                                  borderColor,
-                                  textColor,
-                                  subTextColor,
+                                IconButton(
+                                  tooltip: 'Close',
+                                  icon: const Icon(Icons.close_rounded, color: CubagColors.muted),
+                                  onPressed: () => setState(() => _selected = null),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                          const Divider(height: 1, color: CubagColors.line),
+                          Flexible(
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.fromLTRB(CubagSpace.xl, CubagSpace.lg, CubagSpace.xl, CubagSpace.xl),
+                              child: _buildSheet(primary, isDark, CubagColors.paper, CubagColors.line, CubagColors.ink, CubagColors.muted),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -1008,7 +974,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                       elevation: 0,
                     ),
                     child: Text(
-                      'Save Score',
+                      'Save score',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
@@ -1097,7 +1063,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
 
         ...([
           ['Organisation', m['company']],
-          ['Membership Type', m['member_type']],
+          ['Membership type', m['member_type']],
           ['District(s)', m['port_of_operation']],
           [
             'Membership ID / Number',
@@ -1106,13 +1072,13 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                 'N/A',
           ],
           [
-            'Agency Code',
+            'Agency code',
             (m['agency_code']?.toString().trim().isEmpty ?? true)
                 ? 'N/A'
                 : m['agency_code'],
           ],
           [
-            'Office Location',
+            'Office',
             (m['location']?.toString().trim().isEmpty ?? true)
                 ? 'N/A'
                 : m['location'],
@@ -1128,7 +1094,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
             (m['tin']?.toString().trim().isEmpty ?? true) ? 'N/A' : m['tin'],
           ],
           [
-            'Payment Ref',
+            'Payment reference',
             (m['payment_ref']?.toString().trim().isEmpty ?? true)
                 ? 'None'
                 : m['payment_ref'],
@@ -1146,7 +1112,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  r[0].toString().toUpperCase(),
+                  r[0].toString(),
                   style: TextStyle(
                     fontSize: 14,
                     color: subTextColor,
@@ -1226,7 +1192,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                       ),
                     ),
                     child: Text(
-                      (ss['label'] as String).toUpperCase(),
+                      ss['label'] as String,
                       style: TextStyle(
                         fontSize: 12,
                         color: ss['color'] as Color,
@@ -1236,7 +1202,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Status Controls',
+                    'Change status',
                     style: TextStyle(
                       fontSize: 16,
                       color: subTextColor,
@@ -1334,7 +1300,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           child: TextButton(
             onPressed: () => setState(() => _selected = null),
             child: Text(
-              'Close Profile',
+              'Close',
               style: TextStyle(
                 color: subTextColor,
                 fontWeight: FontWeight.w600,
@@ -1402,7 +1368,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
         _breakdownTile(
           icon: Icons.payments_outlined,
           color: CubagColors.valid,
-          title: 'Financial Compliance',
+          title: 'Dues paid on time',
           scoreText: '$financialScore / 30 pts',
           details: [
             '• Evaluates the ratio of paid invoices vs total issued invoices.',
@@ -1416,7 +1382,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
         _breakdownTile(
           icon: Icons.event_available_outlined,
           color: const Color(0xFF8B5CF6),
-          title: 'Event Attendance',
+          title: 'Event attendance',
           scoreText: '$eventScore / 20 pts',
           details: [
             '• Evaluates ratio of attended events vs total events held since joining.',
@@ -1430,7 +1396,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
         _breakdownTile(
           icon: Icons.admin_panel_settings_outlined,
           color: CubagColors.due,
-          title: 'Admin Trust Score',
+          title: 'Admin score',
           scoreText: '$adminScore / 10 pts',
           details: ['• Derived directly from the manual review slider above.'],
           isDark: isDark,
@@ -1537,7 +1503,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
     final amount = double.tryParse(m['payment_amount']?.toString() ?? '0') ?? 0.0;
     final status = m['payment_status']?.toString().toLowerCase() ?? 'pending';
     final isPaid = status == 'paid' || status == 'success' || status == 'completed';
-    final bankName = m['bank_name']?.toString() ?? 'Bank Deposit';
+    final bankName = m['bank_name']?.toString() ?? 'Bank deposit';
     final paymentId = m['payment_id'];
 
     return Container(
@@ -1727,7 +1693,7 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                   OutlinedButton.icon(
                     onPressed: () => _showDepositSlipModal(context, receiptUrl, payRef, m['name']?.toString() ?? 'Member', amount),
                     icon: const Icon(Icons.visibility_rounded, size: 14),
-                    label: const Text('View Slip'),
+                    label: const Text('View slip'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       minimumSize: Size.zero,
@@ -1759,16 +1725,16 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
   Future<void> _confirmMemberPayment(dynamic paymentId) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Bank Deposit'),
-        content: const Text('Are you sure you want to verify and confirm this member\'s bank deposit?'),
+      builder: (ctx) => AdminDialog(
+        title: 'Confirm this bank deposit?',
+        subtitle: 'Only confirm after you have seen the money in CUBAG\'s account.',
+        maxWidth: 460,
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: CubagColors.valid, foregroundColor: Colors.white),
-            child: const Text('Confirm'),
-          ),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Confirm payment')),
+        ],
+        children: [
+          Text('The payment is marked as paid and the member\'s standing updates.', style: CubagType.small),
         ],
       ),
     );
@@ -1800,46 +1766,27 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
   void _showDepositSlipModal(BuildContext context, String fullUrl, String payRef, String memberName, double amount) {
     showDialog(
       context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          width: 800,
-          height: 600,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.account_balance_rounded, color: CubagColors.action, size: 22),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Deposit Slip · $memberName · Ref: $payRef',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Close',
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
+      builder: (ctx) => AdminDialog(
+        title: 'Bank slip',
+        subtitle: '$memberName · GH₵ ${amount.toStringAsFixed(2)}${payRef.isEmpty ? '' : ' · Ref $payRef'}',
+        maxWidth: 720,
+        actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Done'))],
+        children: [
+          Container(
+            height: 480,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(color: CubagColors.sand, borderRadius: BorderRadius.circular(CubagRadius.card)),
+            child: InteractiveViewer(
+              child: CorsImageWidget(
+                url: fullUrl,
+                fit: BoxFit.contain,
+                errorWidget: const Center(child: Text('Could not show the bank slip.')),
               ),
-              const Divider(),
-              Expanded(
-                child: InteractiveViewer(
-                  child: CorsImageWidget(
-                    url: fullUrl,
-                    fit: BoxFit.contain,
-                    placeholder: const Center(child: CircularProgressIndicator(color: CubagColors.action)),
-                    errorWidget: const Center(child: Text('Could not load the deposit slip.')),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          const SizedBox(height: CubagSpace.xs),
+          Text('Pinch or scroll to zoom.', style: CubagType.caption),
+        ],
       ),
     );
   }

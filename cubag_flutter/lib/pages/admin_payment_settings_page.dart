@@ -1,3 +1,4 @@
+import '../components/admin_dialog.dart';
 import 'package:flutter/material.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
@@ -72,20 +73,7 @@ class _AdminPaymentSettingsPageState extends State<AdminPaymentSettingsPage> {
 
   Future<void> _removeBank(int index) async {
     final name = (_banks[index]['bankName'] ?? '').toString().trim();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Remove this account?'),
-        content: Text(
-          '${name.isEmpty ? 'This account' : name} will no longer be shown to members as a way to pay. '
-          'The change is saved straight away.',
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Remove')),
-        ],
-      ),
-    );
+    final ok = await showAdminConfirm(context, title: 'Remove this account?', message: '${name.isEmpty ? 'This account' : name} will no longer be shown to members as a way to pay. The change is saved straight away.', confirmLabel: 'Remove', destructive: true);
     if (ok != true || !mounted) return;
     final wasDefault = _banks[index]['isDefault'] == true;
     setState(() {

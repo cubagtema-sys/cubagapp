@@ -226,52 +226,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
     Color textColor,
     Color subTextColor,
   ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: cardBg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: borderColor),
-        ),
-        title: Text(
-          'Remove Sub-Admin',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
-        ),
-        content: Text(
-          'Demote ${sa['name']} back to a regular member?\nAll their administrative permissions will be revoked.',
-          style: TextStyle(color: subTextColor),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: subTextColor),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _kRed,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(
-              'Remove',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    final confirmed = await showAdminConfirm(context, title: 'Remove ${sa['name']} as an admin?', message: 'They become a regular member again and lose access to the admin portal.', confirmLabel: 'Remove admin', destructive: true);
     if (confirmed != true) return;
 
     try {

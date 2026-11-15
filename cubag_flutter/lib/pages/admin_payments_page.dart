@@ -1,3 +1,5 @@
+import '../components/admin_list.dart';
+import '../components/admin_dialog.dart';
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -6,16 +8,11 @@ import '../components/app_layout.dart';
 import '../services/api_service.dart';
 import '../components/fetch_error_view.dart';
 import '../utils/app_logger.dart';
-import '../utils/app_colors.dart';
 import '../design/cubag_design.dart';
 import '../components/cubag_ui.dart';
 
-const _kOrange = CubagColors.action;
 const _kGreen = CubagColors.valid;
-const _kAmber = CubagColors.due;
 const _kRed = CubagColors.lapsed;
-const _kBlue = Color(0xFF3b82f6);
-const _kCardBg = Color(0xFF281710);
 
 class AdminPaymentsPage extends StatefulWidget {
   final String? initialAction;
@@ -222,156 +219,67 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     // SEC-04: receipts live in private storage; view through a signed link.
     final signedUrl = await ApiService.signedDocumentUrl(fullUrl);
     if (!mounted) return;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? _kCardBg : Colors.white;
-    final textColor = isDark ? CubagColors.sand : CubagColors.ink;
 
     showDialog(
       context: context,
-      barrierDismissible: true,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: cardBg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-        contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-        actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _kOrange.withAlpha(25),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.account_balance_rounded,
-                color: _kOrange,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Bank Deposit Receipt Slip',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: textColor,
-                    ),
-                  ),
-                  Text(
-                    '$memberName · GH₵ ${amount.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: CubagColors.muted,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.open_in_new_rounded, size: 20),
-              tooltip: 'Open in new tab',
-              onPressed: () async => launchUrl(Uri.parse(await ApiService.signedDocumentUrl(fullUrl)), mode: LaunchMode.externalApplication),
-            ),
-          ],
-        ),
-        content: SizedBox(
-          width: 580,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                constraints: const BoxConstraints(maxHeight: 440),
-                decoration: BoxDecoration(
-                  color: Colors.black.withAlpha(8),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: CubagColors.lineStrong),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: InteractiveViewer(
-                    minScale: 0.8,
-                    maxScale: 4.0,
-                    child: Image.network(
-                      signedUrl,
-                      fit: BoxFit.contain,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          height: 280,
-                          alignment: Alignment.center,
-                          child: const CircularProgressIndicator(strokeWidth: 2.5),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 200,
-                          padding: const EdgeInsets.all(20),
-                          alignment: Alignment.center,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.broken_image_rounded, size: 40, color: Color(0xFF5F6B7E)),
-                              const SizedBox(height: 10),
-                              Text(
-                                'Unable to load receipt image directly.\nClick "Open in new tab" above.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 13, color: CubagColors.muted),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Pinch / scroll to zoom into receipt details',
-                style: TextStyle(fontSize: 12, color: const Color(0xFF5F6B7E)),
-              ),
-            ],
-          ),
-        ),
+      builder: (ctx) => AdminDialog(
+        title: 'Bank slip',
+        subtitle: '$memberName · GH₵ ${amount.toStringAsFixed(2)}${date.isEmpty ? '' : ' · $date'}',
+        maxWidth: 720,
         actions: [
+          TextButton.icon(
+            onPressed: () async => launchUrl(
+              Uri.parse(await ApiService.signedDocumentUrl(fullUrl)),
+              mode: LaunchMode.externalApplication,
+            ),
+            icon: const Icon(Icons.open_in_new_rounded, size: 18),
+            label: const Text('Open in a new tab'),
+          ),
           if (isPending && txId != null) ...[
-            OutlinedButton.icon(
+            OutlinedButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
-                _rejectPayment(txId);
+                _confirmReject(txId, memberName);
               },
-              icon: const Icon(Icons.cancel_outlined, size: 16, color: _kRed),
-              label: const Text('Reject Slip', style: TextStyle(color: _kRed, fontWeight: FontWeight.bold)),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: _kRed),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
+              child: const Text('Reject'),
             ),
-            const SizedBox(width: 8),
-            ElevatedButton.icon(
+            FilledButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
                 _markPaid(txId);
               },
-              icon: const Icon(Icons.check_circle_rounded, size: 16),
-              label: const Text('Confirm & Mark Paid'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kGreen,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              child: const Text('Confirm payment'),
+            ),
+          ] else
+            FilledButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Done')),
+        ],
+        children: [
+          Container(
+            constraints: const BoxConstraints(maxHeight: 480),
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: CubagColors.sand,
+              borderRadius: BorderRadius.circular(CubagRadius.card),
+            ),
+            child: InteractiveViewer(
+              minScale: 0.8,
+              maxScale: 4,
+              child: Image.network(
+                signedUrl,
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, p) =>
+                    p == null ? child : const SizedBox(height: 240, child: Center(child: CircularProgressIndicator())),
+                errorBuilder: (context, e, s) => const SizedBox(
+                  height: 200,
+                  child: Center(
+                    child: Text('Could not show the slip here. Use Open in a new tab.', textAlign: TextAlign.center),
+                  ),
+                ),
               ),
             ),
-          ],
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close'),
           ),
+          const SizedBox(height: CubagSpace.xs),
+          Text('Pinch or scroll to zoom. Check the amount and reference against the bank statement.', style: CubagType.caption),
         ],
       ),
     );
@@ -385,477 +293,127 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     String? method,
     String? notes,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? _kCardBg : Colors.white;
-    final textColor = isDark
-        ? CubagColors.sand
-        : CubagColors.ink;
-    final subTextColor = isDark
-        ? const Color(0xFF5F6B7E)
-        : CubagColors.inkSoft;
     final hasReceipt = receiptUrl != null && receiptUrl.isNotEmpty && receiptUrl != 'null';
-
     showDialog(
       context: context,
-      barrierDismissible: true,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: cardBg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        contentPadding: const EdgeInsets.all(24),
-        content: SizedBox(
-          width: 480,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: _kGreen.withAlpha(30),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check_circle_rounded,
-                  color: _kGreen,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Confirm & Mark Paid',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Mark GHS ${amount.toStringAsFixed(2)} from $memberName as PAID / RECEIVED?\nThis automatically activates member standing and generates their official receipt.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: subTextColor, fontSize: 14.5, height: 1.4),
-              ),
-              if (hasReceipt) ...[
-                const SizedBox(height: 16),
-                InkWell(
-                  onTap: () => _showReceiptDialog(receiptUrl, memberName, amount, '', txId: txId, isPending: true),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF24140D).withAlpha(12),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _kOrange.withAlpha(60)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.receipt_rounded, color: _kOrange, size: 22),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Bank Deposit Slip Attached',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  color: CubagColors.ink,
-                                ),
-                              ),
-                              Text(
-                                'Click to inspect full deposit receipt image',
-                                style: TextStyle(fontSize: 12, color: CubagColors.muted),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.zoom_in_rounded, color: _kOrange, size: 18),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(0, 46),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Cancel',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _actionLoading
-                          ? null
-                          : () {
-                              Navigator.of(ctx).pop();
-                              _markPaid(txId);
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _kGreen,
-                        elevation: 0,
-                        minimumSize: const Size(0, 46),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Approve & Mark Paid',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+      builder: (ctx) => AdminDialog(
+        title: 'Confirm this payment?',
+        subtitle: 'Only confirm after you have seen the money in CUBAG\'s account.',
+        maxWidth: 480,
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: _actionLoading
+                ? null
+                : () {
+                    Navigator.of(ctx).pop();
+                    _markPaid(txId);
+                  },
+            child: const Text('Confirm payment'),
           ),
-        ),
-      ),
-    );
-  }
-
-  void _showDetailModal(Map<String, dynamic> tx) {
-    final amount = double.tryParse(tx['amount']?.toString() ?? '0') ?? 0;
-    final status = tx['status']?.toString() ?? '';
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? _kCardBg : Colors.white;
-    final textColor = isDark
-        ? CubagColors.sand
-        : CubagColors.ink;
-    final borderColor = isDark
-        ? const Color(0xFF4D2D20)
-        : CubagColors.line;
-    final subTextColor = isDark
-        ? const Color(0xFF5F6B7E)
-        : CubagColors.muted;
-    final inputBg = isDark
-        ? CubagColors.ink.withAlpha(120)
-        : CubagColors.sand;
-
-    final paymentMethod = (tx['payment_method'] ?? 'momo').toString();
-    final isBank = paymentMethod.toLowerCase() == 'bank' || paymentMethod.toLowerCase() == 'bank_transfer';
-    final receiptUrl = tx['receipt_url']?.toString();
-    final hasReceipt = receiptUrl != null && receiptUrl.isNotEmpty && receiptUrl != 'null';
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: cardBg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _kOrange.withAlpha(25),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.receipt_long_rounded,
-                color: _kOrange,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Payment Invoice Details',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-                color: textColor,
-              ),
+        ],
+        children: [
+          AdminDetailRow('From', memberName),
+          AdminDetailRow('Amount', 'GH₵ ${amount.toStringAsFixed(2)}'),
+          if ((method ?? '').isNotEmpty) AdminDetailRow('Paid by', _methodLabel(method)),
+          if ((notes ?? '').isNotEmpty && notes != 'null') AdminDetailRow('Member\'s note', notes!),
+          const SizedBox(height: CubagSpace.sm),
+          Text(
+            'The payment is marked as paid, the member\'s standing updates and their receipt is issued.',
+            style: CubagType.small,
+          ),
+          if (hasReceipt) ...[
+            const SizedBox(height: CubagSpace.md),
+            OutlinedButton.icon(
+              onPressed: () => _showReceiptDialog(receiptUrl, memberName, amount, '', txId: txId, isPending: true),
+              icon: const Icon(Icons.receipt_long_outlined, size: 18),
+              label: const Text('Look at the bank slip first'),
             ),
           ],
-        ),
-        content: SizedBox(
-          width: 540,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: _statusColor(status).withAlpha(20),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: _statusColor(status).withAlpha(50),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Amount charged',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: subTextColor,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'GHS ${amount.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w900,
-                              color: textColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _statusColor(status),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          status.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _detailField(
-                  'Transaction ID',
-                  tx['tx_id']?.toString() ?? '—',
-                  inputBg,
-                  borderColor,
-                  textColor,
-                  subTextColor,
-                ),
-                const SizedBox(height: 10),
-                _detailField(
-                  'Member / Company Name',
-                  tx['member_name']?.toString() ?? '—',
-                  inputBg,
-                  borderColor,
-                  textColor,
-                  subTextColor,
-                ),
-                const SizedBox(height: 10),
-                _detailField(
-                  'Payment Channel / Method',
-                  isBank ? 'Bank Transfer (GCB Bank Limited)' : 'Mobile Money / Instant Pay',
-                  inputBg,
-                  borderColor,
-                  textColor,
-                  subTextColor,
-                ),
-                if (tx['payment_ref'] != null && tx['payment_ref'].toString().isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  _detailField(
-                    'Reference / Slip No.',
-                    tx['payment_ref'].toString(),
-                    inputBg,
-                    borderColor,
-                    textColor,
-                    subTextColor,
-                  ),
-                ],
-                if (tx['notes'] != null && tx['notes'].toString().isNotEmpty && tx['notes'] != 'null') ...[
-                  const SizedBox(height: 10),
-                  _detailField(
-                    'Depositor Notes',
-                    tx['notes'].toString(),
-                    inputBg,
-                    borderColor,
-                    textColor,
-                    subTextColor,
-                  ),
-                ],
-                const SizedBox(height: 10),
-                _detailField(
-                  'Description / Fee Type',
-                  tx['description']?.toString() ?? 'Annual Membership Dues',
-                  inputBg,
-                  borderColor,
-                  textColor,
-                  subTextColor,
-                ),
-                const SizedBox(height: 10),
-                _detailField(
-                  'Date Created',
-                  tx['date']?.toString() ?? tx['created_at']?.toString() ?? '—',
-                  inputBg,
-                  borderColor,
-                  textColor,
-                  subTextColor,
-                ),
-                if (hasReceipt) ...[
-                  const SizedBox(height: 14),
-                  InkWell(
-                    onTap: () => _showReceiptDialog(
-                      receiptUrl,
-                      tx['member_name']?.toString() ?? '',
-                      amount,
-                      tx['date']?.toString() ?? '',
-                      txId: tx['tx_id'] ?? tx['id'],
-                      isPending: status == 'pending',
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF24140D).withAlpha(12),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: _kOrange.withAlpha(60)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.attachment_rounded, color: _kOrange, size: 22),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Attached Deposit Slip / Transfer Receipt',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: CubagColors.ink,
-                                  ),
-                                ),
-                                Text(
-                                  'Click to preview high-resolution receipt',
-                                  style: TextStyle(fontSize: 12, color: CubagColors.muted),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(Icons.arrow_forward_ios_rounded, color: _kOrange, size: 14),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          if (status == 'pending')
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kGreen,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                _showConfirmDialog(
-                  tx['tx_id'] ?? tx['id'],
-                  amount,
-                  tx['member_name']?.toString() ?? '',
-                  receiptUrl: receiptUrl,
-                  method: paymentMethod,
-                  notes: tx['notes']?.toString(),
-                );
-              },
-              icon: const Icon(Icons.check_circle_outline_rounded, size: 16),
-              label: const Text('Approve Payment'),
-            ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close'),
-          ),
         ],
       ),
     );
   }
 
-  Widget _detailField(
-    String label,
-    String value,
-    Color inputBg,
-    Color borderCol,
-    Color textCol,
-    Color subTextCol,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: subTextCol,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: inputBg,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: borderCol),
-          ),
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: textCol,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  String _methodLabel(String? m) => switch ((m ?? '').toLowerCase()) {
+        'bank' || 'bank_transfer' => 'Bank deposit or transfer',
+        'momo' || 'mobile_money' => 'Mobile Money',
+        'cash' => 'Cash at the office',
+        'cheque' => 'Cheque',
+        _ => (m ?? '').isEmpty ? '—' : m!,
+      };
 
-  Color _statusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'paid':
-      case 'completed':
-      case 'success':
-        return _kGreen;
-      case 'pending':
-        return _kAmber;
-      case 'failed':
-      case 'overdue':
-        return _kRed;
-      default:
-        return _kBlue;
+  void _showDetailModal(Map<String, dynamic> tx) {
+    final amount = double.tryParse(tx['amount']?.toString() ?? '0') ?? 0;
+    final status = (tx['status']?.toString() ?? '').toLowerCase();
+    final paymentMethod = (tx['payment_method'] ?? 'momo').toString();
+    final receiptUrl = tx['receipt_url']?.toString();
+    final hasReceipt = receiptUrl != null && receiptUrl.isNotEmpty && receiptUrl != 'null';
+    final member = tx['member_name']?.toString() ?? '';
+    String v(String k) {
+      final x = tx[k]?.toString() ?? '';
+      return x == 'null' ? '' : x;
     }
+
+    final (label, kind) = switch (status) {
+      'paid' || 'completed' || 'success' || 'successful' => ('Paid', StatusKind.good),
+      'failed' || 'rejected' || 'cancelled' => ('Not paid', StatusKind.bad),
+      _ => ('Waiting to verify', StatusKind.pending),
+    };
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AdminDialog(
+        title: 'GH₵ ${amount.toStringAsFixed(2)}',
+        subtitle: [member, v('description')].where((s) => s.isNotEmpty).join(' · '),
+        actions: [
+          if (status == 'pending') ...[
+            OutlinedButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _confirmReject(tx['tx_id'] ?? tx['id'], member);
+              },
+              child: const Text('Reject'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _showConfirmDialog(
+                  tx['tx_id'] ?? tx['id'],
+                  amount,
+                  member,
+                  receiptUrl: receiptUrl,
+                  method: paymentMethod,
+                  notes: tx['notes']?.toString(),
+                );
+              },
+              child: const Text('Confirm payment'),
+            ),
+          ] else
+            FilledButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Done')),
+        ],
+        children: [
+          Align(alignment: Alignment.centerLeft, child: StatusChip(label, kind: kind)),
+          const SizedBox(height: CubagSpace.md),
+          AdminDetailRow('Member', member),
+          AdminDetailRow('For', v('description')),
+          AdminDetailRow('Paid by', _methodLabel(paymentMethod)),
+          if (v('payment_ref').isNotEmpty) AdminDetailRow('Reference', v('payment_ref')),
+          if (v('tx_id').isNotEmpty) AdminDetailRow('Transaction', v('tx_id')),
+          if (v('notes').isNotEmpty) AdminDetailRow('Member\'s note', v('notes')),
+          AdminDetailRow('Date', v('date').isNotEmpty ? v('date') : v('created_at')),
+          if (hasReceipt) ...[
+            const SizedBox(height: CubagSpace.md),
+            OutlinedButton.icon(
+              onPressed: () => _showReceiptDialog(receiptUrl, member, amount, v('date'),
+                  txId: tx['tx_id'] ?? tx['id'], isPending: status == 'pending'),
+              icon: const Icon(Icons.receipt_long_outlined, size: 18),
+              label: const Text('Look at the bank slip'),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   // ── Layout ────────────────────────────────────────────────────────────────
@@ -952,7 +510,7 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                         FilledButton.icon(
                           onPressed: _showRecordCounterPaymentModal,
                           icon: const Icon(Icons.add_rounded, size: 18),
-                          label: const Text('Record counter payment'),
+                          label: const Text('Record office payment'),
                         ),
                       ],
                     ),
@@ -1277,24 +835,10 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     final reason = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Reject this payment?'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('$member will be told the payment was not accepted.', style: CubagType.body),
-            const SizedBox(height: CubagSpace.md),
-            TextField(
-              controller: reason,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Reason (shown to the member)',
-                hintText: 'e.g. Amount on slip does not match',
-              ),
-            ),
-          ],
-        ),
+      builder: (ctx) => AdminDialog(
+        title: 'Reject this payment?',
+        subtitle: member.isEmpty ? null : 'From $member. They are told it was not accepted and why.',
+        maxWidth: 480,
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           FilledButton(
@@ -1303,12 +847,24 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
             child: const Text('Reject payment'),
           ),
         ],
+        children: [
+          AdminField(
+            label: 'Reason (the member sees it)',
+            child: TextField(
+              controller: reason,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(hintText: 'For example: The amount on the slip does not match'),
+            ),
+          ),
+        ],
       ),
     );
     final text = reason.text.trim();
     reason.dispose();
     if (ok == true) await _rejectPayment(id, reason: text.isEmpty ? null : text);
   }
+
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1723,943 +1279,262 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
     }
   }
 
+  static const _methodLabels = {
+    'cash': 'Cash at the office',
+    'momo': 'Mobile Money',
+    'cheque': 'Cheque',
+    'pos': 'Card (POS)',
+    'bank_deposit': 'Bank deposit',
+  };
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? _kCardBg : Colors.white;
-    final textColor = isDark ? CubagColors.sand : CubagColors.ink;
-    final subTextColor = isDark ? const Color(0xFF5F6B7E) : CubagColors.muted;
-    final borderColor = isDark ? const Color(0xFF4D2D20) : CubagColors.line;
-    final inputBg = isDark ? CubagColors.ink.withAlpha(120) : CubagColors.sand;
-
-    final appBill = _selectedMember != null
-        ? (double.tryParse(_selectedMember!['app_bill_amount']?.toString() ?? '') ??
-           double.tryParse(_selectedMember!['renewal_fee_amount']?.toString() ?? '') ?? 0.0)
+    final m = _selectedMember;
+    final appBill = m != null
+        ? (double.tryParse(m['app_bill_amount']?.toString() ?? '') ??
+            double.tryParse(m['renewal_fee_amount']?.toString() ?? '') ??
+            0.0)
         : 0.0;
+    final alreadyPaid = m != null && _isCategoryAlreadyPaid(_category);
 
-    return Dialog(
-      backgroundColor: cardBg,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 600,
-          maxHeight: MediaQuery.of(context).size.height * 0.90,
+    return AdminDialog(
+      title: 'Record an office payment',
+      subtitle: 'For money received at the office: cash, cheque, card, bank deposit or Mobile Money paid in person.',
+      maxWidth: 620,
+      actions: [
+        TextButton(onPressed: _submitting ? null : () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        FilledButton(
+          onPressed: (_submitting || m == null || alreadyPaid) ? null : _submitPayment,
+          child: Text(_submitting ? 'Recording…' : (alreadyPaid ? 'Already paid' : 'Record payment')),
         ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: _kGreen.withAlpha(25),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.point_of_sale_rounded,
-                      color: _kGreen,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Record Counter / Office Payment',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: textColor,
-                          ),
-                        ),
-                        Text(
-                          'Over-the-counter settlement for dues, renewals, or fees',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: subTextColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Close',
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded),
-                    color: subTextColor,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Divider(height: 1),
-              const SizedBox(height: 16),
-
-              // Scrollable Body
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Error banner
-                      if (_errorMessage != null) ...[
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: _kRed.withAlpha(20),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: _kRed.withAlpha(60)),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.error_outline_rounded, color: _kRed, size: 20),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  _errorMessage!,
-                                  style: TextStyle(
-                                    color: _kRed,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                      ],
-
-                      // ── Member Selection Section ─────────────────────────────
-                      Text(
-                        '1. Select member / customer',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: subTextColor,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-
-                      if (_selectedMember == null) ...[
-                        // Search bar
-                        TextField(
-                          controller: _searchController,
-                          onChanged: _onSearchChanged,
-                          style: TextStyle(fontSize: 14, color: textColor),
-                          decoration: InputDecoration(
-                            hintText: 'Search by member name, company, phone, license...',
-                            hintStyle: TextStyle(fontSize: 13, color: subTextColor),
-                            prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                            filled: true,
-                            fillColor: inputBg,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: borderColor),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: borderColor),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Member list
-                        Container(
-                          height: 180,
-                          decoration: BoxDecoration(
-                            color: inputBg,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: borderColor),
-                          ),
-                          child: _loadingMembers
-                              ? const Center(child: CircularProgressIndicator(color: _kOrange, strokeWidth: 2))
-                              : _members.isEmpty
-                                  ? Center(
-                                      child: Text(
-                                        'No matching members found.',
-                                        style: TextStyle(fontSize: 13, color: subTextColor),
-                                      ),
-                                    )
-                                  : ListView.separated(
-                                      itemCount: _members.length,
-                                      separatorBuilder: (_, index) => Divider(height: 1, color: borderColor.withAlpha(80)),
-                                      itemBuilder: (ctx, idx) {
-                                        final m = _members[idx] as Map<String, dynamic>;
-                                        final name = m['name']?.toString() ?? 'Unknown Member';
-                                        final company = m['company']?.toString() ?? '';
-                                        final phone = m['phone']?.toString() ?? '';
-                                        final lic = m['license_number']?.toString();
-                                        final bill = double.tryParse(m['app_bill_amount']?.toString() ?? '') ??
-                                            double.tryParse(m['renewal_fee_amount']?.toString() ?? '') ?? 0.0;
-                                        final isPkgPaid = m['package_fee_paid'] == true;
-
-                                        const mTypeStr = 'Corporate';
-
-                                        return ListTile(
-                                          dense: true,
-                                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                                          leading: CircleAvatar(
-                                            radius: 16,
-                                            backgroundColor: _kOrange.withAlpha(30),
-                                            child: Text(
-                                              name.isNotEmpty ? name[0].toUpperCase() : 'M',
-                                              style: TextStyle(
-                                                color: AppColors.accentOrangeText,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                          ),
-                                          title: Row(
-                                            children: [
-                                              Expanded(
-                                                child: Text(
-                                                  name,
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 14,
-                                                    color: textColor,
-                                                  ),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                                decoration: BoxDecoration(
-                                                  color: _kOrange.withAlpha(20),
-                                                  borderRadius: BorderRadius.circular(4),
-                                                  border: Border.all(color: _kOrange.withAlpha(60)),
-                                                ),
-                                                child: Text(
-                                                  mTypeStr.toUpperCase(),
-                                                  style: TextStyle(
-                                                    fontSize: 9.5,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: AppColors.accentOrangeText,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          subtitle: Text(
-                                            [
-                                              if (company.isNotEmpty) company,
-                                              if (phone.isNotEmpty) phone,
-                                              if (lic != null && lic.isNotEmpty) lic,
-                                            ].join(' · '),
-                                            style: TextStyle(fontSize: 11, color: subTextColor),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          trailing: bill > 0
-                                              ? Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                                  decoration: BoxDecoration(
-                                                    color: _kAmber.withAlpha(25),
-                                                    borderRadius: BorderRadius.circular(6),
-                                                    border: Border.all(color: _kAmber.withAlpha(80)),
-                                                  ),
-                                                  child: Text(
-                                                    'Billed: GH₵ ${bill.toStringAsFixed(0)}',
-                                                    style: TextStyle(
-                                                      color: _kAmber,
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: 11,
-                                                    ),
-                                                  ),
-                                                )
-                                              : (!isPkgPaid
-                                                  ? Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                                      decoration: BoxDecoration(
-                                                        color: _kBlue.withAlpha(25),
-                                                        borderRadius: BorderRadius.circular(6),
-                                                      ),
-                                                      child: Text(
-                                                        'New Member Dues',
-                                                        style: TextStyle(
-                                                          color: _kBlue,
-                                                          fontWeight: FontWeight.bold,
-                                                          fontSize: 11,
-                                                        ),
-                                                      ),
-                                                    )
-                                                  : null),
-                                          onTap: () => _selectMember(m),
-                                        );
-                                      },
-                                    ),
-                        ),
-                      ] else ...[
-                        // Selected member card
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: _kGreen.withAlpha(15),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: _kGreen.withAlpha(60)),
-                          ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundColor: _kGreen,
-                                child: Text(
-                                  (_selectedMember!['name']?.toString() ?? 'M')[0].toUpperCase(),
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _selectedMember!['name']?.toString() ?? 'Member',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                        color: textColor,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: _kOrange.withAlpha(25),
-                                            borderRadius: BorderRadius.circular(4),
-                                            border: Border.all(color: _kOrange.withAlpha(80)),
-                                          ),
-                                          child: Text(
-                                            'Corporate',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.accentOrangeText,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Expanded(
-                                          child: Text(
-                                            [
-                                              if (_selectedMember!['company'] != null) _selectedMember!['company'],
-                                              if (_selectedMember!['phone'] != null) _selectedMember!['phone'],
-                                              if (_selectedMember!['license_number'] != null)
-                                                'Lic: ${_selectedMember!['license_number']}',
-                                            ].join(' · '),
-                                            style: TextStyle(fontSize: 11.5, color: subTextColor),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              TextButton.icon(
-                                onPressed: () {
-                                  setState(() {
-                                    _selectedMember = null;
-                                    _amountController.clear();
-                                    _feeSourceNotice = '';
-                                  });
-                                  _fetchMembers();
-                                },
-                                icon: const Icon(Icons.swap_horiz_rounded, size: 16),
-                                label: const Text('Change'),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: _kOrange,
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Member Settlement Status Summary
-                        if (_selectedMember != null) ...[
-                          const SizedBox(height: 8),
-                          _buildMemberStandingSummary(isDark, textColor, subTextColor),
-                        ],
-
-                        // If member has official renewal bill, show quick fill action (only if remaining > 0)
-                        if (appBill > 0) ...[
-                          const SizedBox(height: 8),
-                          Builder(builder: (ctx) {
-                            final appPaid = double.tryParse(_selectedMember!['app_amount_paid']?.toString() ?? '') ?? 0.0;
-                            final remaining = (appBill - appPaid).clamp(0.0, appBill);
-                            final isFullyPaid = remaining <= 0;
-
-                            return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: (isFullyPaid ? _kGreen : _kAmber).withAlpha(20),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: (isFullyPaid ? _kGreen : _kAmber).withAlpha(60)),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(isFullyPaid ? Icons.check_circle_rounded : Icons.receipt_long_rounded,
-                                      color: isFullyPaid ? _kGreen : _kAmber, size: 18),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      isFullyPaid
-                                          ? 'Official Renewal Bill: GH₵ ${appBill.toStringAsFixed(2)} (Fully Settled ✓)'
-                                          : 'Renewal Bill: GH₵ ${appBill.toStringAsFixed(2)} (Remaining: GH₵ ${remaining.toStringAsFixed(2)})',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                        color: textColor,
-                                      ),
-                                    ),
-                                  ),
-                                  if (!isFullyPaid)
-                                    OutlinedButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          _category = 'Annual Renewal Dues';
-                                          _amountController.text = remaining.toStringAsFixed(2);
-                                          _feeSourceNotice = 'Outstanding Renewal Bill: GH₵ ${remaining.toStringAsFixed(2)}';
-                                        });
-                                      },
-                                      style: OutlinedButton.styleFrom(
-                                        side: const BorderSide(color: _kAmber),
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                        minimumSize: const Size(0, 28),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                      ),
-                                      child: Text(
-                                        'Fill Remaining',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          color: _kAmber,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            );
-                          }),
-                        ],
-                      ],
-
-                      const SizedBox(height: 18),
-
-                      // ── Payment Details Section ──────────────────────────────
-                      Text(
-                        '2. Payment specifications',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: subTextColor,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Payment Category Dropdown
-                      DropdownButtonFormField<String>(
-                        initialValue: _categories.contains(_category)
-                            ? _category
-                            : (_categories.isNotEmpty ? _categories.first : 'Annual Renewal Dues'),
-                        decoration: InputDecoration(
-                          labelText: 'Payment Category / Dues Type',
-                          labelStyle: TextStyle(color: subTextColor, fontSize: 13),
-                          filled: true,
-                          fillColor: inputBg,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: borderColor),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: borderColor),
-                          ),
-                        ),
-                        dropdownColor: cardBg,
-                        items: _categories.map((c) {
-                          final isPaid = _isCategoryAlreadyPaid(c);
-                          return DropdownMenuItem(
-                            value: c,
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    c,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: isPaid ? (isDark ? Colors.white38 : Colors.grey.shade500) : textColor,
-                                      fontWeight: isPaid ? FontWeight.normal : FontWeight.w500,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                if (isPaid) ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: _kGreen.withAlpha(20),
-                                      borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(color: _kGreen.withAlpha(80)),
-                                    ),
-                                    child: Text(
-                                      'Paid ✓',
-                                      style: TextStyle(
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: _kGreen,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (v) {
-                          if (v != null) {
-                            setState(() => _category = v);
-                            _updateAmountForCategory(v);
-                          }
-                        },
-                      ),
-                      if (_isCategoryAlreadyPaid(_category)) ...[
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: _kRed.withAlpha(15),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: _kRed.withAlpha(50)),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.warning_amber_rounded, color: _kRed, size: 16),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  'This member has already paid for "$_category". Duplicate payment is blocked.',
-                                  style: TextStyle(color: _kRed, fontSize: 12, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 12),
-
-                      // Amount & Method Row
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 5,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                TextFormField(
-                                  controller: _amountController,
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: textColor,
-                                  ),
-                                  decoration: InputDecoration(
-                                    labelText: 'Amount Paid (GH₵)',
-                                    labelStyle: TextStyle(color: subTextColor, fontSize: 13),
-                                    prefixText: 'GH₵ ',
-                                    prefixStyle: TextStyle(fontWeight: FontWeight.bold, color: _kGreen),
-                                    filled: true,
-                                    fillColor: inputBg,
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: borderColor),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: borderColor),
-                                    ),
-                                  ),
-                                ),
-                                if (_feeSourceNotice.isNotEmpty) ...[
-                                  const SizedBox(height: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: _kGreen.withAlpha(18),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: _kGreen.withAlpha(50)),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.verified_rounded, size: 13, color: _kGreen),
-                                        const SizedBox(width: 6),
-                                        Expanded(
-                                          child: Text(
-                                            _feeSourceNotice,
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold,
-                                              color: _kGreen,
-                                            ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            flex: 6,
-                            child: DropdownButtonFormField<String>(
-                              initialValue: _paymentMethod,
-                              decoration: InputDecoration(
-                                labelText: 'Payment Method',
-                                labelStyle: TextStyle(color: subTextColor, fontSize: 13),
-                                filled: true,
-                                fillColor: inputBg,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: borderColor),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: borderColor),
-                                ),
-                              ),
-                              dropdownColor: cardBg,
-                              items: _methods.map((m) {
-                                return DropdownMenuItem(
-                                  value: m['key']!,
-                                  child: Text(
-                                    m['label']!,
-                                    style: TextStyle(fontSize: 13, color: textColor),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+      ],
+      children: [
+        if (_errorMessage != null) ...[
+          Container(
+            padding: const EdgeInsets.all(CubagSpace.sm),
+            decoration: BoxDecoration(color: CubagColors.lapsedTint, borderRadius: BorderRadius.circular(CubagRadius.control)),
+            child: Text(_errorMessage!, style: CubagType.small.copyWith(color: CubagColors.lapsed)),
+          ),
+          const SizedBox(height: CubagSpace.md),
+        ],
+        Text('1. Who paid', style: CubagType.headline),
+        const SizedBox(height: CubagSpace.sm),
+        if (m == null) ...[
+          AdminSearchField(
+            hint: 'Search name, company, phone or licence number',
+            controller: _searchController,
+            onChanged: _onSearchChanged,
+          ),
+          const SizedBox(height: CubagSpace.sm),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 280),
+            child: _loadingMembers
+                ? const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
+                : _members.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(CubagSpace.lg),
+                        child: Text('No member matches.', style: CubagType.small, textAlign: TextAlign.center),
+                      )
+                    : SingleChildScrollView(
+                        child: AdminRowGroup(
+                          dividerIndent: 68,
+                          children: [
+                            for (final raw in _members)
+                              () {
+                                final x = Map<String, dynamic>.from(raw as Map);
+                                final name = x['name']?.toString() ?? 'Member';
+                                final bill = double.tryParse(x['app_bill_amount']?.toString() ?? '') ??
+                                    double.tryParse(x['renewal_fee_amount']?.toString() ?? '') ??
+                                    0.0;
+                                return AdminListRow(
+                                  leading: AdminRowMark(initials: adminInitials(name)),
+                                  title: name,
+                                  subtitle: [
+                                    if ((x['company'] ?? '').toString().isNotEmpty) x['company'].toString(),
+                                    if ((x['phone'] ?? '').toString().isNotEmpty) x['phone'].toString(),
+                                  ].join(' · '),
+                                  meta: (x['license_number'] ?? '').toString().isEmpty ? null : 'Licence ${x['license_number']}',
+                                  status: bill > 0
+                                      ? StatusChip('Bill GH₵ ${bill.toStringAsFixed(0)}', kind: StatusKind.pending)
+                                      : (x['package_fee_paid'] == true ? null : const StatusChip('New member', kind: StatusKind.pending)),
+                                  onTap: () => _selectMember(x),
                                 );
-                              }).toList(),
-                              onChanged: (v) {
-                                if (v != null) setState(() => _paymentMethod = v);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Installment / Part Payment toggle
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: _isInstallment ? _kOrange.withAlpha(20) : inputBg,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: _isInstallment ? _kOrange : borderColor,
-                            width: _isInstallment ? 1.5 : 1.0,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Checkbox(
-                              value: _isInstallment,
-                              activeColor: _kOrange,
-                              onChanged: (val) {
-                                setState(() {
-                                  _isInstallment = val ?? false;
-                                  if (_isInstallment && _errorMessage != null && _errorMessage!.contains('already paid')) {
-                                    _errorMessage = null;
-                                  }
-                                });
-                              },
-                            ),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Record as Installment / Part Payment',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                      color: textColor,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Allows recording partial amounts towards dues or license fees',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: subTextColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (_isInstallment) ...[
-                              const SizedBox(width: 8),
-                              SizedBox(
-                                width: 85,
-                                child: TextFormField(
-                                  controller: _installmentNumberCtrl,
-                                  keyboardType: TextInputType.number,
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textColor),
-                                  decoration: InputDecoration(
-                                    labelText: 'Part #',
-                                    labelStyle: TextStyle(fontSize: 11, color: subTextColor),
-                                    prefixText: '#',
-                                    prefixStyle: TextStyle(fontWeight: FontWeight.bold, color: AppColors.accentOrangeText),
-                                    isDense: true,
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                    filled: true,
-                                    fillColor: cardBg,
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                  ),
-                                ),
-                              ),
-                            ],
+                              }(),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
-
-                      // Receipt / Cheque # field
-                      TextFormField(
-                        controller: _receiptNoController,
-                        style: TextStyle(fontSize: 14, color: textColor),
-                        decoration: InputDecoration(
-                          labelText: 'Physical Receipt Book # / Cheque # (Optional)',
-                          labelStyle: TextStyle(color: subTextColor, fontSize: 13),
-                          hintText: 'e.g. RCP-2026-0048 or Cheque #4092 Zenith Bank',
-                          hintStyle: TextStyle(fontSize: 12, color: subTextColor.withAlpha(150)),
-                          prefixIcon: const Icon(Icons.tag_rounded, size: 20),
-                          filled: true,
-                          fillColor: inputBg,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: borderColor),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: borderColor),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Internal Notes field
-                      TextFormField(
-                        controller: _notesController,
-                        style: TextStyle(fontSize: 14, color: textColor),
-                        maxLines: 2,
-                        decoration: InputDecoration(
-                          labelText: 'Administrative / Office Notes (Optional)',
-                          labelStyle: TextStyle(color: subTextColor, fontSize: 13),
-                          hintText: 'e.g. Paid in cash at front desk by company director.',
-                          hintStyle: TextStyle(fontSize: 12, color: subTextColor.withAlpha(150)),
-                          filled: true,
-                          fillColor: inputBg,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: borderColor),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: borderColor),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Automated Action Notice
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: _kGreen.withAlpha(15),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: _kGreen.withAlpha(40)),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Icon(Icons.verified_rounded, color: _kGreen, size: 18),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                'Automated Settlement: Upon recording, status will immediately become PAID. Any applicable license will be renewed for 1 year, and an official receipt email + push notification will be sent to the member automatically.',
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  color: textColor.withAlpha(200),
-                                  height: 1.35,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+          ),
+        ] else ...[
+          AdminRowGroup(
+            children: [
+              AdminListRow(
+                leading: AdminRowMark(initials: adminInitials(m['name']?.toString() ?? '')),
+                title: m['name']?.toString() ?? 'Member',
+                subtitle: [
+                  if (m['company'] != null) m['company'].toString(),
+                  if (m['phone'] != null) m['phone'].toString(),
+                ].join(' · '),
+                meta: m['license_number'] == null ? null : 'Licence ${m['license_number']}',
+                trailing: TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedMember = null;
+                      _amountController.clear();
+                      _feeSourceNotice = '';
+                    });
+                    _fetchMembers();
+                  },
+                  child: const Text('Change'),
                 ),
-              ),
-
-              const SizedBox(height: 16),
-              const Divider(height: 1),
-              const SizedBox(height: 16),
-
-              // Action Buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: _submitting ? null : () => Navigator.of(context).pop(),
-                    style: TextButton.styleFrom(
-                      foregroundColor: subTextColor,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    ),
-                    child: Text(
-                      'Cancel',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: (_submitting || _isCategoryAlreadyPaid(_category)) ? null : _submitPayment,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _kGreen,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    icon: _submitting
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                          )
-                        : const Icon(Icons.check_circle_rounded, size: 18),
-                    label: Text(
-                      _submitting
-                          ? 'Recording Payment...'
-                          : (_isCategoryAlreadyPaid(_category) ? 'Category Already Paid' : 'Confirm & Record Payment'),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
-        ),
-      ),
+          const SizedBox(height: CubagSpace.sm),
+          _buildMemberStandingSummary(false, CubagColors.ink, CubagColors.muted),
+          if (appBill > 0)
+            Builder(builder: (ctx) {
+              final appPaid = double.tryParse(m['app_amount_paid']?.toString() ?? '') ?? 0.0;
+              final remaining = (appBill - appPaid).clamp(0.0, appBill);
+              return Padding(
+                padding: const EdgeInsets.only(top: CubagSpace.sm),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        remaining <= 0
+                            ? 'Renewal bill GH₵ ${appBill.toStringAsFixed(2)}: fully paid'
+                            : 'Renewal bill GH₵ ${appBill.toStringAsFixed(2)}: GH₵ ${remaining.toStringAsFixed(2)} still to pay',
+                        style: CubagType.small.copyWith(color: CubagColors.ink),
+                      ),
+                    ),
+                    if (remaining > 0)
+                      TextButton(
+                        onPressed: () => setState(() {
+                          _category = 'Annual Renewal Dues';
+                          _amountController.text = remaining.toStringAsFixed(2);
+                          _feeSourceNotice = 'The rest of the renewal bill.';
+                        }),
+                        child: const Text('Use this amount'),
+                      ),
+                  ],
+                ),
+              );
+            }),
+          const SizedBox(height: CubagSpace.xl),
+          Text('2. What they paid', style: CubagType.headline),
+          const SizedBox(height: CubagSpace.sm),
+          AdminField(
+            label: 'For',
+            child: DropdownMenu<String>(
+              key: ValueKey('cat-${m['id']}'),
+              initialSelection: _categories.contains(_category)
+                  ? _category
+                  : (_categories.isNotEmpty ? _categories.first : 'Annual Renewal Dues'),
+              expandedInsets: EdgeInsets.zero,
+              dropdownMenuEntries: [
+                for (final c in _categories)
+                  DropdownMenuEntry(value: c, label: _isCategoryAlreadyPaid(c) ? '$c (already paid)' : c),
+              ],
+              onSelected: (v) {
+                if (v != null) {
+                  setState(() => _category = v);
+                  _updateAmountForCategory(v);
+                }
+              },
+            ),
+          ),
+          if (alreadyPaid)
+            Padding(
+              padding: const EdgeInsets.only(bottom: CubagSpace.md),
+              child: Text(
+                'This member has already paid for "$_category", so it cannot be recorded twice.',
+                style: CubagType.small.copyWith(color: CubagColors.lapsed),
+              ),
+            ),
+          AdminFieldPair(
+            AdminField(
+              label: 'Amount',
+              help: _feeSourceNotice.isEmpty ? null : _feeSourceNotice.replaceAll('⚠️ ', ''),
+              child: TextField(
+                controller: _amountController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(prefixText: 'GH₵ '),
+              ),
+            ),
+            AdminField(
+              label: 'Paid by',
+              child: DropdownMenu<String>(
+                initialSelection: _paymentMethod,
+                expandedInsets: EdgeInsets.zero,
+                dropdownMenuEntries: [
+                  for (final x in _methods)
+                    DropdownMenuEntry(value: x['key']!, label: _methodLabels[x['key']] ?? x['label']!),
+                ],
+                onSelected: (v) {
+                  if (v != null) setState(() => _paymentMethod = v);
+                },
+              ),
+            ),
+          ),
+          AdminSwitchRow(
+            title: 'Part payment',
+            subtitle: 'Records part of a bill. The rest stays due.',
+            value: _isInstallment,
+            onChanged: (val) => setState(() {
+              _isInstallment = val;
+              if (_isInstallment && (_errorMessage ?? '').contains('already paid')) _errorMessage = null;
+            }),
+          ),
+          if (_isInstallment)
+            AdminField(
+              label: 'Which part is this?',
+              child: TextField(
+                controller: _installmentNumberCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(prefixText: 'Part '),
+              ),
+            ),
+          AdminField(
+            label: 'Receipt book or cheque number (optional)',
+            child: TextField(
+              controller: _receiptNoController,
+              decoration: const InputDecoration(hintText: 'For example: RCP-2026-0048'),
+            ),
+          ),
+          AdminField(
+            label: 'Office note (optional)',
+            child: TextField(
+              controller: _notesController,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(hintText: 'For example: Paid in cash by the company director'),
+            ),
+          ),
+          Text(
+            'When you record it, the payment is marked as paid straight away and the member\'s standing updates.',
+            style: CubagType.small,
+          ),
+        ],
+      ],
     );
   }
 
   Widget _buildMemberStandingSummary(bool isDark, Color textColor, Color subTextColor) {
-    if (_selectedMember == null) return const SizedBox.shrink();
-
-    final isRegPaid = _selectedMember!['package_fee_paid'] == true || _selectedMember!['registration_fee_paid'] == true;
-    final appBill = double.tryParse(_selectedMember!['app_bill_amount']?.toString() ?? '') ?? 0.0;
-    final appPaid = double.tryParse(_selectedMember!['app_amount_paid']?.toString() ?? '') ?? 0.0;
+    final m = _selectedMember;
+    if (m == null) return const SizedBox.shrink();
+    final isRegPaid = m['package_fee_paid'] == true || m['registration_fee_paid'] == true;
+    final appBill = double.tryParse(m['app_bill_amount']?.toString() ?? '') ?? 0.0;
+    final appPaid = double.tryParse(m['app_amount_paid']?.toString() ?? '') ?? 0.0;
     final isRenewalPaid = (appBill > 0 && appPaid >= appBill) ||
-        _selectedMember!['renewal_paid_this_year'] == true ||
-        _selectedMember!['renewal_approved_this_year'] == true;
-
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E140E) : const Color(0xFFF8F5F2),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: isDark ? const Color(0xFF3D261C) : CubagColors.line),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.shield_outlined, size: 14, color: subTextColor),
-              const SizedBox(width: 6),
-              Text(
-                'Member settlement status',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: subTextColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              _buildMiniStatusChip('Registration / Package', isRegPaid),
-              _buildMiniStatusChip('Annual Renewal Dues', isRenewalPaid),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMiniStatusChip(String label, bool isPaid) {
-    final color = isPaid ? _kGreen : _kOrange;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withAlpha(20),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withAlpha(60)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(isPaid ? Icons.check_circle_rounded : Icons.pending_rounded, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            '$label: ${isPaid ? "Paid ✓" : "Outstanding"}',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-        ],
-      ),
+        m['renewal_paid_this_year'] == true ||
+        m['renewal_approved_this_year'] == true;
+    return Wrap(
+      spacing: CubagSpace.xs,
+      runSpacing: CubagSpace.xs,
+      children: [
+        StatusChip(isRegPaid ? 'Registration paid' : 'Registration not paid', kind: isRegPaid ? StatusKind.good : StatusKind.pending),
+        StatusChip(isRenewalPaid ? 'Renewal paid' : 'Renewal not paid', kind: isRenewalPaid ? StatusKind.good : StatusKind.pending),
+      ],
     );
   }
 }
-

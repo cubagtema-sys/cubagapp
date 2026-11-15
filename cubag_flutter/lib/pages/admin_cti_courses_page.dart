@@ -766,32 +766,7 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
   }
 
   Future<void> _deleteCourse(dynamic course, {bool permanent = false}) async {
-    final title = permanent ? 'Permanently Delete Course?' : 'Archive Course?';
-    final content = permanent
-        ? 'This will permanently remove "${course['title']}". Action cannot be undone.'
-        : 'Archive "${course['title']}"? It can be restored anytime from the Archived tab.';
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        content: Text(content, style: TextStyle(fontSize: 13)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _kRed,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              elevation: 0,
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(permanent ? 'Delete' : 'Archive'),
-          ),
-        ],
-      ),
-    );
+    final confirm = await showAdminConfirm(context, title: permanent ? 'Delete this course for good?' : 'Archive this course?', message: permanent ? '"${course['title']}" is removed and cannot be brought back.' : '"${course['title']}" is hidden from members. You can restore it from Archived.', confirmLabel: permanent ? 'Delete for good' : 'Archive', destructive: true);
 
     if (confirm == true) {
       try {

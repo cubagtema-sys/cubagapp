@@ -10,7 +10,6 @@ import '../services/api_service.dart';
 import '../utils/app_logger.dart';
 import '../design/cubag_design.dart';
 
-const _kRed = CubagColors.lapsed;
 
 class AdminPortNewsPage extends StatefulWidget {
   const AdminPortNewsPage({super.key});
@@ -195,22 +194,7 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
   }
 
   Future<void> _deleteBulletin(dynamic bulletin) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: Text('Archive this update?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        content: Text('Remove "${bulletin['port_name']}" bulletin from public view?', style: TextStyle(fontSize: 13)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: _kRed, foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Archive'),
-          ),
-        ],
-      ),
-    );
+    final confirm = await showAdminConfirm(context, title: 'Archive this update?', message: 'Members will no longer see the note for ${bulletin['port_name']}.', confirmLabel: 'Archive', destructive: true);
     if (confirm != true) return;
 
     try {

@@ -14,7 +14,6 @@ import '../design/cubag_design.dart';
 
 const _kOrange = CubagColors.action;
 const _kGreen = CubagColors.valid;
-const _kRed = CubagColors.lapsed;
 const _kBrown = Color(0xFF6B3E26);
 const _kPurple = Color(0xFF7C3AED);
 const _kBlue = Color(0xFF0284C7);
@@ -346,27 +345,17 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
     final itemToRemove = _fees[index];
     final itemName = itemToRemove['label']?.toString() ?? 'Fee Item';
 
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Remove Fee Item', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text('Are you sure you want to delete "$itemName" from the official tariff schedule?', style: TextStyle(fontSize: 15)),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: _kRed, foregroundColor: Colors.white),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              setState(() {
-                _fees.removeAt(index);
-              });
-              _saveAllFees();
-            },
-            child: const Text('Remove'),
-          ),
-        ],
-      ),
-    );
+    showAdminConfirm(
+      context,
+      title: 'Remove this fee?',
+      message: '"$itemName" is taken off the fee list and the change is published straight away.',
+      confirmLabel: 'Remove',
+      destructive: true,
+    ).then((ok) {
+      if (!ok || !mounted) return;
+      setState(() => _fees.removeAt(index));
+      _saveAllFees();
+    });
   }
 
   Future<void> _saveAllFees() async {

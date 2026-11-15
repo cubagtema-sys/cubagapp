@@ -1,3 +1,4 @@
+import '../components/admin_dialog.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -609,75 +610,39 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
 
     showDialog(
       context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          width: 900,
-          height: 680,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.description_rounded,
-                    color: _kOrange,
-                    size: 22,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.open_in_new_rounded),
-                    onPressed: () async {
-                      final uri = Uri.tryParse(cleanUrl);
-                      if (uri != null && await canLaunchUrl(uri)) {
-                        await launchUrl(
-                          uri,
-                          mode: LaunchMode.externalApplication,
-                        );
-                      }
-                    },
-                    tooltip: 'Open in new tab',
-                  ),
-                  IconButton(
-                    tooltip: 'Close',
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-              const Divider(),
-              Expanded(
-                child: isImage
-                    ? InteractiveViewer(
-                        child: CorsImageWidget(
-                          url: cleanUrl,
-                          fit: BoxFit.contain,
-                          placeholder: const Center(
-                            child: CircularProgressIndicator(color: _kOrange),
-                          ),
-                          errorWidget: const Center(
-                            child: Text('Failed to load image preview.'),
-                          ),
-                        ),
-                      )
-                    : doc_preview.buildDocPreview(
-                        cleanUrl,
-                        'modal_${title.hashCode}_${cleanUrl.hashCode}',
-                      ),
-              ),
-            ],
+      builder: (ctx) => AdminDialog(
+        title: title,
+        maxWidth: 900,
+        actions: [
+          TextButton.icon(
+            onPressed: () async {
+              final uri = Uri.tryParse(cleanUrl);
+              if (uri != null && await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            icon: const Icon(Icons.open_in_new_rounded, size: 18),
+            label: const Text('Open in a new tab'),
           ),
-        ),
+          FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Done')),
+        ],
+        children: [
+          Container(
+            height: MediaQuery.sizeOf(ctx).height * 0.6,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(color: CubagColors.sand, borderRadius: BorderRadius.circular(CubagRadius.card)),
+            child: isImage
+                ? InteractiveViewer(
+                    child: CorsImageWidget(
+                      url: cleanUrl,
+                      fit: BoxFit.contain,
+                      placeholder: const Center(child: CircularProgressIndicator()),
+                      errorWidget: const Center(child: Text('Could not show this file. Use Open in a new tab.')),
+                    ),
+                  )
+                : doc_preview.buildDocPreview(cleanUrl, 'modal_${title.hashCode}_${cleanUrl.hashCode}'),
+          ),
+        ],
       ),
     );
   }
@@ -685,51 +650,16 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
   Future<void> _approveAll() async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _kGreen.withAlpha(25),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.verified_rounded,
-                color: _kGreen,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Verify & Approve Documents',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'This will approve all uploaded documents and verify the applicant for membership. Continue?',
-          style: TextStyle(fontSize: 14, height: 1.5),
-        ),
+      builder: (ctx) => AdminDialog(
+        title: 'Approve all documents?',
+        subtitle: 'Every uploaded document is approved and the applicant is verified for membership.',
+        maxWidth: 460,
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _kGreen,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Approve Documents'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Approve all')),
+        ],
+        children: [
+          Text('Open and check each document first.', style: CubagType.small),
         ],
       ),
     );
@@ -756,7 +686,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
       );
       if (mounted) {
         if (res.statusCode == 200) {
-          _snack('All application documents approved and verified!', _kGreen);
+          _snack('All documents approved.', _kGreen);
           await ApiService.deleteCacheKeysMatching('documents/admin');
           _fetch(forceRefresh: true);
         } else {
@@ -769,7 +699,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
       }
     } catch (_) {
       if (mounted) {
-        _snack('Network error while approving documents', _kRed);
+        _snack('Could not approve the documents. Check the connection and try again.', _kRed);
         setState(() {
           _docs = prevDocs;
           _member['status'] = prevStatus;
@@ -880,7 +810,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
                             icon: const Icon(Icons.refresh_rounded, size: 16),
-                            label: const Text('Retry Loading'),
+                            label: const Text('Try again'),
                             onPressed: () => _fetch(forceRefresh: true),
                           ),
                         ],
@@ -1116,12 +1046,12 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                                           : const Icon(Icons.verified_rounded, size: 16)),
                                 label: Text(
                                   isApproved
-                                      ? 'Documents Verified'
+                                      ? 'Documents checked'
                                       : (_approvingAll
                                             ? 'Verifying...'
                                             : (total > 0
                                                   ? 'Approve All ($total/$total)'
-                                                  : 'Approve Application')),
+                                                  : 'Approve application')),
                                   style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
                                 ),
                               ),
@@ -1137,7 +1067,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
                               const SizedBox(width: 8),
                               _buildMiniPill('Uploaded', '$uploaded', _kBlue, border, isDark),
                               const SizedBox(width: 8),
-                              _buildMiniPill('Awaiting Review', '$pending', _kAmber, border, isDark),
+                              _buildMiniPill('Waiting for review', '$pending', _kAmber, border, isDark),
                               const SizedBox(width: 8),
                               _buildMiniPill('Approved', '$approved', _kGreen, border, isDark),
                             ],
@@ -1264,7 +1194,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
       itemBuilder: (ctx, i) {
         final d = items[i];
         final id = d['id'] as int?;
-        final label = (d['label'] as String?) ?? 'Certificate Document';
+        final label = (d['label'] as String?) ?? 'Certificate';
         final key = (d['key'] as String?) ?? 'doc';
         final status = (d['status'] as String?) ?? 'not_uploaded';
         final fileUrl = d['file_url'] as String?;
@@ -1275,7 +1205,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
         _noteCtrl.putIfAbsent(key, () => TextEditingController(text: d['admin_note'] as String? ?? ''));
 
         Color pillColor = _kRed;
-        String pillLabel = 'Not Uploaded';
+        String pillLabel = 'Not uploaded';
         if (status == 'approved') {
           pillColor = _kGreen;
           pillLabel = 'Approved';
@@ -1284,7 +1214,7 @@ class _ReviewApplicantPageState extends State<ReviewApplicantPage>
           pillLabel = 'Rejected';
         } else if (isUploaded) {
           pillColor = _kAmber;
-          pillLabel = 'Awaiting Vetting';
+          pillLabel = 'Waiting for checks';
         }
 
         return Container(

@@ -1,3 +1,6 @@
+import '../components/admin_dialog.dart';
+import '../components/admin_list.dart';
+import '../components/cubag_ui.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -338,7 +341,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Secretariat Counter Desk',
+                      'Office desk',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -468,7 +471,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Pending Registration Approvals',
+                          'New members to approve',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 18,
@@ -518,7 +521,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           context.go('/admin/members?status=pending'),
                       icon: const Icon(Icons.arrow_forward_rounded, size: 14),
                       label: Text(
-                        'View All',
+                        'See all',
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
@@ -604,7 +607,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         ],
                         rows: pendingMembers.take(8).map((m) {
                           final name =
-                              m['name']?.toString() ?? 'Unnamed Member';
+                              m['name']?.toString() ?? 'New member';
                           final email = m['email']?.toString() ?? '—';
                           final company = m['company']?.toString() ?? '';
                           final type =
@@ -919,8 +922,8 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
           SnackBar(
             content: Text(
               status == 'approved'
-                  ? '✅ Document approved'
-                  : '❌ Document rejected',
+                  ? 'Document approved'
+                  : 'Document rejected',
             ),
             backgroundColor: status == 'approved' ? Colors.green : Colors.red,
             duration: const Duration(seconds: 2),
@@ -962,7 +965,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('🎉 Member $name has been approved & activated!'),
+              content: Text('$name is approved and active.'),
               backgroundColor: CubagColors.valid,
               behavior: SnackBarBehavior.floating,
             ),
@@ -972,7 +975,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
           final msg = res.data?['message'] ?? 'Unknown error';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('❌ Approval failed: $msg'),
+              content: Text('Could not approve: $msg'),
               backgroundColor: Colors.red,
             ),
           );
@@ -982,7 +985,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error approving member: $e'),
+            content: const Text('Could not approve the member. Try again.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -999,91 +1002,32 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
     if (memberId == null) return;
 
     final noteCtrl = TextEditingController();
-    bool dialogSubmitting = false;
 
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+      builder: (ctx) => AdminDialog(
+        title: 'Reject this application?',
+        subtitle: '$name is told it was not accepted and why.',
+        maxWidth: 480,
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: CubagColors.lapsed),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Reject application'),
+          ),
+        ],
+        children: [
+          AdminField(
+            label: 'Reason (the applicant sees it)',
+            child: TextField(
+              controller: noteCtrl,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(hintText: 'For example: The SSNIT certificate has expired'),
             ),
-            title: Row(
-              children: [
-                const Icon(
-                  Icons.warning_amber_rounded,
-                  color: Colors.red,
-                  size: 22,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Reject Member',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Enter reason for rejecting $name (e.g. invalid SSNIT certificate):',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: noteCtrl,
-                  maxLines: 3,
-                  enabled: !dialogSubmitting,
-                  decoration: InputDecoration(
-                    hintText: 'Rejection reason...',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    contentPadding: const EdgeInsets.all(12),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: dialogSubmitting
-                    ? null
-                    : () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: dialogSubmitting
-                    ? null
-                    : () {
-                        setDialogState(() => dialogSubmitting = true);
-                        Navigator.pop(ctx, true);
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                ),
-                child: dialogSubmitting
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text('Reject Application'),
-              ),
-            ],
-          );
-        },
+          ),
+        ],
       ),
     );
 
@@ -1102,7 +1046,7 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Member $name application rejected.'),
+              content: Text("$name's application was rejected."),
               backgroundColor: Colors.orange,
             ),
           );
@@ -1145,518 +1089,126 @@ class _MemberReviewDialogState extends State<_MemberReviewDialog> {
   @override
   Widget build(BuildContext context) {
     final m = widget.member;
-    final name = m['name']?.toString() ?? 'Unnamed Member';
-    final company = m['company']?.toString() ?? 'N/A';
-    final email = m['email']?.toString() ?? 'N/A';
-    final phone = m['phone']?.toString() ?? 'N/A';
-    final type = m['member_type']?.toString() ?? 'Corporate';
-    final tin = m['tin']?.toString() ?? 'N/A';
-    final paymentRef = m['payment_ref']?.toString();
-    final hasPayment = paymentRef != null && paymentRef.isNotEmpty;
+    String v(String k) {
+      final x = m[k]?.toString() ?? '';
+      return x == 'null' ? '' : x;
+    }
 
-    final uploadedCount = _documents.where((d) => d['uploaded'] == true).length;
-    final approvedCount = _documents
-        .where((d) => d['status'] == 'approved')
-        .length;
+    final name = v('name').isEmpty ? 'New member' : v('name');
+    final paymentRef = v('payment_ref');
+    final hasPayment = paymentRef.isNotEmpty;
+    final uploaded = _documents.where((d) => d['uploaded'] == true).length;
+    final approved = _documents.where((d) => d['status'] == 'approved').length;
 
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        width: 680,
-        constraints: const BoxConstraints(maxHeight: 720),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.verified_user_rounded,
-                      color: CubagColors.valid,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Member Validation & Approval',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 22,
-                          ),
-                        ),
-                        Text(
-                          'Validate documents and payment before activating license',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                IconButton(
-                  tooltip: 'Close',
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-
-            // Main Content Scrollable
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Member Bio Card
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: CubagColors.sand,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: CubagColors.line),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 22,
-                                backgroundColor: Theme.of(
-                                  context,
-                                ).primaryColor.withValues(alpha: 0.15),
-                                child: Text(
-                                  name.isNotEmpty ? name[0].toUpperCase() : 'M',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 20,
-                                    color: Theme.of(context).primaryColor,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      name,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 20,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '$company • $type',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.grey.shade700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Divider(height: 20),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _infoItem(
-                                  'Email',
-                                  email,
-                                  Icons.email_outlined,
-                                ),
-                              ),
-                              Expanded(
-                                child: _infoItem(
-                                  'Phone',
-                                  phone,
-                                  Icons.phone_outlined,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _infoItem(
-                                  'TIN',
-                                  tin,
-                                  Icons.numbers_outlined,
-                                ),
-                              ),
-                              Expanded(
-                                child: _infoItem(
-                                  'Member Type',
-                                  type,
-                                  Icons.badge_outlined,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Payment Banner
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: hasPayment
-                            ? Colors.green.withValues(alpha: 0.08)
-                            : Colors.amber.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: hasPayment
-                              ? Colors.green.withValues(alpha: 0.3)
-                              : Colors.amber.withValues(alpha: 0.4),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            hasPayment
-                                ? Icons.task_alt_rounded
-                                : Icons.payment_outlined,
-                            color: hasPayment
-                                ? Colors.green
-                                : Colors.amber.shade900,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  hasPayment
-                                      ? 'Registration Payment Confirmed'
-                                      : 'Payment Reference Pending',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                    color: hasPayment
-                                        ? Colors.green.shade900
-                                        : Colors.amber.shade900,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  hasPayment
-                                      ? 'Payment Reference: $paymentRef'
-                                      : 'No dues or registration payment reference recorded yet.',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    color: hasPayment
-                                        ? Colors.green.shade800
-                                        : Colors.amber.shade800,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Documents Checklist Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Registration Documents ($uploadedCount uploaded • $approvedCount approved)',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 19,
-                          ),
-                        ),
-                        TextButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            context.push(
-                              '/admin/documents/${widget.member['id']}',
-                            );
-                          },
-                          icon: const Icon(Icons.open_in_new_rounded, size: 14),
-                          label: const Text('Full Manager'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    if (_loadingDocs)
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: 3,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 8),
-                        itemBuilder: (context, index) =>
-                            const ShimmerListTile(),
-                      )
-                    else if (_documents.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'No registration document requirements found.',
-                          ),
-                        ),
-                      )
-                    else
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _documents.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 8),
-                        itemBuilder: (context, index) {
-                          final doc = _documents[index];
-                          final label = doc['label']?.toString() ?? 'Document';
-                          final uploaded = doc['uploaded'] == true;
-                          final status =
-                              doc['status']?.toString() ?? 'not_uploaded';
-                          final fileName = doc['file_name']?.toString();
-                          final fileUrl = doc['file_url']?.toString();
-                          final docId = doc['id'] as int?;
-
-                          Color statusColor = Colors.grey;
-                          String statusText = 'Not Uploaded';
-                          if (status == 'approved') {
-                            statusColor = Colors.green;
-                            statusText = 'Approved';
-                          } else if (status == 'rejected') {
-                            statusColor = Colors.red;
-                            statusText = 'Rejected';
-                          } else if (uploaded) {
-                            statusColor = Colors.blue;
-                            statusText = 'Uploaded';
-                          }
-
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.grey.shade200),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  uploaded
-                                      ? Icons.description_rounded
-                                      : Icons.article_outlined,
-                                  color: statusColor,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        label,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 17,
-                                        ),
-                                      ),
-                                      if (fileName != null)
-                                        Text(
-                                          fileName,
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: statusColor.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    statusText,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: statusColor,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                if (uploaded && fileUrl != null)
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.remove_red_eye_rounded,
-                                      size: 18,
-                                      color: Colors.blue,
-                                    ),
-                                    tooltip: 'View Document File',
-                                    onPressed: () => _openFile(fileUrl),
-                                  ),
-                                if (docId != null && uploaded) ...[
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.check_circle_outline,
-                                      size: 18,
-                                      color: Colors.green,
-                                    ),
-                                    tooltip: 'Approve Document',
-                                    onPressed: () =>
-                                        _updateDocStatus(docId, 'approved'),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.highlight_off_rounded,
-                                      size: 18,
-                                      color: Colors.red,
-                                    ),
-                                    tooltip: 'Reject Document',
-                                    onPressed: () =>
-                                        _updateDocStatus(docId, 'rejected'),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const Divider(height: 20),
-
-            // Footer Actions
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: _submitting ? null : _rejectMember,
-                  icon: const Icon(
-                    Icons.block_rounded,
-                    size: 16,
-                    color: Colors.red,
-                  ),
-                  label: Text(
-                    'Reject Application',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.red),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                Row(
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Close'),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      onPressed: _submitting ? null : _approveMember,
-                      icon: _submitting
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.verified_rounded, size: 18),
-                      label: Text(
-                        'Approve Member',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: CubagColors.valid,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
+    return AdminDialog(
+      title: name,
+      subtitle: 'Check the documents and the payment, then approve to activate the membership.',
+      maxWidth: 680,
+      actions: [
+        OutlinedButton(
+          style: OutlinedButton.styleFrom(foregroundColor: CubagColors.lapsed),
+          onPressed: _submitting ? null : _rejectMember,
+          child: const Text('Reject application'),
         ),
-      ),
-    );
-  }
-
-  Widget _infoItem(String label, String val, IconData icon) {
-    return Row(
+        FilledButton(
+          onPressed: _submitting ? null : _approveMember,
+          child: Text(_submitting ? 'Approving…' : 'Approve member'),
+        ),
+      ],
       children: [
-        Icon(icon, size: 14, color: Colors.grey.shade600),
-        const SizedBox(width: 6),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        AdminDetailRow('Company', v('company')),
+        AdminDetailRow('Email', v('email')),
+        AdminDetailRow('Phone', v('phone')),
+        AdminDetailRow('TIN', v('tin')),
+        AdminDetailRow('Member type', v('member_type').isEmpty ? 'Corporate' : v('member_type')),
+        const SizedBox(height: CubagSpace.md),
+        Container(
+          padding: const EdgeInsets.all(CubagSpace.sm),
+          decoration: BoxDecoration(
+            color: hasPayment ? CubagColors.validTint : CubagColors.dueTint,
+            borderRadius: BorderRadius.circular(CubagRadius.control),
+          ),
+          child: Row(
+            children: [
+              Icon(hasPayment ? Icons.check_circle_rounded : Icons.schedule_rounded,
+                  size: 20, color: hasPayment ? CubagColors.valid : CubagColors.due),
+              const SizedBox(width: CubagSpace.xs),
+              Expanded(
+                child: Text(
+                  hasPayment ? 'Registration paid. Reference $paymentRef.' : 'No registration payment recorded yet.',
+                  style: CubagType.small.copyWith(color: hasPayment ? CubagColors.valid : CubagColors.due),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: CubagSpace.lg),
+        Row(
           children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
+            Expanded(
+              child: Text(
+                'Documents · $uploaded uploaded, $approved approved',
+                style: CubagType.headline,
               ),
             ),
-            Text(
-              val,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                context.push('/admin/documents/${widget.member['id']}');
+              },
+              child: const Text('Open in Applications'),
             ),
           ],
         ),
+        const SizedBox(height: CubagSpace.xs),
+        if (_loadingDocs)
+          Column(
+            children: List.generate(3, (_) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile())),
+          )
+        else if (_documents.isEmpty)
+          Text('No documents are required for this application.', style: CubagType.small)
+        else
+          AdminRowGroup(
+            dividerIndent: 68,
+            children: [
+              for (final raw in _documents)
+                () {
+                  final doc = raw as Map;
+                  final up = doc['uploaded'] == true;
+                  final status = doc['status']?.toString() ?? 'not_uploaded';
+                  final fileUrl = doc['file_url']?.toString();
+                  final docId = doc['id'] as int?;
+                  final (label, kind) = switch (status) {
+                    'approved' => ('Approved', StatusKind.good),
+                    'rejected' => ('Rejected', StatusKind.bad),
+                    _ => up ? ('To check', StatusKind.pending) : ('Not uploaded', StatusKind.neutral),
+                  };
+                  return AdminListRow(
+                    leading: AdminRowMark(icon: up ? Icons.description_outlined : Icons.article_outlined),
+                    title: doc['label']?.toString() ?? 'Document',
+                    subtitle: doc['file_name']?.toString(),
+                    status: StatusChip(label, kind: kind),
+                    onTap: up && fileUrl != null ? () => _openFile(fileUrl) : null,
+                    trailing: up && docId != null
+                        ? PopupMenuButton<String>(
+                            tooltip: 'Decide',
+                            icon: const Icon(Icons.more_vert_rounded, color: CubagColors.muted),
+                            onSelected: (a) {
+                              if (a == 'view' && fileUrl != null) _openFile(fileUrl);
+                              if (a == 'approve') _updateDocStatus(docId, 'approved');
+                              if (a == 'reject') _updateDocStatus(docId, 'rejected');
+                            },
+                            itemBuilder: (_) => [
+                              if (fileUrl != null) const PopupMenuItem(value: 'view', child: Text('Open the file')),
+                              const PopupMenuItem(value: 'approve', child: Text('Approve document')),
+                              PopupMenuItem(value: 'reject', child: Text('Reject document', style: TextStyle(color: CubagColors.lapsed))),
+                            ],
+                          )
+                        : const SizedBox(width: CubagSpace.xs),
+                  );
+                }(),
+            ],
+          ),
       ],
     );
   }

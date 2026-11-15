@@ -1,3 +1,4 @@
+import '../components/admin_dialog.dart';
 import '../components/filter_tabs.dart';
 import '../components/cubag_ui.dart';
 import '../components/admin_list.dart';
@@ -13,7 +14,6 @@ import '../design/cubag_design.dart';
 
 const _kGreen = CubagColors.valid;
 const _kRed = CubagColors.lapsed;
-const _kSlate = CubagColors.muted;
 
 class AdminTicketsPage extends StatefulWidget {
   const AdminTicketsPage({super.key});
@@ -174,32 +174,7 @@ class _AdminTicketsPageState extends State<AdminTicketsPage> {
   }
 
   Future<void> _confirmArchiveTicket(String ticketId) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: Text('Archive this ticket?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        content: Text(
-          'Are you sure you want to archive Ticket #$ticketId?',
-          style: TextStyle(fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: TextStyle(color: _kSlate)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _kRed,
-              foregroundColor: Colors.white,
-              elevation: 0,
-            ),
-            child: Text('Archive', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
+    final ok = await showAdminConfirm(context, title: 'Archive this ticket?', message: 'Ticket #$ticketId moves to Archived. You can still open it there.', confirmLabel: 'Archive', destructive: true);
 
     if (ok == true) {
       await _updateTicketStatus(ticketId, 'archived');

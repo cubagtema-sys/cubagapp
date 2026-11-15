@@ -141,51 +141,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
   }
 
   Future<void> _deleteRule(Map<String, dynamic> req) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        return AlertDialog(
-          backgroundColor: isDark ? const Color(0xFF281710) : Colors.white,
-          title: Text(
-            'Delete Document Rule',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : CubagColors.ink,
-            ),
-          ),
-          content: Text(
-            'Are you sure you want to delete "${req['label']}"? Existing submitted applications will not lose their files.',
-            style: TextStyle(
-              fontSize: 13.5,
-              color: isDark ? Colors.white70 : CubagColors.inkSoft,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(
-                'Cancel',
-                style: TextStyle(
-                  color: isDark ? Colors.white60 : Colors.grey,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kRed,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(
-                'Delete',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
+    final confirmed = await showAdminConfirm(context, title: 'Delete this document?', message: 'Members will no longer be asked for "${req['label'] ?? 'this document'}".', confirmLabel: 'Delete', destructive: true);
 
     if (confirmed == true) {
       final reqId = req['id'];
@@ -219,43 +175,7 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
     const catName = 'Corporate';
     final scopeName = _selectedScope == 'new' ? 'New Onboarding' : 'Annual Renewal';
 
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        return AlertDialog(
-          backgroundColor: isDark ? const Color(0xFF281710) : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            enableAll
-                ? 'Enable All Documents for $catName'
-                : 'Turn Off All Documents for $catName',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            enableAll
-                ? 'Are you sure you want to enable all document requirements for $catName ($scopeName)? Applicants will be required to upload them.'
-                : 'Are you sure you want to disable all document requirements for $catName ($scopeName)? Applicants will not be asked to upload any documents and can proceed directly to payment.',
-            style: TextStyle(fontSize: 13.5),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: enableAll ? _kGreen : _kRed,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(enableAll ? 'Enable All' : 'Turn Off All', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ],
-        );
-      },
-    );
+    final confirm = await showAdminConfirm(context, title: enableAll ? 'Switch all documents on?' : 'Switch all documents off?', message: enableAll ? 'Members will be asked for every document in $scopeName.' : 'Members will not be asked for any document in $scopeName until you switch them on again.', confirmLabel: enableAll ? 'Switch all on' : 'Switch all off', destructive: !enableAll);
 
     if (confirm != true) return;
 

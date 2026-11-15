@@ -12,7 +12,6 @@ import 'admin_qr_scanner_page.dart';
 import '../utils/app_logger.dart';
 import '../design/cubag_design.dart';
 
-const _kRed = CubagColors.lapsed;
 
 class AdminEventsPage extends StatefulWidget {
   const AdminEventsPage({super.key});
@@ -205,25 +204,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
   }
 
   Future<void> _deleteEvent(dynamic event) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Archive this event?'),
-        content: Text('Are you sure you want to archive "${event['title']}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: _kRed),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Archive', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
+    final confirm = await showAdminConfirm(context, title: 'Archive this event?', message: 'Members will no longer see "${event['title']}".', confirmLabel: 'Archive', destructive: true);
     if (confirm != true) return;
 
     try {

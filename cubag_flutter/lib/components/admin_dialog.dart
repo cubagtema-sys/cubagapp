@@ -236,3 +236,31 @@ class AdminDetailRow extends StatelessWidget {
     );
   }
 }
+
+/// A yes/no question in the shared admin layout. Returns true when the admin
+/// confirms. Use [destructive] for archive/delete/reject so the button is red.
+Future<bool> showAdminConfirm(
+  BuildContext context, {
+  required String title,
+  String? message,
+  required String confirmLabel,
+  bool destructive = false,
+}) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AdminDialog(
+      title: title,
+      maxWidth: 460,
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(
+          style: destructive ? FilledButton.styleFrom(backgroundColor: CubagColors.lapsed) : null,
+          onPressed: () => Navigator.pop(ctx, true),
+          child: Text(confirmLabel),
+        ),
+      ],
+      children: [if (message != null && message.isNotEmpty) Text(message, style: CubagType.body)],
+    ),
+  );
+  return ok == true;
+}
