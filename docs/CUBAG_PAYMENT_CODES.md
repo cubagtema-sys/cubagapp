@@ -9,7 +9,7 @@ amount into the CUBAG bank account registered for its code.
 
 ## Codes and settlement accounts
 
-> CUBAG must confirm the account names and numbers below before go-live.
+> Starting list. CUBAG must confirm the account names and numbers before go-live.
 
 | Code | What it is for | Bank | Account number |
 |---|---|---|---|
@@ -22,9 +22,17 @@ amount into the CUBAG bank account registered for its code.
 | `CUB-GST` | Public and guest services | GCB | 107113005326 |
 | `CUB-OTH` | Anything not matched to a fee (should be rare) | GCB | 107113005326 |
 
-CUBAG admins can give a fee a different code in **Admin → Fees** (for example to split
-legal and audit fees from administrative fees). The system refuses a code that would
-point at two different accounts.
+The list above is the **starting list**. CUBAG admins manage it in
+**Admin → Fees → Payment codes**: add a new code (for a new fee or category), change what it
+is for or its account, or switch a code off. Each fee can also pick its code in its Add/Edit
+fee window. The system refuses:
+
+- a code that would point at two different accounts;
+- a fee whose code belongs to a different account than the fee;
+- switching off a code that a fee still uses.
+
+**Whenever a code is added or its account changes, CUBAG must tell WhitsunPay** so the
+routing on their side matches.
 
 ## Narration format
 

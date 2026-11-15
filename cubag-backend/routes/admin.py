@@ -469,6 +469,58 @@ def get_admin_fees():
         conn.close()
 
 
+@admin_bp.route('/payment-codes', methods=['GET'])
+@sub_admin_required('fees')
+def get_payment_codes():
+    """The payment code list (Admin > Fees > Payment codes)."""
+    from config.payment_codes import load_catalogue
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            return jsonify({'codes': load_catalogue(cursor)}), 200
+    finally:
+        conn.close()
+
+
+@admin_bp.route('/payment-codes', methods=['POST', 'PUT'])
+@sub_admin_required('fees')
+def save_payment_codes():
+    """Save the whole code list. Refused if a fee would be left with a code
+    that is missing, switched off, or for a different account."""
+    from config.payment_codes import SETTING_KEY, clean_entry, fee_code_problem, validate_catalogue
+    data = request.get_json(silent=True)
+    entries = data.get('codes') if isinstance(data, dict) else data
+    problem = validate_catalogue(entries)
+    if problem:
+        return jsonify({'message': problem}), 400
+    catalogue = [clean_entry(e) for e in entries]
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT config_value FROM platform_settings WHERE config_key = 'cubag_fees_v2'")
+            row = cursor.fetchone()
+            fees = row and row.get('config_value')
+            if isinstance(fees, str):
+                fees = json.loads(fees)
+            if isinstance(fees, list):
+                problem = fee_code_problem([f for f in fees if isinstance(f, dict)], catalogue)
+                if problem:
+                    return jsonify({'message': problem + ' Change the fee first, then the code.'}), 400
+            cursor.execute("""
+                INSERT INTO platform_settings (config_key, config_value) VALUES (%s, %s)
+                ON CONFLICT (config_key) DO UPDATE SET config_value = EXCLUDED.config_value, updated_at = CURRENT_TIMESTAMP
+            """, (SETTING_KEY, json.dumps(catalogue)))
+            conn.commit()
+        log_admin_action(get_jwt_identity(), 'update_payment_codes', 'platform_settings', None, SETTING_KEY,
+                         {'codes': [c['code'] for c in catalogue]})
+        return jsonify({'codes': catalogue}), 200
+    except Exception:
+        conn.rollback()
+        return jsonify({'message': 'Could not save the payment codes.'}), 500
+    finally:
+        conn.close()
+
+
 @admin_bp.route('/fees', methods=['POST', 'PUT'])
 @sub_admin_required('fees')
 def update_admin_fees():
@@ -476,19 +528,20 @@ def update_admin_fees():
     if not isinstance(data, list):
         return jsonify({'message': 'Data must be a list of fee objects'}), 400
 
-    # Payment codes: WhitsunPay settles each code into one account, so a code
-    # may not point at two different accounts.
-    from config.payment_codes import conflicting_codes
+    # Payment codes: each fee's code must be in the code list and settle into
+    # the same account as the fee (WhitsunPay routes by code).
+    from config.payment_codes import fee_code_problem, load_catalogue
     for f in data:
         if isinstance(f, dict) and f.get('payment_code'):
             f['payment_code'] = str(f['payment_code']).strip().upper()[:20]
-    clashes = conflicting_codes([f for f in data if isinstance(f, dict)])
-    if clashes:
-        code, accounts = next(iter(clashes.items()))
-        return jsonify({
-            'message': f'Payment code {code} is set to more than one bank account ({", ".join(accounts)}). '
-                       'Each code must go to one account. Change the code or the account on one of the fees.'
-        }), 400
+    _conn = get_db()
+    try:
+        with _conn.cursor() as _cur:
+            _problem = fee_code_problem([f for f in data if isinstance(f, dict)], load_catalogue(_cur))
+    finally:
+        _conn.close()
+    if _problem:
+        return jsonify({'message': _problem}), 400
 
     conn = get_db()
     try:

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../design/cubag_design.dart';
 import '../services/api_service.dart';
-import '../utils/payment_codes.dart';
 import 'admin_list.dart';
 import 'filter_tabs.dart';
 
@@ -196,7 +195,7 @@ class _SettlementReportState extends State<SettlementReport> {
                           SizedBox(width: 80, child: Text(c['code'].toString(), style: CubagType.label)),
                           Expanded(
                             child: Text(
-                              paymentCodeLabels[c['code']] ?? c['label']?.toString() ?? '',
+                              c['label']?.toString() ?? '',
                               style: CubagType.small,
                             ),
                           ),

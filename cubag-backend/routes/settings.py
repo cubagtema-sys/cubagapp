@@ -72,14 +72,24 @@ def get_setting(key):
 @sub_admin_required('settings')
 def update_setting(key):
     data = request.get_json()
+    if key == 'cubag_payment_codes':
+        # Same checks as POST /admin/payment-codes.
+        from config.payment_codes import validate_catalogue
+        problem = validate_catalogue(data if isinstance(data, list) else (data or {}).get('codes'))
+        if problem:
+            return jsonify({'message': problem}), 400
+
     if key == 'cubag_fees_v2' and isinstance(data, list):
         # Same rule as POST /admin/fees: each payment code goes to one account.
-        from config.payment_codes import conflicting_codes
-        clashes = conflicting_codes([f for f in data if isinstance(f, dict)])
-        if clashes:
-            code, accounts = next(iter(clashes.items()))
-            return jsonify({'message': f'Payment code {code} is set to more than one bank account '
-                                       f'({", ".join(accounts)}). Each code must go to one account.'}), 400
+        from config.payment_codes import fee_code_problem, load_catalogue
+        _c = get_db()
+        try:
+            with _c.cursor() as _cur:
+                _problem = fee_code_problem([f for f in data if isinstance(f, dict)], load_catalogue(_cur))
+        finally:
+            _c.close()
+        if _problem:
+            return jsonify({'message': _problem}), 400
 
     conn = get_db()
     try:

@@ -1,7 +1,7 @@
 """Payment codes: each code settles into one account; amounts add up exactly."""
 from config.payment_codes import (
-    DEFAULT_ACCOUNTS, code_for_description, code_for_item, code_split, codes_for_payment,
-    conflicting_codes, narration,
+    DEFAULT_CATALOGUE, clean_entry, code_for_description, code_for_item, code_split, codes_for_payment,
+    conflicting_codes, fee_code_problem, narration, validate_catalogue,
 )
 
 RENEWAL = [
@@ -20,7 +20,8 @@ def test_default_codes_follow_the_bank():
 
 
 def test_every_default_code_has_one_account():
-    assert all(len(v) == 2 for v in DEFAULT_ACCOUNTS.values())
+    assert all(e['account_number'] and e['bank_name'] for e in DEFAULT_CATALOGUE)
+    assert validate_catalogue(DEFAULT_CATALOGUE) is None
 
 
 def test_split_groups_by_code_and_adds_up():
@@ -92,3 +93,37 @@ def test_add_on_descriptions():
     assert code_for_description('ID card') == 'CUB-ADM'
     assert code_for_description('Association Cloth') == 'CUB-ADM'
     assert code_for_description('Welfare due (small companies)') == 'CUB-ADM'
+
+
+
+# ── The code list is data: admins add codes without a code change ──
+NEW = [clean_entry(e) for e in DEFAULT_CATALOGUE] + [clean_entry({
+    'code': 'cub-lev', 'label': 'Port levy', 'bank_name': 'Zenith Bank', 'account_number': '6010 309212',
+    'sections': 'levy', 'keywords': 'port levy',
+})]
+
+
+def test_admin_added_code_is_used_everywhere():
+    assert NEW[-1]['code'] == 'CUB-LEV' and NEW[-1]['account_number'] == '6010309212'
+    assert code_for_item({'section': 'levy', 'bank_name': 'Zenith Bank', 'account_number': '6010309212'}, NEW) == 'CUB-LEV'
+    assert code_for_description('Port levy 2027', catalogue=NEW) == 'CUB-LEV'
+    rep = settlement_summary([{'ref': 'CUBAG-3', 'amount': 50, 'day': date(2026, 11, 15), 'via_whitsun': True,
+                               'description': 'Port levy'}], NEW)
+    assert rep['banks'][0]['codes'][0]['label'] == 'Port levy'
+
+
+def test_bad_lists_are_refused():
+    assert 'not a valid code' in validate_catalogue([{'code': 'a b', 'label': 'x', 'bank_name': 'GCB', 'account_number': '1'}])
+    assert 'listed twice' in validate_catalogue(NEW + [NEW[0]])
+    assert 'needs a bank' in validate_catalogue([{'code': 'CUB-X', 'label': 'x'}])
+    assert validate_catalogue([]) == 'Add at least one payment code.'
+
+
+def test_fee_codes_must_exist_and_match_the_account():
+    fee = {'label': 'Port levy', 'payment_code': 'CUB-LEV', 'account_number': '6010309212'}
+    assert fee_code_problem([fee], NEW) is None
+    assert 'not in the list' in fee_code_problem([fee], DEFAULT_CATALOGUE)
+    wrong = {**fee, 'account_number': '107113005326'}
+    assert 'Use a code for that account' in fee_code_problem([wrong], NEW)
+    off = [dict(e, active=False) if e['code'] == 'CUB-LEV' else e for e in NEW]
+    assert 'switched off' in fee_code_problem([fee], off)

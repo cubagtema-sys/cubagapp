@@ -162,10 +162,17 @@ def test_gateway_connectivity():
 
 
 def _guest_narration(service_type, amount, tx_ref, course_name):
-    """Guest MoMo narration with its payment code first (courses: CUB-CTI)."""
-    from config.payment_codes import narration, single_code
-    code = 'CUB-CTI' if 'cti' in (service_type or '').lower() or 'course' in (service_type or '').lower() else 'CUB-GST'
-    return narration(single_code(code, amount), tx_ref, f"CTI: {course_name}" if code == 'CUB-CTI' else course_name)
+    """Guest MoMo narration with its payment code first, from the code list."""
+    from config.payment_codes import code_for_description, load_catalogue, narration, single_code
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cat = load_catalogue(cur)
+    finally:
+        conn.close()
+    kind = 'cti course' if any(k in (service_type or '').lower() for k in ('cti', 'course')) else 'guest service'
+    code = code_for_description(kind, catalogue=cat)
+    return narration(single_code(code, amount, cat), tx_ref, f"CTI: {course_name}" if 'cti' in kind else course_name)
 
 
 # ─── POST /payments/public/initiate-momo — Public MoMo Prompt for CTI Course Enrollment ───
@@ -2661,7 +2668,7 @@ def settlement_report():
     import csv
     import io
     import json as _json
-    from config.payment_codes import settlement_summary
+    from config.payment_codes import code_for_description, load_catalogue, settlement_summary
 
     try:
         to_day = date.fromisoformat(request.args.get('to')) if request.args.get('to') else date.today()
@@ -2676,6 +2683,7 @@ def settlement_report():
     conn = get_db()
     try:
         with conn.cursor() as cursor:
+            catalogue = load_catalogue(cursor)
             cursor.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_codes JSONB")
             cursor.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS settlement_distribution JSONB")
             cursor.execute("""
@@ -2702,7 +2710,9 @@ def settlement_report():
                     WHERE LOWER(status) = 'paid' AND DATE(COALESCE(updated_at, created_at)) BETWEEN %s AND %s
                 """, (from_day, to_day))
                 for g in cursor.fetchall():
-                    code = 'CUB-CTI' if 'cti' in str(g.get('service_type') or '').lower() else 'CUB-GST'
+                    code = code_for_description(
+                        'cti course' if 'cti' in str(g.get('service_type') or '').lower() else 'guest service',
+                        catalogue=catalogue)
                     rows.append({
                         'ref': g['reference_no'], 'amount': g['amount'], 'day': g['day'], 'via_whitsun': True,
                         'description': g.get('course_name'),
@@ -2713,7 +2723,7 @@ def settlement_report():
     finally:
         conn.close()
 
-    report = settlement_summary(rows)
+    report = settlement_summary(rows, catalogue)
     report.update({'from': from_day.isoformat(), 'to': to_day.isoformat()})
 
     if request.args.get('format') == 'csv':

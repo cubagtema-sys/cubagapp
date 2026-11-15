@@ -42,10 +42,29 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
 
   Timer? _debounce;
 
+  /// The payment code list, from the server (Admin > Fees > Payment codes).
+  List<PaymentCode> _codes = [];
+  bool _loadingCodes = true;
+
+  Future<void> _fetchCodes() async {
+    try {
+      final codes = await PaymentCode.fetch();
+      if (mounted) {
+        setState(() {
+          _codes = codes;
+          _loadingCodes = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingCodes = false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _fetchFees();
+    _fetchCodes();
   }
 
   void _onSearchChanged(String v) {
@@ -247,6 +266,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                       options: [for (final b in banks) (b.$1, b.$1), ('other', 'Other account')],
                       value: knownBank?.$1 ?? 'other',
                       onChanged: (v) => setDlgState(() {
+                        codeCtrl.clear(); // the code must match the new account
                         final b = banks.where((b) => b.$1 == v).firstOrNull;
                         if (b != null) {
                           bankCtrl.text = b.$1;
@@ -267,7 +287,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                         ),
                         TextField(
                           controller: accCtrl,
-                          onChanged: (_) => setDlgState(() {}),
+                          onChanged: (_) => setDlgState(() => codeCtrl.clear()),
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(labelText: 'Account number'),
                         ),
@@ -280,16 +300,27 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                 ),
               ),
               Builder(builder: (_) {
-                final def = defaultPaymentCode(section, bankCtrl.text);
+                final account = accCtrl.text.replaceAll(RegExp(r'\s+'), '');
+                final def = defaultPaymentCode(_codes, section: section, bank: bankCtrl.text, account: account);
+                final forAccount = _codes.where((c) => c.active && c.accountNumber == account).toList();
+                final chosen = codeCtrl.text.trim().toUpperCase();
+                final defLabel = _codes.where((c) => c.code == def).map((c) => c.label).firstOrNull ?? '';
                 return AdminField(
                   label: 'Payment code',
-                  help: 'WhitsunPay uses this code to pay the money into the right account. '
-                      'Leave it empty to use $def (${paymentCodeLabels[def] ?? 'default'}). '
-                      'One code can only go to one account.',
-                  child: TextField(
-                    controller: codeCtrl,
-                    textCapitalization: TextCapitalization.characters,
-                    decoration: InputDecoration(hintText: def),
+                  help: forAccount.isEmpty
+                      ? 'No payment code is set up for this account yet. Add one under Payment codes, '
+                          'or WhitsunPay will not know where to pay this fee.'
+                      : 'WhitsunPay uses the code to pay this fee into the account above. '
+                          'Only codes for that account are listed.',
+                  child: DropdownMenu<String>(
+                    key: ValueKey('code-$account'),
+                    initialSelection: forAccount.any((c) => c.code == chosen) ? chosen : '',
+                    expandedInsets: EdgeInsets.zero,
+                    dropdownMenuEntries: [
+                      DropdownMenuEntry(value: '', label: 'Automatic: $def${defLabel.isEmpty ? '' : ' ($defLabel)'}'),
+                      for (final c in forAccount) DropdownMenuEntry(value: c.code, label: '${c.code}: ${c.label}'),
+                    ],
+                    onSelected: (v) => setDlgState(() => codeCtrl.text = v ?? ''),
                   ),
                 );
               }),
@@ -526,7 +557,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
               LayoutBuilder(
                 builder: (context, constraints) {
                   final w = constraints.maxWidth;
-                  final perRow = w < 520 ? 2 : (w < 900 ? 3 : 5);
+                  final perRow = w < 520 ? 2 : (w < 900 ? 3 : 6);
                   final cardWidth = (w - CubagSpace.sm * (perRow - 1)) / perRow;
                   return Wrap(
                     spacing: CubagSpace.sm,
@@ -538,6 +569,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                         ('district', 'District renewal', '${districtFees.length} fees', Icons.location_city_outlined),
                         ('variable', 'Add-ons', '${variableFees.length} fees', Icons.tune_rounded),
                         ('settlement', 'Accounts', '4 bank accounts', Icons.account_balance_outlined),
+                        ('codes', 'Payment codes', _loadingCodes ? 'Loading' : '${_codes.where((c) => c.active).length} codes', Icons.qr_code_2_outlined),
                       ])
                         _buildCategoryKpiCard(
                           key: s.$1,
@@ -558,7 +590,9 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                 },
               ),
               const SizedBox(height: CubagSpace.xl),
-              if (_selectedCategory == 'settlement')
+              if (_selectedCategory == 'codes')
+                _buildCodesView()
+              else if (_selectedCategory == 'settlement')
                 _buildSettlementDashboard(isDark, cardBg, border, textPrimary, textMuted)
               else ...[
                 Row(
@@ -615,6 +649,238 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
           ),
         ),
       ),
+    );
+  }
+
+  static const _feeTypes = [
+    ('new_membership', 'New registration'),
+    ('national', 'National renewal'),
+    ('district', 'District renewal'),
+    ('variable', 'Add-ons'),
+    ('cti', 'Courses'),
+    ('guest', 'Guest services'),
+  ];
+
+  Future<bool> _saveCodes(List<PaymentCode> next) async {
+    try {
+      final res = await _api.post('admin/payment-codes', data: {'codes': next.map((c) => c.toJson()).toList()});
+      if ((res.statusCode ?? 500) < 300) {
+        final list = (res.data is Map ? res.data['codes'] : null) as List? ?? [];
+        setState(() {
+          _codes = list.map((e) => PaymentCode.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+          _isSuccess = true;
+          _message = 'Payment codes saved. Tell WhitsunPay about any new or changed code.';
+        });
+        return true;
+      }
+      setState(() {
+        _isSuccess = false;
+        _message = (res.data is Map ? res.data['message']?.toString() : null) ?? 'The payment codes were not saved.';
+      });
+    } catch (_) {
+      setState(() {
+        _isSuccess = false;
+        _message = 'The payment codes were not saved. Check the connection and try again.';
+      });
+    }
+    return false;
+  }
+
+  Future<void> _showCodeDialog([PaymentCode? existing]) async {
+    final codeCtrl = TextEditingController(text: existing?.code ?? 'CUB-');
+    final labelCtrl = TextEditingController(text: existing?.label ?? '');
+    final bankCtrl = TextEditingController(text: existing?.bankName ?? '');
+    final accCtrl = TextEditingController(text: existing?.accountNumber ?? '');
+    final wordsCtrl = TextEditingController(text: existing?.keywords.join(', ') ?? '');
+    final types = {...?existing?.sections};
+    bool saving = false;
+    String? error;
+    const banks = [
+      ('Zenith Bank', '6010309212'),
+      ('GCB', '107113005326'),
+      ('Ecobank', '1441002452360'),
+      ('NIB', '1110045585101'),
+    ];
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) {
+          final known = banks.where((b) => b.$1 == bankCtrl.text && b.$2 == accCtrl.text).firstOrNull;
+          Future<void> save() async {
+            final entry = PaymentCode(
+              code: codeCtrl.text.trim().toUpperCase(),
+              label: labelCtrl.text.trim(),
+              bankName: bankCtrl.text.trim(),
+              accountNumber: accCtrl.text.replaceAll(RegExp(r'\s+'), ''),
+              // Older fees use other names for new-member fees; keep them working.
+              sections: {...types, if (types.contains('new_membership')) ...['new_reg', 'corporate']}.toList(),
+              keywords: wordsCtrl.text.split(',').map((w) => w.trim().toLowerCase()).where((w) => w.isNotEmpty).toList(),
+              active: existing?.active ?? true,
+            );
+            if (existing == null && _codes.any((c) => c.code == entry.code)) {
+              setD(() => error = '${entry.code} already exists.');
+              return;
+            }
+            setD(() {
+              saving = true;
+              error = null;
+            });
+            final next = existing == null
+                ? [..._codes, entry]
+                : [for (final c in _codes) c.code == existing.code ? entry : c];
+            final ok = await _saveCodes(next);
+            if (!ctx.mounted) return;
+            if (ok) {
+              Navigator.pop(ctx);
+            } else {
+              setD(() {
+                saving = false;
+                error = _message;
+              });
+            }
+          }
+
+          return AdminDialog(
+            title: existing == null ? 'Add payment code' : 'Edit ${existing.code}',
+            subtitle: 'WhitsunPay pays every amount with this code into the account below. '
+                'After saving, give WhitsunPay the new code and account.',
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              FilledButton(onPressed: saving ? null : save, child: Text(saving ? 'Saving…' : 'Save')),
+            ],
+            children: [
+              AdminFieldPair(
+                AdminField(
+                  label: 'Code',
+                  help: 'Capital letters, numbers and hyphens. For example CUB-LEV.',
+                  child: TextField(
+                    controller: codeCtrl,
+                    enabled: existing == null,
+                    textCapitalization: TextCapitalization.characters,
+                  ),
+                ),
+                AdminField(
+                  label: 'What it is for',
+                  child: TextField(controller: labelCtrl, decoration: const InputDecoration(hintText: 'For example: Port levy')),
+                ),
+              ),
+              AdminField(
+                label: 'Paid into',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AdminChoice<String>(
+                      options: [for (final b in banks) (b.$1, b.$1), ('other', 'Other account')],
+                      value: known?.$1 ?? (bankCtrl.text.isEmpty && accCtrl.text.isEmpty ? '' : 'other'),
+                      onChanged: (v) => setD(() {
+                        final b = banks.where((b) => b.$1 == v).firstOrNull;
+                        bankCtrl.text = b?.$1 ?? '';
+                        accCtrl.text = b?.$2 ?? '';
+                      }),
+                    ),
+                    const SizedBox(height: CubagSpace.sm),
+                    AdminFieldPair(
+                      TextField(controller: bankCtrl, onChanged: (_) => setD(() {}), decoration: const InputDecoration(labelText: 'Bank')),
+                      TextField(
+                        controller: accCtrl,
+                        onChanged: (_) => setD(() {}),
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Account number'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              AdminField(
+                label: 'Use automatically for (optional)',
+                help: 'Fees of these types paid into this account get this code unless a fee picks another.',
+                child: Wrap(
+                  spacing: CubagSpace.xs,
+                  runSpacing: CubagSpace.xs,
+                  children: [
+                    for (final t in _feeTypes)
+                      FilterChip(
+                        label: Text(t.$2),
+                        selected: types.contains(t.$1),
+                        showCheckmark: false,
+                        selectedColor: CubagColors.cocoa,
+                        labelStyle: CubagType.label.copyWith(
+                          color: types.contains(t.$1) ? CubagColors.onCocoa : CubagColors.inkSoft,
+                        ),
+                        backgroundColor: CubagColors.paper,
+                        side: BorderSide(color: types.contains(t.$1) ? CubagColors.cocoa : CubagColors.line),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                        onSelected: (on) => setD(() => on ? types.add(t.$1) : types.remove(t.$1)),
+                      ),
+                  ],
+                ),
+              ),
+              AdminField(
+                label: 'Words that identify it (optional)',
+                help: 'For payments made without a fee list, such as office payments. Separate with commas.',
+                child: TextField(controller: wordsCtrl, decoration: const InputDecoration(hintText: 'For example: port levy')),
+              ),
+              if (error != null) Text(error!, style: CubagType.small.copyWith(color: CubagColors.lapsed)),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCodesView() {
+    String typeNames(List<String> s) =>
+        _feeTypes.where((t) => s.contains(t.$1)).map((t) => t.$2).join(', ');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text('Payment codes', style: CubagType.title)),
+            OutlinedButton.icon(
+              onPressed: _loadingCodes ? null : () => _showCodeDialog(),
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('Add payment code'),
+            ),
+          ],
+        ),
+        const SizedBox(height: CubagSpace.xxs),
+        Text(
+          'Every MoMo payment reaches the WhitsunPay account with these codes. WhitsunPay pays each code into its account. '
+          'A code you switch off is no longer given to new payments.',
+          style: CubagType.small,
+        ),
+        const SizedBox(height: CubagSpace.md),
+        if (_loadingCodes)
+          const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()))
+        else if (_codes.isEmpty)
+          const EmptyMessage(icon: Icons.qr_code_2_outlined, title: 'Could not load the payment codes')
+        else
+          AdminRowGroup(
+            dividerIndent: CubagSpace.md,
+            children: [
+              for (final c in _codes)
+                AdminListRow(
+                  leading: SizedBox(
+                    width: 84,
+                    child: Text(c.code, style: CubagType.label.copyWith(color: c.active ? CubagColors.cocoa : CubagColors.muted)),
+                  ),
+                  title: c.label,
+                  subtitle: '${c.bankName} ${c.accountNumber}',
+                  meta: c.sections.isEmpty ? null : 'Automatic for ${typeNames(c.sections)}',
+                  onTap: () => _showCodeDialog(c),
+                  trailing: Tooltip(
+                    message: c.active ? 'Given to new payments' : 'Switched off',
+                    child: Switch(
+                      value: c.active,
+                      onChanged: (on) => _saveCodes([for (final x in _codes) x.code == c.code ? x.copyWith(active: on) : x]),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+      ],
     );
   }
 
@@ -841,7 +1107,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                               if (scaleLabel.isNotEmpty) scaleLabel,
                               '$freq${unit == 'flat' ? '' : ', $unit'}',
                               if (bankName.isNotEmpty) 'Paid into $bankName${accNum.isEmpty ? '' : ' $accNum'}',
-                              paymentCodeFor(item),
+                              if (!_loadingCodes) paymentCodeFor(item, _codes),
                             ].join(' · '),
                             style: CubagType.caption,
                           ),
