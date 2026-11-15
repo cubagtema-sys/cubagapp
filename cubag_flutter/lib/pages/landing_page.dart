@@ -5349,7 +5349,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               ),
               const SizedBox(height: 8),
               SelectableText(
-                'info@cubag.org.gh',
+                'info@cubag.org',
                 style: _outfit(
                   color: paperOnDark,
                   fontSize: isMobile ? 26 : 44,
@@ -5360,7 +5360,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
               ),
               const SizedBox(height: 6),
               SelectableText(
-                '+233 30 220 2345',
+                '030 321 6577',
                 style: _outfit(
                   color: mutedOnDark,
                   fontSize: isMobile ? 20 : 30,

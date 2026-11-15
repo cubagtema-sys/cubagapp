@@ -27,7 +27,7 @@ def test_privacy_policy_html(client):
     assert 'Data Protection Act, 2012 (Act 843)' in html
     assert 'Hubtel' in html
     assert 'Paystack' in html
-    assert 'support@cubag.org' in html
+    assert 'info@cubag.org' in html
     assert '/delete-account' in html
 
 
@@ -38,7 +38,7 @@ def test_privacy_policy_json(client):
     data = res.get_json()
     assert data['data_controller'] == 'Customs Brokers Association of Ghana (CUBAG)'
     assert 'Act 843' in data['jurisdiction']
-    assert data['contact_email'] == 'support@cubag.org'
+    assert data['contact_email'] == 'info@cubag.org'
 
 
 def test_terms_of_service_html(client):

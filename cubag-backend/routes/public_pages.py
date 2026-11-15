@@ -183,7 +183,7 @@ def serve_privacy_policy():
             'last_updated': '2026-11-11',
             'data_controller': 'Customs Brokers Association of Ghana (CUBAG)',
             'jurisdiction': 'Republic of Ghana (Data Protection Act, 2012 - Act 843)',
-            'contact_email': 'support@cubag.org',
+            'contact_email': 'info@cubag.org',
             'deletion_url': 'https://cubag-api-server.fly.dev/delete-account'
         }), 200
 
@@ -209,7 +209,7 @@ def serve_privacy_policy():
                     <strong>Data Controller:</strong> Customs Brokers Association of Ghana (CUBAG)<br>
                     <strong>National Secretariat:</strong> Tema Port Commercial Area, Greater Accra, Republic of Ghana<br>
                     <strong>Operating Chapters:</strong> Tema Port, Takoradi Port, Kotoka International Airport (KIA), Aflao, Elubo, Paga<br>
-                    <strong>Data Protection Contact:</strong> <a href="mailto:support@cubag.org" style="color: var(--accent);">support@cubag.org</a>
+                    <strong>Data Protection Contact:</strong> <a href="mailto:info@cubag.org" style="color: var(--accent);">info@cubag.org</a>
                 </p>
             </div>
 
@@ -274,7 +274,7 @@ def serve_privacy_policy():
                 <div class="info-box">
                     <strong>Customs Brokers Association of Ghana</strong><br>
                     Attn: Data Protection Officer / Secretariat<br>
-                    Email: <a href="mailto:support@cubag.org" style="color: var(--primary); font-weight: bold;">support@cubag.org</a><br>
+                    Email: <a href="mailto:info@cubag.org" style="color: var(--primary); font-weight: bold;">info@cubag.org</a><br>
                     Telephone: +233 (0) 303 206 182 / +233 (0) 50 123 4567<br>
                     Headquarters: Tema Port Commercial District, Greater Accra, Ghana
                 </div>
@@ -297,7 +297,7 @@ def serve_terms_of_service():
             'last_updated': '2026-11-11',
             'association': 'Customs Brokers Association of Ghana (CUBAG)',
             'jurisdiction': 'Republic of Ghana',
-            'contact_email': 'support@cubag.org'
+            'contact_email': 'info@cubag.org'
         }), 200
 
     template = _BASE_PAGE_HEAD + """
@@ -326,7 +326,7 @@ def serve_terms_of_service():
             <div class="section">
                 <h3>3. Account Security &amp; Credentials</h3>
                 <p>
-                    You are solely responsible for maintaining the confidentiality of your login credentials, password, and biometric enrollment on personal devices. You must promptly report any unauthorized access or compromise of your account to <a href="mailto:support@cubag.org" style="color: var(--accent);">support@cubag.org</a>.
+                    You are solely responsible for maintaining the confidentiality of your login credentials, password, and biometric enrollment on personal devices. You must promptly report any unauthorized access or compromise of your account to <a href="mailto:info@cubag.org" style="color: var(--accent);">info@cubag.org</a>.
                 </p>
             </div>
 
@@ -523,7 +523,7 @@ def process_delete_account_request():
         logger.error(f"[Account Deletion] Error logging deletion request: {e}")
         if is_json:
             return jsonify({'success': False, 'message': 'Internal error processing deletion request.'}), 500
-        return _render_error_page("A server error occurred while processing your request. Please email support@cubag.org directly.")
+        return _render_error_page("A server error occurred while processing your request. Please email info@cubag.org directly.")
     finally:
         conn.close()
 
@@ -563,7 +563,7 @@ def process_delete_account_request():
 
             <div class="section" style="margin-top: 24px;">
                 <p>
-                    If you have questions regarding this request or wish to cancel it, please contact our secretariat at <a href="mailto:support@cubag.org" style="color: var(--accent); font-weight: bold;">support@cubag.org</a> quoting reference <strong>{{ tracking_code }}</strong>.
+                    If you have questions regarding this request or wish to cancel it, please contact our secretariat at <a href="mailto:info@cubag.org" style="color: var(--accent); font-weight: bold;">info@cubag.org</a> quoting reference <strong>{{ tracking_code }}</strong>.
                 </p>
             </div>
 

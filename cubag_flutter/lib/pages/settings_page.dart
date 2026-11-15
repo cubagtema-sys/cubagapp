@@ -275,7 +275,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Unable to complete account deletion at this time. Please contact support@cubag.org.gh',
+            'Unable to complete account deletion at this time. Please contact info@cubag.org',
           ),
           backgroundColor: _kRed,
         ),
@@ -531,9 +531,9 @@ class _SettingsPageState extends State<SettingsPage> {
               _contactItem(
                 Icons.call_rounded,
                 'Call the Secretariat',
-                '+233 (0) 302 123 456',
+                '030 321 6577',
                 () async {
-                  final uri = Uri.parse('tel:+233302123456');
+                  final uri = Uri.parse('tel:+233303216577');
                   if (await canLaunchUrl(uri)) await launchUrl(uri);
                 },
                 text,
@@ -545,9 +545,9 @@ class _SettingsPageState extends State<SettingsPage> {
               _contactItem(
                 Icons.mail_outline_rounded,
                 'Email',
-                'support@cubag.org.gh',
+                'info@cubag.org',
                 () async {
-                  final uri = Uri.parse('mailto:support@cubag.org.gh');
+                  final uri = Uri.parse('mailto:info@cubag.org');
                   if (await canLaunchUrl(uri)) await launchUrl(uri);
                 },
                 text,

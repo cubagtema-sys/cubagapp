@@ -9,7 +9,7 @@ import '../design/cubag_design.dart';
 /// documents really are ordered clauses, and the date it last changed.
 class InAppLegalViewer {
   static const _updated = 'November 2026';
-  static const _supportEmail = 'support@cubag.org.gh';
+  static const _supportEmail = 'info@cubag.org';
 
   static void show(
     BuildContext context, {
