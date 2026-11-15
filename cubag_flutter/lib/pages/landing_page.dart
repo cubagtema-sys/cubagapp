@@ -893,7 +893,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
 
               if (isMobile) ...[
                 const SizedBox(width: 4),
-                IconButton(
+                IconButton(tooltip: 'Open menu', 
                   onPressed: () => setState(() => _mobileMenuOpen = true),
                   icon: Icon(Icons.menu_rounded, color: _kText, size: 26),
                 ),
@@ -2637,7 +2637,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                     valueListenable: fieldTextEditingController,
                     builder: (context, val, _) {
                       if (val.text.isEmpty) return const SizedBox.shrink();
-                      return IconButton(
+                      return IconButton(tooltip: 'Clear', 
                         icon: const Icon(Icons.clear_rounded, size: 18, color: Colors.grey),
                         onPressed: () => fieldTextEditingController.clear(),
                       );
@@ -4106,7 +4106,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                                 ),
                               ],
                             ),
-                            IconButton(
+                            IconButton(tooltip: 'Close', 
                               icon: Icon(
                                 Icons.close_sharp,
                                 size: 22,
@@ -4153,7 +4153,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                             if (_galleryList.length > 1) ...[
                               Positioned(
                                 left: 12,
-                                child: IconButton(
+                                child: IconButton(tooltip: 'Previous', 
                                   style: IconButton.styleFrom(
                                     backgroundColor: Colors.black54,
                                     foregroundColor: Colors.white,
@@ -4179,7 +4179,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
                               ),
                               Positioned(
                                 right: 12,
-                                child: IconButton(
+                                child: IconButton(tooltip: 'Next', 
                                   style: IconButton.styleFrom(
                                     backgroundColor: Colors.black54,
                                     foregroundColor: Colors.white,
@@ -4851,7 +4851,7 @@ class _LandingPageState extends State<LandingPage> with WidgetsBindingObserver {
             children: List.generate(5, (idx) {
               final starNum = idx + 1;
               final filled = starNum <= currentVal;
-              return IconButton(
+              return IconButton(tooltip: 'Rate $starNum', 
                 iconSize: 34,
                 onPressed: () =>
                     setState(() => _selectedOptionMap[surveyId] = '$starNum'),
@@ -5777,7 +5777,7 @@ class _AllUpdatesDialogState extends State<_AllUpdatesDialog> {
                           ],
                         ),
                       ),
-                      IconButton(
+                      IconButton(tooltip: 'Close', 
                         icon: Icon(
                           Icons.close_rounded,
                           color: _kText,
@@ -5820,7 +5820,7 @@ class _AllUpdatesDialogState extends State<_AllUpdatesDialog> {
                               color: _kBrown,
                             ),
                             suffixIcon: _query.isNotEmpty
-                                ? IconButton(
+                                ? IconButton(tooltip: 'Clear', 
                                     icon: Icon(
                                       Icons.clear_rounded,
                                       size: 18,
@@ -6297,7 +6297,7 @@ class _AllEventsDialogState extends State<_AllEventsDialog> {
                           ],
                         ),
                       ),
-                      IconButton(
+                      IconButton(tooltip: 'Close', 
                         icon: Icon(
                           Icons.close_rounded,
                           color: _kText,
@@ -6340,7 +6340,7 @@ class _AllEventsDialogState extends State<_AllEventsDialog> {
                               color: _kBrown,
                             ),
                             suffixIcon: _query.isNotEmpty
-                                ? IconButton(
+                                ? IconButton(tooltip: 'Clear', 
                                     icon: Icon(
                                       Icons.clear_rounded,
                                       size: 18,
@@ -6733,7 +6733,7 @@ class _AllCoursesDialogState extends State<_AllCoursesDialog> {
                           ],
                         ),
                       ),
-                      IconButton(
+                      IconButton(tooltip: 'Close', 
                         icon: Icon(
                           Icons.close_rounded,
                           color: _kText,
@@ -6773,7 +6773,7 @@ class _AllCoursesDialogState extends State<_AllCoursesDialog> {
                           color: _kBrown,
                         ),
                         suffixIcon: _query.isNotEmpty
-                            ? IconButton(
+                            ? IconButton(tooltip: 'Clear', 
                                 icon: Icon(
                                   Icons.clear_rounded,
                                   size: 18,
@@ -7237,7 +7237,7 @@ class _AllDirectoryDialogState extends State<_AllDirectoryDialog> {
                             size: 20,
                           ),
                           suffixIcon: _query.isNotEmpty
-                              ? IconButton(
+                              ? IconButton(tooltip: 'Clear', 
                                   icon: Icon(
                                     Icons.clear_rounded,
                                     size: 16,

@@ -1,3 +1,5 @@
+import '../components/first_run_guide.dart';
+import '../components/feedback_sheet.dart';
 import 'dart:async' show unawaited;
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -49,6 +51,11 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     unawaited(PushNotificationService().requestPermissionsAndSyncToken());
+    // New members: a three-screen guide, once per device.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final role = SessionStorage.instance.getStringSync('cubag_role') ?? '';
+      if (mounted && (role.isEmpty || role == 'member')) FirstRunGuide.showIfNew(context);
+    });
     final cachedName = SessionStorage.instance.getStringSync('cubag_name');
     final isPkgPaid = SessionStorage.instance.getStringSync('cubag_package_fee_paid') == 'true';
     final isGood = SessionStorage.instance.getStringSync('cubag_good_standing') == 'true' || isPkgPaid;
@@ -770,6 +777,13 @@ class _DashboardPageState extends State<DashboardPage> {
                     ],
                   );
                   const gap = SizedBox(height: CubagSpace.xxl);
+                  final feedback = Center(
+                    child: TextButton.icon(
+                      onPressed: () => FeedbackSheet.show(context),
+                      icon: const Icon(Icons.rate_review_outlined, size: 20),
+                      label: const Text('Something hard to use? Tell us'),
+                    ),
+                  );
 
                   final body = twoColumns
                       ? Row(
@@ -793,6 +807,8 @@ class _DashboardPageState extends State<DashboardPage> {
                                   if (polls != null) ...[const SizedBox(height: CubagSpace.lg), polls],
                                   gap,
                                   rates,
+                                  gap,
+                                  feedback,
                                 ],
                               ),
                             ),
@@ -811,6 +827,8 @@ class _DashboardPageState extends State<DashboardPage> {
                             if (polls != null) ...[const SizedBox(height: CubagSpace.xl), polls],
                             gap,
                             rates,
+                            gap,
+                            feedback,
                           ],
                         );
 

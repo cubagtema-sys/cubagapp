@@ -1,3 +1,4 @@
+import '../components/feedback_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -18,107 +19,42 @@ class MobileMenuPage extends StatelessWidget {
     // Same logic as AppLayout's _buildNavItems
     List<Widget> sections = [];
     if (isAdmin) {
+      // Same groups and names as the admin sidebar.
       sections = [
-        _buildSection(context, 'Core management', [
+        _buildSection(context, 'Overview', [
           _MenuItem('Dashboard', Icons.grid_view_rounded, '/admin/dashboard'),
-          _MenuItem('Members', Icons.people_alt_rounded, '/admin/members'),
-          _MenuItem(
-            'Registration',
-            Icons.folder_copy_rounded,
-            '/admin/documents',
-          ),
-          _MenuItem(
-            'Document Rules',
-            Icons.rule_folder_rounded,
-            '/admin/document-rules',
-          ),
-          _MenuItem(
-            'Renewal',
-            Icons.verified_user_rounded,
-            '/admin/compliance',
-          ),
-          _MenuItem(
-            'Announcements',
-            Icons.campaign_rounded,
-            '/admin/announcements',
-          ),
         ]),
-        _buildSection(context, 'Operations & support', [
-          _MenuItem(
-            'Port Operational News',
-            Icons.feed_rounded,
-            '/admin/port-news',
-          ),
-          _MenuItem(
-            'Insights',
-            Icons.cell_tower_rounded,
-            '/admin/intelligence',
-          ),
-          _MenuItem(
-            'Support Tickets',
-            Icons.support_agent_rounded,
-            '/admin/tickets',
-          ),
-          _MenuItem(
-            'Complaints',
-            Icons.gavel_rounded,
-            '/admin/complaints',
-          ),
-          _MenuItem(
-            'Messages',
-            Icons.chat_rounded,
-            '/admin/messages',
-          ),
-          _MenuItem(
-            'Reported Messages',
-            Icons.flag_rounded,
-            '/admin/message-reports',
-          ),
+        _buildSection(context, 'Members', [
+          _MenuItem('Members', Icons.people_alt_outlined, '/admin/members'),
+          _MenuItem('Applications', Icons.folder_shared_outlined, '/admin/documents'),
+          _MenuItem('Compliance', Icons.verified_user_outlined, '/admin/compliance'),
         ]),
-        _buildSection(context, 'Financials & records', [
-          _MenuItem(
-            'Financial Center',
-            Icons.account_balance_wallet_rounded,
-            '/admin/payments',
-          ),
-          _MenuItem(
-            'Platform Analytics',
-            Icons.analytics_rounded,
-            '/admin/analytics',
-          ),
-          _MenuItem(
-            'Payment Settings',
-            Icons.payment_rounded,
-            '/admin/payment-settings',
-          ),
-          _MenuItem('Platform Fees', Icons.receipt_rounded, '/admin/fees'),
+        _buildSection(context, 'Money', [
+          _MenuItem('Payments', Icons.payments_outlined, '/admin/payments'),
+          _MenuItem('Revenue', Icons.trending_up_rounded, '/admin/analytics'),
+          _MenuItem('Fees', Icons.receipt_long_outlined, '/admin/fees'),
+          _MenuItem('Bank accounts', Icons.account_balance_outlined, '/admin/payment-settings'),
         ]),
-        _buildSection(context, 'Engagement & events', [
-          _MenuItem('Events & Meetings', Icons.event_rounded, '/admin/events'),
-          _MenuItem(
-            'CTI Short Courses',
-            Icons.school_rounded,
-            '/admin/cti-courses',
-          ),
-          _MenuItem(
-            'Photo Gallery',
-            Icons.photo_library_rounded,
-            '/admin/gallery',
-          ),
-          _MenuItem(
-            'Surveys',
-            Icons.how_to_vote_rounded,
-            '/admin/surveys',
-          ),
+        _buildSection(context, 'Communication', [
+          _MenuItem('Announcements', Icons.campaign_outlined, '/admin/announcements'),
+          _MenuItem('Messages', Icons.chat_bubble_outline_rounded, '/admin/messages'),
+          _MenuItem('Reports', Icons.flag_outlined, '/admin/message-reports'),
+          _MenuItem('Tickets', Icons.support_agent_outlined, '/admin/tickets'),
+          _MenuItem('Complaints', Icons.gavel_rounded, '/admin/complaints'),
         ]),
-        _buildSection(context, 'Administration', [
-          _MenuItem(
-            'Sub-Admins',
-            Icons.admin_panel_settings_rounded,
-            '/admin/sub-admins',
-          ),
-          _MenuItem('Ports of Operation', Icons.anchor_rounded, '/admin/ports'),
-          _MenuItem('Audit Log', Icons.history_rounded, '/admin/audit-log'),
+        _buildSection(context, 'Events and content', [
+          _MenuItem('Events', Icons.event_outlined, '/admin/events'),
+          _MenuItem('Courses', Icons.school_outlined, '/admin/cti-courses'),
+          _MenuItem('Polls', Icons.how_to_vote_outlined, '/admin/surveys'),
+          _MenuItem('Gallery', Icons.photo_library_outlined, '/admin/gallery'),
+          _MenuItem('News', Icons.newspaper_outlined, '/admin/port-news'),
+          _MenuItem('Insights', Icons.insights_outlined, '/admin/intelligence'),
+        ]),
+        _buildSection(context, 'Setup', [
+          _MenuItem('Requirements', Icons.rule_folder_outlined, '/admin/document-rules'),
+          _MenuItem('Ports', Icons.anchor_rounded, '/admin/ports'),
+          _MenuItem('Admins', Icons.admin_panel_settings_outlined, '/admin/sub-admins'),
+          _MenuItem('Audit', Icons.history_rounded, '/admin/audit-log'),
         ]),
       ];
     } else if (role == 'sub_admin') {
@@ -128,19 +64,19 @@ class MobileMenuPage extends StatelessWidget {
         ],
         'compliance': [
           _MenuItem(
-            'Renewal',
+            'Compliance',
             Icons.verified_user_rounded,
             '/admin/compliance',
           ),
         ],
         'documents': [
           _MenuItem(
-            'Registration',
+            'Applications',
             Icons.folder_shared_rounded,
             '/admin/documents',
           ),
           _MenuItem(
-            'Document Rules',
+            'Requirements',
             Icons.rule_folder_rounded,
             '/admin/document-rules',
           ),
@@ -152,7 +88,7 @@ class MobileMenuPage extends StatelessWidget {
             '/admin/announcements',
           ),
           _MenuItem(
-            'Port Operational News',
+            'News',
             Icons.feed_rounded,
             '/admin/port-news',
           ),
@@ -166,7 +102,7 @@ class MobileMenuPage extends StatelessWidget {
         ],
         'tickets': [
           _MenuItem(
-            'Support Tickets',
+            'Tickets',
             Icons.support_agent_rounded,
             '/admin/tickets',
           ),
@@ -178,7 +114,7 @@ class MobileMenuPage extends StatelessWidget {
         ],
         'messaging': [
           _MenuItem('Messages', Icons.chat_rounded, '/admin/messages'),
-          _MenuItem('Reported Messages', Icons.flag_rounded, '/admin/message-reports'),
+          _MenuItem('Reports', Icons.flag_rounded, '/admin/message-reports'),
         ],
         'notifications': [
           _MenuItem(
@@ -189,43 +125,43 @@ class MobileMenuPage extends StatelessWidget {
         ],
         'payments': [
           _MenuItem(
-            'Financial Center',
+            'Payments',
             Icons.account_balance_wallet_rounded,
             '/admin/payments',
           ),
         ],
         'analytics': [
           _MenuItem(
-            'Platform Analytics',
+            'Revenue',
             Icons.analytics_rounded,
             '/admin/analytics',
           ),
         ],
         'fees': [
-          _MenuItem('Platform Fees', Icons.receipt_rounded, '/admin/fees'),
+          _MenuItem('Fees', Icons.receipt_rounded, '/admin/fees'),
         ],
         'events': [
-          _MenuItem('Events & Meetings', Icons.event_rounded, '/admin/events'),
+          _MenuItem('Events', Icons.event_rounded, '/admin/events'),
           _MenuItem(
-            'CTI Short Courses',
+            'Courses',
             Icons.school_rounded,
             '/admin/cti-courses',
           ),
           _MenuItem(
-            'Photo Gallery',
+            'Gallery',
             Icons.photo_library_rounded,
             '/admin/gallery',
           ),
         ],
         'surveys': [
           _MenuItem(
-            'Surveys',
+            'Polls',
             Icons.how_to_vote_rounded,
             '/admin/surveys',
           ),
         ],
         'audit_log': [
-          _MenuItem('Audit Log', Icons.history_rounded, '/admin/audit-log'),
+          _MenuItem('Audit', Icons.history_rounded, '/admin/audit-log'),
         ],
       };
 
@@ -260,7 +196,7 @@ class MobileMenuPage extends StatelessWidget {
             _MenuItem('Dashboard', Icons.grid_view_rounded, '/admin/dashboard'),
           ]),
         if (permittedItems.isNotEmpty)
-          _buildSection(context, 'My modules', permittedItems),
+          _buildSection(context, 'Your sections', permittedItems),
       ];
     } else {
       final status = auth.membershipStatus.toLowerCase().trim();
@@ -317,6 +253,8 @@ class MobileMenuPage extends StatelessWidget {
           _buildSection(context, 'Help', [
             _MenuItem('Support', Icons.support_agent_outlined, '/engagement',
                 subtitle: 'Ask CUBAG or report a problem'),
+            _MenuItem('Tell us what is hard', Icons.rate_review_outlined, _feedbackRoute,
+                subtitle: 'Something confusing or hard to read in the app'),
           ]),
         ];
       }
@@ -401,6 +339,10 @@ class MobileMenuPage extends StatelessWidget {
           if (item.isLogout) {
             await Provider.of<AuthService>(context, listen: false).logout();
           }
+          if (item.route == _feedbackRoute) {
+            if (context.mounted) FeedbackSheet.show(context);
+            return;
+          }
           if (context.mounted) {
             context.go(item.route);
           }
@@ -437,6 +379,9 @@ class MobileMenuPage extends StatelessWidget {
     );
   }
 }
+
+/// Not a page: opens the feedback sheet.
+const _feedbackRoute = '#feedback';
 
 class _MenuItem {
   final String title;
