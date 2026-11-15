@@ -1,17 +1,16 @@
+import '../components/filter_tabs.dart';
+import '../components/cubag_ui.dart';
+import '../components/admin_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../services/api_service.dart';
-import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
 import '../design/cubag_design.dart';
 
 const _kOrange = CubagColors.action;
-const _kGreen = CubagColors.valid;
-const _kBlue = Color(0xFF3B82F6);
 const _kRed = CubagColors.lapsed;
-const _kSlate = CubagColors.muted;
 
 class AdminPortNewsPage extends StatefulWidget {
   const AdminPortNewsPage({super.key});
@@ -286,20 +285,6 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
     }
   }
 
-  Color _badgeColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'operational':
-      case 'normal':
-        return _kGreen;
-      case 'maintenance':
-        return _kOrange;
-      case 'restricted':
-        return _kRed;
-      default:
-        return _kBlue;
-    }
-  }
-
   List<dynamic> get _filteredBulletins {
     return _bulletins.where((b) {
       final port = (b['port_name']?.toString() ?? '').toLowerCase();
@@ -318,15 +303,8 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-    final textColor = isDark ? Colors.white : const Color(0xFF1F1612);
-    final subTextColor = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
-
     final total = _bulletins.length;
     final active = _bulletins.where((b) => b['is_active'] == true).length;
-    final inactive = total - active;
     final bulletins = _filteredBulletins;
 
     return AppLayout(
@@ -334,455 +312,127 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
       scrollable: true,
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1440),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isDesktop = constraints.maxWidth >= 950;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  AdminHeader(
-                    title: 'Port news',
-                    subtitle: 'Status updates for Ghana\'s ports, shown to members.',
-                    actions: [
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: isDark ? Colors.white : CubagColors.inkSoft,
-                          side: BorderSide(color: borderCol),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onPressed: _fetchBulletins,
-                        icon: const Icon(Icons.refresh_rounded, size: 16),
-                        label: Text('Refresh', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _kOrange,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          elevation: 0,
-                        ),
-                        onPressed: () => _showBulletinDialog(),
-                        icon: const Icon(Icons.add_rounded, size: 18),
-                        label: Text('New update', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      ),
-                    ],
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AdminHeader(
+                title: 'Port news',
+                subtitle: 'Short status notes for each port. Shown updates appear in the member app; hide one when it no longer applies.',
+                actions: [
+                  OutlinedButton.icon(
+                    onPressed: _fetchBulletins,
+                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    label: const Text('Refresh'),
                   ),
-                  const SizedBox(height: 16),
-
-                  // Maintained KPI Cards Row (Interactive)
-                  _buildKPIRow(isDark, cardBg, borderCol, textColor, subTextColor, total, active, inactive),
-                  const SizedBox(height: 16),
-
-                  // Filter & Search Toolbar
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: borderCol),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: SizedBox(
-                            height: 38,
-                            child: TextField(
-                              controller: _searchCtrl,
-                              onChanged: (v) => setState(() => _searchQuery = v.trim()),
-                              style: TextStyle(fontSize: 13.5, color: textColor),
-                              decoration: InputDecoration(
-                                hintText: 'Search port news',
-                                hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
-                                prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
-                                filled: true,
-                                fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderCol)),
-                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderCol)),
-                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange, width: 1.2)),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
-                                suffixIcon: _searchQuery.isNotEmpty
-                                    ? IconButton(
-                                        tooltip: 'Close',
-                                        icon: const Icon(Icons.close_rounded, size: 14),
-                                        onPressed: () {
-                                          _searchCtrl.clear();
-                                          setState(() => _searchQuery = '');
-                                        },
-                                      )
-                                    : null,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              _filterPill('All ($total)', _filterTab == 0, () => setState(() => _filterTab = 0), borderCol, textColor),
-                              const SizedBox(width: 6),
-                              _filterPill('Active ($active)', _filterTab == 1, () => setState(() => _filterTab = 1), borderCol, textColor, activeColor: _kGreen),
-                              const SizedBox(width: 6),
-                              _filterPill('Archived ($inactive)', _filterTab == 2, () => setState(() => _filterTab = 2), borderCol, textColor, activeColor: _kSlate),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                  FilledButton.icon(
+                    onPressed: () => _showBulletinDialog(),
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text('New update'),
                   ),
-                  const SizedBox(height: 16),
-
-                  // Content List
-                  if (_loading)
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: List.generate(3, (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile())),
-                      ),
-                    )
-                  else if (_error != null)
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(_error!, style: const TextStyle(color: Colors.red)),
-                      ),
-                    )
-                  else if (bulletins.isEmpty)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(36),
-                      decoration: BoxDecoration(
-                        color: cardBg,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: borderCol),
-                      ),
-                      child: Center(
-                        child: Column(
-                          children: [
-                            Icon(Icons.anchor_rounded, size: 36, color: subTextColor),
-                            const SizedBox(height: 8),
-                            Text('No port updates yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
-                          ],
-                        ),
-                      ),
-                    )
-                  else
-                    Wrap(
-                      spacing: 14,
-                      runSpacing: 14,
-                      children: bulletins.map((b) {
-                        final cardWidth = isDesktop ? (constraints.maxWidth - 14) / 2 : constraints.maxWidth;
-                        return SizedBox(
-                          width: cardWidth,
-                          child: _buildBulletinCard(b, isDark, cardBg, borderCol, textColor, subTextColor),
-                        );
-                      }).toList(),
-                    ),
-                  const SizedBox(height: 32),
                 ],
-              );
-            },
+              ),
+              FilterTabs(
+                tabs: [('0', 'All · $total'), ('1', 'Shown · $active'), ('2', 'Hidden · ${total - active}')],
+                selected: '$_filterTab',
+                onSelected: (k) => setState(() => _filterTab = int.parse(k)),
+              ),
+              const SizedBox(height: CubagSpace.sm),
+              AdminSearchField(
+                hint: 'Search port, code or text',
+                controller: _searchCtrl,
+                onChanged: (v) => setState(() => _searchQuery = v),
+              ),
+              const SizedBox(height: CubagSpace.md),
+              if (_loading)
+                const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()))
+              else if (_error != null)
+                EmptyMessage(
+                  icon: Icons.cloud_off_rounded,
+                  title: 'Could not load port news',
+                  message: _error,
+                  action: OutlinedButton(onPressed: _fetchBulletins, child: const Text('Try again')),
+                )
+              else if (bulletins.isEmpty)
+                EmptyMessage(
+                  icon: Icons.anchor_rounded,
+                  title: total == 0 ? 'No port updates yet' : 'No updates match',
+                  message: total == 0
+                      ? 'Post a note when a port is closed, slow or back to normal.'
+                      : 'Try another filter, or clear the search.',
+                )
+              else
+                AdminRowGroup(children: [for (final b in bulletins) _bulletinItem(b)]),
+              const SizedBox(height: CubagSpace.xl),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildBulletinCard(
-    dynamic b,
-    bool isDark,
-    Color cardBg,
-    Color borderCol,
-    Color textColor,
-    Color subTextColor,
-  ) {
+  Widget _bulletinItem(dynamic b) {
     final isActive = b['is_active'] == true;
     final statusStr = b['status']?.toString() ?? 'Operational';
-    final badgeColor = _badgeColor(statusStr);
     final portName = b['port_name']?.toString() ?? '';
     final code = b['code']?.toString() ?? '';
     final notice = b['notice']?.toString() ?? '';
+    final s = statusStr.toLowerCase();
+    final kind = s == 'operational' || s == 'normal'
+        ? StatusKind.good
+        : (s == 'restricted' || s == 'closed' ? StatusKind.bad : StatusKind.pending);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: borderCol),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(CubagSpace.lg, CubagSpace.md, CubagSpace.xs, CubagSpace.md),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(9),
-                decoration: BoxDecoration(
-                  color: badgeColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.anchor_rounded, color: badgeColor, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: CubagSpace.xs,
+                  runSpacing: CubagSpace.xxs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: SelectableText(
-                            portName,
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textColor),
-                          ),
-                        ),
-                        if (code.isNotEmpty) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                            decoration: BoxDecoration(
-                              color: isDark ? CubagColors.ink : CubagColors.sand,
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: borderCol),
-                            ),
-                            child: SelectableText(
-                              code,
-                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: subTextColor),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: badgeColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: badgeColor.withValues(alpha: 0.3)),
-                      ),
-                      child: Text(
-                        statusStr.isEmpty ? statusStr : statusStr[0].toUpperCase() + statusStr.substring(1).toLowerCase(),
-                        style: TextStyle(
-                          color: badgeColor,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
+                    Text(portName, style: CubagType.bodyStrong),
+                    if (code.isNotEmpty) Text(code, style: CubagType.caption),
+                    StatusChip(statusStr[0].toUpperCase() + statusStr.substring(1), kind: kind),
+                    if (!isActive) const StatusChip('Hidden'),
                   ],
                 ),
-              ),
-              Transform.scale(
-                scale: 0.8,
-                child: Switch(
-                  value: isActive,
-                  activeThumbColor: _kGreen,
-                  onChanged: (_) => _toggleStatus(b),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: borderCol.withValues(alpha: 0.7)),
-            ),
-            child: SelectableText(
-              notice,
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.45,
-                color: isDark ? Colors.white70 : CubagColors.inkSoft,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton.icon(
-                style: TextButton.styleFrom(
-                  foregroundColor: subTextColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  visualDensity: VisualDensity.compact,
-                ),
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: notice));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Notice copied to clipboard'),
-                      duration: Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.copy_rounded, size: 14),
-                label: Text('Copy', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 16),
-                    color: _kBlue,
-                    tooltip: 'Edit Bulletin',
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => _showBulletinDialog(b),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.archive_outlined, size: 16),
-                    color: _kRed,
-                    tooltip: 'Archive',
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => _deleteBulletin(b),
-                  ),
+                if (notice.isNotEmpty) ...[
+                  const SizedBox(height: CubagSpace.xxs),
+                  SelectableText(notice, style: CubagType.body.copyWith(color: isActive ? CubagColors.inkSoft : CubagColors.muted)),
                 ],
-              ),
+              ],
+            ),
+          ),
+          Tooltip(
+            message: isActive ? 'Shown to members' : 'Hidden from members',
+            child: Switch(value: isActive, onChanged: (_) => _toggleStatus(b)),
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'More',
+            icon: const Icon(Icons.more_vert_rounded, color: CubagColors.muted),
+            onSelected: (v) {
+              if (v == 'edit') _showBulletinDialog(b);
+              if (v == 'delete') _deleteBulletin(b);
+              if (v == 'copy') {
+                Clipboard.setData(ClipboardData(text: notice));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Text copied'), behavior: SnackBarBehavior.floating),
+                );
+              }
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'edit', child: Text('Edit')),
+              const PopupMenuItem(value: 'copy', child: Text('Copy text')),
+              PopupMenuItem(value: 'delete', child: Text('Archive', style: TextStyle(color: CubagColors.lapsed))),
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildKPIRow(
-    bool isDark,
-    Color cardBg,
-    Color borderCol,
-    Color textColor,
-    Color subTextColor,
-    int total,
-    int active,
-    int inactive,
-  ) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 650;
-        final cards = [
-          _kpiCard('Total', '$total', Icons.feed_outlined, _kBlue, _filterTab == 0, () => setState(() => _filterTab = 0), isDark, cardBg, borderCol, textColor, subTextColor),
-          _kpiCard('Live', '$active', Icons.check_circle_outline_rounded, _kGreen, _filterTab == 1, () => setState(() => _filterTab = 1), isDark, cardBg, borderCol, textColor, subTextColor),
-          _kpiCard('Archived', '$inactive', Icons.pause_circle_outline_rounded, _kSlate, _filterTab == 2, () => setState(() => _filterTab = 2), isDark, cardBg, borderCol, textColor, subTextColor),
-        ];
-
-        if (isWide) {
-          return Row(
-            children: cards.map((c) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: c))).toList(),
-          );
-        }
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: cards.map((c) => Container(width: 170, margin: const EdgeInsets.only(right: 8), child: c)).toList(),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _kpiCard(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-    bool isSelected,
-    VoidCallback onTap,
-    bool isDark,
-    Color cardBg,
-    Color borderCol,
-    Color textColor,
-    Color subTextColor,
-  ) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: isDark ? 0.22 : 0.1) : cardBg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? color : borderCol,
-            width: isSelected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 16),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textColor),
-                  ),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: isSelected ? color : subTextColor,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _filterPill(String label, bool isSelected, VoidCallback onTap, Color borderColor, Color textColor, {Color? activeColor}) {
-    final col = activeColor ?? _kOrange;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? col : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: isSelected ? col : borderColor),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11.5,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            color: isSelected ? Colors.white : textColor,
-          ),
-        ),
       ),
     );
   }

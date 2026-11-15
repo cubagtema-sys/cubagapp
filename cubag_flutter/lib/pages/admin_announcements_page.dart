@@ -1,10 +1,14 @@
+import '../components/admin_components.dart';
+import '../components/custom_dropdown.dart';
+import '../components/filter_tabs.dart';
+import '../components/cubag_ui.dart';
+import '../components/admin_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../components/app_layout.dart';
 import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
-import '../utils/app_colors.dart';
 import '../design/cubag_design.dart';
 
 const _kOrange = CubagColors.action;
@@ -211,11 +215,11 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
           final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
 
           final categories = [
-            {'label': 'General Notice', 'key': 'General', 'icon': Icons.article_outlined, 'color': _kBlue},
-            {'label': 'Urgent Alert', 'key': 'Urgent Alert', 'icon': Icons.priority_high_rounded, 'color': _kRed},
-            {'label': 'Regulatory & Port Advisory', 'key': 'Regulatory & Port Advisory', 'icon': Icons.gavel_rounded, 'color': _kIndigo},
-            {'label': 'System Maintenance', 'key': 'System Maintenance', 'icon': Icons.build_circle_outlined, 'color': _kAmber},
-            {'label': 'Event / News', 'key': 'Event', 'icon': Icons.event_rounded, 'color': _kPurple},
+            {'label': 'General', 'key': 'General', 'icon': Icons.article_outlined, 'color': _kBlue},
+            {'label': 'Urgent', 'key': 'Urgent Alert', 'icon': Icons.priority_high_rounded, 'color': _kRed},
+            {'label': 'Regulatory', 'key': 'Regulatory & Port Advisory', 'icon': Icons.gavel_rounded, 'color': _kIndigo},
+            {'label': 'Maintenance', 'key': 'System Maintenance', 'icon': Icons.build_circle_outlined, 'color': _kAmber},
+            {'label': 'Event', 'key': 'Event', 'icon': Icons.event_rounded, 'color': _kPurple},
           ];
 
           return Dialog(
@@ -239,7 +243,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'New Announcement',
+                            'New announcement',
                             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textCol),
                           ),
                         ),
@@ -264,7 +268,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                       runSpacing: 6,
                       children: categories.map((c) {
                         final sel = category == c['key'];
-                        final color = c['color'] as Color;
+                        const color = CubagColors.cocoa;
                         return InkWell(
                           onTap: () => setDialogState(() => category = c['key'] as String),
                           borderRadius: BorderRadius.circular(8),
@@ -297,7 +301,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                     const SizedBox(height: 14),
 
                     Text(
-                      'Title / subject',
+                      'Title',
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5),
                     ),
                     const SizedBox(height: 6),
@@ -305,7 +309,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                       controller: titleCtrl,
                       style: TextStyle(fontSize: 14, color: textCol),
                       decoration: InputDecoration(
-                        hintText: 'e.g. Revised Port Clearance Procedures...',
+                        hintText: 'For example: New clearance hours at Tema',
                         hintStyle: TextStyle(fontSize: 13, color: textMuted),
                         isDense: true,
                         filled: true,
@@ -319,7 +323,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                     const SizedBox(height: 14),
 
                     Text(
-                      'Message content',
+                      'Message',
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5),
                     ),
                     const SizedBox(height: 6),
@@ -389,7 +393,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                           icon: submitting
                               ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                               : const Icon(Icons.send_rounded, size: 15),
-                          label: Text(submitting ? 'Publishing...' : 'Publish Announcement', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                          label: Text(submitting ? 'Publishing…' : 'Publish', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                         ),
                       ],
                     ),
@@ -460,9 +464,10 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                       children: ['General', 'Urgent Alert', 'Regulatory & Port Advisory', 'System Maintenance', 'Event'].map((c) {
                         final sel = editCategory == c;
                         return ChoiceChip(
-                          label: Text(c, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: sel ? Colors.white : textCol)),
+                          label: Text(_shortCategory(c), style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: sel ? Colors.white : textCol)),
                           selected: sel,
-                          selectedColor: _kOrange,
+                          showCheckmark: false,
+                          selectedColor: CubagColors.cocoa,
                           backgroundColor: isDark ? const Color(0xFF4D2D20) : CubagColors.sand,
                           onSelected: (val) {
                             if (val) setDialogState(() => editCategory = c);
@@ -472,7 +477,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                     ),
                     const SizedBox(height: 14),
 
-                    Text('Title / subject', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5)),
+                    Text('Title', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5)),
                     const SizedBox(height: 6),
                     TextField(
                       controller: titleEditCtrl,
@@ -487,7 +492,7 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
                     ),
                     const SizedBox(height: 14),
 
-                    Text('Message content', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5)),
+                    Text('Message', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5)),
                     const SizedBox(height: 6),
                     TextField(
                       controller: bodyEditCtrl,
@@ -587,630 +592,227 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
     return filtered;
   }
 
+  static const _categories = [
+    ('All', 'All categories'),
+    ('Urgent Alert', 'Urgent'),
+    ('Regulatory & Port Advisory', 'Regulatory'),
+    ('System Maintenance', 'Maintenance'),
+    ('Event', 'Events'),
+    ('General', 'General'),
+  ];
+
+  String _shortCategory(String c) =>
+      _categories.firstWhere((e) => e.$1 == c, orElse: () => (c, c)).$2;
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? CubagColors.ink : const Color(0xFFFAF6F0);
-    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
-    final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
-
-    final displayList = _tab == 'active' ? _filterList(_active) : _filterList(_archived);
-    final isLoading = _tab == 'active' ? _loadingActive : _loadingArchived;
+    final active = _tab == 'active';
+    final displayList = active ? _filterList(_active) : _filterList(_archived);
+    final isLoading = active ? _loadingActive : _loadingArchived;
+    final page = active ? _pageActive : _pageArchived;
+    final hasMore = active ? _hasMoreActive : _hasMoreArchived;
 
     return AppLayout(
       title: 'Announcements',
       scrollable: true,
-      child: Container(
-        color: bg,
-        alignment: Alignment.topCenter,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1440),
+          constraints: const BoxConstraints(maxWidth: 900),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-            // ── TOP HEADER ──────────────────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: border),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: _kOrange.withAlpha(20),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.campaign_rounded, color: _kOrange, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Announcements & Circulars',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: textPrimary,
-                          ),
-                        ),
-                        Text(
-                          'Notices sent to every member in the app.',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+              AdminHeader(
+                title: 'Announcements',
+                subtitle: 'Notices every member sees on their Home screen. Archive one to take it down; you can restore it later.',
+                actions: [
                   OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: textPrimary,
-                      side: BorderSide(color: border),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
                     onPressed: () {
                       _clearCache();
                       _fetchActive(page: 1);
                       _fetchArchived(page: 1);
                     },
-                    icon: const Icon(Icons.refresh_rounded, size: 15, color: _kOrange),
-                    label: Text('Refresh', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    label: const Text('Refresh'),
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _kOrange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      elevation: 0,
-                    ),
+                  FilledButton.icon(
                     onPressed: _showCreateDialog,
-                    icon: const Icon(Icons.add_rounded, size: 16),
-                    label: Text('New announcement', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text('New announcement'),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 12),
-
-            // ── TOAST MESSAGE ───────────────────────────────────────────────
-            if (_toastMessage.isNotEmpty)
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: _toastColor.withAlpha(20),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: _toastColor.withAlpha(50)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(_toastColor == _kGreen ? Icons.check_circle_rounded : Icons.info_outline_rounded, color: _toastColor, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _toastMessage,
-                        style: TextStyle(color: _toastColor, fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-            // ── TABS & SEARCH BAR ───────────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: border),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      _buildTabButton('Live', 'active', _totalActive, Icons.sensors_rounded, isDark),
-                      const SizedBox(width: 8),
-                      _buildTabButton('Archived', 'archived', _totalArchived, Icons.archive_outlined, isDark),
-                      const Spacer(),
-                    ],
+              if (_toastMessage.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(bottom: CubagSpace.md),
+                  padding: const EdgeInsets.all(CubagSpace.md),
+                  decoration: BoxDecoration(
+                    color: _toastColor == _kRed ? CubagColors.lapsedTint : CubagColors.validTint,
+                    borderRadius: BorderRadius.circular(CubagRadius.card),
                   ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      // Search input
-                      Expanded(
-                        child: Container(
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: isDark ? CubagColors.ink : CubagColors.sand,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: border),
-                          ),
-                          child: TextField(
-                            onChanged: (v) => setState(() => _searchQuery = v),
-                            style: TextStyle(fontSize: 13, color: textPrimary),
-                            decoration: InputDecoration(
-                              hintText: 'Search announcements',
-                              hintStyle: TextStyle(fontSize: 12.5, color: textMuted),
-                              prefixIcon: Icon(Icons.search_rounded, size: 16, color: textMuted),
-                              border: InputBorder.none,
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                              suffixIcon: _searchQuery.isNotEmpty
-                                  ? IconButton(
-                                      tooltip: 'Close',
-                                      icon: const Icon(Icons.close_rounded, size: 15),
-                                      onPressed: () => setState(() => _searchQuery = ''),
-                                    )
-                                  : null,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    _toastMessage,
+                    style: CubagType.label.copyWith(color: _toastColor == _kRed ? CubagColors.lapsed : CubagColors.valid),
                   ),
-                  const SizedBox(height: 8),
-                  // Category chips
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _buildCategoryChip('All', 'All', isDark),
-                        const SizedBox(width: 6),
-                        _buildCategoryChip('Urgent', 'Urgent Alert', isDark, activeColor: _kRed),
-                        const SizedBox(width: 6),
-                        _buildCategoryChip('Regulatory', 'Regulatory & Port Advisory', isDark, activeColor: _kIndigo),
-                        const SizedBox(width: 6),
-                        _buildCategoryChip('Maintenance', 'System Maintenance', isDark, activeColor: _kAmber),
-                        const SizedBox(width: 6),
-                        _buildCategoryChip('Events', 'Event', isDark, activeColor: _kPurple),
-                        const SizedBox(width: 6),
-                        _buildCategoryChip('General', 'General', isDark, activeColor: _kBlue),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
+              FilterTabs(
+                tabs: [('active', 'Live · $_totalActive'), ('archived', 'Archived · $_totalArchived')],
+                selected: _tab,
+                onSelected: (k) => setState(() => _tab = k),
               ),
-            ),
-            const SizedBox(height: 14),
-
-            // ── LIST FEED ───────────────────────────────────────────────────
-            if (isLoading)
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: 4,
-                separatorBuilder: (context, index) => const SizedBox(height: 10),
-                itemBuilder: (context, index) => const ShimmerListTile(),
-              )
-            else if (displayList.isEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: border),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _tab == 'archived' ? Icons.archive_outlined : Icons.campaign_outlined,
-                      size: 36,
-                      color: textMuted.withAlpha(120),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      _tab == 'archived' ? 'No archived circulars found' : 'No announcements yet',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _tab == 'archived'
-                          ? 'Archived circulars will be stored here.'
-                          : 'Write one to notify every member.',
-                      style: TextStyle(fontSize: 13, color: textMuted),
-                    ),
-                    if (_tab == 'active') ...[
-                      const SizedBox(height: 14),
-                      ElevatedButton.icon(
-                        onPressed: _showCreateDialog,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _kOrange,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          elevation: 0,
-                        ),
-                        icon: const Icon(Icons.add_rounded, size: 15),
-                        label: Text('New announcement', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      ),
-                    ],
-                  ],
-                ),
-              )
-            else
+              const SizedBox(height: CubagSpace.sm),
               LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide = constraints.maxWidth >= 950;
-                  return Column(
-                    children: [
-                      if (isWide)
-                        Wrap(
-                          spacing: 14,
-                          runSpacing: 14,
-                          children: displayList.map((ann) {
-                            return SizedBox(
-                              width: (constraints.maxWidth - 14) / 2,
-                              child: _buildAnnouncementCard(
-                                Map<String, dynamic>.from(ann as Map),
-                                isDark: isDark,
-                                cardBg: cardBg,
-                                border: border,
-                                textPrimary: textPrimary,
-                                textMuted: textMuted,
-                              ),
-                            );
-                          }).toList(),
-                        )
-                      else
-                        Column(
-                          children: displayList.map((ann) => _buildAnnouncementCard(
-                                Map<String, dynamic>.from(ann as Map),
-                                isDark: isDark,
-                                cardBg: cardBg,
-                                border: border,
-                                textPrimary: textPrimary,
-                                textMuted: textMuted,
-                              )).toList(),
-                        ),
-                      const SizedBox(height: 16),
-                      // Pagination
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: cardBg,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: border),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Showing ${displayList.length} circulars (Page ${_tab == 'active' ? _pageActive : _pageArchived})',
-                              style: TextStyle(fontSize: 12.5, color: textMuted),
-                            ),
-                            Row(
-                              children: [
-                                OutlinedButton.icon(
-                                  onPressed: (_tab == 'active' ? _pageActive : _pageArchived) > 1
-                                      ? () {
-                                          if (_tab == 'active') {
-                                            _fetchActive(page: _pageActive - 1);
-                                          } else {
-                                            _fetchArchived(page: _pageArchived - 1);
-                                          }
-                                        }
-                                      : null,
-                                  style: OutlinedButton.styleFrom(
-                                    side: BorderSide(color: border),
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                  ),
-                                  icon: const Icon(Icons.chevron_left_rounded, size: 14),
-                                  label: Text('Prev', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
-                                ),
-                                const SizedBox(width: 6),
-                                OutlinedButton.icon(
-                                  onPressed: (_tab == 'active' ? _hasMoreActive : _hasMoreArchived)
-                                      ? () {
-                                          if (_tab == 'active') {
-                                            _fetchActive(page: _pageActive + 1);
-                                          } else {
-                                            _fetchArchived(page: _pageArchived + 1);
-                                          }
-                                        }
-                                      : null,
-                                  style: OutlinedButton.styleFrom(
-                                    side: BorderSide(color: border),
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                  ),
-                                  label: Text('Next', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
-                                  icon: const Icon(Icons.chevron_right_rounded, size: 14),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                builder: (context, c) {
+                  final search = AdminSearchField(
+                    hint: 'Search title, text or author',
+                    onChanged: (v) => setState(() => _searchQuery = v),
                   );
+                  final category = SizedBox(
+                    width: c.maxWidth < 560 ? double.infinity : 210,
+                    child: CustomDropdown<String>(
+                      value: _categoryFilter,
+                      items: [for (final e in _categories) DropdownItem(value: e.$1, label: e.$2)],
+                      onChanged: (v) => setState(() => _categoryFilter = v),
+                    ),
+                  );
+                  if (c.maxWidth < 560) {
+                    return Column(children: [search, const SizedBox(height: CubagSpace.xs), category]);
+                  }
+                  return Row(children: [Expanded(child: search), const SizedBox(width: CubagSpace.sm), category]);
                 },
               ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-  Widget _buildTabButton(String label, String key, int count, IconData icon, bool isDark) {
-    final isSel = _tab == key;
-    return InkWell(
-      onTap: () {
-        setState(() => _tab = key);
-        if (key == 'active') _fetchActive(page: 1);
-        if (key == 'archived') _fetchArchived(page: 1);
-      },
-      borderRadius: BorderRadius.circular(8),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSel ? _kOrange : (isDark ? const Color(0xFF4D2D20) : CubagColors.sand),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: isSel ? Colors.white : (isDark ? Colors.white70 : CubagColors.inkSoft)),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
-                color: isSel ? Colors.white : (isDark ? Colors.white : CubagColors.inkSoft),
-              ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-              decoration: BoxDecoration(
-                color: isSel ? Colors.white.withAlpha(40) : (isDark ? Colors.white12 : Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '$count',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: isSel ? Colors.white : (isDark ? Colors.white70 : CubagColors.inkSoft),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryChip(String label, String key, bool isDark, {Color? activeColor}) {
-    final isSel = _categoryFilter == key;
-    final color = activeColor ?? _kOrange;
-
-    return InkWell(
-      onTap: () => setState(() => _categoryFilter = key),
-      borderRadius: BorderRadius.circular(6),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-        decoration: BoxDecoration(
-          color: isSel ? color.withAlpha(isDark ? 40 : 25) : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: isSel ? color : (isDark ? const Color(0xFF3D261C) : CubagColors.line),
-            width: isSel ? 1.5 : 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
-            color: isSel ? color : (isDark ? Colors.white70 : CubagColors.inkSoft),
+              const SizedBox(height: CubagSpace.md),
+              if (isLoading)
+                Column(
+                  children: List.generate(
+                    3,
+                    (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile()),
+                  ),
+                )
+              else if (displayList.isEmpty)
+                EmptyMessage(
+                  icon: Icons.campaign_outlined,
+                  title: _searchQuery.isNotEmpty || _categoryFilter != 'All'
+                      ? 'No announcements match'
+                      : (active ? 'Nothing live right now' : 'Nothing archived'),
+                  message: _searchQuery.isNotEmpty || _categoryFilter != 'All'
+                      ? 'Try other words or another category.'
+                      : (active ? 'Post a notice and every member sees it on Home.' : 'Archived notices are kept here.'),
+                  action: active && _searchQuery.isEmpty && _categoryFilter == 'All'
+                      ? FilledButton.icon(
+                          onPressed: _showCreateDialog,
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: const Text('New announcement'),
+                        )
+                      : null,
+                )
+              else ...[
+                AdminRowGroup(children: [for (final a in displayList) _announcementItem(Map<String, dynamic>.from(a as Map))]),
+                if (page > 1 || hasMore)
+                  Row(
+                    children: [
+                      Expanded(child: Text('Page $page', style: CubagType.caption)),
+                      IconButton(
+                        tooltip: 'Previous page',
+                        icon: const Icon(Icons.chevron_left_rounded),
+                        onPressed: page > 1
+                            ? () => active ? _fetchActive(page: page - 1) : _fetchArchived(page: page - 1)
+                            : null,
+                      ),
+                      IconButton(
+                        tooltip: 'Next page',
+                        icon: const Icon(Icons.chevron_right_rounded),
+                        onPressed: hasMore
+                            ? () => active ? _fetchActive(page: page + 1) : _fetchArchived(page: page + 1)
+                            : null,
+                      ),
+                    ],
+                  ),
+              ],
+              const SizedBox(height: CubagSpace.xl),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildAnnouncementCard(
-    Map<String, dynamic> item, {
-    required bool isDark,
-    required Color cardBg,
-    required Color border,
-    required Color textPrimary,
-    required Color textMuted,
-  }) {
+  Widget _announcementItem(Map<String, dynamic> item) {
     final id = item['id'] as int? ?? 0;
     final title = (item['title'] as String? ?? '').trim();
     final body = (item['body'] as String? ?? '').trim();
     final category = (item['category'] as String? ?? 'General').trim();
     final postedBy = (item['posted_by'] as String? ?? 'CUBAG Secretariat').trim();
     final createdAt = (item['created_at'] as String? ?? '').trim();
+    final date = createdAt.length > 10 ? createdAt.substring(0, 10) : createdAt;
     final isExpanded = _expandedIds.contains(id);
     final isArchived = _tab == 'archived';
+    final urgent = category == 'Urgent Alert';
 
-    Color catColor;
-    IconData catIcon;
-    switch (category) {
-      case 'Urgent Alert':
-        catColor = _kRed;
-        catIcon = Icons.priority_high_rounded;
-        break;
-      case 'Regulatory & Port Advisory':
-        catColor = _kIndigo;
-        catIcon = Icons.gavel_rounded;
-        break;
-      case 'System Maintenance':
-        catColor = _kAmber;
-        catIcon = Icons.build_circle_outlined;
-        break;
-      case 'Event':
-        catColor = _kPurple;
-        catIcon = Icons.event_rounded;
-        break;
-      default:
-        catColor = _kBlue;
-        catIcon = Icons.article_outlined;
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: category == 'Urgent Alert' ? _kRed.withAlpha(50) : border,
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(CubagSpace.lg, CubagSpace.md, CubagSpace.xs, CubagSpace.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: catColor.withAlpha(20),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: catColor.withAlpha(50)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(catIcon, size: 11, color: catColor),
-                    const SizedBox(width: 4),
-                    Text(
-                      category.toUpperCase(),
-                      style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: catColor, letterSpacing: 0.4),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              if (createdAt.isNotEmpty)
-                Text(
-                  createdAt.length > 10 ? createdAt.substring(0, 10) : createdAt,
-                  style: TextStyle(fontSize: 12, color: textMuted),
-                ),
+              if (urgent)
+                const StatusChip('Urgent', kind: StatusKind.bad)
+              else
+                Text(_shortCategory(category), style: CubagType.caption.copyWith(color: CubagColors.cocoa, fontWeight: FontWeight.w700)),
               const Spacer(),
-
-              IconButton(
-                tooltip: 'Copy Text',
-                icon: const Icon(Icons.copy_rounded, size: 14, color: Color(0xFF5F6B7E)),
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: '$title\n\n$body'));
-                  _showToast('Circular text copied to clipboard.', _kGreen);
+              PopupMenuButton<String>(
+                tooltip: 'More',
+                icon: const Icon(Icons.more_vert_rounded, color: CubagColors.muted),
+                onSelected: (v) {
+                  switch (v) {
+                    case 'edit':
+                      _showEditDialog(item);
+                    case 'archive':
+                      _archiveAnnouncement(id);
+                    case 'restore':
+                      _restoreAnnouncement(id);
+                    case 'copy':
+                      Clipboard.setData(ClipboardData(text: '$title\n\n$body'));
+                      _showToast('Text copied.', _kGreen);
+                  }
                 },
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                itemBuilder: (_) => [
+                  if (!isArchived) const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                  const PopupMenuItem(value: 'copy', child: Text('Copy text')),
+                  if (!isArchived)
+                    PopupMenuItem(value: 'archive', child: Text('Archive', style: TextStyle(color: CubagColors.lapsed)))
+                  else
+                    const PopupMenuItem(value: 'restore', child: Text('Restore')),
+                ],
               ),
-              if (!isArchived) ...[
-                IconButton(
-                  tooltip: 'Edit',
-                  icon: const Icon(Icons.edit_outlined, size: 14, color: _kOrange),
-                  onPressed: () => _showEditDialog(item),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: CubagSpace.sm),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SelectableText(title, style: CubagType.headline),
+                const SizedBox(height: CubagSpace.xxs),
+                Text(
+                  body,
+                  maxLines: isExpanded ? null : 3,
+                  overflow: isExpanded ? null : TextOverflow.ellipsis,
+                  style: CubagType.body.copyWith(color: CubagColors.inkSoft),
                 ),
-                IconButton(
-                  tooltip: 'Archive',
-                  icon: const Icon(Icons.archive_outlined, size: 14, color: _kRed),
-                  onPressed: () => _archiveAnnouncement(id),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                ),
-              ] else ...[
-                InkWell(
-                  onTap: () => _restoreAnnouncement(id),
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: _kGreen.withAlpha(20),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: _kGreen.withAlpha(60)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.settings_backup_restore_rounded, size: 12, color: _kGreen),
-                        const SizedBox(width: 4),
-                        Text('Restore', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: _kGreen)),
-                      ],
-                    ),
+                if (body.length > 160)
+                  TextButton(
+                    style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 36)),
+                    onPressed: () => setState(() => isExpanded ? _expandedIds.remove(id) : _expandedIds.add(id)),
+                    child: Text(isExpanded ? 'Show less' : 'Read more'),
                   ),
+                const SizedBox(height: CubagSpace.xxs),
+                Text(
+                  [if (date.isNotEmpty) date, postedBy].join(' · '),
+                  style: CubagType.caption,
                 ),
               ],
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Title
-          SelectableText(
-            title,
-            style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: textPrimary),
-          ),
-          const SizedBox(height: 6),
-
-          // Body
-          SelectableText(
-            body,
-            maxLines: isExpanded ? 50 : 4,
-            style: TextStyle(fontSize: 13, color: isDark ? const Color(0xFFD1D5DB) : CubagColors.inkSoft, height: 1.4),
-          ),
-
-          if (body.length > 160) ...[
-            const SizedBox(height: 4),
-            InkWell(
-              onTap: () {
-                setState(() {
-                  if (isExpanded) {
-                    _expandedIds.remove(id);
-                  } else {
-                    _expandedIds.add(id);
-                  }
-                });
-              },
-              child: Text(
-                isExpanded ? 'Show Less' : 'Read Full Circular →',
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: AppColors.accentOrangeText),
-              ),
             ),
-          ],
-          const SizedBox(height: 8),
-          const Divider(height: 1),
-          const SizedBox(height: 6),
-
-          // Footer
-          Row(
-            children: [
-              Icon(Icons.person_outline_rounded, size: 12, color: textMuted),
-              const SizedBox(width: 4),
-              Text(
-                'Issued by: $postedBy',
-                style: TextStyle(fontSize: 11.5, color: textMuted),
-              ),
-            ],
           ),
         ],
       ),

@@ -1,3 +1,7 @@
+import '../components/custom_dropdown.dart';
+import '../components/filter_tabs.dart';
+import '../components/cubag_ui.dart';
+import '../components/admin_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../components/app_layout.dart';
@@ -10,10 +14,7 @@ import '../design/cubag_design.dart';
 
 const _kOrange = CubagColors.action;
 const _kGreen = CubagColors.valid;
-const _kBlue = Color(0xFF3B82F6);
-const _kIndigo = Color(0xFF6366F1);
 const _kRed = CubagColors.lapsed;
-const _kSlate = CubagColors.muted;
 
 class AdminCtiCoursesPage extends StatefulWidget {
   const AdminCtiCoursesPage({super.key});
@@ -250,936 +251,307 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final borderColor = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-    final textColor = isDark ? Colors.white : const Color(0xFF1F1612);
-    final subTextColor = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
-
     final total = _courses.length;
     final active = _courses.where((c) => c['is_active'] == true).length;
+    final tab = _tabController.index;
 
     return AppLayout(
       title: 'Courses',
       scrollable: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          AdminHeader(
-            title: 'Courses',
-            subtitle: 'Training courses from the CUBAG Training Institute, and who has enrolled.',
-            actions: [
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: isDark ? Colors.white : CubagColors.inkSoft,
-                  side: BorderSide(color: borderColor),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: _fetchAll,
-                icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: Text('Refresh', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1000),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AdminHeader(
+                title: 'Courses',
+                subtitle: 'Courses from the CUBAG Training Institute, and the members and guests who enrolled.',
+                actions: [
+                  OutlinedButton.icon(
+                    onPressed: _fetchAll,
+                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    label: const Text('Refresh'),
+                  ),
+                  FilledButton.icon(
+                    onPressed: () => _showCourseDialog(),
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text('New course'),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kOrange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  elevation: 0,
-                ),
-                onPressed: () => _showCourseDialog(),
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: Text('New course', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              FilterTabs(
+                tabs: [
+                  ('0', 'Courses · $total'),
+                  ('1', 'Members · ${_enrollments.length}'),
+                  ('2', 'Guests · ${_guestEnrollments.length}'),
+                ],
+                selected: '$tab',
+                onSelected: (k) => setState(() => _tabController.index = int.parse(k)),
               ),
+              const SizedBox(height: CubagSpace.md),
+              if (tab == 0) ..._coursesView(total, active),
+              if (tab == 1) ..._membersView(),
+              if (tab == 2) ..._guestsView(),
+              const SizedBox(height: CubagSpace.xl),
             ],
           ),
-          const SizedBox(height: 14),
-
-          // Streamlined KPI Cards
-          _buildKPIRow(isDark, cardBg, borderColor, textColor, subTextColor, total, active),
-          const SizedBox(height: 16),
-
-          // Clean Tab Bar
-          Container(
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderColor),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicatorColor: _kOrange,
-              labelColor: _kOrange,
-              unselectedLabelColor: subTextColor,
-              labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-              unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-              tabs: [
-                Tab(
-                  icon: const Icon(Icons.school_rounded, size: 16),
-                  text: 'Courses ($total)',
-                ),
-                Tab(
-                  icon: const Icon(Icons.people_alt_rounded, size: 16),
-                  text: 'Members (${_enrollments.length})',
-                ),
-                Tab(
-                  icon: const Icon(Icons.person_pin_rounded, size: 16),
-                  text: 'Guests (${_guestEnrollments.length})',
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Tab Views
-          AnimatedBuilder(
-            animation: _tabController,
-            builder: (context, _) {
-              if (_tabController.index == 0) {
-                return _buildCoursesTab(total, active, isDark, cardBg, borderColor, textColor, subTextColor);
-              } else if (_tabController.index == 1) {
-                return _buildEnrollmentsTab(isDark, cardBg, borderColor, textColor, subTextColor);
-              } else {
-                return _buildGuestEnrollmentsTab(isDark, cardBg, borderColor, textColor, subTextColor);
-              }
-            },
-          ),
-          const SizedBox(height: 24),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildKPIRow(
-    bool isDark,
-    Color cardBg,
-    Color borderColor,
-    Color textColor,
-    Color subTextColor,
-    int total,
-    int active,
-  ) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 750;
-        final cards = [
-          _kpiStat('Courses', '$total', Icons.school_outlined, _kIndigo, cardBg, borderColor, textColor, subTextColor),
-          _kpiStat('Active', '$active', Icons.check_circle_outline_rounded, _kGreen, cardBg, borderColor, textColor, subTextColor),
-          _kpiStat('Members', '${_enrollments.length}', Icons.people_alt_outlined, _kBlue, cardBg, borderColor, textColor, subTextColor),
-          _kpiStat('Guests', '${_guestEnrollments.length}', Icons.person_pin_circle_outlined, _kOrange, cardBg, borderColor, textColor, subTextColor),
-        ];
+  Widget _loadingList() => Column(
+        children: List.generate(
+          3,
+          (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile()),
+        ),
+      );
 
-        if (isWide) {
-          return Row(
-            children: cards.map((c) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: c))).toList(),
-          );
-        }
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: cards.map((c) => Container(width: 160, margin: const EdgeInsets.only(right: 8), child: c)).toList(),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _kpiStat(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-    Color cardBg,
-    Color borderColor,
-    Color textColor,
-    Color subTextColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 16),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textColor),
-                ),
-                Text(
-                  label,
-                  style: TextStyle(fontSize: 11.5, color: subTextColor, fontWeight: FontWeight.w500),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── TAB 1: COURSE CATALOG ──────────────────────────────────────────────────
-  Widget _buildCoursesTab(
-    int total,
-    int active,
-    bool isDark,
-    Color cardBg,
-    Color borderColor,
-    Color textColor,
-    Color subTextColor,
-  ) {
+  List<Widget> _coursesView(int total, int active) {
     final courses = _filteredCourses;
-    final inactive = total - active;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Search & Filter Bar
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 38,
-                  child: TextField(
-                    onChanged: (v) => setState(() => _searchQuery = v.trim()),
-                    style: TextStyle(fontSize: 13.5, color: textColor),
-                    decoration: InputDecoration(
-                      hintText: 'Search courses',
-                      hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
-                      prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
-                      filled: true,
-                      fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _filterPill('All ($total)', _filterTab == 0, () => setState(() => _filterTab = 0), borderColor, textColor),
-                    const SizedBox(width: 6),
-                    _filterPill('Active ($active)', _filterTab == 1, () => setState(() => _filterTab = 1), borderColor, textColor, activeColor: _kGreen),
-                    const SizedBox(width: 6),
-                    _filterPill('Archived ($inactive)', _filterTab == 2, () => setState(() => _filterTab = 2), borderColor, textColor, activeColor: _kSlate),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        if (_loading)
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: List.generate(3, (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile())),
-            ),
-          )
-        else if (courses.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(36),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderColor),
-            ),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(Icons.school_outlined, size: 36, color: subTextColor),
-                  const SizedBox(height: 8),
-                  Text('No courses found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
-                ],
-              ),
-            ),
-          )
-        else
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: courses.length,
-            separatorBuilder: (_, index) => const SizedBox(height: 10),
-            itemBuilder: (ctx, i) {
-              final c = courses[i];
-              final isActive = c['is_active'] == true;
-              final enrolledCount = _getEnrollmentsForCourse(c).length;
-
-              return Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: borderColor),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.02), blurRadius: 4, offset: const Offset(0, 2)),
-                  ],
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: _kOrange.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.school_rounded, color: _kOrange, size: 22),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  c['title'] ?? '',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textColor),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: (isActive ? _kGreen : _kSlate).withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  isActive ? 'ACTIVE' : 'ARCHIVED',
-                                  style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: isActive ? _kGreen : _kSlate),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (c['description'] != null && c['description'].toString().isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              c['description'],
-                              style: TextStyle(fontSize: 12, color: subTextColor, height: 1.3),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: [
-                              _infoBadge(Icons.calendar_today_rounded, '${c['start_date'] ?? 'N/A'}', isDark, subTextColor),
-                              _infoBadge(Icons.timelapse_rounded, '${c['duration'] ?? 'N/A'}', isDark, subTextColor),
-                              _infoBadge(Icons.location_on_outlined, '${c['mode'] ?? 'Hybrid'}', isDark, subTextColor),
-                              _infoBadge(Icons.payments_outlined, '${c['fee'] ?? 'Free'}', isDark, _kOrange),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        // Enrolled button
-                        InkWell(
-                          onTap: () => _showCourseEnrollmentsDialog(c),
-                          borderRadius: BorderRadius.circular(6),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: (enrolledCount > 0 ? _kGreen : _kOrange).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: (enrolledCount > 0 ? _kGreen : _kOrange).withValues(alpha: 0.3)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.people_alt_rounded, size: 12, color: enrolledCount > 0 ? _kGreen : _kOrange),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '$enrolledCount Enrolled',
-                                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: enrolledCount > 0 ? _kGreen : _kOrange),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit_outlined, size: 16),
-                              color: _kBlue,
-                              tooltip: 'Edit Course',
-                              visualDensity: VisualDensity.compact,
-                              onPressed: () => _showCourseDialog(c),
-                            ),
-                            if (isActive)
-                              IconButton(
-                                icon: const Icon(Icons.archive_outlined, size: 16),
-                                color: _kOrange,
-                                tooltip: 'Archive',
-                                visualDensity: VisualDensity.compact,
-                                onPressed: () => _deleteCourse(c),
-                              )
-                            else ...[
-                              IconButton(
-                                icon: const Icon(Icons.restore_from_trash_rounded, size: 16),
-                                color: _kGreen,
-                                tooltip: 'Restore',
-                                visualDensity: VisualDensity.compact,
-                                onPressed: () => _restoreCourse(c),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_forever_rounded, size: 16),
-                                color: _kRed,
-                                tooltip: 'Delete Permanently',
-                                visualDensity: VisualDensity.compact,
-                                onPressed: () => _deleteCourse(c, permanent: true),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-      ],
-    );
+    return [
+      AdminFigureStrip(figures: [
+        AdminFigure('All', '$total', selected: _filterTab == 0, onTap: () => setState(() => _filterTab = 0)),
+        AdminFigure('Open for enrolment', '$active', selected: _filterTab == 1, onTap: () => setState(() => _filterTab = 1)),
+        AdminFigure('Archived', '${total - active}', selected: _filterTab == 2, onTap: () => setState(() => _filterTab = 2)),
+      ]),
+      const SizedBox(height: CubagSpace.md),
+      AdminSearchField(hint: 'Search courses', onChanged: (v) => setState(() => _searchQuery = v)),
+      const SizedBox(height: CubagSpace.md),
+      if (_loading)
+        _loadingList()
+      else if (courses.isEmpty)
+        EmptyMessage(
+          icon: Icons.school_outlined,
+          title: total == 0 ? 'No courses yet' : 'No courses match',
+          message: total == 0
+              ? 'Add a course and members can enrol and pay from the app.'
+              : 'Try another filter, or clear the search.',
+        )
+      else
+        AdminRowGroup(dividerIndent: 68, children: [for (final c in courses) _courseRow(c)]),
+    ];
   }
 
-  // ── TAB 2: MEMBER ENROLLED ─────────────────────────────────────────────────
-  Widget _buildEnrollmentsTab(
-    bool isDark,
-    Color cardBg,
-    Color borderColor,
-    Color textColor,
-    Color subTextColor,
-  ) {
-    final filteredList = _filteredEnrollments;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Filter toolbar
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 38,
-                      child: TextField(
-                        onChanged: (v) => setState(() => _enrollmentSearchQuery = v.trim()),
-                        style: TextStyle(fontSize: 13.5, color: textColor),
-                        decoration: InputDecoration(
-                          hintText: 'Search members',
-                          hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
-                          prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
-                          filled: true,
-                          fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _coursePill('All Courses (${_enrollments.length})', 'all', isDark, borderColor, textColor),
-                    ..._courses.map((c) {
-                      final cId = c['id']?.toString() ?? '';
-                      final cTitle = c['title'] ?? 'Course';
-                      final count = _getEnrollmentsForCourse(c).length;
-                      return Padding(
-                        padding: const EdgeInsets.only(left: 6),
-                        child: _coursePill('$cTitle ($count)', cId, isDark, borderColor, textColor),
-                      );
-                    }),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        if (_loadingEnrollments)
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: List.generate(3, (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile())),
-            ),
-          )
-        else if (filteredList.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(36),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderColor),
-            ),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(Icons.people_outline_rounded, size: 36, color: subTextColor),
-                  const SizedBox(height: 8),
-                  Text('No enrolled members found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
-                ],
-              ),
-            ),
-          )
-        else
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: filteredList.length,
-            separatorBuilder: (_, index) => const SizedBox(height: 8),
-            itemBuilder: (ctx, i) {
-              final en = filteredList[i];
-              final memberName = en['member_name'] ?? 'Enrolled Member';
-              final company = en['company'] ?? 'Licensed Member';
-              final courseTitle = en['course_title'] ?? 'CTI Course';
-              final mode = en['mode'] ?? 'Hybrid';
-              final amount = en['amount']?.toString() ?? '0.00';
-              final paymentRef = en['payment_ref'] ?? 'N/A';
-              final phone = en['phone'] ?? 'N/A';
-              final email = en['email'] ?? 'N/A';
-              final enrolledDate = en['created_at']?.toString().split('T').first ?? '';
-
-              return Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: _kGreen.withValues(alpha: 0.12),
-                      child: Text(
-                        memberName.isNotEmpty ? memberName[0].toUpperCase() : 'M',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: _kGreen),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(memberName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: textColor)),
-                              if (company.isNotEmpty) ...[
-                                const SizedBox(width: 6),
-                                Text('• $company', style: TextStyle(fontSize: 11.5, color: AppColors.accentOrangeText, fontWeight: FontWeight.w500)),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text('Course: $courseTitle ($mode)', style: TextStyle(fontSize: 12, color: textColor, fontWeight: FontWeight.w500)),
-                          Text('Ref: $paymentRef • GHS $amount • $phone • $email ${enrolledDate.isNotEmpty ? '• Date: $enrolledDate' : ''}', style: TextStyle(fontSize: 11, color: subTextColor)),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: _kGreen.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text('Paid & enrolled', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: _kGreen)),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-      ],
-    );
-  }
-
-  // ── TAB 3: GUEST ENROLLED & PAID ───────────────────────────────────────────
-  Widget _buildGuestEnrollmentsTab(
-    bool isDark,
-    Color cardBg,
-    Color borderColor,
-    Color textColor,
-    Color subTextColor,
-  ) {
-    final filtered = _filteredGuestEnrollments;
-    final totalGuests = _guestEnrollments.length;
-    final paidGuests = _guestEnrollments.where((e) {
-      final st = (e['status'] ?? '').toString().toLowerCase();
-      return st == 'paid' || st == 'completed' || st == 'success';
-    }).length;
-    final pendingGuests = totalGuests - paidGuests;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Controls toolbar
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 38,
-                      child: TextField(
-                        onChanged: (v) => setState(() => _guestSearchQuery = v.trim()),
-                        style: TextStyle(fontSize: 13.5, color: textColor),
-                        decoration: InputDecoration(
-                          hintText: 'Search guests',
-                          hintStyle: TextStyle(fontSize: 12.5, color: subTextColor),
-                          prefixIcon: Icon(Icons.search_rounded, size: 16, color: subTextColor),
-                          filled: true,
-                          fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 10),
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (filtered.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        final roster = filtered.map((e) {
-                          final name = e['guest_name'] ?? 'Guest';
-                          final phone = e['phone'] ?? '';
-                          final email = e['email'] ?? '';
-                          final course = e['course_title'] ?? 'CTI Course';
-                          final ref = e['reference_no'] ?? '';
-                          final status = e['status'] ?? 'paid';
-                          return '$name | $phone | $email | Course: $course | Ref: $ref | Status: $status';
-                        }).join('\n');
-                        Clipboard.setData(ClipboardData(text: roster));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Guest roster copied to clipboard!'),
-                            backgroundColor: _kGreen,
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.copy_rounded, size: 14),
-                      label: Text('Copy Roster', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _kOrange,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        elevation: 0,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  _filterPill('All Status ($totalGuests)', _guestStatusFilter == 'all', () => setState(() => _guestStatusFilter = 'all'), borderColor, textColor),
-                  const SizedBox(width: 6),
-                  _filterPill('Paid ($paidGuests)', _guestStatusFilter == 'paid', () => setState(() => _guestStatusFilter = 'paid'), borderColor, textColor, activeColor: _kGreen),
-                  const SizedBox(width: 6),
-                  _filterPill('Pending ($pendingGuests)', _guestStatusFilter == 'pending', () => setState(() => _guestStatusFilter = 'pending'), borderColor, textColor, activeColor: _kOrange),
-                ],
-              ),
-              const SizedBox(height: 8),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _coursePill('All Courses', 'all', isDark, borderColor, textColor),
-                    ..._courses.map((c) {
-                      final cTitle = c['title']?.toString() ?? 'Course';
-                      final isSel = _guestCourseFilter.toLowerCase() == cTitle.toLowerCase();
-                      return Padding(
-                        padding: const EdgeInsets.only(left: 6),
-                        child: InkWell(
-                          onTap: () => setState(() => _guestCourseFilter = isSel ? 'all' : cTitle),
-                          borderRadius: BorderRadius.circular(6),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: isSel ? _kIndigo : (isDark ? CubagColors.ink : CubagColors.sand),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: isSel ? _kIndigo : borderColor),
-                            ),
-                            child: Text(
-                              cTitle,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: isSel ? FontWeight.bold : FontWeight.w600,
-                                color: isSel ? Colors.white : (isDark ? Colors.white70 : CubagColors.inkSoft),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        if (_loadingGuestEnrollments)
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: List.generate(3, (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile())),
-            ),
-          )
-        else if (filtered.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(36),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderColor),
-            ),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(Icons.person_search_rounded, size: 36, color: subTextColor),
-                  const SizedBox(height: 8),
-                  Text('No guest course enrollments found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
-                ],
-              ),
-            ),
-          )
-        else
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: filtered.length,
-            separatorBuilder: (_, index) => const SizedBox(height: 8),
-            itemBuilder: (ctx, i) {
-              final g = filtered[i];
-              final name = g['guest_name']?.toString() ?? 'Guest Student';
-              final phone = g['phone']?.toString() ?? '';
-              final email = g['email']?.toString() ?? '';
-              final course = g['course_title']?.toString() ?? 'CTI Course';
-              final rawRef = g['reference_no']?.toString() ?? '';
-              final ctiRef = rawRef.replaceAll('GSR-', 'CTI-');
-              final amount = g['amount']?.toString() ?? '1500.00';
-              final status = (g['status']?.toString() ?? 'paid').toLowerCase();
-              final isPaid = status == 'paid' || status == 'completed' || status == 'success';
-              final dateStr = g['created_at']?.toString().split('T').first ?? '';
-
-              return Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: isPaid ? _kGreen.withValues(alpha: 0.12) : _kOrange.withValues(alpha: 0.12),
-                      child: Text(
-                        name.isNotEmpty ? name[0].toUpperCase() : 'G',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: isPaid ? _kGreen : _kOrange),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: textColor)),
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                decoration: BoxDecoration(
-                                  color: _kIndigo.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text('Guest', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: _kIndigo)),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text('Course: $course • Fee: GHS $amount', style: TextStyle(fontSize: 12, color: textColor, fontWeight: FontWeight.w500)),
-                          Text('Ref: $ctiRef • $phone • $email ${dateStr.isNotEmpty ? '• Date: $dateStr' : ''}', style: TextStyle(fontSize: 11, color: subTextColor)),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: (isPaid ? _kGreen : _kOrange).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            isPaid ? 'PAID' : 'PENDING',
-                            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: isPaid ? _kGreen : _kOrange),
-                          ),
-                        ),
-                        if (!isPaid) ...[
-                          const SizedBox(height: 4),
-                          InkWell(
-                            onTap: () => _markGuestPaid(rawRef),
-                            child: Text(
-                              'Mark Paid',
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _kGreen),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-      ],
-    );
-  }
-
-  // ── HELPER WIDGETS & DIALOGS ───────────────────────────────────────────────
-  Widget _infoBadge(IconData icon, String text, bool isDark, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.15 : 0.08),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 11, color: color),
-          const SizedBox(width: 4),
-          Text(text, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+  Widget _courseRow(dynamic c) {
+    final isActive = c['is_active'] == true;
+    final enrolled = _getEnrollmentsForCourse(c).length;
+    final fee = '${c['fee'] ?? ''}'.trim();
+    return AdminListRow(
+      leading: AdminRowMark(icon: Icons.school_outlined, color: isActive ? CubagColors.cocoa : CubagColors.muted),
+      title: c['title']?.toString() ?? '',
+      subtitle: [
+        if ((c['start_date'] ?? '').toString().isNotEmpty) 'Starts ${c['start_date']}',
+        if ((c['duration'] ?? '').toString().isNotEmpty) '${c['duration']}',
+        if ((c['mode'] ?? '').toString().isNotEmpty) '${c['mode']}',
+      ].join(' · '),
+      meta: [
+        fee.isEmpty || fee == '0' ? 'Free' : (fee.contains('GH') ? fee : 'GH₵ $fee'),
+        enrolled == 1 ? '1 member enrolled' : '$enrolled members enrolled',
+      ].join(' · '),
+      status: isActive ? const StatusChip('Open', kind: StatusKind.good) : const StatusChip('Archived'),
+      onTap: () => _showCourseEnrollmentsDialog(c),
+      trailing: PopupMenuButton<String>(
+        tooltip: 'More',
+        icon: const Icon(Icons.more_vert_rounded, color: CubagColors.muted),
+        onSelected: (v) {
+          switch (v) {
+            case 'enrolled':
+              _showCourseEnrollmentsDialog(c);
+            case 'edit':
+              _showCourseDialog(c);
+            case 'archive':
+              _deleteCourse(c);
+            case 'restore':
+              _restoreCourse(c);
+            case 'delete':
+              _deleteCourse(c, permanent: true);
+          }
+        },
+        itemBuilder: (_) => [
+          const PopupMenuItem(value: 'enrolled', child: Text('Who enrolled')),
+          const PopupMenuItem(value: 'edit', child: Text('Edit')),
+          if (isActive)
+            const PopupMenuItem(value: 'archive', child: Text('Archive'))
+          else ...[
+            const PopupMenuItem(value: 'restore', child: Text('Restore')),
+            PopupMenuItem(value: 'delete', child: Text('Delete for good', style: TextStyle(color: CubagColors.lapsed))),
+          ],
         ],
       ),
     );
   }
 
-  Widget _filterPill(String label, bool isSelected, VoidCallback onTap, Color borderColor, Color textColor, {Color? activeColor}) {
-    final col = activeColor ?? _kOrange;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? col : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: isSelected ? col : borderColor),
+  Widget _courseFilter(String selected, ValueChanged<String> onChanged) => SizedBox(
+        width: 240,
+        child: CustomDropdown<String>(
+          value: selected,
+          items: [
+            const DropdownItem(value: 'all', label: 'All courses'),
+            for (final c in _courses)
+              DropdownItem(value: (c['title'] ?? '').toString(), label: (c['title'] ?? 'Course').toString()),
+          ],
+          onChanged: onChanged,
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11.5,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            color: isSelected ? Colors.white : textColor,
-          ),
-        ),
+      );
+
+  Widget _searchAndCourse(String hint, ValueChanged<String> onSearch, Widget course) => LayoutBuilder(
+        builder: (context, c) {
+          final search = AdminSearchField(hint: hint, onChanged: onSearch);
+          if (c.maxWidth < 560) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [search, const SizedBox(height: CubagSpace.xs), course],
+            );
+          }
+          return Row(children: [Expanded(child: search), const SizedBox(width: CubagSpace.sm), course]);
+        },
+      );
+
+  List<Widget> _membersView() {
+    final list = _filteredEnrollments;
+    final courseKey = _enrollmentCourseFilter == 'all'
+        ? 'all'
+        : (_courses.firstWhere(
+              (c) => c['id']?.toString() == _enrollmentCourseFilter,
+              orElse: () => {'title': 'all'},
+            )['title'] ??
+            'all').toString();
+    return [
+      _searchAndCourse(
+        'Search name, company or reference',
+        (v) => setState(() => _enrollmentSearchQuery = v),
+        _courseFilter(courseKey, (title) {
+          setState(() {
+            _enrollmentCourseFilter = title == 'all'
+                ? 'all'
+                : (_courses.firstWhere((c) => (c['title'] ?? '').toString() == title, orElse: () => {'id': 'all'})['id'] ?? 'all')
+                    .toString();
+          });
+        }),
       ),
-    );
+      const SizedBox(height: CubagSpace.md),
+      if (_loadingEnrollments)
+        _loadingList()
+      else if (list.isEmpty)
+        const EmptyMessage(
+          icon: Icons.people_outline_rounded,
+          title: 'No members enrolled',
+          message: 'Members who enrol and pay in the app appear here.',
+        )
+      else
+        AdminRowGroup(
+          dividerIndent: 68,
+          children: [
+            for (final en in list)
+              AdminListRow(
+                leading: AdminRowMark(initials: adminInitials((en['member_name'] ?? '').toString())),
+                title: (en['member_name'] ?? 'Member').toString(),
+                subtitle: [
+                  (en['course_title'] ?? 'Course').toString(),
+                  if ((en['company'] ?? '').toString().isNotEmpty) en['company'].toString(),
+                ].join(' · '),
+                meta: [
+                  'GH₵ ${en['amount'] ?? '0.00'}',
+                  if ((en['payment_ref'] ?? '').toString().isNotEmpty) 'Ref ${en['payment_ref']}',
+                  if ((en['created_at'] ?? '').toString().isNotEmpty) en['created_at'].toString().split('T').first,
+                ].join(' · '),
+                status: const StatusChip('Paid', kind: StatusKind.good),
+              ),
+          ],
+        ),
+    ];
   }
 
-  Widget _coursePill(String label, String value, bool isDark, Color borderColor, Color textColor) {
-    final isSelected = _enrollmentCourseFilter == value;
-    return InkWell(
-      onTap: () => setState(() => _enrollmentCourseFilter = value),
-      borderRadius: BorderRadius.circular(6),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: isSelected ? _kOrange : (isDark ? CubagColors.ink : CubagColors.sand),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: isSelected ? _kOrange : borderColor),
+  List<Widget> _guestsView() {
+    final filtered = _filteredGuestEnrollments;
+    bool paid(dynamic e) => const {'paid', 'completed', 'success'}.contains((e['status'] ?? '').toString().toLowerCase());
+    final totalGuests = _guestEnrollments.length;
+    final paidGuests = _guestEnrollments.where(paid).length;
+
+    return [
+      AdminFigureStrip(figures: [
+        AdminFigure('All guests', '$totalGuests', selected: _guestStatusFilter == 'all', onTap: () => setState(() => _guestStatusFilter = 'all')),
+        AdminFigure('Paid', '$paidGuests', color: CubagColors.valid, selected: _guestStatusFilter == 'paid', onTap: () => setState(() => _guestStatusFilter = 'paid')),
+        AdminFigure(
+          'Not paid yet',
+          '${totalGuests - paidGuests}',
+          color: totalGuests - paidGuests > 0 ? CubagColors.due : null,
+          selected: _guestStatusFilter == 'pending',
+          onTap: () => setState(() => _guestStatusFilter = 'pending'),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11.5,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-            color: isSelected ? Colors.white : (isDark ? Colors.white70 : CubagColors.inkSoft),
+      ]),
+      const SizedBox(height: CubagSpace.md),
+      _searchAndCourse(
+        'Search name, phone or reference',
+        (v) => setState(() => _guestSearchQuery = v),
+        _courseFilter(_guestCourseFilter, (t) => setState(() => _guestCourseFilter = t)),
+      ),
+      const SizedBox(height: CubagSpace.md),
+      if (_loadingGuestEnrollments)
+        _loadingList()
+      else if (filtered.isEmpty)
+        const EmptyMessage(
+          icon: Icons.person_outline_rounded,
+          title: 'No guest enrolments',
+          message: 'People who are not members can enrol from the public course page. They appear here.',
+        )
+      else ...[
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: () {
+              final roster = filtered.map((e) {
+                return '${e['guest_name'] ?? 'Guest'} | ${e['phone'] ?? ''} | ${e['email'] ?? ''} | '
+                    'Course: ${e['course_title'] ?? ''} | Ref: ${e['reference_no'] ?? ''} | Status: ${e['status'] ?? ''}';
+              }).join('\n');
+              Clipboard.setData(ClipboardData(text: roster));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Guest list copied'), behavior: SnackBarBehavior.floating),
+              );
+            },
+            icon: const Icon(Icons.copy_rounded, size: 16),
+            label: const Text('Copy this list'),
           ),
         ),
-      ),
-    );
+        AdminRowGroup(
+          dividerIndent: 68,
+          children: [
+            for (final g in filtered)
+              () {
+                final rawRef = g['reference_no']?.toString() ?? '';
+                final isPaid = paid(g);
+                return AdminListRow(
+                  leading: AdminRowMark(initials: adminInitials((g['guest_name'] ?? '').toString())),
+                  title: (g['guest_name'] ?? 'Guest').toString(),
+                  subtitle: [
+                    (g['course_title'] ?? 'Course').toString(),
+                    'GH₵ ${g['amount'] ?? '—'}',
+                  ].join(' · '),
+                  meta: [
+                    if (rawRef.isNotEmpty) rawRef.replaceAll('GSR-', 'CTI-'),
+                    if ((g['phone'] ?? '').toString().isNotEmpty) g['phone'].toString(),
+                    if ((g['created_at'] ?? '').toString().isNotEmpty) g['created_at'].toString().split('T').first,
+                  ].join(' · '),
+                  status: isPaid
+                      ? const StatusChip('Paid', kind: StatusKind.good)
+                      : const StatusChip('Not paid', kind: StatusKind.pending),
+                  trailing: isPaid
+                      ? null
+                      : Padding(
+                          padding: const EdgeInsets.only(left: CubagSpace.xs),
+                          child: OutlinedButton(
+                            onPressed: rawRef.isEmpty ? null : () => _markGuestPaid(rawRef),
+                            child: const Text('Mark paid'),
+                          ),
+                        ),
+                );
+              }(),
+          ],
+        ),
+      ],
+    ];
   }
 
   void _showCourseEnrollmentsDialog(dynamic course) {

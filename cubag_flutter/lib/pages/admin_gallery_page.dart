@@ -1,3 +1,5 @@
+import '../components/filter_tabs.dart';
+import '../components/admin_list.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -10,8 +12,6 @@ import '../utils/app_logger.dart';
 import '../design/cubag_design.dart';
 
 const _kOrange = CubagColors.action;
-const _kGreen = CubagColors.valid;
-const _kCardBg = Color(0xFF22140E);
 
 class AdminGalleryPage extends StatefulWidget {
   const AdminGalleryPage({super.key});
@@ -591,330 +591,146 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
-    final borderCol = isDark
-        ? const Color(0xFF3D261C)
-        : CubagColors.line;
-
-    final total = _items.length;
-    final active = _items.where((i) => i['is_active'] == true).length;
+    final items = _filteredItems;
+    final shown = _items.where((i) => i['is_active'] == true).length;
 
     return AppLayout(
       title: 'Gallery',
       scrollable: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AdminHeader(
-            title: 'Gallery',
-            subtitle:
-                'Photos shown to members in the app, grouped by topic.',
-            actions: [
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kAdminOrange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                onPressed: () => _showGalleryDialog(),
-                icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
-                label: Text(
-                  'Upload Photo',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // Metric Stats Cards
-          Row(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Photos',
-                  value: '$total',
-                  icon: Icons.photo_library_outlined,
-                  color: kAdminBlue,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Live',
-                  value: '$active',
-                  icon: Icons.check_circle_outline_rounded,
-                  color: kAdminGreen,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Categories',
-                  value: '4 Categories',
-                  icon: Icons.category_outlined,
-                  color: kAdminOrange,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Category Chips & Search Bar
-          AdminToolbar(
-            searchHint: 'Search photos',
-            onSearchChanged: (v) => setState(() => _searchQuery = v),
-            filters: _categories.map((cat) {
-              final isSel = _categoryFilter == cat;
-              return AdminFilterChip(
-                label: cat,
-                isSelected: isSel,
-                onTap: () => setState(() => _categoryFilter = cat),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 16),
-
-          // Content Grid / List
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.all(40),
-              child: Center(child: CircularProgressIndicator(color: _kOrange)),
-            )
-          else if (_error != null)
-            Center(
-              child: Text(_error!, style: const TextStyle(color: Colors.red)),
-            )
-          else if (_filteredItems.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(40),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderCol),
-              ),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.photo_library_outlined,
-                    size: 48,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'No gallery items match your filter.',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                    ),
+              AdminHeader(
+                title: 'Gallery',
+                subtitle: 'Photos members see in the app. $shown of ${_items.length} shown. Hide a photo to take it down without deleting it.',
+                actions: [
+                  FilledButton.icon(
+                    onPressed: () => _showGalleryDialog(),
+                    icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
+                    label: const Text('Add photo'),
                   ),
                 ],
               ),
-            )
-          else
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 360,
-                mainAxisSpacing: 14,
-                crossAxisSpacing: 14,
-                childAspectRatio: 1.05,
+              FilterTabs(
+                tabs: [for (final c in _categories) (c, c == 'All' ? 'All' : c)],
+                selected: _categoryFilter,
+                onSelected: (c) => setState(() => _categoryFilter = c),
               ),
-              itemCount: _filteredItems.length,
-              itemBuilder: (ctx, i) {
-                final it = _filteredItems[i];
-                final isActive = it['is_active'] == true;
-                final grad0 = _parseColor(
-                  it['grad_start']?.toString() ?? '#6B3E26',
-                );
-                final grad1 = _parseColor(
-                  it['grad_end']?.toString() ?? '#3E2418',
-                );
-                final imgUrl = it['image_url']?.toString() ?? '';
-
-                return Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [grad0, grad1],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(20),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+              const SizedBox(height: CubagSpace.sm),
+              AdminSearchField(
+                hint: 'Search photo titles',
+                onChanged: (v) => setState(() => _searchQuery = v),
+              ),
+              const SizedBox(height: CubagSpace.md),
+              if (_loading)
+                const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()))
+              else if (_error != null)
+                EmptyMessage(
+                  icon: Icons.cloud_off_rounded,
+                  title: 'Could not load the gallery',
+                  message: _error,
+                  action: OutlinedButton(onPressed: _fetchGallery, child: const Text('Try again')),
+                )
+              else if (items.isEmpty)
+                EmptyMessage(
+                  icon: Icons.photo_library_outlined,
+                  title: _items.isEmpty ? 'No photos yet' : 'No photos match',
+                  message: _items.isEmpty
+                      ? 'Add photos from meetings and events. Members see them in the app.'
+                      : 'Try another topic, or clear the search.',
+                )
+              else
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 320,
+                    mainAxisSpacing: CubagSpace.md,
+                    crossAxisSpacing: CubagSpace.md,
+                    mainAxisExtent: 290,
                   ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Stack(
-                    children: [
-                      // If photo attachment URL is present, show image at full opacity with crisp gradient overlay
-                      if (imgUrl.isNotEmpty) ...[
-                        Positioned.fill(
-                          child: CorsImageWidget(
-                            url: ApiService.resolveImageUrl(imgUrl),
-                            fit: BoxFit.cover,
-                            errorWidget: const SizedBox(),
-                          ),
-                        ),
-                        Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.black.withAlpha(90),
-                                  Colors.transparent,
-                                  Colors.black.withAlpha(190),
-                                ],
-                                stops: const [0.0, 0.4, 1.0],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 9,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withAlpha(120),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    it['category']?.toString() ?? 'Conferences',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      constraints: const BoxConstraints(),
-                                      padding: EdgeInsets.zero,
-                                      icon: const Icon(
-                                        Icons.edit_outlined,
-                                        color: Colors.white,
-                                        size: 18,
-                                      ),
-                                      tooltip: 'Edit',
-                                      onPressed: () => _showGalleryDialog(it),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    IconButton(
-                                      constraints: const BoxConstraints(),
-                                      padding: EdgeInsets.zero,
-                                      icon: const Icon(
-                                        Icons.delete_outline_rounded,
-                                        color: Colors.white70,
-                                        size: 18,
-                                      ),
-                                      tooltip: 'Archive',
-                                      onPressed: () => _deleteItem(it),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  it['title']?.toString() ?? '',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    shadows: const [
-                                      Shadow(
-                                        color: Colors.black87,
-                                        blurRadius: 4,
-                                      ),
-                                    ],
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      isActive ? '● Active' : '○ Hidden',
-                                      style: TextStyle(
-                                        color: isActive
-                                            ? _kGreen
-                                            : Colors.white60,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold,
-                                        shadows: const [
-                                          Shadow(
-                                            color: Colors.black87,
-                                            blurRadius: 4,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Switch(
-                                      value: isActive,
-                                      activeThumbColor: _kGreen,
-                                      onChanged: (_) => _toggleStatus(it),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-        ],
+                  itemCount: items.length,
+                  itemBuilder: (context, i) => _photoTile(items[i]),
+                ),
+              const SizedBox(height: CubagSpace.xl),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Color _parseColor(String hex) {
-    try {
-      final s = hex.replaceAll('#', '');
-      return Color(int.parse('FF$s', radix: 16));
-    } catch (_) {
-      return const Color(0xFF6B3E26);
-    }
+  Widget _photoTile(dynamic it) {
+    final isActive = it['is_active'] == true;
+    final imgUrl = it['image_url']?.toString() ?? '';
+    final title = it['title']?.toString() ?? '';
+    final category = it['category']?.toString() ?? '';
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: CubagColors.paper,
+        borderRadius: BorderRadius.circular(CubagRadius.card),
+        border: Border.all(color: CubagColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: Opacity(
+              opacity: isActive ? 1 : 0.45,
+              child: Container(
+                color: CubagColors.sand,
+                child: imgUrl.isEmpty
+                    ? const Icon(Icons.image_outlined, size: 40, color: CubagColors.muted)
+                    : CorsImageWidget(
+                        url: ApiService.resolveImageUrl(imgUrl),
+                        fit: BoxFit.cover,
+                        errorWidget: const Icon(Icons.broken_image_outlined, size: 32, color: CubagColors.muted),
+                      ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(CubagSpace.md, CubagSpace.sm, CubagSpace.md, 0),
+            child: Text(title, style: CubagType.bodyStrong, maxLines: 2, overflow: TextOverflow.ellipsis),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(CubagSpace.md, 0, 0, CubagSpace.xxs),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    [if (category.isNotEmpty) category, isActive ? 'Shown' : 'Hidden'].join(' · '),
+                    style: CubagType.caption,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Tooltip(
+                  message: isActive ? 'Shown to members' : 'Hidden from members',
+                  child: Switch(value: isActive, onChanged: (_) => _toggleStatus(it)),
+                ),
+                PopupMenuButton<String>(
+                  tooltip: 'More',
+                  icon: const Icon(Icons.more_vert_rounded, color: CubagColors.muted),
+                  onSelected: (v) {
+                    if (v == 'edit') _showGalleryDialog(it);
+                    if (v == 'delete') _deleteItem(it);
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                    PopupMenuItem(value: 'delete', child: Text('Archive', style: TextStyle(color: CubagColors.lapsed))),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

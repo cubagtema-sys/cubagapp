@@ -1,3 +1,6 @@
+import '../components/filter_tabs.dart';
+import '../components/cubag_ui.dart';
+import '../components/admin_list.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../components/app_layout.dart';
@@ -6,14 +9,10 @@ import '../services/api_service.dart';
 import '../components/fetch_error_view.dart';
 import 'admin_qr_scanner_page.dart';
 import '../utils/app_logger.dart';
-import '../utils/app_colors.dart';
 import '../design/cubag_design.dart';
 
 const _kOrange = CubagColors.action;
-const _kGreen = CubagColors.valid;
-const _kBlue = Color(0xFF3b82f6);
 const _kRed = CubagColors.lapsed;
-const _kCardBg = Color(0xFF22140E);
 
 class AdminEventsPage extends StatefulWidget {
   const AdminEventsPage({super.key});
@@ -486,516 +485,163 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
-    final borderCol = isDark
-        ? const Color(0xFF3D261C)
-        : CubagColors.line;
-    final headerBg = isDark
-        ? CubagColors.ink
-        : const Color(0xFFFAF6F0);
-    final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
-    final subTextCol = isDark
-        ? const Color(0xFFB0A298)
-        : const Color(0xFF6B5E55);
-
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     final total = _events.length;
     final upcomingCount = _events.where((ev) {
-      final dStr = ev['date']?.toString().split('T')[0] ?? '';
-      final parsed = DateTime.tryParse(dStr);
-      return parsed != null &&
-          !parsed.isBefore(DateTime(now.year, now.month, now.day));
+      final parsed = DateTime.tryParse(ev['date']?.toString().split('T')[0] ?? '');
+      return parsed != null && !parsed.isBefore(today);
     }).length;
     final pastCount = total - upcomingCount;
+    AdminFigure fig(String label, String key, int n) => AdminFigure(
+          label,
+          '$n',
+          selected: _filterStatus == key,
+          onTap: () => setState(() => _filterStatus = key),
+        );
 
     return AppLayout(
       title: 'Events',
       scrollable: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AdminHeader(
-            title: 'Events',
-            subtitle:
-                'Meetings and events, who is coming, and check-in on the day.',
-            actions: [
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: kAdminOrange,
-                  side: const BorderSide(color: kAdminOrange, width: 1.2),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AdminQrScannerPage(
-                        onScan: (memberId) {
-                          context.push('/verify-member/$memberId');
-                        },
-                      ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
-                label: Text(
-                  'Scan tickets',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kAdminOrange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                onPressed: () => _showEventDialog(),
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: Text(
-                  'New event',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // ── Metric Stats Cards ───────────────────────────────────────────────
-          Row(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1000),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Total',
-                  value: '$total',
-                  icon: Icons.event_note_outlined,
-                  color: kAdminBlue,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Upcoming',
-                  value: '$upcomingCount',
-                  icon: Icons.upcoming_outlined,
-                  color: kAdminGreen,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Past',
-                  value: '$pastCount',
-                  icon: Icons.history_rounded,
-                  color: kAdminOrange,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // ── Search Bar & Filter Tabs ─────────────────────────────────────────
-          AdminToolbar(
-            searchHint: 'Search events',
-            onSearchChanged: (v) => setState(() => _searchQuery = v),
-            filters: [
-              _filterChip('All', 'all'),
-              _filterChip('Upcoming', 'upcoming'),
-              _filterChip('Past', 'past'),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // ── Tabular Events Table ─────────────────────────────────────────────
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.all(40),
-              child: Center(child: CircularProgressIndicator(color: _kOrange)),
-            )
-          else if (_hasError)
-            FetchErrorView(onRetry: () => _fetch(refresh: true))
-          else if (_filteredEvents.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(48),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderCol),
-              ),
-              child: Column(
-                children: [
-                  Icon(Icons.event_busy_outlined, size: 48, color: subTextCol),
-                  const SizedBox(height: 12),
-                  Text(
-                    'No events match your current filter.',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                      color: textCol,
-                    ),
+              AdminHeader(
+                title: 'Events',
+                subtitle: 'Meetings and events members can see and sign up for. Open one for its attendee list; scan tickets at the door.',
+                actions: [
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AdminQrScannerPage(
+                            onScan: (memberId) => context.push('/verify-member/$memberId'),
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
+                    label: const Text('Scan tickets'),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Create a new event or adjust your search filter.',
-                    style: TextStyle(fontSize: 17, color: subTextCol),
+                  FilledButton.icon(
+                    onPressed: () => _showEventDialog(),
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text('New event'),
                   ),
                 ],
               ),
-            )
-          else
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderCol),
+              AdminFigureStrip(figures: [
+                fig('All', 'all', total),
+                fig('Upcoming', 'upcoming', upcomingCount),
+                fig('Past', 'past', pastCount),
+              ]),
+              const SizedBox(height: CubagSpace.md),
+              AdminSearchField(
+                hint: 'Search title or venue',
+                onChanged: (v) => setState(() => _searchQuery = v),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minWidth: constraints.maxWidth,
-                        ),
-                        child: DataTable(
-                          headingRowColor: WidgetStateProperty.all(headerBg),
-                          headingTextStyle: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                            color: subTextCol,
-                          ),
-                          dataTextStyle: TextStyle(
-                            fontSize: 17,
-                            color: textCol,
-                          ),
-                          columnSpacing: 24,
-                          horizontalMargin: 24,
-                          dataRowMinHeight: 64,
-                          dataRowMaxHeight: 76,
-                          columns: const [
-                            DataColumn(label: Text('Event')),
-                            DataColumn(label: Text('Date & time')),
-                            DataColumn(label: Text('Venue')),
-                            DataColumn(label: Text('Attendees')),
-                            DataColumn(label: Text('Status')),
-                            DataColumn(label: Text('Actions')),
-                          ],
-                          rows: _filteredEvents.map((ev) {
-                            final title =
-                                ev['title']?.toString() ?? 'Untitled Event';
-                            final desc = ev['description']?.toString() ?? '';
-                            final location =
-                                ev['location']?.toString() ?? 'TBD';
-                            final rawDate =
-                                ev['date']?.toString().split('T')[0] ?? '';
-                            final time = ev['time']?.toString() ?? '';
-                            final attendeeCount =
-                                ev['attendees_count'] ??
-                                ev['attendee_count'] ??
-                                0;
-
-                            final parsed = DateTime.tryParse(rawDate);
-                            final isPast =
-                                parsed != null &&
-                                parsed.isBefore(
-                                  DateTime(now.year, now.month, now.day),
-                                );
-
-                            return DataRow(
-                              cells: [
-                                // 1. Title & Description Excerpt
-                                DataCell(
-                                  Container(
-                                    constraints: BoxConstraints(
-                                      minWidth: 200,
-                                      maxWidth: constraints.maxWidth > 900
-                                          ? constraints.maxWidth * 0.28
-                                          : 280,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          title,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 18,
-                                            color: textCol,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        if (desc.isNotEmpty) ...[
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            desc,
-                                            style: TextStyle(
-                                              fontSize: 15,
-                                              color: subTextCol,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                ),
-
-                                // 2. Date & Time
-                                DataCell(
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 9,
-                                          vertical: 5,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: _kOrange.withAlpha(20),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.calendar_today_rounded,
-                                              size: 13,
-                                              color: _kOrange,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              rawDate.isNotEmpty
-                                                  ? rawDate
-                                                  : 'No Date',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                                color: AppColors.accentOrangeText,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      if (time.isNotEmpty) ...[
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          time,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            color: subTextCol,
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-
-                                // 3. Venue
-                                DataCell(
-                                  Container(
-                                    constraints: const BoxConstraints(
-                                      maxWidth: 200,
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.location_on_outlined,
-                                          size: 16,
-                                          color: subTextCol,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Flexible(
-                                          child: Text(
-                                            location,
-                                            style: TextStyle(
-                                              fontSize: 17,
-                                              color: textCol,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-
-                                // 4. Attendees Button
-                                DataCell(
-                                  InkWell(
-                                    borderRadius: BorderRadius.circular(8),
-                                    onTap: () {
-                                      context.push(
-                                        '/admin/events/${ev['id']}/attendees',
-                                        extra: ev,
-                                      );
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: _kBlue.withAlpha(25),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: _kBlue.withAlpha(50),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.people_alt_outlined,
-                                            size: 14,
-                                            color: _kBlue,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            '$attendeeCount Attendees',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: _kBlue,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 4),
-                                          const Icon(
-                                            Icons.arrow_forward_ios_rounded,
-                                            size: 10,
-                                            color: _kBlue,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                // 5. Status
-                                DataCell(
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isPast
-                                          ? Colors.grey.withAlpha(25)
-                                          : _kGreen.withAlpha(25),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      isPast ? 'Past Event' : 'Upcoming',
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold,
-                                        color: isPast ? Colors.grey : _kGreen,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                // 6. Action Buttons
-                                DataCell(
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.people_outline_rounded,
-                                          size: 18,
-                                          color: _kBlue,
-                                        ),
-                                        tooltip: 'View Registered Attendees',
-                                        onPressed: () {
-                                          context.push(
-                                            '/admin/events/${ev['id']}/attendees',
-                                            extra: ev,
-                                          );
-                                        },
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.edit_outlined,
-                                          size: 18,
-                                          color: _kOrange,
-                                        ),
-                                        tooltip: 'Edit Event',
-                                        onPressed: () => _showEventDialog(ev),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.delete_outline_rounded,
-                                          size: 18,
-                                          color: _kRed,
-                                        ),
-                                        tooltip: 'Archive Event',
-                                        onPressed: () => _deleteEvent(ev),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    );
-                  },
+              const SizedBox(height: CubagSpace.md),
+              if (_loading)
+                const Padding(
+                  padding: EdgeInsets.all(40),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_hasError)
+                FetchErrorView(onRetry: () => _fetch(refresh: true))
+              else if (_filteredEvents.isEmpty)
+                EmptyMessage(
+                  icon: Icons.event_outlined,
+                  title: _events.isEmpty ? 'No events yet' : 'No events match',
+                  message: _events.isEmpty
+                      ? 'Add a meeting, seminar or CTI session. Members see it in the app and can add it to their calendar.'
+                      : 'Try another filter, or clear the search.',
+                  action: _events.isEmpty
+                      ? FilledButton.icon(
+                          onPressed: () => _showEventDialog(),
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: const Text('New event'),
+                        )
+                      : null,
+                )
+              else
+                AdminRowGroup(
+                  dividerIndent: 76,
+                  children: [for (final ev in _filteredEvents) _eventRow(ev, today)],
                 ),
-              ),
-            ),
-        ],
+              const SizedBox(height: CubagSpace.xl),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _filterChip(String label, String value) {
-    final isSelected = _filterStatus == value;
-    return FilterChip(
-      label: Text(
-        label,
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-          fontSize: 16,
-          color: isSelected ? _kOrange : null,
-        ),
+  static const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  Widget _eventRow(dynamic ev, DateTime today) {
+    final title = ev['title']?.toString() ?? 'Untitled event';
+    final location = ev['location']?.toString() ?? '';
+    final time = ev['time']?.toString() ?? '';
+    final count = int.tryParse('${ev['attendees_count'] ?? ev['attendee_count'] ?? 0}') ?? 0;
+    final parsed = DateTime.tryParse(ev['date']?.toString().split('T')[0] ?? '');
+    final isPast = parsed != null && parsed.isBefore(today);
+
+    final badge = Container(
+      width: 48,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: CubagColors.paper,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: CubagColors.line),
       ),
-      selected: isSelected,
-      selectedColor: _kOrange.withAlpha(30),
-      checkmarkColor: _kOrange,
-      onSelected: (_) => setState(() => _filterStatus = value),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: double.infinity,
+            color: isPast ? CubagColors.muted : CubagColors.cocoa,
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Text(
+              parsed == null ? '—' : _months[parsed.month - 1],
+              textAlign: TextAlign.center,
+              style: CubagType.caption.copyWith(color: CubagColors.onCocoa, fontWeight: FontWeight.w700),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Text(parsed == null ? '?' : '${parsed.day}', style: CubagType.headline),
+          ),
+        ],
+      ),
+    );
+
+    void openAttendees() => context.push('/admin/events/${ev['id']}/attendees');
+
+    return AdminListRow(
+      leading: badge,
+      title: title,
+      subtitle: [if (time.isNotEmpty) time, if (location.isNotEmpty) location].join(' · '),
+      meta: count == 1 ? '1 attending' : '$count attending',
+      status: isPast ? const StatusChip('Past') : const StatusChip('Upcoming', kind: StatusKind.good),
+      onTap: openAttendees,
+      trailing: PopupMenuButton<String>(
+        tooltip: 'More',
+        icon: const Icon(Icons.more_vert_rounded, color: CubagColors.muted),
+        onSelected: (v) {
+          if (v == 'attendees') openAttendees();
+          if (v == 'edit') _showEventDialog(ev);
+          if (v == 'delete') _deleteEvent(ev);
+        },
+        itemBuilder: (_) => [
+          const PopupMenuItem(value: 'attendees', child: Text('Attendees')),
+          const PopupMenuItem(value: 'edit', child: Text('Edit')),
+          PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: CubagColors.lapsed))),
+        ],
+      ),
     );
   }
 }
