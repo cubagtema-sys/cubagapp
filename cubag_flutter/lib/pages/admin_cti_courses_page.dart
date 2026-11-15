@@ -1,3 +1,4 @@
+import '../components/admin_dialog.dart';
 import '../components/custom_dropdown.dart';
 import '../components/filter_tabs.dart';
 import '../components/cubag_ui.dart';
@@ -9,7 +10,6 @@ import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
-import '../utils/app_colors.dart';
 import '../design/cubag_design.dart';
 
 const _kOrange = CubagColors.action;
@@ -555,155 +555,69 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
   }
 
   void _showCourseEnrollmentsDialog(dynamic course) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dialogBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
-    final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
-    final fieldBg = isDark ? CubagColors.ink : const Color(0xFFFAF6F0);
-
-    final courseTitle = course['title'] ?? 'CTI Course';
-    final courseEnrollments = _getEnrollmentsForCourse(course);
-    String studentFilter = '';
+    final courseTitle = (course['title'] ?? 'Course').toString();
+    final enrolments = _getEnrollmentsForCourse(course);
+    String query = '';
 
     showDialog(
       context: context,
       builder: (dlgCtx) => StatefulBuilder(
         builder: (context, setDlgState) {
-          final filteredList = courseEnrollments.where((e) {
-            if (studentFilter.isEmpty) return true;
-            final q = studentFilter.toLowerCase();
-            final name = (e['member_name']?.toString() ?? '').toLowerCase();
-            final comp = (e['company']?.toString() ?? '').toLowerCase();
-            final email = (e['email']?.toString() ?? '').toLowerCase();
-            return name.contains(q) || comp.contains(q) || email.contains(q);
+          final q = query.toLowerCase();
+          final list = enrolments.where((e) {
+            if (q.isEmpty) return true;
+            return [e['member_name'], e['company'], e['email']].any((v) => (v ?? '').toString().toLowerCase().contains(q));
           }).toList();
 
-          return AlertDialog(
-            backgroundColor: dialogBg,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: _kOrange.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
-                  child: const Icon(Icons.school_rounded, color: _kOrange, size: 20),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(courseTitle, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      Text('Enrolled Students (${courseEnrollments.length} Total)', style: TextStyle(fontSize: 12, color: AppColors.accentOrangeText, fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Close',
-                  icon: const Icon(Icons.close_rounded, size: 18),
-                  color: textMuted,
-                  onPressed: () => Navigator.pop(dlgCtx),
-                ),
-              ],
-            ),
-            content: SizedBox(
-              width: 540,
-              height: 420,
-              child: Column(
-                children: [
-                  TextField(
-                    onChanged: (v) => setDlgState(() => studentFilter = v.trim()),
-                    style: TextStyle(fontSize: 13, color: textPrimary),
-                    decoration: InputDecoration(
-                      hintText: 'Search students',
-                      hintStyle: TextStyle(fontSize: 12.5, color: textMuted),
-                      prefixIcon: const Icon(Icons.search_rounded, size: 16),
-                      filled: true,
-                      fillColor: fieldBg,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderCol)),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderCol)),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Expanded(
-                    child: filteredList.isEmpty
-                        ? Center(
-                            child: Text(
-                              courseEnrollments.isEmpty ? 'No members enrolled yet.' : 'No matching students found.',
-                              style: TextStyle(fontSize: 13.5, color: textMuted),
-                            ),
-                          )
-                        : ListView.separated(
-                            itemCount: filteredList.length,
-                            separatorBuilder: (_, index) => const SizedBox(height: 6),
-                            itemBuilder: (ctx, i) {
-                              final en = filteredList[i];
-                              final memberName = en['member_name'] ?? 'Member';
-                              final company = en['company'] ?? 'Member';
-                              final email = en['email'] ?? '';
-                              final phone = en['phone'] ?? '';
-                              final amount = en['amount']?.toString() ?? '';
-
-                              return Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(color: fieldBg, borderRadius: BorderRadius.circular(8), border: Border.all(color: borderCol)),
-                                child: Row(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 16,
-                                      backgroundColor: _kOrange.withValues(alpha: 0.15),
-                                      child: Text(memberName.isNotEmpty ? memberName[0].toUpperCase() : 'M', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.accentOrangeText)),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text('$memberName • $company', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary)),
-                                          Text('$email • $phone', style: TextStyle(fontSize: 11.5, color: textMuted)),
-                                        ],
-                                      ),
-                                    ),
-                                    if (amount.isNotEmpty)
-                                      Text('GHS $amount', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _kGreen)),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-            ),
+          return AdminDialog(
+            title: courseTitle,
+            subtitle: enrolments.length == 1 ? '1 member enrolled' : '${enrolments.length} members enrolled',
+            maxWidth: 640,
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dlgCtx),
-                child: Text('Close', style: TextStyle(color: textMuted)),
-              ),
-              if (courseEnrollments.isNotEmpty)
-                ElevatedButton.icon(
+              if (enrolments.isNotEmpty)
+                OutlinedButton.icon(
                   onPressed: () {
-                    final names = courseEnrollments.map((e) => '${e['member_name']} (${e['company'] ?? 'Member'}) - ${e['phone']} - ${e['email']}').join('\n');
-                    Clipboard.setData(ClipboardData(text: names));
+                    final text = enrolments
+                        .map((e) => '${e['member_name']} (${e['company'] ?? 'Member'}) - ${e['phone'] ?? ''} - ${e['email'] ?? ''}')
+                        .join('\n');
+                    Clipboard.setData(ClipboardData(text: text));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Student roster copied to clipboard'),
-                        backgroundColor: _kGreen,
-                        behavior: SnackBarBehavior.floating,
-                      ),
+                      const SnackBar(content: Text('List copied'), behavior: SnackBarBehavior.floating),
                     );
                   },
-                  icon: const Icon(Icons.copy_rounded, size: 14),
-                  label: Text('Copy Roster', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _kOrange,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    elevation: 0,
-                  ),
+                  icon: const Icon(Icons.copy_rounded, size: 16),
+                  label: const Text('Copy list'),
+                ),
+              FilledButton(onPressed: () => Navigator.pop(dlgCtx), child: const Text('Done')),
+            ],
+            children: [
+              if (enrolments.isNotEmpty) ...[
+                AdminSearchField(hint: 'Search name, company or email', onChanged: (v) => setDlgState(() => query = v.trim())),
+                const SizedBox(height: CubagSpace.md),
+              ],
+              if (list.isEmpty)
+                EmptyMessage(
+                  icon: Icons.people_outline_rounded,
+                  title: enrolments.isEmpty ? 'No one enrolled yet' : 'No one matches',
+                )
+              else
+                AdminRowGroup(
+                  dividerIndent: 68,
+                  children: [
+                    for (final en in list)
+                      AdminListRow(
+                        leading: AdminRowMark(initials: adminInitials((en['member_name'] ?? '').toString())),
+                        title: (en['member_name'] ?? 'Member').toString(),
+                        subtitle: [
+                          if ((en['company'] ?? '').toString().isNotEmpty) en['company'].toString(),
+                          if ((en['email'] ?? '').toString().isNotEmpty) en['email'].toString(),
+                        ].join(' · '),
+                        meta: (en['phone'] ?? '').toString(),
+                        status: (en['amount'] ?? '').toString().isEmpty
+                            ? null
+                            : Text('GH₵ ${en['amount']}', style: CubagType.small.copyWith(color: CubagColors.ink)),
+                      ),
+                  ],
                 ),
             ],
           );
@@ -715,169 +629,120 @@ class _AdminCtiCoursesPageState extends State<AdminCtiCoursesPage>
   Future<void> _showCourseDialog([dynamic existing]) async {
     final isEdit = existing != null;
     final titleCtrl = TextEditingController(text: existing?['title']?.toString() ?? '');
-    final dateCtrl = TextEditingController(text: existing?['start_date']?.toString() ?? '25 Aug 2026');
-    final durationCtrl = TextEditingController(text: existing?['duration']?.toString() ?? '4 Weeks');
-    final feeCtrl = TextEditingController(text: existing?['fee']?.toString() ?? 'GHS 1,980');
+    final dateCtrl = TextEditingController(text: existing?['start_date']?.toString() ?? '');
+    final durationCtrl = TextEditingController(text: existing?['duration']?.toString() ?? '');
+    final feeCtrl = TextEditingController(text: existing?['fee']?.toString() ?? '');
     final descCtrl = TextEditingController(text: existing?['description']?.toString() ?? '');
     String mode = existing?['mode']?.toString() ?? 'Hybrid';
-    bool notifyMembers = true;
+    if (!const ['Hybrid', 'In-Person', 'Online'].contains(mode)) mode = 'Hybrid';
+    bool notifyMembers = !isEdit;
     bool submitting = false;
+    String? error;
 
     await showDialog(
       context: context,
       builder: (dlgCtx) => StatefulBuilder(
-        builder: (context, setDlgState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: _kOrange.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.school_rounded, color: _kOrange, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  isEdit ? 'Edit CTI Course' : 'Add New CTI Course',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
+        builder: (context, setDlgState) {
+          Future<void> submit() async {
+            if (titleCtrl.text.trim().isEmpty) {
+              setDlgState(() => error = 'Add the course name.');
+              return;
+            }
+            setDlgState(() {
+              submitting = true;
+              error = null;
+            });
+            final payload = {
+              'title': titleCtrl.text.trim(),
+              'start_date': dateCtrl.text.trim(),
+              'duration': durationCtrl.text.trim(),
+              'mode': mode,
+              'fee': feeCtrl.text.trim(),
+              'description': descCtrl.text.trim(),
+              'notify_members': notifyMembers,
+            };
+            final messenger = ScaffoldMessenger.of(context);
+            try {
+              if (isEdit) {
+                await _api.put('/events/admin/courses/${existing['id']}', data: payload);
+              } else {
+                await _api.post('/events/admin/courses', data: payload);
+              }
+              if (dlgCtx.mounted) Navigator.pop(dlgCtx);
+              _fetchCourses();
+              messenger.showSnackBar(SnackBar(
+                content: Text(isEdit ? 'Course updated.' : 'Course published.'),
+                behavior: SnackBarBehavior.floating,
+              ));
+            } catch (e) {
+              setDlgState(() {
+                submitting = false;
+                error = 'Could not save the course. Try again.';
+              });
+            }
+          }
+
+          return AdminDialog(
+            title: isEdit ? 'Edit course' : 'New course',
+            subtitle: 'Members can read about it, enrol and pay in the app.',
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dlgCtx), child: const Text('Cancel')),
+              FilledButton(
+                onPressed: submitting ? null : submit,
+                child: Text(submitting ? 'Saving…' : (isEdit ? 'Save changes' : 'Publish course')),
               ),
             ],
-          ),
-          content: SingleChildScrollView(
-            child: SizedBox(
-              width: 480,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: titleCtrl,
-                    style: TextStyle(fontSize: 13.5),
-                    decoration: const InputDecoration(labelText: 'Course Title *', hintText: 'e.g. Freight Forwarding Fundamentals'),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: dateCtrl,
-                          style: TextStyle(fontSize: 13.5),
-                          decoration: const InputDecoration(labelText: 'Start Date *', hintText: 'e.g. 25 Aug 2026'),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          controller: durationCtrl,
-                          style: TextStyle(fontSize: 13.5),
-                          decoration: const InputDecoration(labelText: 'Duration *', hintText: 'e.g. 4 Weeks'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: mode,
-                          decoration: const InputDecoration(labelText: 'Delivery Mode'),
-                          items: const [
-                            DropdownMenuItem(value: 'Hybrid', child: Text('Hybrid')),
-                            DropdownMenuItem(value: 'In-Person', child: Text('In-Person Classroom')),
-                            DropdownMenuItem(value: 'Online', child: Text('Online Virtual')),
-                          ],
-                          onChanged: (v) => setDlgState(() => mode = v ?? 'Hybrid'),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          controller: feeCtrl,
-                          style: TextStyle(fontSize: 13.5),
-                          decoration: const InputDecoration(labelText: 'Fee (GHS) *', hintText: 'e.g. GHS 1,980'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: descCtrl,
-                    maxLines: 3,
-                    style: TextStyle(fontSize: 13),
-                    decoration: const InputDecoration(labelText: 'Description & Scope *'),
-                  ),
-                  const SizedBox(height: 10),
-                  CheckboxListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      '🔔 Broadcast Push Notification to all Members',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.accentOrangeText),
-                    ),
-                    value: notifyMembers,
-                    activeColor: _kOrange,
-                    onChanged: (v) => setDlgState(() => notifyMembers = v ?? true),
-                  ),
-                ],
+            children: [
+              AdminField(
+                label: 'Course name',
+                child: TextField(
+                  controller: titleCtrl,
+                  decoration: const InputDecoration(hintText: 'For example: Customs declarations and ICUMS'),
+                ),
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dlgCtx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kOrange,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                elevation: 0,
+              AdminFieldPair(
+                AdminField(
+                  label: 'Starts',
+                  child: TextField(controller: dateCtrl, decoration: const InputDecoration(hintText: 'For example: 25 Aug 2026')),
+                ),
+                AdminField(
+                  label: 'Length',
+                  child: TextField(controller: durationCtrl, decoration: const InputDecoration(hintText: 'For example: 4 weeks')),
+                ),
               ),
-              onPressed: submitting
-                  ? null
-                  : () async {
-                      if (titleCtrl.text.trim().isEmpty) return;
-                      setDlgState(() => submitting = true);
-
-                      final payload = {
-                        'title': titleCtrl.text.trim(),
-                        'start_date': dateCtrl.text.trim(),
-                        'duration': durationCtrl.text.trim(),
-                        'mode': mode,
-                        'fee': feeCtrl.text.trim(),
-                        'description': descCtrl.text.trim(),
-                        'notify_members': notifyMembers,
-                      };
-
-                      final messenger = ScaffoldMessenger.of(context);
-                      try {
-                        if (isEdit) {
-                          await _api.put('/events/admin/courses/${existing['id']}', data: payload);
-                        } else {
-                          await _api.post('/events/admin/courses', data: payload);
-                        }
-                        if (dlgCtx.mounted) Navigator.pop(dlgCtx);
-                        _fetchCourses();
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(isEdit ? 'Course updated successfully!' : 'Course created and announced!'),
-                            backgroundColor: _kGreen,
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      } catch (e) {
-                        setDlgState(() => submitting = false);
-                        messenger.showSnackBar(
-                          SnackBar(content: Text('Error: $e'), backgroundColor: _kRed, behavior: SnackBarBehavior.floating),
-                        );
-                      }
-                    },
-              child: Text(submitting ? 'Saving...' : (isEdit ? 'Save Changes' : 'Publish Course')),
-            ),
-          ],
-        ),
+              AdminField(
+                label: 'How it is taught',
+                child: AdminChoice<String>(
+                  options: const [('Hybrid', 'Hybrid'), ('In-Person', 'In person'), ('Online', 'Online')],
+                  value: mode,
+                  onChanged: (v) => setDlgState(() => mode = v),
+                ),
+              ),
+              AdminField(
+                label: 'Fee',
+                help: 'Shown to members as written.',
+                child: TextField(controller: feeCtrl, decoration: const InputDecoration(hintText: 'For example: GHS 1,980')),
+              ),
+              AdminField(
+                label: 'About the course (optional)',
+                child: TextField(
+                  controller: descCtrl,
+                  minLines: 3,
+                  maxLines: 8,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(hintText: 'What it covers and who it is for'),
+                ),
+              ),
+              AdminSwitchRow(
+                title: 'Tell all members',
+                subtitle: 'Sends a notification when you save.',
+                value: notifyMembers,
+                onChanged: (v) => setDlgState(() => notifyMembers = v),
+              ),
+              if (error != null) Text(error!, style: CubagType.small.copyWith(color: CubagColors.lapsed)),
+            ],
+          );
+        },
       ),
     );
   }

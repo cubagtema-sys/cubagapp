@@ -1,3 +1,4 @@
+import '../components/admin_dialog.dart';
 import '../components/filter_tabs.dart';
 import '../components/admin_list.dart';
 import 'package:flutter/material.dart';
@@ -400,135 +401,35 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
   }
 
   void _showExportDialog(bool isDark, Color cardBg, Color textPrimary, Color textMuted) {
-    final borderCol = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: cardBg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _kOrange.withAlpha(30),
-                borderRadius: BorderRadius.circular(10),
+      builder: (ctx) => AdminDialog(
+        title: 'Export',
+        subtitle: 'Downloads a CSV file that opens in Excel, for the period chosen at the top of the page.',
+        maxWidth: 480,
+        children: [
+          AdminRowGroup(
+            dividerIndent: 68,
+            children: [
+              AdminListRow(
+                leading: const AdminRowMark(icon: Icons.payments_outlined),
+                title: 'Payments',
+                subtitle: 'Payment records in the period',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _exportFinancialsCSV();
+                },
               ),
-              child: const Icon(Icons.table_chart_rounded, color: _kOrange, size: 22),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Export',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 21, color: textPrimary),
-                  ),
-                  Text(
-                    'CSV file, opens in Excel',
-                    style: TextStyle(color: _kGreen, fontSize: 15.5, fontWeight: FontWeight.w600),
-                  ),
-                ],
+              AdminListRow(
+                leading: const AdminRowMark(icon: Icons.people_outline_rounded),
+                title: 'Members',
+                subtitle: 'Members who joined in the period',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _exportMembersCSV();
+                },
               ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Select the dataset you would like to export. Files include full metadata and UTF-8 formatting ready for Excel.',
-              style: TextStyle(color: textMuted, fontSize: 17),
-            ),
-            const SizedBox(height: 16),
-            // Financial Ledger Button Card
-            InkWell(
-              onTap: () {
-                Navigator.pop(context);
-                _exportFinancialsCSV();
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: borderCol),
-                  color: _kOrange.withAlpha(15),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.account_balance_wallet_rounded, color: _kOrange, size: 24),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Payments',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: textPrimary),
-                          ),
-                          Text(
-                            '${_transactions.length} payment records, MoMo & Card receipts',
-                            style: TextStyle(fontSize: 15.5, color: textMuted),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.download_rounded, color: _kOrange, size: 20),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            // Members Roster Button Card
-            InkWell(
-              onTap: () {
-                Navigator.pop(context);
-                _exportMembersCSV();
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: borderCol),
-                  color: _kBrown.withAlpha(15),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.people_alt_rounded, color: _kBrown, size: 24),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Members',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: textPrimary),
-                          ),
-                          Text(
-                            '${_rawMembers.length} member profiles, categories & licenses',
-                            style: TextStyle(fontSize: 15.5, color: textMuted),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.download_rounded, color: _kBrown, size: 20),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Close',
-              style: TextStyle(color: textMuted, fontWeight: FontWeight.w600),
-            ),
+            ],
           ),
         ],
       ),

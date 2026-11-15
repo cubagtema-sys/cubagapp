@@ -1,3 +1,4 @@
+import '../components/admin_dialog.dart';
 import '../components/shimmer_loader.dart';
 import '../components/filter_tabs.dart';
 import '../components/cubag_ui.dart';
@@ -7,7 +8,6 @@ import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../utils/app_logger.dart';
-import '../utils/app_colors.dart';
 import '../design/cubag_design.dart';
 
 const _kOrange = CubagColors.action;
@@ -537,8 +537,8 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
           SnackBar(
             content: Text(
               widget.existing != null
-                  ? 'Document rule updated successfully'
-                  : 'Document rule created successfully',
+                  ? 'Document updated'
+                  : 'Document added',
             ),
             backgroundColor: _kGreen,
           ),
@@ -549,7 +549,7 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to save rule: $e'),
+            content: const Text('Could not save. Try again.'),
             backgroundColor: _kRed,
           ),
         );
@@ -559,365 +559,68 @@ class _AddEditRuleDialogState extends State<_AddEditRuleDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF281710) : Colors.white;
-    final inputBg = isDark ? CubagColors.ink : CubagColors.sand;
-    final borderColor = isDark ? const Color(0xFF4D2D20) : CubagColors.line;
-    final textColor = isDark ? Colors.white : CubagColors.ink;
     final isEdit = widget.existing != null;
-
-    return Dialog(
-      backgroundColor: bg,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      child: Container(
-        width: 580,
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: _kOrange.withAlpha(25),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          isEdit ? Icons.edit_note_rounded : Icons.add_circle_outline_rounded,
-                          color: _kOrange,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        isEdit ? 'Edit Document Rule' : 'Add Compliance Document Rule',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: textColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    tooltip: 'Close',
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded),
-                    color: Colors.grey,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              // Membership Category & Application Scope
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Membership category',
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.accentOrangeText,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: inputBg,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: borderColor),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _category,
-                              isExpanded: true,
-                              dropdownColor: bg,
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 'corporate',
-                                  child: Text('Corporate Members'),
-                                ),
-                              ],
-                              onChanged: (v) {
-                                if (v != null) setState(() => _category = v);
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Application scope',
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.accentOrangeText,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: inputBg,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: borderColor),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _scope,
-                              isExpanded: true,
-                              dropdownColor: bg,
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 'new',
-                                  child: Text('Complete Application'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'renewal',
-                                  child: Text('Annual Renewal'),
-                                ),
-                              ],
-                              onChanged: (v) {
-                                if (v != null) setState(() => _scope = v);
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-
-              // Title / Label & Display Order
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 4,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Document title / name *',
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            color: textColor,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          controller: _labelCtrl,
-                          style: TextStyle(fontSize: 13.5, color: textColor),
-                          validator: (v) => v?.trim().isEmpty == true ? 'Document title required' : null,
-                          decoration: InputDecoration(
-                            hintText: 'e.g. Tax Clearance Certificate',
-                            filled: true,
-                            fillColor: inputBg,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: borderColor),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: borderColor),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 1,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Order',
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            color: textColor,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          controller: _orderCtrl,
-                          keyboardType: TextInputType.number,
-                          style: TextStyle(fontSize: 13.5, color: textColor),
-                          decoration: InputDecoration(
-                            hintText: '1',
-                            filled: true,
-                            fillColor: inputBg,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: borderColor),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: borderColor),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-
-              // Description
-              Text(
-                'Instructions / guidelines for applicant',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w800,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 6),
-              TextFormField(
-                controller: _descCtrl,
-                maxLines: 2,
-                style: TextStyle(fontSize: 12.5, color: textColor),
-                decoration: InputDecoration(
-                  hintText: 'e.g. Upload a valid GRA clearance certificate valid for the current fiscal year.',
-                  filled: true,
-                  fillColor: inputBg,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              // Switches: Mandatory & Active
-              Row(
-                children: [
-                  Expanded(
-                    child: SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        'Mandatory Requirement',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Must be uploaded before submission',
-                        style: TextStyle(fontSize: 11, color: Colors.grey),
-                      ),
-                      value: _isRequired,
-                      activeThumbColor: _kOrange,
-                      onChanged: (v) => setState(() => _isRequired = v),
-                    ),
-                  ),
-                  Expanded(
-                    child: SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        'Active',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Visible to applicants on portal',
-                        style: TextStyle(fontSize: 11, color: Colors.grey),
-                      ),
-                      value: _isActive,
-                      activeThumbColor: _kGreen,
-                      onChanged: (v) => setState(() => _isActive = v),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              // Action buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: _saving ? null : () => Navigator.pop(context),
-                    child: Text(
-                      'Cancel',
-                      style: TextStyle(
-                        color: isDark ? Colors.white70 : Colors.grey,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _kOrange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    onPressed: _saving ? null : _submit,
-                    icon: _saving
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Icon(Icons.check_circle_outline_rounded, size: 18),
-                    label: Text(
-                      isEdit ? 'Save Changes' : 'Create Rule',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+    return Form(
+      key: _formKey,
+      child: AdminDialog(
+        title: isEdit ? 'Edit document' : 'Add document',
+        subtitle: 'Members see the name and instructions when they upload.',
+        actions: [
+          TextButton(onPressed: _saving ? null : () => Navigator.pop(context), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: _saving ? null : _submit,
+            child: Text(_saving ? 'Saving…' : (isEdit ? 'Save changes' : 'Add document')),
           ),
-        ),
+        ],
+        children: [
+          AdminField(
+            label: 'Asked for',
+            child: AdminChoice<String>(
+              options: const [('new', 'When applying'), ('renewal', 'When renewing')],
+              value: _scope,
+              onChanged: (v) => setState(() => _scope = v),
+            ),
+          ),
+          AdminFieldPair(
+            AdminField(
+              label: 'Document name',
+              child: TextFormField(
+                controller: _labelCtrl,
+                validator: (v) => v?.trim().isEmpty == true ? 'Add the document name' : null,
+                decoration: const InputDecoration(hintText: 'For example: Tax clearance certificate'),
+              ),
+            ),
+            AdminField(
+              label: 'Position in the list',
+              child: TextFormField(
+                controller: _orderCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(hintText: '1'),
+              ),
+            ),
+          ),
+          AdminField(
+            label: 'Instructions for the member (optional)',
+            child: TextFormField(
+              controller: _descCtrl,
+              minLines: 2,
+              maxLines: 5,
+              decoration: const InputDecoration(hintText: 'For example: The GRA certificate for this year, as a PDF or photo.'),
+            ),
+          ),
+          AdminSwitchRow(
+            title: 'Required',
+            subtitle: 'The member cannot submit without it.',
+            value: _isRequired,
+            onChanged: (v) => setState(() => _isRequired = v),
+          ),
+          AdminSwitchRow(
+            title: 'Switched on',
+            subtitle: 'When off, members are not asked for it.',
+            value: _isActive,
+            onChanged: (v) => setState(() => _isActive = v),
+          ),
+        ],
       ),
     );
   }

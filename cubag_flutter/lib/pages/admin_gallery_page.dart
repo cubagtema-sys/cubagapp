@@ -1,3 +1,4 @@
+import '../components/admin_dialog.dart';
 import '../components/filter_tabs.dart';
 import '../components/admin_list.dart';
 import 'dart:typed_data';
@@ -11,7 +12,6 @@ import '../services/api_service.dart';
 import '../utils/app_logger.dart';
 import '../design/cubag_design.dart';
 
-const _kOrange = CubagColors.action;
 
 class AdminGalleryPage extends StatefulWidget {
   const AdminGalleryPage({super.key});
@@ -73,449 +73,196 @@ class _AdminGalleryPageState extends State<AdminGalleryPage> {
 
   Future<void> _showGalleryDialog([dynamic existing]) async {
     final isEdit = existing != null;
-    final titleCtrl = TextEditingController(
-      text: existing?['title']?.toString() ?? '',
-    );
+    final titleCtrl = TextEditingController(text: existing?['title']?.toString() ?? '');
     String uploadedUrl = existing?['image_url']?.toString() ?? '';
     String category = existing?['category']?.toString() ?? 'Conferences';
-    String gradStart = existing?['grad_start']?.toString() ?? '#6B3E26';
-    String gradEnd = existing?['grad_end']?.toString() ?? '#3E2418';
-
-    Uint8List? selectedImageBytes;
-    String? selectedImageName;
+    if (!_categories.contains(category) || category == 'All') category = 'Conferences';
+    Uint8List? pickedBytes;
+    String? pickedName;
     bool submitting = false;
+    String? error;
+
+    // The member app still uses these colours behind a photo while it loads.
+    (String, String) gradientFor(String c) => switch (c) {
+          'Port Operations' => ('#1A3A5C', '#0D2137'),
+          'Education' => ('#1B5E20', '#0A3012'),
+          'Leadership' => ('#4A1A42', '#2B0A28'),
+          _ => ('#6B3E26', '#3E2418'),
+        };
 
     await showDialog(
       context: context,
       builder: (dlgCtx) => StatefulBuilder(
         builder: (context, setDlgState) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
+          Future<void> pick() async {
+            try {
+              final result = await FilePicker.pickFiles(
+                type: FileType.custom,
+                allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+                withData: true,
+              );
+              final file = result?.files.firstOrNull;
+              if (file?.bytes != null) {
+                setDlgState(() {
+                  pickedBytes = file!.bytes;
+                  pickedName = file.name;
+                  error = null;
+                });
+              }
+            } catch (e) {
+              setDlgState(() => error = 'Could not open the photo. Try another file.');
+            }
+          }
+
+          Future<void> submit() async {
+            final title = titleCtrl.text.trim();
+            if (title.isEmpty) {
+              setDlgState(() => error = 'Add a caption.');
+              return;
+            }
+            if (pickedBytes == null && uploadedUrl.isEmpty) {
+              setDlgState(() => error = 'Choose a photo.');
+              return;
+            }
+            setDlgState(() {
+              submitting = true;
+              error = null;
+            });
+            try {
+              var finalUrl = uploadedUrl;
+              if (pickedBytes != null) {
+                final mpFile = MultipartFile.fromBytes(
+                  Uint8List.fromList(pickedBytes!),
+                  filename: pickedName ?? 'gallery_photo.jpg',
+                );
+                final up = await _api.upload('/uploads/image', FormData.fromMap({'image': mpFile}));
+                if (up.data != null && up.data['url'] != null) finalUrl = up.data['url'].toString();
+              }
+              final g = gradientFor(category);
+              final data = {
+                'title': title,
+                'category': category,
+                'image_url': finalUrl,
+                'grad_start': g.$1,
+                'grad_end': g.$2,
+              };
+              if (isEdit) {
+                await _api.put('/events/admin/gallery/${existing['id']}', data: {...data, 'is_active': existing['is_active'] ?? true});
+              } else {
+                await _api.post('/events/admin/gallery', data: data);
+              }
+              if (dlgCtx.mounted) {
+                Navigator.pop(dlgCtx);
+                _fetchGallery();
+              }
+            } catch (e) {
+              setDlgState(() {
+                submitting = false;
+                error = 'Could not save the photo. Try again.';
+              });
+            }
+          }
+
+          final hasPhoto = pickedBytes != null || uploadedUrl.isNotEmpty;
+          return AdminDialog(
+            title: isEdit ? 'Edit photo' : 'Add photo',
+            subtitle: 'Members see it in the gallery in the app.',
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dlgCtx), child: const Text('Cancel')),
+              FilledButton(
+                onPressed: submitting ? null : submit,
+                child: Text(submitting ? 'Saving…' : (isEdit ? 'Save changes' : 'Add photo')),
+              ),
+            ],
+            children: [
+              AdminField(
+                label: 'Photo',
+                help: 'JPEG, PNG or WEBP.',
+                child: Container(
+                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    color: _kOrange.withAlpha(25),
-                    borderRadius: BorderRadius.circular(10),
+                    color: CubagColors.sand,
+                    borderRadius: BorderRadius.circular(CubagRadius.card),
+                    border: Border.all(color: CubagColors.line),
                   ),
-                  child: const Icon(
-                    Icons.photo_library_rounded,
-                    color: _kOrange,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  isEdit ? 'Edit Gallery Photo' : 'Upload Gallery Photo',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
-                  ),
-                ),
-              ],
-            ),
-            content: SizedBox(
-              width: 440,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Upload photo attachment with short writings & captions for the homepage CUBAG Gallery.',
-                      style: TextStyle(
-                        fontSize: 16.5,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Photo Caption / Title
-                    TextField(
-                      controller: titleCtrl,
-                      decoration: InputDecoration(
-                        labelText: 'Photo Caption / Title *',
-                        hintText: 'e.g. CUBAG Annual General Meeting 2026',
-                        prefixIcon: const Icon(Icons.title_rounded, size: 20),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Category Dropdown
-                    DropdownButtonFormField<String>(
-                      initialValue: category,
-                      decoration: InputDecoration(
-                        labelText: 'Category',
-                        prefixIcon: const Icon(Icons.category_outlined, size: 20),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'Conferences',
-                          child: Text('Conferences'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Port Operations',
-                          child: Text('Port Operations'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Education',
-                          child: Text('Education'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Leadership',
-                          child: Text('Leadership'),
-                        ),
-                      ],
-                      onChanged: (val) {
-                        if (val == null) return;
-                        setDlgState(() {
-                          category = val;
-                          if (val == 'Port Operations') {
-                            gradStart = '#1A3A5C';
-                            gradEnd = '#0D2137';
-                          } else if (val == 'Education') {
-                            gradStart = '#1B5E20';
-                            gradEnd = '#0A3012';
-                          } else if (val == 'Leadership') {
-                            gradStart = '#4A1A42';
-                            gradEnd = '#2B0A28';
-                          } else {
-                            gradStart = '#6B3E26';
-                            gradEnd = '#3E2418';
-                          }
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Image Attachment Section
-                    Text(
-                      'Photo Attachment',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 17,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withAlpha(20),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.grey.withAlpha(50)),
-                      ),
-                      child: Column(
-                        children: [
-                          if (selectedImageBytes != null) ...[
-                            Container(
-                              height: 240,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: CubagColors.ink,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.white12),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.memory(
-                                  selectedImageBytes!,
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    selectedImageName ?? 'Attached image',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                TextButton.icon(
-                                  onPressed: () {
-                                    setDlgState(() {
-                                      selectedImageBytes = null;
-                                      selectedImageName = null;
-                                    });
-                                  },
-                                  icon: const Icon(
-                                    Icons.close,
-                                    size: 16,
-                                    color: Colors.red,
-                                  ),
-                                  label: const Text(
-                                    'Remove',
-                                    style: TextStyle(
-                                      color: Colors.red,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ] else if (uploadedUrl.isNotEmpty) ...[
-                            Container(
-                              height: 240,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: CubagColors.ink,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.white12),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: CorsImageWidget(
-                                  url: ApiService.resolveImageUrl(uploadedUrl),
-                                  fit: BoxFit.contain,
-                                  errorWidget: Container(
-                                    height: 120,
-                                    color: Colors.grey.shade900,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(
+                        height: 200,
+                        child: pickedBytes != null
+                            ? Image.memory(pickedBytes!, fit: BoxFit.cover)
+                            : (uploadedUrl.isNotEmpty
+                                ? CorsImageWidget(
+                                    url: ApiService.resolveImageUrl(uploadedUrl),
+                                    fit: BoxFit.cover,
+                                    errorWidget: const Center(child: Icon(Icons.broken_image_outlined, color: CubagColors.muted)),
+                                  )
+                                : InkWell(
+                                    onTap: pick,
                                     child: const Center(
-                                      child: Icon(
-                                        Icons.photo_outlined,
-                                        color: Colors.grey,
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.add_photo_alternate_outlined, size: 36, color: CubagColors.cocoa),
+                                          SizedBox(height: CubagSpace.xs),
+                                          Text('Choose a photo'),
+                                        ],
                                       ),
                                     ),
-                                  ),
+                                  )),
+                      ),
+                      if (hasPhoto)
+                        Container(
+                          color: CubagColors.paper,
+                          padding: const EdgeInsets.symmetric(horizontal: CubagSpace.sm),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  pickedName ?? 'Current photo',
+                                  style: CubagType.small,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Current Photo (Full View)',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                TextButton.icon(
-                                  onPressed: () {
-                                    setDlgState(() => uploadedUrl = '');
-                                  },
-                                  icon: const Icon(
-                                    Icons.close,
-                                    size: 16,
-                                    color: Colors.red,
-                                  ),
-                                  label: const Text(
-                                    'Remove',
-                                    style: TextStyle(
-                                      color: Colors.red,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ] else ...[
-                            Icon(
-                              Icons.add_photo_alternate_outlined,
-                              size: 36,
-                              color: _kOrange.withAlpha(200),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Select a JPEG, PNG, or WEBP image file',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey.shade500,
+                              TextButton(onPressed: pick, child: const Text('Replace')),
+                              TextButton(
+                                onPressed: () => setDlgState(() {
+                                  pickedBytes = null;
+                                  pickedName = null;
+                                  uploadedUrl = '';
+                                }),
+                                child: const Text('Remove'),
                               ),
-                            ),
-                            const SizedBox(height: 10),
-                          ],
-
-                          // Pick attachment button
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: _kOrange,
-                              side: const BorderSide(color: _kOrange),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                            ),
-                            onPressed: () async {
-                              try {
-                                final result = await FilePicker.pickFiles(
-                                  type: FileType.custom,
-                                  allowedExtensions: [
-                                    'jpg',
-                                    'jpeg',
-                                    'png',
-                                    'webp',
-                                    'gif',
-                                  ],
-                                  withData: true,
-                                );
-                                if (result != null && result.files.isNotEmpty) {
-                                  final file = result.files.first;
-                                  if (file.bytes != null) {
-                                    setDlgState(() {
-                                      selectedImageBytes = file.bytes;
-                                      selectedImageName = file.name;
-                                    });
-                                  }
-                                }
-                              } catch (e) {
-                                if (dlgCtx.mounted) {
-                                  ScaffoldMessenger.of(dlgCtx).showSnackBar(
-                                    SnackBar(
-                                      content: Text('File picker error: $e'),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            icon: const Icon(Icons.attach_file_rounded, size: 18),
-                            label: Text(
-                              selectedImageBytes != null || uploadedUrl.isNotEmpty
-                                  ? 'Replace Photo Attachment'
-                                  : 'Choose Photo Attachment',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 17,
-                              ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dlgCtx),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kOrange,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                        ),
+                    ],
                   ),
                 ),
-                onPressed: submitting
-                    ? null
-                    : () async {
-                        final title = titleCtrl.text.trim();
-                        if (title.isEmpty) return;
-                        setDlgState(() => submitting = true);
-                        try {
-                          String finalUrl = uploadedUrl;
-
-                          // If new attachment picked, upload it first
-                          if (selectedImageBytes != null) {
-                            final exactBytes = Uint8List.fromList(selectedImageBytes!);
-                            final mpFile = MultipartFile.fromBytes(
-                              exactBytes,
-                              filename:
-                                  selectedImageName ?? 'gallery_photo.jpg',
-                            );
-                            final uploadRes = await _api.upload(
-                              '/uploads/image',
-                              FormData.fromMap({'image': mpFile}),
-                            );
-                            if (uploadRes.data != null &&
-                                uploadRes.data['url'] != null) {
-                              finalUrl = uploadRes.data['url'].toString();
-                            }
-                          }
-
-                          if (isEdit) {
-                            await _api.put(
-                              '/events/admin/gallery/${existing['id']}',
-                              data: {
-                                'title': title,
-                                'category': category,
-                                'image_url': finalUrl,
-                                'grad_start': gradStart,
-                                'grad_end': gradEnd,
-                                'is_active': existing['is_active'] ?? true,
-                              },
-                            );
-                          } else {
-                            await _api.post(
-                              '/events/admin/gallery',
-                              data: {
-                                'title': title,
-                                'category': category,
-                                'image_url': finalUrl,
-                                'grad_start': gradStart,
-                                'grad_end': gradEnd,
-                              },
-                            );
-                          }
-                          if (dlgCtx.mounted) {
-                            Navigator.pop(dlgCtx);
-                            _fetchGallery();
-                          }
-                        } catch (e) {
-                          setDlgState(() => submitting = false);
-                          if (dlgCtx.mounted) {
-                            ScaffoldMessenger.of(dlgCtx).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Failed to save gallery photo: $e',
-                                ),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                child: submitting
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : Text(
-                        isEdit ? 'Save Changes' : 'Publish Photo',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
               ),
+              AdminField(
+                label: 'Caption',
+                child: TextField(
+                  controller: titleCtrl,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(hintText: 'For example: Annual general meeting 2026'),
+                ),
+              ),
+              AdminField(
+                label: 'Topic',
+                child: AdminChoice<String>(
+                  options: [for (final c in _categories.where((c) => c != 'All')) (c, c)],
+                  value: category,
+                  onChanged: (v) => setDlgState(() => category = v),
+                ),
+              ),
+              if (error != null) Text(error!, style: CubagType.small.copyWith(color: CubagColors.lapsed)),
             ],
           );
         },
       ),
     );
-
     titleCtrl.dispose();
   }
 

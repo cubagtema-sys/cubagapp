@@ -1,3 +1,5 @@
+import '../components/filter_tabs.dart';
+import '../components/admin_dialog.dart';
 import '../components/cubag_ui.dart';
 import 'package:flutter/material.dart';
 import '../components/app_layout.dart';
@@ -6,9 +8,6 @@ import '../utils/session_storage.dart';
 import '../services/api_service.dart';
 import '../design/cubag_design.dart';
 
-const _kOrange = CubagColors.action;
-const _kGreen = CubagColors.valid;
-const _kRed = CubagColors.lapsed;
 const _kCardBg = Color(0xFF22140E);
 
 class AdminSettingsPage extends StatefulWidget {
@@ -182,7 +181,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
 
     if (cur.isEmpty || newP.isEmpty || conf.isEmpty) {
       setState(() {
-        _pwMessage = 'Please fill out all password fields.';
+        _pwMessage = 'Fill in all three password boxes.';
         _pwSuccess = false;
       });
       return;
@@ -223,7 +222,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
         }
         if (!mounted) return;
         setState(() {
-          _pwMessage = 'Password updated successfully.';
+          _pwMessage = 'Password changed.';
           _pwSuccess = true;
           _currentCtrl.clear();
           _newCtrl.clear();
@@ -238,7 +237,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
       }
     } catch (e) {
       setState(() {
-        _pwMessage = 'Password update failed: $e';
+        _pwMessage = 'Could not change the password. Try again.';
         _pwSuccess = false;
       });
     } finally {
@@ -276,7 +275,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
               AdminHeader(
                 title: 'Settings',
                 subtitle:
-                    'Your admin account, password, and how compliance scores are worked out.',
+                    'Your account and password, and how members\' standing scores are worked out.',
                 actions: [
                   StatusChip(
                     switch ((_user['role']?.toString() ?? 'admin').toLowerCase()) {
@@ -289,40 +288,12 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
               ),
               const SizedBox(height: 14),
 
-              // Segmented Tab bar
-              Container(
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: borderCol),
-                ),
-                child: TabBar(
-                  controller: _tabController,
-                  indicatorColor: CubagColors.cocoa,
-                  indicatorWeight: 3,
-                  labelColor: CubagColors.cocoa,
-                  unselectedLabelColor: subTextCol,
-                  labelStyle: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                  unselectedLabelStyle: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                  tabs: const [
-                    Tab(
-                      icon: Icon(Icons.manage_accounts_outlined, size: 18),
-                      text: 'Account',
-                    ),
-                    Tab(
-                      icon: Icon(Icons.rule_rounded, size: 18),
-                      text: 'Scoring',
-                    ),
-                  ],
-                ),
+              FilterTabs(
+                tabs: const [('0', 'Account'), ('1', 'Standing score')],
+                selected: '${_tabController.index}',
+                onSelected: (k) => setState(() => _tabController.index = int.parse(k)),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: CubagSpace.lg),
 
               if (_fetchingUser && _user.isEmpty)
                 const Padding(
@@ -361,6 +332,49 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
     );
   }
 
+  Widget _section({required String title, String? subtitle, required List<Widget> children}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: CubagSpace.lg),
+      padding: const EdgeInsets.all(CubagSpace.xl),
+      decoration: BoxDecoration(
+        color: CubagColors.paper,
+        borderRadius: BorderRadius.circular(CubagRadius.card),
+        border: Border.all(color: CubagColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(title, style: CubagType.headline),
+          if (subtitle != null) ...[
+            const SizedBox(height: CubagSpace.xxs),
+            Text(subtitle, style: CubagType.small),
+          ],
+          const SizedBox(height: CubagSpace.lg),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _notice(String message, bool success) => Container(
+        margin: const EdgeInsets.only(bottom: CubagSpace.md),
+        padding: const EdgeInsets.all(CubagSpace.sm),
+        decoration: BoxDecoration(
+          color: success ? CubagColors.validTint : CubagColors.lapsedTint,
+          borderRadius: BorderRadius.circular(CubagRadius.control),
+        ),
+        child: Row(
+          children: [
+            Icon(success ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+                size: 18, color: success ? CubagColors.valid : CubagColors.lapsed),
+            const SizedBox(width: CubagSpace.xs),
+            Expanded(
+              child: Text(message, style: CubagType.small.copyWith(color: success ? CubagColors.valid : CubagColors.lapsed)),
+            ),
+          ],
+        ),
+      );
+
   Widget _buildAccountSecurityTab(
     Color cardBg,
     Color borderCol,
@@ -369,371 +383,44 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
     Color inputBg,
   ) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Profile Info Card
-        Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: borderCol),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: CubagColors.sand,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.person_outline_rounded,
-                      color: CubagColors.cocoa,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Your profile',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          color: textCol,
-                        ),
-                      ),
-                      Text(
-                        'The account you are signed in with.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: subTextCol,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide = constraints.maxWidth > 500;
-                  return isWide
-                      ? Row(
-                          children: [
-                            Expanded(
-                              child: _readOnlyField(
-                                'Full name',
-                                _user['name']?.toString() ?? 'Administrator',
-                                inputBg,
-                                borderCol,
-                                textCol,
-                                subTextCol,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: _readOnlyField(
-                                'Email',
-                                _user['email']?.toString() ?? 'admin@cubag.org',
-                                inputBg,
-                                borderCol,
-                                textCol,
-                                subTextCol,
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          children: [
-                            _readOnlyField(
-                              'Full name',
-                              _user['name']?.toString() ?? 'Administrator',
-                              inputBg,
-                              borderCol,
-                              textCol,
-                              subTextCol,
-                            ),
-                            const SizedBox(height: 12),
-                            _readOnlyField(
-                              'Email',
-                              _user['email']?.toString() ?? 'admin@cubag.org',
-                              inputBg,
-                              borderCol,
-                              textCol,
-                              subTextCol,
-                            ),
-                          ],
-                        );
-                },
-              ),
-              const SizedBox(height: 14),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide = constraints.maxWidth > 500;
-                  return isWide
-                      ? Row(
-                          children: [
-                            Expanded(
-                              child: _readOnlyField(
-                                'Role',
-                                _roleLabel(),
-                                inputBg,
-                                borderCol,
-                                textCol,
-                                subTextCol,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: _readOnlyField(
-                                'Session',
-                                'Signed in',
-                                inputBg,
-                                borderCol,
-                                textCol,
-                                subTextCol,
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          children: [
-                            _readOnlyField(
-                              'Role',
-                              _roleLabel(),
-                              inputBg,
-                              borderCol,
-                              textCol,
-                              subTextCol,
-                            ),
-                            const SizedBox(height: 12),
-                            _readOnlyField(
-                              'Session',
-                              'Signed in',
-                              inputBg,
-                              borderCol,
-                              textCol,
-                              subTextCol,
-                            ),
-                          ],
-                        );
-                },
-              ),
-            ],
-          ),
+        _section(
+          title: 'Your profile',
+          subtitle: 'The account you are signed in with. Ask a super admin to change your name or email.',
+          children: [
+            AdminDetailRow('Name', _user['name']?.toString() ?? ''),
+            AdminDetailRow('Email', _user['email']?.toString() ?? ''),
+            AdminDetailRow('Role', _roleLabel()),
+          ],
         ),
-        const SizedBox(height: 18),
-
-        // Password Reset Card
-        Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: borderCol),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: CubagColors.sand,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.lock_reset_rounded,
-                      color: CubagColors.cocoa,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Password',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          color: textCol,
-                        ),
-                      ),
-                      Text(
-                        'Change the password you sign in with.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: subTextCol,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+        _section(
+          title: 'Password',
+          subtitle: 'The new password needs at least 6 characters.',
+          children: [
+            if (_pwMessage.isNotEmpty) _notice(_pwMessage, _pwSuccess),
+            AdminField(
+              label: 'Current password',
+              child: _pwField('', _currentCtrl, _showCurrent, () => setState(() => _showCurrent = !_showCurrent), inputBg, borderCol, textCol, subTextCol),
+            ),
+            AdminFieldPair(
+              AdminField(
+                label: 'New password',
+                child: _pwField('', _newCtrl, _showNew, () => setState(() => _showNew = !_showNew), inputBg, borderCol, textCol, subTextCol),
               ),
-              const SizedBox(height: 18),
-
-              if (_pwMessage.isNotEmpty) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 14),
-                  decoration: BoxDecoration(
-                    color: _pwSuccess
-                        ? _kGreen.withAlpha(20)
-                        : _kRed.withAlpha(20),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _pwSuccess
-                          ? _kGreen.withAlpha(60)
-                          : _kRed.withAlpha(60),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _pwSuccess
-                            ? Icons.check_circle_rounded
-                            : Icons.error_outline_rounded,
-                        color: _pwSuccess ? _kGreen : _kRed,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _pwMessage,
-                          style: TextStyle(
-                            color: _pwSuccess ? _kGreen : _kRed,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              _pwField(
-                'Current password *',
-                _currentCtrl,
-                _showCurrent,
-                () => setState(() => _showCurrent = !_showCurrent),
-                inputBg,
-                borderCol,
-                textCol,
-                subTextCol,
+              AdminField(
+                label: 'Type it again',
+                child: _pwField('', _confirmCtrl, _showConfirm, () => setState(() => _showConfirm = !_showConfirm), inputBg, borderCol, textCol, subTextCol),
               ),
-              const SizedBox(height: 14),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide = constraints.maxWidth > 500;
-                  return isWide
-                      ? Row(
-                          children: [
-                            Expanded(
-                              child: _pwField(
-                                'New password *',
-                                _newCtrl,
-                                _showNew,
-                                () => setState(() => _showNew = !_showNew),
-                                inputBg,
-                                borderCol,
-                                textCol,
-                                subTextCol,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: _pwField(
-                                'Confirm new password *',
-                                _confirmCtrl,
-                                _showConfirm,
-                                () => setState(
-                                  () => _showConfirm = !_showConfirm,
-                                ),
-                                inputBg,
-                                borderCol,
-                                textCol,
-                                subTextCol,
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          children: [
-                            _pwField(
-                              'New password *',
-                              _newCtrl,
-                              _showNew,
-                              () => setState(() => _showNew = !_showNew),
-                              inputBg,
-                              borderCol,
-                              textCol,
-                              subTextCol,
-                            ),
-                            const SizedBox(height: 12),
-                            _pwField(
-                              'Confirm new password *',
-                              _confirmCtrl,
-                              _showConfirm,
-                              () => setState(
-                                () => _showConfirm = !_showConfirm,
-                              ),
-                              inputBg,
-                              borderCol,
-                              textCol,
-                              subTextCol,
-                            ),
-                          ],
-                        );
-                },
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton(
+                onPressed: _changingPw ? null : _changePassword,
+                child: Text(_changingPw ? 'Changing…' : 'Change password'),
               ),
-              const SizedBox(height: 18),
-
-              Align(
-                alignment: Alignment.centerRight,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _kOrange,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 22,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    elevation: 0,
-                  ),
-                  onPressed: _changingPw ? null : _changePassword,
-                  icon: _changingPw
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Icon(Icons.key_rounded, size: 16),
-                  label: Text(
-                    'Change password',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
@@ -747,283 +434,37 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
     Color inputBg,
   ) {
     if (_fetchingSettings) {
-      return const Padding(
-        padding: EdgeInsets.all(40),
-        child: Center(child: CircularProgressIndicator()),
-      );
+      return const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()));
     }
-
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderCol),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: CubagColors.sand,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.rule_folder_outlined,
-                  color: CubagColors.cocoa,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Scoring weights',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: textCol,
-                    ),
-                  ),
-                  Text(
-                    'How many points each item adds to a member\'s standing score (out of 100).',
-                    style: TextStyle(fontSize: 13, color: subTextCol),
-                  ),
-                ],
-              ),
-            ],
+    Widget pair(String a, TextEditingController ca, String b, TextEditingController cb) => AdminFieldPair(
+          AdminField(label: a, child: _weightField('', ca, inputBg, borderCol, textCol, subTextCol)),
+          AdminField(label: b, child: _weightField('', cb, inputBg, borderCol, textCol, subTextCol)),
+        );
+    return _section(
+      title: 'Standing score',
+      subtitle: 'Each member gets a standing score out of 100. Set how many points each item is worth.',
+      children: [
+        if (_settingsMessage.isNotEmpty) _notice(_settingsMessage, _settingsSuccess),
+        Text('Dues', style: CubagType.label.copyWith(color: CubagColors.cocoa)),
+        const SizedBox(height: CubagSpace.xs),
+        pair('Paid on time', _payPunctualCtrl, 'Payment history', _payHistoryCtrl),
+        Text('Licence', style: CubagType.label.copyWith(color: CubagColors.cocoa)),
+        const SizedBox(height: CubagSpace.xs),
+        pair('Licence active', _licActiveCtrl, 'Licence expired', _licInactiveCtrl),
+        Text('Taking part', style: CubagType.label.copyWith(color: CubagColors.cocoa)),
+        const SizedBox(height: CubagSpace.xs),
+        pair('Tasks done', _taskCtrl, 'Polls answered', _surveyCtrl),
+        Text('Annual general meeting', style: CubagType.label.copyWith(color: CubagColors.cocoa)),
+        const SizedBox(height: CubagSpace.xs),
+        pair('Attended', _agmActiveCtrl, 'Absent or no record', _agmInactiveCtrl),
+        Align(
+          alignment: Alignment.centerRight,
+          child: FilledButton(
+            onPressed: _savingSettings ? null : _saveSettings,
+            child: Text(_savingSettings ? 'Saving…' : 'Save'),
           ),
-          const SizedBox(height: 18),
-
-          if (_settingsMessage.isNotEmpty) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              margin: const EdgeInsets.only(bottom: 14),
-              decoration: BoxDecoration(
-                color: _settingsSuccess
-                    ? _kGreen.withAlpha(20)
-                    : _kRed.withAlpha(20),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: _settingsSuccess
-                      ? _kGreen.withAlpha(60)
-                      : _kRed.withAlpha(60),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    _settingsSuccess
-                        ? Icons.check_circle_rounded
-                        : Icons.error_outline_rounded,
-                    color: _settingsSuccess ? _kGreen : _kRed,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      _settingsMessage,
-                      style: TextStyle(
-                        color: _settingsSuccess ? _kGreen : _kRed,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          // 1. Payment Points
-          Text(
-            '1. Payment & Financial Standing',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: textCol,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _weightField(
-                  'Dues paid on time (points)',
-                  _payPunctualCtrl,
-                  inputBg,
-                  borderCol,
-                  textCol,
-                  subTextCol,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _weightField(
-                  'Payment history (points)',
-                  _payHistoryCtrl,
-                  inputBg,
-                  borderCol,
-                  textCol,
-                  subTextCol,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // 2. Customs Licensing Points
-          Text(
-            '2. Customs Operating License Standing',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: textCol,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _weightField(
-                  'Licence active (points)',
-                  _licActiveCtrl,
-                  inputBg,
-                  borderCol,
-                  textCol,
-                  subTextCol,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _weightField(
-                  'Licence expired (points)',
-                  _licInactiveCtrl,
-                  inputBg,
-                  borderCol,
-                  textCol,
-                  subTextCol,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // 3. Operational Tasks & Surveys
-          Text(
-            '3. Association Engagements & Surveys',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: textCol,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _weightField(
-                  'Task & Compliance Checks (pts)',
-                  _taskCtrl,
-                  inputBg,
-                  borderCol,
-                  textCol,
-                  subTextCol,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _weightField(
-                  'Answered polls (points)',
-                  _surveyCtrl,
-                  inputBg,
-                  borderCol,
-                  textCol,
-                  subTextCol,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // 4. AGM Attendance
-          Text(
-            '4. AGM & Executive Meetings Attendance',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: textCol,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _weightField(
-                  'AGM Attended (pts)',
-                  _agmActiveCtrl,
-                  inputBg,
-                  borderCol,
-                  textCol,
-                  subTextCol,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _weightField(
-                  'Absent / No Record (pts)',
-                  _agmInactiveCtrl,
-                  inputBg,
-                  borderCol,
-                  textCol,
-                  subTextCol,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          Align(
-            alignment: Alignment.centerRight,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kOrange,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 22,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                elevation: 0,
-              ),
-              onPressed: _savingSettings ? null : _saveSettings,
-              icon: _savingSettings
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Icon(Icons.save_rounded, size: 16),
-              label: Text(
-                'Save weights',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -1033,107 +474,28 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
         _ => 'Admin',
       };
 
-  Widget _readOnlyField(
-    String label,
-    String value,
-    Color inputBg,
-    Color borderCol,
-    Color textCol,
-    Color subTextCol,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: subTextCol,
-          ),
-        ),
-        const SizedBox(height: 5),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: inputBg,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: borderCol),
-          ),
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: textCol,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _pwField(
     String label,
     TextEditingController ctrl,
-    bool show,
-    VoidCallback toggle,
+    bool visible,
+    VoidCallback onToggle,
     Color inputBg,
     Color borderCol,
     Color textCol,
     Color subTextCol,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: subTextCol,
-          ),
+    return TextField(
+      controller: ctrl,
+      obscureText: !visible,
+      autocorrect: false,
+      enableSuggestions: false,
+      decoration: InputDecoration(
+        suffixIcon: IconButton(
+          tooltip: visible ? 'Hide password' : 'Show password',
+          icon: Icon(visible ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+          onPressed: onToggle,
         ),
-        const SizedBox(height: 5),
-        TextField(
-          controller: ctrl,
-          obscureText: !show,
-          style: TextStyle(fontSize: 14, color: textCol),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: inputBg,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 10,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: borderCol),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: borderCol),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: _kOrange, width: 1.5),
-            ),
-            suffixIcon: IconButton(
-              tooltip: show ? 'Hide password' : 'Show password',
-              icon: Icon(
-                show
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                size: 18,
-                color: subTextCol,
-              ),
-              onPressed: toggle,
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -1145,44 +507,10 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
     Color textCol,
     Color subTextCol,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: subTextCol,
-          ),
-        ),
-        const SizedBox(height: 5),
-        TextField(
-          controller: ctrl,
-          keyboardType: TextInputType.number,
-          style: TextStyle(fontSize: 14, color: textCol),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: inputBg,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 10,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: borderCol),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: borderCol),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: _kOrange, width: 1.5),
-            ),
-          ),
-        ),
-      ],
+    return TextField(
+      controller: ctrl,
+      keyboardType: TextInputType.number,
+      decoration: const InputDecoration(suffixText: 'points'),
     );
   }
 }

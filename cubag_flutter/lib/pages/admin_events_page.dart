@@ -1,3 +1,4 @@
+import '../components/admin_dialog.dart';
 import '../components/filter_tabs.dart';
 import '../components/cubag_ui.dart';
 import '../components/admin_list.dart';
@@ -11,7 +12,6 @@ import 'admin_qr_scanner_page.dart';
 import '../utils/app_logger.dart';
 import '../design/cubag_design.dart';
 
-const _kOrange = CubagColors.action;
 const _kRed = CubagColors.lapsed;
 
 class AdminEventsPage extends StatefulWidget {
@@ -69,356 +69,136 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
 
   Future<void> _showEventDialog([Map<String, dynamic>? existing]) async {
     final isEdit = existing != null;
-    final titleCtrl = TextEditingController(
-      text: existing?['title']?.toString() ?? '',
-    );
-    final locationCtrl = TextEditingController(
-      text: existing?['location']?.toString() ?? '',
-    );
-    final descCtrl = TextEditingController(
-      text: existing?['description']?.toString() ?? '',
-    );
-
-    String rawDate = existing?['date'] != null
-        ? existing!['date'].toString().split('T')[0]
-        : '';
+    final titleCtrl = TextEditingController(text: existing?['title']?.toString() ?? '');
+    final locationCtrl = TextEditingController(text: existing?['location']?.toString() ?? '');
+    final descCtrl = TextEditingController(text: existing?['description']?.toString() ?? '');
+    String rawDate = existing?['date'] != null ? existing!['date'].toString().split('T')[0] : '';
     String timeVal = existing?['time']?.toString() ?? '';
     bool submitting = false;
+    String? error;
 
     await showDialog(
       context: context,
       builder: (dlgCtx) => StatefulBuilder(
         builder: (context, setDlgState) {
-          final isDark = Theme.of(context).brightness == Brightness.dark;
-          final inputBg = isDark
-              ? CubagColors.ink
-              : const Color(0xFFFAF6F0);
-          final borderCol = isDark
-              ? const Color(0xFF3D261C)
-              : CubagColors.line;
+          Future<void> submit() async {
+            final title = titleCtrl.text.trim();
+            final loc = locationCtrl.text.trim();
+            if (title.isEmpty || loc.isEmpty || rawDate.isEmpty || timeVal.isEmpty) {
+              setDlgState(() => error = 'Add a title, a venue, a date and a time.');
+              return;
+            }
+            setDlgState(() {
+              submitting = true;
+              error = null;
+            });
+            final data = {
+              'title': title,
+              'location': loc,
+              'description': descCtrl.text.trim(),
+              'date': rawDate,
+              'time': timeVal,
+            };
+            try {
+              if (isEdit) {
+                await _api.putData('events/${existing['id']}', data);
+              } else {
+                await _api.postData('events', data);
+              }
+              if (dlgCtx.mounted) {
+                Navigator.pop(dlgCtx);
+                _fetch(refresh: true);
+              }
+            } catch (e) {
+              setDlgState(() {
+                submitting = false;
+                error = 'Could not save the event. Try again.';
+              });
+            }
+          }
 
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: _kOrange.withAlpha(25),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.event_note_rounded,
-                    color: _kOrange,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  isEdit ? 'Edit Event Details' : 'Create New Event',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
-                  ),
-                ),
-              ],
-            ),
-            content: SizedBox(
-              width: 520,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Provide event scheduling, venue details, and agenda description.',
-                      style: TextStyle(
-                        fontSize: 17,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-
-                    // Title
-                    TextField(
-                      controller: titleCtrl,
-                      decoration: InputDecoration(
-                        labelText: 'Event Title *',
-                        hintText: 'e.g. CUBAG Annual General Meeting 2026',
-                        prefixIcon: const Icon(Icons.title_rounded, size: 20),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Venue / Location
-                    TextField(
-                      controller: locationCtrl,
-                      decoration: InputDecoration(
-                        labelText: 'Venue / Location *',
-                        hintText: 'e.g. Accra International Conference Centre',
-                        prefixIcon: const Icon(
-                          Icons.location_on_outlined,
-                          size: 20,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Date & Time pickers
-                    Row(
-                      children: [
-                        // Date picker
-                        Expanded(
-                          child: InkWell(
-                            onTap: () async {
-                              final picked = await showDatePicker(
-                                context: context,
-                                initialDate: rawDate.isNotEmpty
-                                    ? DateTime.tryParse(rawDate) ??
-                                          DateTime.now()
-                                    : DateTime.now(),
-                                firstDate: DateTime(2020),
-                                lastDate: DateTime(2035),
-                              );
-                              if (picked != null) {
-                                setDlgState(() {
-                                  rawDate =
-                                      '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
-                                });
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 14,
-                              ),
-                              decoration: BoxDecoration(
-                                color: inputBg,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: borderCol),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.calendar_today_outlined,
-                                    size: 18,
-                                    color: _kOrange,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      rawDate.isNotEmpty
-                                          ? rawDate
-                                          : 'Select Date *',
-                                      style: TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: rawDate.isNotEmpty
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                        color: rawDate.isNotEmpty
-                                            ? null
-                                            : Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-
-                        // Time picker
-                        Expanded(
-                          child: InkWell(
-                            onTap: () async {
-                              final picked = await showTimePicker(
-                                context: context,
-                                initialTime: TimeOfDay.now(),
-                              );
-                              if (picked != null) {
-                                setDlgState(() {
-                                  final hour = picked.hourOfPeriod == 0
-                                      ? 12
-                                      : picked.hourOfPeriod;
-                                  final minute = picked.minute
-                                      .toString()
-                                      .padLeft(2, '0');
-                                  final period = picked.period == DayPeriod.am
-                                      ? 'AM'
-                                      : 'PM';
-                                  timeVal = '$hour:$minute $period';
-                                });
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 14,
-                              ),
-                              decoration: BoxDecoration(
-                                color: inputBg,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: borderCol),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.access_time_rounded,
-                                    size: 18,
-                                    color: _kOrange,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      timeVal.isNotEmpty
-                                          ? timeVal
-                                          : 'Select Time *',
-                                      style: TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: timeVal.isNotEmpty
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                        color: timeVal.isNotEmpty
-                                            ? null
-                                            : Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Description
-                    TextField(
-                      controller: descCtrl,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        labelText: 'Description & Agenda',
-                        hintText:
-                            'Brief summary of agenda, keynote speakers, or requirements...',
-                        alignLabelWithHint: true,
-                        prefixIcon: const Padding(
-                          padding: EdgeInsets.only(bottom: 40),
-                          child: Icon(Icons.description_outlined, size: 20),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          return AdminDialog(
+            title: isEdit ? 'Edit event' : 'New event',
+            subtitle: 'Members see it in the app and can add it to their calendar.',
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dlgCtx),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.grey),
+              TextButton(onPressed: () => Navigator.pop(dlgCtx), child: const Text('Cancel')),
+              FilledButton(
+                onPressed: submitting ? null : submit,
+                child: Text(submitting ? 'Saving…' : (isEdit ? 'Save changes' : 'Publish event')),
+              ),
+            ],
+            children: [
+              AdminField(
+                label: 'Title',
+                child: TextField(
+                  controller: titleCtrl,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(hintText: 'For example: Annual general meeting 2026'),
                 ),
               ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kOrange,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              AdminField(
+                label: 'Venue',
+                child: TextField(
+                  controller: locationCtrl,
+                  decoration: const InputDecoration(hintText: 'For example: CUBAG office, Tema'),
+                ),
+              ),
+              AdminFieldPair(
+                AdminField(
+                  label: 'Date',
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(alignment: Alignment.centerLeft),
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.tryParse(rawDate) ?? DateTime.now(),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2035),
+                      );
+                      if (picked != null) {
+                        setDlgState(() => rawDate =
+                            '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}');
+                      }
+                    },
+                    icon: const Icon(Icons.calendar_today_outlined, size: 18),
+                    label: Text(rawDate.isEmpty ? 'Pick a date' : rawDate),
                   ),
                 ),
-                onPressed: submitting
-                    ? null
-                    : () async {
-                        final title = titleCtrl.text.trim();
-                        final loc = locationCtrl.text.trim();
-                        if (title.isEmpty ||
-                            loc.isEmpty ||
-                            rawDate.isEmpty ||
-                            timeVal.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Please complete all required fields (Title, Venue, Date, Time)',
-                              ),
-                            ),
-                          );
-                          return;
-                        }
-
-                        setDlgState(() => submitting = true);
-                        try {
-                          if (isEdit) {
-                            await _api.putData('events/${existing['id']}', {
-                              'title': title,
-                              'location': loc,
-                              'description': descCtrl.text.trim(),
-                              'date': rawDate,
-                              'time': timeVal,
-                            });
-                          } else {
-                            await _api.postData('events', {
-                              'title': title,
-                              'location': loc,
-                              'description': descCtrl.text.trim(),
-                              'date': rawDate,
-                              'time': timeVal,
-                            });
-                          }
-                          if (dlgCtx.mounted) {
-                            Navigator.pop(dlgCtx);
-                            _fetch(refresh: true);
-                          }
-                        } catch (e) {
-                          setDlgState(() => submitting = false);
-                          if (dlgCtx.mounted) {
-                            ScaffoldMessenger.of(dlgCtx).showSnackBar(
-                              SnackBar(
-                                content: Text('Failed to save event: $e'),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                child: submitting
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : Text(
-                        isEdit ? 'Save Changes' : 'Publish Event',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                AdminField(
+                  label: 'Time',
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(alignment: Alignment.centerLeft),
+                    onPressed: () async {
+                      final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+                      if (picked != null) {
+                        setDlgState(() {
+                          final hour = picked.hourOfPeriod == 0 ? 12 : picked.hourOfPeriod;
+                          final minute = picked.minute.toString().padLeft(2, '0');
+                          timeVal = '$hour:$minute ${picked.period == DayPeriod.am ? 'AM' : 'PM'}';
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.access_time_rounded, size: 18),
+                    label: Text(timeVal.isEmpty ? 'Pick a time' : timeVal),
+                  ),
+                ),
               ),
+              AdminField(
+                label: 'Details (optional)',
+                child: TextField(
+                  controller: descCtrl,
+                  minLines: 3,
+                  maxLines: 8,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(hintText: 'Agenda, speakers, what to bring'),
+                ),
+              ),
+              if (error != null) Text(error!, style: CubagType.small.copyWith(color: CubagColors.lapsed)),
             ],
           );
         },
       ),
     );
-
     titleCtrl.dispose();
     locationCtrl.dispose();
     descCtrl.dispose();

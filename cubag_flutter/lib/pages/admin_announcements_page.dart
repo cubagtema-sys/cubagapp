@@ -1,3 +1,4 @@
+import '../components/admin_dialog.dart';
 import '../components/admin_components.dart';
 import '../components/custom_dropdown.dart';
 import '../components/filter_tabs.dart';
@@ -11,13 +12,8 @@ import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
 import '../design/cubag_design.dart';
 
-const _kOrange = CubagColors.action;
 const _kGreen = CubagColors.valid;
 const _kRed = CubagColors.lapsed;
-const _kAmber = CubagColors.due;
-const _kBlue = Color(0xFF3B82F6);
-const _kIndigo = Color(0xFF6366F1);
-const _kPurple = Color(0xFF8B5CF6);
 
 class AdminAnnouncementsPage extends StatefulWidget {
   const AdminAnnouncementsPage({super.key});
@@ -198,367 +194,107 @@ class _AdminAnnouncementsPageState extends State<AdminAnnouncementsPage> {
     }
   }
 
-  Future<void> _showCreateDialog() async {
-    final titleCtrl = TextEditingController();
-    final bodyCtrl = TextEditingController();
-    String category = 'General';
-    bool submitting = false;
+  Future<void> _showCreateDialog() => _showAnnouncementDialog();
+
+  Future<void> _showEditDialog(Map<String, dynamic> item) => _showAnnouncementDialog(item);
+
+  /// One form for new and existing announcements.
+  Future<void> _showAnnouncementDialog([Map<String, dynamic>? item]) async {
+    final editing = item != null;
+    final titleCtrl = TextEditingController(text: item?['title']?.toString() ?? '');
+    final bodyCtrl = TextEditingController(text: item?['body']?.toString() ?? '');
+    String category = item?['category']?.toString() ?? 'General';
+    bool busy = false;
+    String? error;
 
     await showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
-          final isDark = Theme.of(context).brightness == Brightness.dark;
-          final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-          final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-          final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
-          final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
+          Future<void> submit() async {
+            final title = titleCtrl.text.trim();
+            final body = bodyCtrl.text.trim();
+            if (title.isEmpty || body.isEmpty) {
+              setDialogState(() => error = 'Add a title and a message.');
+              return;
+            }
+            setDialogState(() {
+              busy = true;
+              error = null;
+            });
+            try {
+              bool ok;
+              if (editing) {
+                final res = await _api.put(
+                  '/announcements/${item['id']}',
+                  data: {'title': title, 'body': body, 'category': category},
+                );
+                ok = res.statusCode == 200;
+              } else {
+                final res = await _api.postData('announcements', {
+                  'title': title,
+                  'body': body,
+                  'category': category,
+                });
+                ok = res != null;
+              }
+              if (ok) {
+                if (ctx.mounted) Navigator.pop(ctx);
+                _showToast(editing ? 'Announcement updated.' : 'Announcement published.', _kGreen);
+                await _clearCache();
+                _fetchActive(page: editing ? _pageActive : 1);
+                return;
+              }
+              setDialogState(() => error = 'Could not save. Try again.');
+            } catch (e, st) {
+              AppLogger.error('admin_announcement_save', e, st);
+              setDialogState(() => error = 'Could not save. Check the connection and try again.');
+            }
+            if (mounted) setDialogState(() => busy = false);
+          }
 
-          final categories = [
-            {'label': 'General', 'key': 'General', 'icon': Icons.article_outlined, 'color': _kBlue},
-            {'label': 'Urgent', 'key': 'Urgent Alert', 'icon': Icons.priority_high_rounded, 'color': _kRed},
-            {'label': 'Regulatory', 'key': 'Regulatory & Port Advisory', 'icon': Icons.gavel_rounded, 'color': _kIndigo},
-            {'label': 'Maintenance', 'key': 'System Maintenance', 'icon': Icons.build_circle_outlined, 'color': _kAmber},
-            {'label': 'Event', 'key': 'Event', 'icon': Icons.event_rounded, 'color': _kPurple},
-          ];
-
-          return Dialog(
-            backgroundColor: cardBg,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Padding(
-                padding: const EdgeInsets.all(22),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(color: _kOrange.withAlpha(25), borderRadius: BorderRadius.circular(8)),
-                          child: const Icon(Icons.campaign_rounded, color: _kOrange, size: 20),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'New announcement',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textCol),
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: 'Close',
-                          icon: const Icon(Icons.close_rounded, size: 20),
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Divider(height: 1),
-                    const SizedBox(height: 14),
-
-                    Text(
-                      'Category',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5),
-                    ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: categories.map((c) {
-                        final sel = category == c['key'];
-                        const color = CubagColors.cocoa;
-                        return InkWell(
-                          onTap: () => setDialogState(() => category = c['key'] as String),
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: sel ? color.withAlpha(25) : (isDark ? const Color(0xFF4D2D20) : CubagColors.sand),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: sel ? color : border, width: sel ? 1.5 : 1),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(c['icon'] as IconData, size: 13, color: sel ? color : textMuted),
-                                const SizedBox(width: 5),
-                                Text(
-                                  c['label'] as String,
-                                  style: TextStyle(
-                                    fontSize: 12.5,
-                                    fontWeight: sel ? FontWeight.w800 : FontWeight.w600,
-                                    color: sel ? color : textCol,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 14),
-
-                    Text(
-                      'Title',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: titleCtrl,
-                      style: TextStyle(fontSize: 14, color: textCol),
-                      decoration: InputDecoration(
-                        hintText: 'For example: New clearance hours at Tema',
-                        hintStyle: TextStyle(fontSize: 13, color: textMuted),
-                        isDense: true,
-                        filled: true,
-                        fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    Text(
-                      'Message',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: bodyCtrl,
-                      maxLines: 5,
-                      style: TextStyle(fontSize: 13.5, color: textCol, height: 1.4),
-                      decoration: InputDecoration(
-                        hintText: 'Enter announcement directives, dates, or guidelines for members...',
-                        hintStyle: TextStyle(fontSize: 13, color: textMuted),
-                        isDense: true,
-                        filled: true,
-                        fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kOrange)),
-                        contentPadding: const EdgeInsets.all(12),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600, color: textMuted)),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton.icon(
-                          onPressed: submitting
-                              ? null
-                              : () async {
-                                  final title = titleCtrl.text.trim();
-                                  final body = bodyCtrl.text.trim();
-                                  if (title.isEmpty || body.isEmpty) {
-                                    _showToast('Please provide both title and message content', _kAmber);
-                                    return;
-                                  }
-                                  setDialogState(() => submitting = true);
-                                  try {
-                                    final res = await _api.postData('announcements', {
-                                      'title': title,
-                                      'body': body,
-                                      'category': category,
-                                      'posted_by': 'CUBAG Secretariat',
-                                    });
-                                    if (res != null) {
-                                      if (ctx.mounted) Navigator.pop(ctx);
-                                      _showToast('Announcement published successfully!', _kGreen);
-                                      await _clearCache();
-                                      _fetchActive(page: 1);
-                                    }
-                                  } catch (e, st) {
-                                    AppLogger.error('admin_announcements_create', e, st);
-                                    _showToast('Failed to publish announcement', _kRed);
-                                  }
-                                  if (mounted) setDialogState(() => submitting = false);
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _kOrange,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            elevation: 0,
-                          ),
-                          icon: submitting
-                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.send_rounded, size: 15),
-                          label: Text(submitting ? 'Publishing…' : 'Publish', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
-                        ),
-                      ],
-                    ),
-                  ],
+          return AdminDialog(
+            title: editing ? 'Edit announcement' : 'New announcement',
+            subtitle: editing
+                ? 'Changes show on members\' Home screen straight away.'
+                : 'Every member sees it on their Home screen and gets a notification.',
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              FilledButton(
+                onPressed: busy ? null : submit,
+                child: Text(busy ? 'Saving…' : (editing ? 'Save changes' : 'Publish')),
+              ),
+            ],
+            children: [
+              AdminField(
+                label: 'Category',
+                child: AdminChoice<String>(
+                  options: [for (final c in _categories.skip(1)) (c.$1, c.$2)],
+                  value: category,
+                  onChanged: (v) => setDialogState(() => category = v),
                 ),
               ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Future<void> _showEditDialog(Map<String, dynamic> item) async {
-    final titleEditCtrl = TextEditingController(text: item['title'] ?? '');
-    final bodyEditCtrl = TextEditingController(text: item['body'] ?? '');
-    String editCategory = item['category'] ?? 'General';
-    bool saving = false;
-
-    await showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          final isDark = Theme.of(context).brightness == Brightness.dark;
-          final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
-          final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-          final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
-          final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
-
-          return Dialog(
-            backgroundColor: cardBg,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Padding(
-                padding: const EdgeInsets.all(22),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(color: _kOrange.withAlpha(25), borderRadius: BorderRadius.circular(8)),
-                          child: const Icon(Icons.edit_note_rounded, color: _kOrange, size: 20),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text('Edit announcement', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textCol)),
-                        ),
-                        IconButton(
-                          tooltip: 'Close',
-                          icon: const Icon(Icons.close_rounded, size: 20),
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Divider(height: 1),
-                    const SizedBox(height: 14),
-
-                    Text('Category', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5)),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: ['General', 'Urgent Alert', 'Regulatory & Port Advisory', 'System Maintenance', 'Event'].map((c) {
-                        final sel = editCategory == c;
-                        return ChoiceChip(
-                          label: Text(_shortCategory(c), style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: sel ? Colors.white : textCol)),
-                          selected: sel,
-                          showCheckmark: false,
-                          selectedColor: CubagColors.cocoa,
-                          backgroundColor: isDark ? const Color(0xFF4D2D20) : CubagColors.sand,
-                          onSelected: (val) {
-                            if (val) setDialogState(() => editCategory = c);
-                          },
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 14),
-
-                    Text('Title', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5)),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: titleEditCtrl,
-                      style: TextStyle(fontSize: 14, color: textCol),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        filled: true,
-                        fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    Text('Message', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textMuted, letterSpacing: 0.5)),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: bodyEditCtrl,
-                      maxLines: 5,
-                      style: TextStyle(fontSize: 13.5, color: textCol, height: 1.4),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        filled: true,
-                        fillColor: isDark ? CubagColors.ink : const Color(0xFFFAF6F0),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
-                        contentPadding: const EdgeInsets.all(12),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600, color: textMuted)),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton.icon(
-                          onPressed: saving
-                              ? null
-                              : () async {
-                                  final newT = titleEditCtrl.text.trim();
-                                  final newB = bodyEditCtrl.text.trim();
-                                  if (newT.isEmpty || newB.isEmpty) return;
-
-                                  setDialogState(() => saving = true);
-                                  try {
-                                    final res = await _api.put(
-                                      '/announcements/${item['id']}',
-                                      data: {'title': newT, 'body': newB, 'category': editCategory},
-                                    );
-                                    if (res.statusCode == 200) {
-                                      if (ctx.mounted) Navigator.pop(ctx);
-                                      _showToast('Announcement updated successfully!', _kGreen);
-                                      await _clearCache();
-                                      _fetchActive(page: _pageActive);
-                                    }
-                                  } catch (e, st) {
-                                    AppLogger.error('admin_announcements_edit', e, st);
-                                  }
-                                  if (mounted) setDialogState(() => saving = false);
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _kOrange,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            elevation: 0,
-                          ),
-                          icon: saving
-                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.check_rounded, size: 15),
-                          label: Text('Save', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
-                        ),
-                      ],
-                    ),
-                  ],
+              AdminField(
+                label: 'Title',
+                child: TextField(
+                  controller: titleCtrl,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(hintText: 'For example: New clearance hours at Tema'),
                 ),
               ),
-            ),
+              AdminField(
+                label: 'Message',
+                child: TextField(
+                  controller: bodyCtrl,
+                  minLines: 5,
+                  maxLines: 12,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(hintText: 'What members need to know, and what to do'),
+                ),
+              ),
+              if (error != null)
+                Text(error!, style: CubagType.small.copyWith(color: CubagColors.lapsed)),
+            ],
           );
         },
       ),

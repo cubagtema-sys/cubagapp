@@ -1,3 +1,4 @@
+import '../components/admin_dialog.dart';
 import '../components/custom_dropdown.dart';
 import '../components/filter_tabs.dart';
 import '../components/cubag_ui.dart';
@@ -11,7 +12,6 @@ import '../services/auth_service.dart';
 import '../utils/app_logger.dart';
 import '../design/cubag_design.dart';
 
-const _kOrange = CubagColors.action;
 const _kGreen = CubagColors.valid;
 const _kBlue = Color(0xFF3b82f6);
 const _kRed = CubagColors.lapsed;
@@ -39,21 +39,21 @@ const _kAllPermissions = [
 ];
 
 const _kPermissionLabels = {
-  'members': 'Member Management',
-  'payments': 'Financial Center',
-  'tickets': 'Support Tickets',
+  'members': 'Members',
+  'payments': 'Payments',
+  'tickets': 'Tickets',
   'announcements': 'Announcements',
   'schedules': 'Schedules',
-  'events': 'Events & Meetings',
-  'surveys': 'Surveys',
+  'events': 'Events',
+  'surveys': 'Polls',
   'intelligence': 'Insights',
-  'audit_log': 'Audit Log',
-  'fees': 'Platform Fees',
-  'settings': 'System Settings',
-  'compliance': 'Compliance & Licensing',
-  'documents': 'Documents Hub',
-  'messaging': 'Member Messaging',
-  'notifications': 'Broadcasts & Alerts',
+  'audit_log': 'Audit',
+  'fees': 'Fees',
+  'settings': 'Settings',
+  'compliance': 'Compliance',
+  'documents': 'Applications',
+  'messaging': 'Messages',
+  'notifications': 'Notifications',
 };
 
 const _kPermissionDescriptions = {
@@ -111,7 +111,7 @@ class _RoleTemplate {
 const _kRoleTemplates = [
   _RoleTemplate(
     id: 'compliance',
-    label: 'Compliance Officer',
+    label: 'Compliance officer',
     description: 'Member ID, renewals & document inspection',
     icon: Icons.verified_user_outlined,
     color: _kGreen,
@@ -119,7 +119,7 @@ const _kRoleTemplates = [
   ),
   _RoleTemplate(
     id: 'membership',
-    label: 'Membership Officer',
+    label: 'Membership officer',
     description: 'Member onboarding, status & support',
     icon: Icons.badge_outlined,
     color: _kBlue,
@@ -133,7 +133,7 @@ const _kRoleTemplates = [
   ),
   _RoleTemplate(
     id: 'finance',
-    label: 'Finance Officer',
+    label: 'Finance officer',
     description: 'Payments, dues & fee configuration',
     icon: Icons.account_balance_outlined,
     color: _kGreen,
@@ -155,7 +155,7 @@ const _kRoleTemplates = [
   ),
   _RoleTemplate(
     id: 'operations',
-    label: 'Operations Support',
+    label: 'Operations',
     description: 'Tickets, schedules & member queries',
     icon: Icons.support_agent_outlined,
     color: _kPurple,
@@ -298,20 +298,12 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
     Color subTextColor,
     Color inputBg,
   ) {
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (ctx) => _CreateSubAdminSheet(
-        isDark: isDark,
-        cardBg: cardBg,
-        borderColor: borderColor,
-        textColor: textColor,
-        subTextColor: subTextColor,
-        inputBg: inputBg,
         onCreated: () {
           Navigator.pop(ctx);
-          _toast('Sub-admin created successfully');
+          _toast('Admin added');
           _fetch();
         },
       ),
@@ -326,7 +318,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
         subAdmin: sa,
         onSaved: () {
           Navigator.pop(ctx);
-          _toast('Permissions updated successfully');
+          _toast('Access saved');
           _fetch();
         },
       ),
@@ -562,24 +554,75 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
   }
 }
 
+/// Role presets plus one switch per section; shared by the add and edit pop-ups.
+class _SectionPicker extends StatelessWidget {
+  final Set<String> selected;
+  final String? template;
+  final void Function(Set<String> perms, String? template) onChanged;
+  const _SectionPicker({required this.selected, required this.template, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final all = selected.length == _kAllPermissions.length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AdminField(
+          label: 'Start from a role',
+          help: 'Fills in the sections below. You can still change them.',
+          child: AdminChoice<String>(
+            options: [for (final t in _kRoleTemplates) (t.id, t.label), ('full', 'Full access')],
+            value: template ?? '',
+            onChanged: (id) {
+              if (id == 'full') {
+                onChanged(Set<String>.from(_kAllPermissions), 'full');
+              } else {
+                final t = _kRoleTemplates.firstWhere((t) => t.id == id);
+                onChanged(Set<String>.from(t.permissions), id);
+              }
+            },
+          ),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Sections they can open · ${selected.length} of ${_kAllPermissions.length}',
+                style: CubagType.label,
+              ),
+            ),
+            TextButton(
+              onPressed: () => onChanged(all ? <String>{} : Set<String>.from(_kAllPermissions), all ? null : 'full'),
+              child: Text(all ? 'Clear all' : 'Select all'),
+            ),
+          ],
+        ),
+        const SizedBox(height: CubagSpace.xs),
+        AdminRowGroup(
+          children: [
+            for (final perm in _kAllPermissions)
+              SwitchListTile(
+                value: selected.contains(perm),
+                onChanged: (v) {
+                  final next = Set<String>.from(selected);
+                  v ? next.add(perm) : next.remove(perm);
+                  onChanged(next, null);
+                },
+                secondary: Icon(_kPermissionIcons[perm] ?? Icons.check_rounded, color: CubagColors.cocoa, size: 20),
+                title: Text(_kPermissionLabels[perm] ?? perm, style: CubagType.bodyStrong),
+                subtitle: Text(_kPermissionDescriptions[perm] ?? '', style: CubagType.caption),
+                dense: true,
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class _CreateSubAdminSheet extends StatefulWidget {
   final VoidCallback onCreated;
-  final bool isDark;
-  final Color cardBg;
-  final Color borderColor;
-  final Color textColor;
-  final Color subTextColor;
-  final Color inputBg;
-
-  const _CreateSubAdminSheet({
-    required this.onCreated,
-    required this.isDark,
-    required this.cardBg,
-    required this.borderColor,
-    required this.textColor,
-    required this.subTextColor,
-    required this.inputBg,
-  });
+  const _CreateSubAdminSheet({required this.onCreated});
   @override
   State<_CreateSubAdminSheet> createState() => _CreateSubAdminSheetState();
 }
@@ -589,22 +632,11 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
-  final Set<String> _selectedPerms = {};
-  String? _selectedTemplate;
+  Set<String> _perms = {};
+  String? _template;
   bool _loading = false;
   bool _obscure = true;
-
-  void _applyTemplate(String templateId) {
-    final tpl = _kRoleTemplates.firstWhere(
-      (t) => t.id == templateId,
-      orElse: () => _kRoleTemplates.first,
-    );
-    setState(() {
-      _selectedTemplate = templateId;
-      _selectedPerms.clear();
-      _selectedPerms.addAll(tpl.permissions);
-    });
-  }
+  String? _error;
 
   @override
   void dispose() {
@@ -616,339 +648,100 @@ class _CreateSubAdminSheetState extends State<_CreateSubAdminSheet> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _loading = true);
+    if (_perms.isEmpty) {
+      setState(() => _error = 'Choose at least one section.');
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
-      final res = await ApiService().post(
-        '/sub-admins/',
-        data: {
-          'name': _nameCtrl.text.trim(),
-          'email': _emailCtrl.text.trim().toLowerCase(),
-          'password': _passCtrl.text.trim(),
-          'permissions': _selectedPerms.toList(),
-        },
-      );
+      final res = await ApiService().post('/sub-admins/', data: {
+        'name': _nameCtrl.text.trim(),
+        'email': _emailCtrl.text.trim().toLowerCase(),
+        'password': _passCtrl.text.trim(),
+        'permissions': _perms.toList(),
+      });
       if (!mounted) return;
       if (res.statusCode == 201) {
         widget.onCreated();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              res.data['message'] ?? 'Failed to create sub-admin',
-              style: const TextStyle(),
-            ),
-            backgroundColor: _kRed,
-          ),
-        );
+        return;
       }
+      setState(() => _error = (res.data is Map ? res.data['message'] : null)?.toString() ?? 'Could not add the admin.');
     } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Network error', style: const TextStyle())),
-        );
-      }
+      if (mounted) setState(() => _error = 'Could not add the admin. Check the connection and try again.');
     }
     if (mounted) setState(() => _loading = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: widget.cardBg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        24,
-        16,
-        24,
-        MediaQuery.of(context).viewInsets.bottom + 32,
-      ),
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Container(
-                  width: 48,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: widget.borderColor,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'New Sub-Admin Account',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24,
-                  color: widget.textColor,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Provision a new officer with scoped operational modules.',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: widget.subTextColor,
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              TextFormField(
+    return Form(
+      key: _formKey,
+      child: AdminDialog(
+        title: 'Add admin',
+        subtitle: 'They sign in to this portal with this email and the temporary password.',
+        maxWidth: 640,
+        actions: [
+          TextButton(onPressed: _loading ? null : () => Navigator.pop(context), child: const Text('Cancel')),
+          FilledButton(onPressed: _loading ? null : _submit, child: Text(_loading ? 'Adding…' : 'Add admin')),
+        ],
+        children: [
+          AdminFieldPair(
+            AdminField(
+              label: 'Full name',
+              child: TextFormField(
                 controller: _nameCtrl,
-                style: TextStyle(
-                  color: widget.textColor,
-                  fontSize: 16,
-                ),
-                decoration: _inputDeco(
-                  label: 'Full Name',
-                  icon: Icons.person_outline_rounded,
-                ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Add their name' : null,
               ),
-              const SizedBox(height: 16),
-              TextFormField(
+            ),
+            AdminField(
+              label: 'Email',
+              child: TextFormField(
                 controller: _emailCtrl,
                 keyboardType: TextInputType.emailAddress,
-                style: TextStyle(
-                  color: widget.textColor,
-                  fontSize: 16,
-                ),
-                decoration: _inputDeco(
-                  label: 'Email Address',
-                  icon: Icons.email_outlined,
-                ),
-                validator: (v) => (v == null || !v.contains('@'))
-                    ? 'Valid email required'
-                    : null,
+                validator: (v) => (v == null || !v.contains('@')) ? 'Add a valid email' : null,
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _passCtrl,
-                obscureText: _obscure,
-                style: TextStyle(
-                  color: widget.textColor,
-                  fontSize: 16,
-                ),
-                decoration: _inputDeco(
-                  label: 'Temporary Password',
-                  icon: Icons.lock_outline_rounded,
-                  suffix: IconButton(
-                    tooltip: 'Show or hide password',
-                    icon: Icon(
-                      _obscure
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                      size: 20,
-                      color: widget.subTextColor,
-                    ),
-                    onPressed: () => setState(() => _obscure = !_obscure),
-                  ),
-                ),
-                validator: (v) =>
-                    (v == null || v.length < 6) ? 'Min 6 characters' : null,
-              ),
-
-              const SizedBox(height: 24),
-              Text(
-                'Role Preset Template',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 17,
-                  color: widget.textColor,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Select a role to auto-configure module permissions.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: widget.subTextColor,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _kRoleTemplates.map((tpl) {
-                  final isSelected = _selectedTemplate == tpl.id;
-                  return ChoiceChip(
-                    avatar: Icon(
-                      tpl.icon,
-                      size: 16,
-                      color: isSelected ? Colors.white : tpl.color,
-                    ),
-                    label: Text(
-                      tpl.label,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    selected: isSelected,
-                    selectedColor: tpl.color,
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : widget.textColor,
-                    ),
-                    onSelected: (_) => _applyTemplate(tpl.id),
-                  );
-                }).toList(),
-              ),
-
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                    Text(
-                      'Granted Modules (${_selectedPerms.length} of ${_kAllPermissions.length})',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: widget.textColor,
-                      ),
-                    ),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        if (_selectedPerms.length == _kAllPermissions.length) {
-                          _selectedPerms.clear();
-                        } else {
-                          _selectedPerms.addAll(_kAllPermissions);
-                        }
-                      });
-                    },
-                    child: Text(
-                      _selectedPerms.length == _kAllPermissions.length
-                          ? 'Clear all'
-                          : 'Select all',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              ..._kAllPermissions.map((perm) {
-                final isGranted = _selectedPerms.contains(perm);
-                return CheckboxListTile(
-                  dense: true,
-                  title: Text(
-                    _kPermissionLabels[perm] ?? perm,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: widget.textColor,
-                    ),
-                  ),
-                  subtitle: Text(
-                    _kPermissionDescriptions[perm] ?? '',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: widget.subTextColor,
-                    ),
-                  ),
-                  secondary: Icon(
-                    _kPermissionIcons[perm] ?? Icons.check_rounded,
-                    size: 18,
-                    color: isGranted ? _kOrange : widget.subTextColor,
-                  ),
-                  value: isGranted,
-                  activeColor: _kOrange,
-                  side: BorderSide(color: widget.subTextColor.withAlpha(120)),
-                  onChanged: (v) => setState(() {
-                    v == true
-                        ? _selectedPerms.add(perm)
-                        : _selectedPerms.remove(perm);
-                    _selectedTemplate = null;
-                  }),
-                );
-              }),
-
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _loading ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _kOrange,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _loading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          'Create Sub-Admin',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
-    );
-  }
-
-  InputDecoration _inputDeco({
-    required String label,
-    required IconData icon,
-    Widget? suffix,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(icon, size: 20, color: widget.subTextColor),
-      suffixIcon: suffix,
-      filled: true,
-      fillColor: widget.inputBg,
-      labelStyle: TextStyle(fontSize: 16, color: widget.subTextColor),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: widget.borderColor, width: 1.2),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: _kOrange, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 1.2),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 2),
+          AdminField(
+            label: 'Temporary password',
+            help: 'At least 6 characters. Share it privately; they should change it after signing in.',
+            child: TextFormField(
+              controller: _passCtrl,
+              obscureText: _obscure,
+              validator: (v) => (v == null || v.length < 6) ? 'At least 6 characters' : null,
+              decoration: InputDecoration(
+                suffixIcon: IconButton(
+                  tooltip: _obscure ? 'Show password' : 'Hide password',
+                  icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                  onPressed: () => setState(() => _obscure = !_obscure),
+                ),
+              ),
+            ),
+          ),
+          _SectionPicker(
+            selected: _perms,
+            template: _template,
+            onChanged: (p, t) => setState(() {
+              _perms = p;
+              _template = t;
+            }),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: CubagSpace.md),
+            Text(_error!, style: CubagType.small.copyWith(color: CubagColors.lapsed)),
+          ],
+        ],
       ),
     );
   }
 }
 
-// ── Redesigned Edit permissions modal dialog ──────────────────────────────────
 class _EditPermissionsDialog extends StatefulWidget {
   final Map<String, dynamic> subAdmin;
   final VoidCallback onSaved;
-
   const _EditPermissionsDialog({required this.subAdmin, required this.onSaved});
 
   @override
@@ -957,8 +750,9 @@ class _EditPermissionsDialog extends StatefulWidget {
 
 class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
   late Set<String> _selected;
-  String? _activeTemplate;
+  String? _template;
   bool _loading = false;
+  String? _error;
 
   @override
   void initState() {
@@ -966,20 +760,11 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
     _selected = Set<String>.from(widget.subAdmin['permissions'] ?? []);
   }
 
-  void _applyTemplate(String templateId) {
-    final tpl = _kRoleTemplates.firstWhere(
-      (t) => t.id == templateId,
-      orElse: () => _kRoleTemplates.first,
-    );
-    setState(() {
-      _activeTemplate = templateId;
-      _selected.clear();
-      _selected.addAll(tpl.permissions);
-    });
-  }
-
   Future<void> _save() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final res = await ApiService().put(
         '/sub-admins/${widget.subAdmin['id']}/permissions',
@@ -988,404 +773,45 @@ class _EditPermissionsDialogState extends State<_EditPermissionsDialog> {
       if (!mounted) return;
       if (res.statusCode == 200) {
         widget.onSaved();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              res.data['message'] ?? 'Failed to update permissions',
-              style: const TextStyle(),
-            ),
-            backgroundColor: _kRed,
-          ),
-        );
+        return;
       }
+      setState(() => _error = (res.data is Map ? res.data['message'] : null)?.toString() ?? 'Could not save.');
     } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Network error', style: const TextStyle())),
-        );
-      }
+      if (mounted) setState(() => _error = 'Could not save. Check the connection and try again.');
     }
     if (mounted) setState(() => _loading = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
-    final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
-    final subTextCol = isDark
-        ? const Color(0xFFB0A298)
-        : const Color(0xFF6B5E55);
-    final borderCol = isDark
-        ? const Color(0xFF3D261C)
-        : CubagColors.line;
-    final name = widget.subAdmin['name']?.toString() ?? 'Sub-Admin';
+    final name = widget.subAdmin['name']?.toString() ?? 'Admin';
     final email = widget.subAdmin['email']?.toString() ?? '';
-
-    return Dialog(
-      backgroundColor: cardBg,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        width: 720,
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
+    return AdminDialog(
+      title: 'Access for $name',
+      subtitle: email.isEmpty ? null : '$email · changes apply the next time they open a page.',
+      maxWidth: 640,
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        FilledButton(onPressed: _loading ? null : _save, child: Text(_loading ? 'Saving…' : 'Save access')),
+      ],
+      children: [
+        _SectionPicker(
+          selected: _selected,
+          template: _template,
+          onChanged: (p, t) => setState(() {
+            _selected = p;
+            _template = t;
+          }),
         ),
-        child: Column(
-          children: [
-            // ── Dialog Header ──────────────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: borderCol)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: _kOrange.withAlpha(25),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.security_rounded,
-                      color: _kOrange,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Edit Module Privileges: $name',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                            color: textCol,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '$email • ${_selected.length} of ${_kAllPermissions.length} modules granted',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: subTextCol,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Close',
-                    icon: const Icon(Icons.close_rounded, size: 20),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Dialog Body ────────────────────────────────────────────────
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Role Presets Bar
-                    Text(
-                      'Role Preset Templates',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                        color: textCol,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Quickly apply standard operational privilege templates:',
-                      style: TextStyle(fontSize: 14, color: subTextCol),
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        ..._kRoleTemplates.map((tpl) {
-                          final isSelected = _activeTemplate == tpl.id;
-                          return ActionChip(
-                            avatar: Icon(
-                              tpl.icon,
-                              size: 15,
-                              color: isSelected ? Colors.white : tpl.color,
-                            ),
-                            label: Text(
-                              tpl.label,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            backgroundColor: isSelected
-                                ? tpl.color
-                                : tpl.color.withAlpha(20),
-                            labelStyle: TextStyle(
-                              color: isSelected ? Colors.white : tpl.color,
-                            ),
-                            onPressed: () => _applyTemplate(tpl.id),
-                          );
-                        }),
-                        ActionChip(
-                          avatar: const Icon(
-                            Icons.select_all_rounded,
-                            size: 15,
-                            color: _kGreen,
-                          ),
-                          label: const Text(
-                            'Full Access (All)',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          backgroundColor: _kGreen.withAlpha(20),
-                          labelStyle: const TextStyle(color: _kGreen),
-                          onPressed: () {
-                            setState(() {
-                              _activeTemplate = 'full';
-                              _selected.addAll(_kAllPermissions);
-                            });
-                          },
-                        ),
-                        ActionChip(
-                          avatar: const Icon(
-                            Icons.clear_rounded,
-                            size: 15,
-                            color: _kRed,
-                          ),
-                          label: const Text(
-                            'Revoke All',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          backgroundColor: _kRed.withAlpha(20),
-                          labelStyle: const TextStyle(color: _kRed),
-                          onPressed: () {
-                            setState(() {
-                              _activeTemplate = 'none';
-                              _selected.clear();
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    const Divider(),
-                    const SizedBox(height: 12),
-
-                    // Grid of Permission Modules
-                    Text(
-                      'Granular Module Access Controls',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: textCol,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 320,
-                            mainAxisSpacing: 10,
-                            crossAxisSpacing: 10,
-                            childAspectRatio: 2.8,
-                          ),
-                      itemCount: _kAllPermissions.length,
-                      itemBuilder: (ctx, i) {
-                        final perm = _kAllPermissions[i];
-                        final isGranted = _selected.contains(perm);
-                        final label = _kPermissionLabels[perm] ?? perm;
-                        final desc = _kPermissionDescriptions[perm] ?? '';
-                        final icon =
-                            _kPermissionIcons[perm] ?? Icons.check_rounded;
-
-                        return InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () {
-                            setState(() {
-                              isGranted
-                                  ? _selected.remove(perm)
-                                  : _selected.add(perm);
-                              _activeTemplate = null;
-                            });
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isGranted
-                                  ? _kOrange.withAlpha(20)
-                                  : (isDark
-                                        ? CubagColors.ink.withAlpha(120)
-                                        : CubagColors.sand),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isGranted
-                                    ? _kOrange.withAlpha(120)
-                                    : borderCol,
-                                width: isGranted ? 1.5 : 1.0,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: isGranted
-                                        ? _kOrange
-                                        : Colors.grey.withAlpha(30),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(
-                                    icon,
-                                    size: 16,
-                                    color: isGranted
-                                        ? Colors.white
-                                        : subTextCol,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        label,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                          color: isGranted
-                                              ? (isDark
-                                                    ? Colors.white
-                                                    : CubagColors.ink)
-                                              : subTextCol,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      Text(
-                                        desc,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: subTextCol,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Checkbox(
-                                  value: isGranted,
-                                  activeColor: _kOrange,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  onChanged: (v) {
-                                    setState(() {
-                                      v == true
-                                          ? _selected.add(perm)
-                                          : _selected.remove(perm);
-                                      _activeTemplate = null;
-                                    });
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // ── Dialog Footer ──────────────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: borderCol)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${_selected.length} modules selected',
-                    style: TextStyle(
-                      color: subTextCol,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Cancel'),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _kOrange,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: _loading ? null : _save,
-                        icon: _loading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.check_rounded, size: 18),
-                        label: Text(
-                          'Save Permissions',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+        if (_selected.isEmpty) ...[
+          const SizedBox(height: CubagSpace.sm),
+          Text('With no sections they can sign in but cannot open anything.', style: CubagType.small.copyWith(color: CubagColors.due)),
+        ],
+        if (_error != null) ...[
+          const SizedBox(height: CubagSpace.sm),
+          Text(_error!, style: CubagType.small.copyWith(color: CubagColors.lapsed)),
+        ],
+      ],
     );
   }
 }

@@ -1,3 +1,4 @@
+import '../components/admin_dialog.dart';
 import '../components/filter_tabs.dart';
 import '../components/cubag_ui.dart';
 import '../components/admin_list.dart';
@@ -8,10 +9,6 @@ import '../services/api_service.dart';
 import '../utils/app_logger.dart';
 import '../design/cubag_design.dart';
 
-const _kOrange = CubagColors.action;
-const _kBlue = Color(0xFF3b82f6);
-const _kPurple = Color(0xFF8b5cf6);
-const _kCardBg = Color(0xFF22140E);
 
 class AdminAuditLogPage extends StatefulWidget {
   const AdminAuditLogPage({super.key});
@@ -144,278 +141,104 @@ class _AdminAuditLogPageState extends State<AdminAuditLogPage> {
     }
   }
 
-  void _showActorDialog() {
+  /// A list of choices in the shared pop-up; the current one is ticked.
+  void _pickFrom(String title, List<(String, String, String?)> options, String current, ValueChanged<String> onPick) {
     showDialog(
       context: context,
-      builder: (ctx) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+      builder: (ctx) => AdminDialog(
+        title: title,
+        maxWidth: 420,
+        children: [
+          AdminRowGroup(
+            children: [
+              for (final o in options)
+                ListTile(
+                  title: Text(o.$2, style: CubagType.bodyStrong),
+                  subtitle: o.$3 == null ? null : Text(o.$3!, style: CubagType.caption),
+                  trailing: o.$1 == current ? const Icon(Icons.check_rounded, color: CubagColors.cocoa) : null,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onPick(o.$1);
+                  },
+                ),
+            ],
           ),
-          backgroundColor: isDark ? _kCardBg : Colors.white,
-          title: Text(
-            'Filter by Admin / Sub-Admin',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ],
+      ),
+    );
+  }
+
+  void _showActorDialog() {
+    String roleLabel(String r) => r.contains('super') ? 'Super admin' : (r.contains('sub') ? 'Sub-admin' : 'Admin');
+    _pickFrom(
+      'Show entries by',
+      [
+        ('', 'All admins', null),
+        for (final a in _actorsOptions)
+          (
+            a['id']?.toString() ?? '',
+            a['name']?.toString() ?? 'Admin #${a['id']}',
+            roleLabel((a['role']?.toString() ?? '').toLowerCase()),
           ),
-          content: SizedBox(
-            width: 360,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    title: Text(
-                      'All admins',
-                      style: TextStyle(
-                        fontWeight: _filterActorId.isEmpty
-                            ? FontWeight.bold
-                            : FontWeight.w500,
-                        color: _filterActorId.isEmpty ? _kOrange : null,
-                      ),
-                    ),
-                    trailing: _filterActorId.isEmpty
-                        ? const Icon(Icons.check, color: _kOrange, size: 18)
-                        : null,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      setState(() {
-                        _filterActorId = '';
-                        _offset = 0;
-                      });
-                      _fetchLogs();
-                    },
-                  ),
-                  const Divider(height: 1),
-                  ..._actorsOptions.map((actor) {
-                    final aId = actor['id']?.toString() ?? '';
-                    final aName = actor['name']?.toString() ?? 'User #$aId';
-                    final aRole = (actor['role']?.toString() ?? 'sub_admin').toUpperCase();
-                    final isSelected = _filterActorId == aId;
-                    return ListTile(
-                      title: Text(
-                        aName,
-                        style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                          color: isSelected ? _kOrange : null,
-                        ),
-                      ),
-                      subtitle: Text(
-                        aRole.replaceAll('_', ' '),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: aRole.contains('SUPER')
-                              ? _kOrange
-                              : (aRole.contains('SUB') ? _kPurple : _kBlue),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      trailing: isSelected
-                          ? const Icon(Icons.check, color: _kOrange, size: 18)
-                          : null,
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        setState(() {
-                          _filterActorId = aId;
-                          _offset = 0;
-                        });
-                        _fetchLogs();
-                      },
-                    );
-                  }),
-                ],
-              ),
-            ),
-          ),
-        );
+      ],
+      _filterActorId,
+      (id) {
+        setState(() {
+          _filterActorId = id;
+          _offset = 0;
+        });
+        _fetchLogs();
       },
     );
   }
 
-  void _showOptionDialog(
-    String title,
-    List<String> options,
-    Function(String) onSelect,
-  ) {
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          backgroundColor: isDark ? _kCardBg : Colors.white,
-          title: Text(
-            'Select $title',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-          content: SizedBox(
-            width: 320,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: options.map((opt) {
-                  final label = opt.isEmpty ? 'All ${title}s' : opt;
-                  return ListTile(
-                    title: Text(label, style: TextStyle(fontSize: 14)),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      onSelect(opt);
-                    },
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-        );
-      },
+  void _showOptionDialog(String title, List<String> options, Function(String) onSelect) {
+    final current = title == 'action' ? _filterActionType : _filterTargetType;
+    _pickFrom(
+      'Show which ${title}s',
+      [for (final o in options) (o, o.isEmpty ? 'All ${title}s' : o[0].toUpperCase() + o.substring(1).replaceAll('_', ' '), null)],
+      current,
+      (v) => onSelect(v),
     );
   }
 
   void _showLogDetailsModal(Map<String, dynamic> log) {
+    String v(String k) => log[k]?.toString() ?? '';
+    final actor = v('admin_name').isNotEmpty ? v('admin_name') : (v('actor_name').isNotEmpty ? v('actor_name') : 'Admin');
+    final role = (v('admin_role').isNotEmpty ? v('admin_role') : v('actor_role')).toLowerCase();
+    final roleLabel = role.contains('super') ? 'Super admin' : (role.contains('sub') ? 'Sub-admin' : 'Admin');
+    final d = DateTime.tryParse(v('created_at'))?.toLocal();
+    final when = d == null
+        ? v('created_at')
+        : '${d.day} ${_months[d.month - 1]} ${d.year}, ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    final type = v('target_type');
+
     showDialog(
       context: context,
-      builder: (ctx) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
-        final borderCol = isDark
-            ? const Color(0xFF3D261C)
-            : CubagColors.line;
-        final textCol = isDark
-            ? Colors.white
-            : const Color(0xFF1F1612);
-        final subTextCol = isDark
-            ? const Color(0xFFB0A298)
-            : const Color(0xFF6B5E55);
-        final inputBg = isDark
-            ? CubagColors.ink.withAlpha(120)
-            : CubagColors.sand;
-
-        final actor = log['admin_name'] ?? log['actor_name'] ?? 'Admin';
-        final role = (log['admin_role'] ?? log['actor_role'] ?? 'admin').toString();
-        final action = log['action']?.toString() ?? 'Action';
-        final targetType = log['target_type']?.toString() ?? '—';
-        final targetName = log['target_name']?.toString() ?? '—';
-        final details = log['details']?.toString() ?? '—';
-        final createdAt = log['created_at']?.toString() ?? '—';
-        final ipAddress = log['ip_address']?.toString() ?? '127.0.0.1';
-
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          backgroundColor: cardBg,
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: _kOrange.withAlpha(25),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.history_edu_rounded,
-                  color: _kOrange,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Audit Entry Details',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: textCol,
-                ),
-              ),
-            ],
-          ),
-          content: SizedBox(
-            width: 500,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _detailRow('Timestamp', createdAt, inputBg, borderCol, textCol, subTextCol),
-                  const SizedBox(height: 8),
-                  _detailRow('Actor / Role', '$actor (${role.toUpperCase()})', inputBg, borderCol, textCol, subTextCol),
-                  const SizedBox(height: 8),
-                  _detailRow('Action Performed', action, inputBg, borderCol, textCol, subTextCol),
-                  const SizedBox(height: 8),
-                  _detailRow('Target Type', targetType.toUpperCase(), inputBg, borderCol, textCol, subTextCol),
-                  if (targetName != '—') ...[
-                    const SizedBox(height: 8),
-                    _detailRow('Target Subject / Name', targetName, inputBg, borderCol, textCol, subTextCol),
-                  ],
-                  if (details != '—') ...[
-                    const SizedBox(height: 8),
-                    _detailRow('Details / Payload', details, inputBg, borderCol, textCol, subTextCol),
-                  ],
-                  const SizedBox(height: 8),
-                  _detailRow('Origin IP Address', ipAddress, inputBg, borderCol, textCol, subTextCol),
-                ],
-              ),
+      builder: (ctx) => AdminDialog(
+        title: v('action').isEmpty ? 'Audit entry' : v('action'),
+        subtitle: 'by $actor · $when',
+        actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Done'))],
+        children: [
+          AdminDetailRow('Admin', '$actor ($roleLabel)'),
+          AdminDetailRow('When', when),
+          AdminDetailRow('Action', v('action')),
+          if (type.isNotEmpty) AdminDetailRow('Record type', type[0].toUpperCase() + type.substring(1).replaceAll('_', ' ')),
+          if (v('target_name').isNotEmpty) AdminDetailRow('Record', v('target_name')),
+          if (v('details').isNotEmpty) ...[
+            const SizedBox(height: CubagSpace.sm),
+            Text('Details', style: CubagType.label),
+            const SizedBox(height: CubagSpace.xxs),
+            Container(
+              padding: const EdgeInsets.all(CubagSpace.sm),
+              decoration: BoxDecoration(color: CubagColors.sand, borderRadius: BorderRadius.circular(CubagRadius.control)),
+              child: SelectableText(v('details'), style: CubagType.small.copyWith(color: CubagColors.ink, fontFamily: 'monospace')),
             ),
-          ),
-          actions: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kOrange,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                elevation: 0,
-              ),
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Close'),
-            ),
+            const SizedBox(height: CubagSpace.sm),
           ],
-        );
-      },
-    );
-  }
-
-  Widget _detailRow(
-    String label,
-    String value,
-    Color inputBg,
-    Color borderCol,
-    Color textCol,
-    Color subTextCol,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: subTextCol,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: inputBg,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: borderCol),
-          ),
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: textCol,
-            ),
-          ),
-        ),
-      ],
+          AdminDetailRow('From IP address', v('ip_address')),
+        ],
+      ),
     );
   }
 

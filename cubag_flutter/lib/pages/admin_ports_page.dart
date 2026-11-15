@@ -1,3 +1,4 @@
+import '../components/admin_dialog.dart';
 import '../components/filter_tabs.dart';
 import '../components/admin_list.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +8,6 @@ import '../services/api_service.dart';
 import '../utils/app_logger.dart';
 import '../design/cubag_design.dart';
 
-const _kOrange = CubagColors.action;
 
 class AdminPortsPage extends StatefulWidget {
   const AdminPortsPage({super.key});
@@ -56,155 +56,73 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
 
   Future<void> _showPortDialog([dynamic existingPort]) async {
     final isEdit = existingPort != null;
-    final nameCtrl = TextEditingController(
-      text: existingPort?['name']?.toString() ?? '',
-    );
-    final codeCtrl = TextEditingController(
-      text: existingPort?['code']?.toString() ?? '',
-    );
+    final nameCtrl = TextEditingController(text: existingPort?['name']?.toString() ?? '');
+    final codeCtrl = TextEditingController(text: existingPort?['code']?.toString() ?? '');
     bool submitting = false;
+    String? error;
 
     await showDialog(
       context: context,
       builder: (dlgCtx) => StatefulBuilder(
-        builder: (context, setDlgState) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: _kOrange.withAlpha(25),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.anchor_rounded,
-                  color: _kOrange,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                isEdit ? 'Edit Port of Operation' : 'Add Port of Operation',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 22,
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Enter the official terminal or border post name for member assignments and public guest requests.',
-                style: TextStyle(
-                  fontSize: 17,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 18),
-              TextField(
-                controller: nameCtrl,
-                decoration: InputDecoration(
-                  labelText: 'Port / Terminal Name *',
-                  hintText: 'e.g. Buipe Inland Port',
-                  prefixIcon: const Icon(Icons.location_on_outlined, size: 20),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: codeCtrl,
-                decoration: InputDecoration(
-                  labelText: 'Port Code (Optional)',
-                  hintText: 'e.g. BUP',
-                  prefixIcon: const Icon(Icons.tag_rounded, size: 20),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+        builder: (context, setDlgState) {
+          Future<void> submit() async {
+            final name = nameCtrl.text.trim();
+            if (name.isEmpty) {
+              setDlgState(() => error = 'Add the port name.');
+              return;
+            }
+            setDlgState(() {
+              submitting = true;
+              error = null;
+            });
+            try {
+              if (isEdit) {
+                await _api.put('/admin/ports/${existingPort['id']}', data: {
+                  'name': name,
+                  'code': codeCtrl.text.trim(),
+                  'is_active': existingPort['is_active'] ?? true,
+                });
+              } else {
+                await _api.post('/admin/ports', data: {'name': name, 'code': codeCtrl.text.trim()});
+              }
+              if (dlgCtx.mounted) {
+                Navigator.pop(dlgCtx);
+                _fetchPorts();
+              }
+            } catch (e) {
+              setDlgState(() {
+                submitting = false;
+                error = 'Could not save the port. Try again.';
+              });
+            }
+          }
+
+          return AdminDialog(
+            title: isEdit ? 'Edit port' : 'Add port',
+            subtitle: 'The official name of the port, terminal or border post. Members pick it as their district.',
+            maxWidth: 480,
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dlgCtx), child: const Text('Cancel')),
+              FilledButton(
+                onPressed: submitting ? null : submit,
+                child: Text(submitting ? 'Saving…' : (isEdit ? 'Save changes' : 'Add port')),
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dlgCtx),
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kOrange,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            children: [
+              AdminField(
+                label: 'Name',
+                child: TextField(controller: nameCtrl, decoration: const InputDecoration(hintText: 'For example: Buipe Inland Port')),
               ),
-              onPressed: submitting
-                  ? null
-                  : () async {
-                      final name = nameCtrl.text.trim();
-                      if (name.isEmpty) return;
-                      setDlgState(() => submitting = true);
-                      try {
-                        if (isEdit) {
-                          await _api.put(
-                            '/admin/ports/${existingPort['id']}',
-                            data: {
-                              'name': name,
-                              'code': codeCtrl.text.trim(),
-                              'is_active': existingPort['is_active'] ?? true,
-                            },
-                          );
-                        } else {
-                          await _api.post(
-                            '/admin/ports',
-                            data: {'name': name, 'code': codeCtrl.text.trim()},
-                          );
-                        }
-                        if (dlgCtx.mounted) {
-                          Navigator.pop(dlgCtx);
-                          _fetchPorts();
-                        }
-                      } catch (e) {
-                        setDlgState(() => submitting = false);
-                        if (dlgCtx.mounted) {
-                          ScaffoldMessenger.of(dlgCtx).showSnackBar(
-                            SnackBar(content: Text('Failed to save port: $e')),
-                          );
-                        }
-                      }
-                    },
-              child: submitting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : Text(
-                      isEdit ? 'Save Changes' : 'Add Port',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-            ),
-          ],
-        ),
+              AdminField(
+                label: 'Code (optional)',
+                child: TextField(controller: codeCtrl, decoration: const InputDecoration(hintText: 'For example: BUP')),
+              ),
+              if (error != null) Text(error!, style: CubagType.small.copyWith(color: CubagColors.lapsed)),
+            ],
+          );
+        },
       ),
     );
-
     nameCtrl.dispose();
     codeCtrl.dispose();
   }

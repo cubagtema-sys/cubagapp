@@ -1,3 +1,4 @@
+import '../components/admin_dialog.dart';
 import '../components/filter_tabs.dart';
 import '../components/cubag_ui.dart';
 import '../components/admin_list.dart';
@@ -9,7 +10,6 @@ import '../services/api_service.dart';
 import '../utils/app_logger.dart';
 import '../design/cubag_design.dart';
 
-const _kOrange = CubagColors.action;
 const _kRed = CubagColors.lapsed;
 
 class AdminPortNewsPage extends StatefulWidget {
@@ -76,168 +76,106 @@ class _AdminPortNewsPageState extends State<AdminPortNewsPage> {
     final codeCtrl = TextEditingController(text: existing?['code']?.toString() ?? '');
     final noticeCtrl = TextEditingController(text: existing?['notice']?.toString() ?? '');
     String status = existing?['status']?.toString() ?? 'Operational';
-    String colorHex = existing?['status_color']?.toString() ?? '#2E7D32';
+    if (!const ['Operational', 'Normal', 'Maintenance', 'Restricted'].contains(status)) status = 'Operational';
     bool submitting = false;
+    String? error;
+
+    String colorFor(String s) => switch (s) {
+          'Maintenance' => '#E65100',
+          'Restricted' => '#C62828',
+          _ => '#2E7D32',
+        };
 
     await showDialog(
       context: context,
       builder: (dlgCtx) => StatefulBuilder(
-        builder: (context, setDlgState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: _kOrange.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.anchor_rounded, color: _kOrange, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                isEdit ? 'Edit Port Bulletin' : 'Post Port Bulletin',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        builder: (context, setDlgState) {
+          Future<void> submit() async {
+            final port = portCtrl.text.trim();
+            final notice = noticeCtrl.text.trim();
+            if (port.isEmpty || notice.isEmpty) {
+              setDlgState(() => error = 'Add the port and the note.');
+              return;
+            }
+            setDlgState(() {
+              submitting = true;
+              error = null;
+            });
+            final data = {
+              'port_name': port,
+              'code': codeCtrl.text.trim(),
+              'status': status,
+              'notice': notice,
+              'status_color': colorFor(status),
+            };
+            try {
+              if (isEdit) {
+                await _api.put('/news/admin/bulletins/${existing['id']}', data: {...data, 'is_active': existing['is_active'] ?? true});
+              } else {
+                await _api.post('/news/admin/bulletins', data: data);
+              }
+              if (dlgCtx.mounted) {
+                Navigator.pop(dlgCtx);
+                _fetchBulletins();
+              }
+            } catch (e) {
+              setDlgState(() {
+                submitting = false;
+                error = 'Could not save. Try again.';
+              });
+            }
+          }
+
+          return AdminDialog(
+            title: isEdit ? 'Edit port update' : 'New port update',
+            subtitle: 'A short note on how a port is running. Members see it in the app.',
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dlgCtx), child: const Text('Cancel')),
+              FilledButton(
+                onPressed: submitting ? null : submit,
+                child: Text(submitting ? 'Saving…' : (isEdit ? 'Save changes' : 'Post update')),
               ),
             ],
-          ),
-          content: SingleChildScrollView(
-            child: SizedBox(
-              width: 480,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Publish operational status updates for cargo terminals displayed on member portals & dashboard.',
-                    style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: portCtrl,
-                    style: TextStyle(fontSize: 13.5),
-                    decoration: const InputDecoration(
-                      labelText: 'Port / Terminal Name *',
-                      hintText: 'e.g. Tema Port Terminal 3',
-                      prefixIcon: Icon(Icons.location_city_rounded, size: 18),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 1,
-                        child: TextField(
-                          controller: codeCtrl,
-                          style: TextStyle(fontSize: 13.5),
-                          decoration: const InputDecoration(
-                            labelText: 'Code',
-                            hintText: 'e.g. TMP',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        flex: 2,
-                        child: DropdownButtonFormField<String>(
-                          initialValue: status,
-                          decoration: const InputDecoration(labelText: 'Status'),
-                          items: const [
-                            DropdownMenuItem(value: 'Operational', child: Text('Operational')),
-                            DropdownMenuItem(value: 'Normal', child: Text('Normal')),
-                            DropdownMenuItem(value: 'Maintenance', child: Text('Maintenance')),
-                            DropdownMenuItem(value: 'Restricted', child: Text('Restricted')),
-                          ],
-                          onChanged: (val) {
-                            if (val == null) return;
-                            setDlgState(() {
-                              status = val;
-                              if (val == 'Maintenance') {
-                                colorHex = '#E65100';
-                              } else if (val == 'Restricted') {
-                                colorHex = '#C62828';
-                              } else {
-                                colorHex = '#2E7D32';
-                              }
-                            });
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: noticeCtrl,
-                    maxLines: 3,
-                    style: TextStyle(fontSize: 13),
-                    decoration: const InputDecoration(
-                      labelText: 'Live Operational Notice *',
-                      hintText: 'e.g. MPS Terminal 3 fully operational. Digital gate clearance active.',
-                    ),
-                  ),
-                ],
+            children: [
+              AdminFieldPair(
+                AdminField(
+                  label: 'Port or terminal',
+                  child: TextField(controller: portCtrl, decoration: const InputDecoration(hintText: 'For example: Tema Terminal 3')),
+                ),
+                AdminField(
+                  label: 'Code (optional)',
+                  child: TextField(controller: codeCtrl, decoration: const InputDecoration(hintText: 'For example: TMA')),
+                ),
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dlgCtx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kOrange,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                elevation: 0,
+              AdminField(
+                label: 'Status',
+                child: AdminChoice<String>(
+                  options: const [
+                    ('Operational', 'Operational'),
+                    ('Normal', 'Normal'),
+                    ('Maintenance', 'Maintenance'),
+                    ('Restricted', 'Restricted'),
+                  ],
+                  value: status,
+                  onChanged: (v) => setDlgState(() => status = v),
+                ),
               ),
-              onPressed: submitting
-                  ? null
-                  : () async {
-                      final port = portCtrl.text.trim();
-                      final notice = noticeCtrl.text.trim();
-                      if (port.isEmpty || notice.isEmpty) return;
-                      setDlgState(() => submitting = true);
-                      try {
-                        if (isEdit) {
-                          await _api.put(
-                            '/news/admin/bulletins/${existing['id']}',
-                            data: {
-                              'port_name': port,
-                              'code': codeCtrl.text.trim(),
-                              'status': status,
-                              'notice': notice,
-                              'status_color': colorHex,
-                              'is_active': existing['is_active'] ?? true,
-                            },
-                          );
-                        } else {
-                          await _api.post(
-                            '/news/admin/bulletins',
-                            data: {
-                              'port_name': port,
-                              'code': codeCtrl.text.trim(),
-                              'status': status,
-                              'notice': notice,
-                              'status_color': colorHex,
-                            },
-                          );
-                        }
-                        if (dlgCtx.mounted) {
-                          Navigator.pop(dlgCtx);
-                          _fetchBulletins();
-                        }
-                      } catch (e) {
-                        setDlgState(() => submitting = false);
-                      }
-                    },
-              child: submitting
-                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : Text(isEdit ? 'Save Changes' : 'Post Bulletin', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            ),
-          ],
-        ),
+              AdminField(
+                label: 'Note',
+                child: TextField(
+                  controller: noticeCtrl,
+                  minLines: 3,
+                  maxLines: 6,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(hintText: 'For example: Gate 2 closed until Friday. Use Gate 1.'),
+                ),
+              ),
+              if (error != null) Text(error!, style: CubagType.small.copyWith(color: CubagColors.lapsed)),
+            ],
+          );
+        },
       ),
     );
-
     portCtrl.dispose();
     codeCtrl.dispose();
     noticeCtrl.dispose();

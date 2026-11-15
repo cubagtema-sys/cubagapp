@@ -1,3 +1,4 @@
+import '../components/admin_dialog.dart';
 import '../components/admin_components.dart';
 // ignore_for_file: use_build_context_synchronously
 import '../components/filter_tabs.dart';
@@ -783,7 +784,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.description_rounded, color: _kPrimary, size: 22),
+                  const Icon(Icons.description_outlined, color: CubagColors.cocoa, size: 22),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -801,7 +802,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                         await launchUrl(uri, mode: LaunchMode.externalApplication);
                       }
                     },
-                    tooltip: 'Open in new tab',
+                    tooltip: 'Open in a new tab',
                   ),
                   IconButton(
                     tooltip: 'Close',
@@ -821,7 +822,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                             child: CircularProgressIndicator(color: _kPrimary),
                           ),
                           errorWidget: const Center(
-                            child: Text('Failed to load image preview.'),
+                            child: Text('Could not show this file. Use Open in a new tab.'),
                           ),
                         ),
                       )
@@ -835,92 +836,66 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
   }
 
   Widget _buildTopHeaderBar(bool isDark, String typeLabel, String status) {
-    final statusColor = _statusColor(status);
-    final statusLabel = _statusLabel(status);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: isDark ? _kCardDark : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? _kBorderDark : CubagColors.line),
-      ),
-      child: Row(
-        children: [
-          Semantics(button: true, label: 'Back', child: InkWell(
-            onTap: () {
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go('/admin/compliance');
-              }
-            },
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF4D2D20) : CubagColors.sand,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: isDark ? _kBorderDark : CubagColors.line),
-              ),
-              child: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 15,
-                color: isDark ? Colors.white : _kTextDark,
-              ),
-            ),
-          )),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      '#COMP-${widget.appId.toString().padLeft(5, '0')}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                        color: _kPrimary,
+    final name = _app['member_name']?.toString() ?? 'Applicant';
+    final company = _app['member_company']?.toString() ?? '';
+    final kind = switch (status) {
+      'approved' || 'payment_confirmed' => StatusKind.good,
+      'rejected' => StatusKind.bad,
+      'draft' => StatusKind.neutral,
+      _ => StatusKind.pending,
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextButton.icon(
+          style: TextButton.styleFrom(padding: EdgeInsets.zero),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/admin/compliance');
+            }
+          },
+          icon: const Icon(Icons.arrow_back_rounded, size: 18),
+          label: const Text('All applications'),
+        ),
+        const SizedBox(height: CubagSpace.xs),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(company.isNotEmpty ? company : name, style: CubagType.display.copyWith(fontSize: 28)),
+                  const SizedBox(height: CubagSpace.xxs),
+                  Wrap(
+                    spacing: CubagSpace.xs,
+                    runSpacing: CubagSpace.xxs,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      StatusChip(_statusLabel(status), kind: kind),
+                      Text(
+                        [
+                          typeLabel,
+                          if (company.isNotEmpty) name,
+                          '#COMP-${widget.appId.toString().padLeft(5, '0')}',
+                        ].join(' · '),
+                        style: CubagType.small,
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: statusColor.withValues(alpha: 0.4)),
-                      ),
-                      child: Text(
-                        statusLabel,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: statusColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  typeLabel,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: isDark ? Colors.white60 : CubagColors.muted,
+                    ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, size: 20),
-            tooltip: 'Refresh',
-            onPressed: _fetch,
-          ),
-        ],
-      ),
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              tooltip: 'Refresh',
+              onPressed: _fetch,
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -943,7 +918,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
           ],
         ),
         content: const Text(
-          'Are you sure you want to verify and confirm this bank deposit? This will mark the payment as PAID and confirm the member\'s renewal payment.',
+          'Only confirm after you have seen the money in the bank account. The payment is then marked as paid for this member.',
         ),
         actions: [
           TextButton(
@@ -956,7 +931,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
               backgroundColor: _kGreen,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Confirm & Verify'),
+            child: const Text('Confirm payment'),
           ),
         ],
       ),
@@ -968,7 +943,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
     try {
       final res = await ApiService().post('/payments/admin/mark-paid/$paymentId');
       if (res.statusCode == 200) {
-        _showSnack('Bank payment verified and confirmed successfully!', color: _kGreen);
+        _showSnack('Payment confirmed.', color: _kGreen);
         setState(() {
           if (_payment != null) {
             _payment!['status'] = 'paid';
@@ -986,7 +961,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
       }
     } catch (e, st) {
       AppLogger.error('admin_compliance_confirm_payment', e, st);
-      _showSnack('Error confirming payment. Please try again.', color: _kRed);
+      _showSnack('Could not confirm the payment. Try again.', color: _kRed);
     } finally {
       if (mounted) setState(() => _confirmingPayment = false);
     }
@@ -1010,18 +985,11 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDark ? _kCardDark : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(CubagRadius.card),
         border: Border.all(
-          color: isPaid ? _kGreen.withValues(alpha: 0.4) : _kPrimary.withValues(alpha: 0.4),
-          width: 1.5,
+          color: isDark ? _kBorderDark : CubagColors.line,
+          width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1031,7 +999,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: (isPaid ? _kGreen : _kPrimary).withValues(alpha: 0.12),
+                  color: isPaid ? CubagColors.validTint : CubagColors.sand,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -1082,7 +1050,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      isPaid ? 'PAYMENT CONFIRMED' : 'VERIFICATION PENDING',
+                      isPaid ? 'Payment confirmed' : 'Waiting for you to confirm',
                       style: TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w700,
@@ -1343,7 +1311,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? _kCardDark : Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(CubagRadius.card),
         border: Border.all(color: isDark ? _kBorderDark : CubagColors.line),
       ),
       child: Column(
@@ -1351,7 +1319,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
         children: [
           Row(
             children: [
-              const Icon(Icons.folder_shared_rounded, color: _kPrimary, size: 20),
+              const Icon(Icons.folder_shared_rounded, color: CubagColors.cocoa, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Documents',
@@ -1369,7 +1337,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '$uploadedCount of $totalCount Uploaded',
+                  '$uploadedCount of $totalCount uploaded',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -1420,7 +1388,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? _kCardDark : Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(CubagRadius.card),
         border: Border.all(color: isDark ? _kBorderDark : CubagColors.line),
       ),
       child: Column(
@@ -1428,7 +1396,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
         children: [
           Row(
             children: [
-              const Icon(Icons.receipt_long_rounded, color: _kPrimary, size: 20),
+              const Icon(Icons.receipt_long_rounded, color: CubagColors.cocoa, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Renewal bill',
@@ -1684,15 +1652,8 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDark ? _kCardDark : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(CubagRadius.card),
         border: Border.all(color: isDark ? _kBorderDark : CubagColors.line),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1702,10 +1663,10 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: _kPrimary.withValues(alpha: 0.12),
+                  color: CubagColors.sand,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.account_balance_wallet_rounded, color: _kPrimary, size: 22),
+                child: const Icon(Icons.account_balance_wallet_rounded, color: CubagColors.cocoa, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1933,7 +1894,7 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? _kCardDark : Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(CubagRadius.card),
         border: Border.all(color: isDark ? _kBorderDark : CubagColors.line),
       ),
       child: Column(
@@ -2005,96 +1966,87 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
     final memberName = _app['member_name']?.toString() ?? 'Applicant';
     final memberCompany = _app['member_company']?.toString() ?? '';
     final appType = _app['type']?.toString() ?? '';
-    final typeLabel = appType == 'renewal'
-        ? 'Membership renewal'
-        : 'Member ID Application';
+    final typeLabel = appType == 'renewal' ? 'Membership renewal' : 'Member ID application';
     final isResolved = status == 'approved' || status == 'rejected';
+    final hasPayment = _payment != null || (_app['payment_ref'] != null && _app['payment_ref'].toString().isNotEmpty);
+    final showLedger = _app['type'] == 'renewal' &&
+        (_installments.isNotEmpty || _app['amount_paid'] != null || status == 'partially_paid');
+    final canDecide = !isResolved &&
+        const [
+          'under_review',
+          'payment_confirmed',
+          'submitted',
+          'revision_requested',
+          'awaiting_bill',
+          'awaiting_payment',
+          'partially_paid',
+        ].contains(status);
+    final note = _app['admin_note']?.toString().trim() ?? '';
 
-    final pageTitle = memberCompany.isNotEmpty
-        ? 'Review: $memberCompany'
-        : 'Review: $memberName';
+    const gap = SizedBox(height: CubagSpace.lg);
+    // Work (documents, bill) on the left; who, money and the decision on the right.
+    final work = <Widget>[
+      _buildDocumentsSection(isDark, isResolved),
+      gap,
+      _buildBillGenerationSection(isDark),
+      if (showLedger) ...[gap, _buildInstallmentsLedgerSection(isDark)],
+    ];
+    final side = <Widget>[
+      _MemberInfoCard(app: _app, isDark: isDark, showPayment: !hasPayment),
+      if (note.isNotEmpty) ...[gap, _AdminStatusBanner(status: status, note: note)],
+      if (hasPayment) ...[gap, _buildPaymentProofSection(isDark)],
+      if (canDecide) ...[gap, _buildDecisionSection(isDark, isResolved)],
+    ];
 
     return AppLayout(
-      title: pageTitle,
+      title: memberCompany.isNotEmpty ? memberCompany : memberName,
       scrollable: true,
-      child: Container(
-        color: isDark ? _kDarkBg : const Color(0xFFFAF6F0),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: _loading
-            ? Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1000),
-                  child: Column(
-                    children: List.generate(
-                      4,
-                      (_) => const Padding(
-                        padding: EdgeInsets.only(bottom: 12),
-                        child: ShimmerListTile(),
-                      ),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1240),
+          child: _loading
+              ? Column(
+                  children: List.generate(
+                    4,
+                    (_) => const Padding(padding: EdgeInsets.only(bottom: 12), child: ShimmerListTile()),
+                  ),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildTopHeaderBar(isDark, typeLabel, status),
+                    const SizedBox(height: CubagSpace.lg),
+                    LayoutBuilder(
+                      builder: (context, c) {
+                        if (c.maxWidth < 980) {
+                          // One column: decide last, after the work is checked.
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _MemberInfoCard(app: _app, isDark: isDark, showPayment: !hasPayment),
+                              if (note.isNotEmpty) ...[gap, _AdminStatusBanner(status: status, note: note)],
+                              if (hasPayment) ...[gap, _buildPaymentProofSection(isDark)],
+                              gap,
+                              ...work,
+                              if (canDecide) ...[gap, _buildDecisionSection(isDark, isResolved)],
+                            ],
+                          );
+                        }
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 3, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: work)),
+                            const SizedBox(width: CubagSpace.lg),
+                            Expanded(flex: 2, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: side)),
+                          ],
+                        );
+                      },
                     ),
-                  ),
+                    const SizedBox(height: CubagSpace.xxl),
+                  ],
                 ),
-              )
-            : Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1000),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ── Top Navigation / Back Bar ──
-                      _buildTopHeaderBar(isDark, typeLabel, status),
-                      const SizedBox(height: 16),
-
-                      // ── Member & Application Overview Card ──
-                      _MemberInfoCard(app: _app, isDark: isDark),
-                      const SizedBox(height: 16),
-
-                      // ── Status & Notes Banner (if rejected/revision/notes) ──
-                      if (_app['admin_note'] != null && _app['admin_note'].toString().trim().isNotEmpty) ...[
-                        _AdminStatusBanner(status: status, note: _app['admin_note']?.toString()),
-                        const SizedBox(height: 16),
-                      ],
-
-                      // ── Bank Deposit Slip / Proof of Payment Attachment ──
-                      if (_payment != null || (_app['payment_ref'] != null && _app['payment_ref'].toString().isNotEmpty)) ...[
-                        _buildPaymentProofSection(isDark),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // ── Renewal Payment Ledger & Installments ──
-                      if (_app['type'] == 'renewal' && (_installments.isNotEmpty || _app['amount_paid'] != null || status == 'partially_paid' || status == 'payment_confirmed')) ...[
-                        _buildInstallmentsLedgerSection(isDark),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // ── Required Documents Section ──
-                      _buildDocumentsSection(isDark, isResolved),
-                      const SizedBox(height: 20),
-
-                      // ── Profile-Specific Renewal Bill Section ──
-                      _buildBillGenerationSection(isDark),
-                      const SizedBox(height: 20),
-
-                      // ── Decision Actions ──
-                      if (!isResolved &&
-                          [
-                            'under_review',
-                            'payment_confirmed',
-                            'submitted',
-                            'revision_requested',
-                            'awaiting_bill',
-                            'awaiting_payment',
-                            'partially_paid',
-                          ].contains(status))
-                        _buildDecisionSection(isDark, isResolved),
-
-                      const SizedBox(height: 32),
-                    ],
-                  ),
-                ),
-              ),
+        ),
       ),
     );
   }
@@ -2103,239 +2055,59 @@ class _AdminComplianceDetailPageState extends State<AdminComplianceDetailPage> {
 class _MemberInfoCard extends StatelessWidget {
   final Map<String, dynamic> app;
   final bool isDark;
-  const _MemberInfoCard({required this.app, required this.isDark});
+  final bool showPayment;
+  const _MemberInfoCard({required this.app, required this.isDark, this.showPayment = true});
 
   @override
   Widget build(BuildContext context) {
-    final memberName = app['member_name']?.toString() ?? 'Applicant';
-    final memberCompany = app['member_company']?.toString() ?? 'N/A';
-    final memberEmail = app['member_email']?.toString() ?? 'N/A';
-    final memberPhone = app['member_phone']?.toString() ?? 'N/A';
-    final category = (() { final c = app['category']?.toString() ?? 'associate'; return c.isEmpty ? c : c[0].toUpperCase() + c.substring(1).toLowerCase(); })();
-    final paymentRef = app['payment_ref']?.toString() ?? 'Pending';
-    final paymentAmount = app['payment_amount']?.toString();
-    final appStatus = app['status']?.toString().toLowerCase() ?? '';
-    final bool isPaid = app['payment_confirmed_at'] != null ||
-        appStatus == 'payment_confirmed' ||
-        appStatus == 'approved';
-    final bool isSubmitted = !isPaid &&
-        ((app['payment_ref'] != null && app['payment_ref'].toString().isNotEmpty) ||
-            appStatus == 'payment_submitted');
-
-    final String paymentStatusVal;
-    final Color paymentStatusCol;
-    if (isPaid) {
-      paymentStatusVal = paymentAmount != null ? 'Paid (GH₵ $paymentAmount)' : 'Paid';
-      paymentStatusCol = _kGreen;
-    } else if (isSubmitted) {
-      paymentStatusVal = paymentAmount != null ? 'Submitted GH₵ $paymentAmount (Awaiting Verification)' : 'Submitted (Awaiting Verification)';
-      paymentStatusCol = _kAmber;
-    } else {
-      paymentStatusVal = 'Pending (Unpaid)';
-      paymentStatusCol = const Color(0xFF5F6B7E);
-    }
-    final cardBg = isDark ? _kCardDark : const Color(0xFFFBF8F3);
-    final borderColor = isDark ? _kBorderDark : CubagColors.line;
-    final fieldBg = isDark ? _kDarkBg : const Color(0xFFFAF6F0);
-    final textColor = isDark ? Colors.white : _kTextDark;
-    final mutedText = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
+    String v(String k) => app[k]?.toString() ?? '';
+    final name = v('member_name').isEmpty ? 'Applicant' : v('member_name');
+    final company = v('member_company');
+    final c = v('category');
+    final category = c.isEmpty ? '' : '${c[0].toUpperCase()}${c.substring(1).toLowerCase()} member';
+    final status = v('status').toLowerCase();
+    final isPaid = app['payment_confirmed_at'] != null || status == 'payment_confirmed' || status == 'approved';
+    final sent = !isPaid && (v('payment_ref').isNotEmpty || status == 'payment_submitted');
+    final amount = v('payment_amount');
+    final payment = isPaid
+        ? (amount.isEmpty ? 'Paid' : 'Paid, GH₵ $amount')
+        : (sent ? (amount.isEmpty ? 'Sent, waiting for you to confirm' : 'GH₵ $amount sent, waiting for you to confirm') : 'Not paid yet');
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(CubagSpace.lg),
       decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: borderColor),
+        color: CubagColors.paper,
+        borderRadius: BorderRadius.circular(CubagRadius.card),
+        border: Border.all(color: CubagColors.line),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: _kPrimary,
-                child: Text(
-                  memberCompany.isNotEmpty
-                      ? memberCompany[0].toUpperCase()
-                      : (memberName.isNotEmpty ? memberName[0].toUpperCase() : 'M'),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
+              AdminRowMark(initials: adminInitials(company.isNotEmpty ? company : name)),
+              const SizedBox(width: CubagSpace.sm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      memberCompany.isNotEmpty ? memberCompany : memberName,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      memberName,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: mutedText,
-                      ),
-                    ),
+                    Text(name, style: CubagType.bodyStrong),
+                    if (category.isNotEmpty) Text(category, style: CubagType.small),
                   ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _kPrimary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _kPrimary.withValues(alpha: 0.3)),
-                ),
-                child: Text(
-                  '$category MEMBER',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: _kPrimary,
-                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          const Divider(height: 1),
-          const SizedBox(height: 14),
-
-          // Responsive info grid
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isNarrow = constraints.maxWidth < 650;
-              final colWidth = isNarrow ? constraints.maxWidth : (constraints.maxWidth - 20) / 3;
-
-              return Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  SizedBox(
-                    width: colWidth,
-                    child: _buildGridItem(
-                      icon: Icons.email_rounded,
-                      label: 'EMAIL',
-                      val: memberEmail,
-                      fieldBg: fieldBg,
-                      borderColor: borderColor,
-                      textColor: textColor,
-                      mutedText: mutedText,
-                    ),
-                  ),
-                  SizedBox(
-                    width: colWidth,
-                    child: _buildGridItem(
-                      icon: Icons.phone_rounded,
-                      label: 'TELEPHONE',
-                      val: memberPhone,
-                      fieldBg: fieldBg,
-                      borderColor: borderColor,
-                      textColor: textColor,
-                      mutedText: mutedText,
-                    ),
-                  ),
-                  SizedBox(
-                    width: colWidth,
-                    child: _buildGridItem(
-                      icon: Icons.receipt_long_rounded,
-                      label: 'PAYMENT REFERENCE',
-                      val: paymentRef,
-                      fieldBg: fieldBg,
-                      borderColor: borderColor,
-                      textColor: textColor,
-                      mutedText: mutedText,
-                    ),
-                  ),
-                  SizedBox(
-                    width: colWidth,
-                    child: _buildGridItem(
-                      icon: Icons.account_balance_wallet_rounded,
-                      label: 'PAYMENT STATUS',
-                      val: paymentStatusVal,
-                      fieldBg: fieldBg,
-                      borderColor: borderColor,
-                      textColor: paymentStatusCol,
-                      mutedText: mutedText,
-                    ),
-                  ),
-                  SizedBox(
-                    width: colWidth,
-                    child: _buildGridItem(
-                      icon: Icons.calendar_today_rounded,
-                      label: 'SUBMITTED AT',
-                      val: _fmt(app['created_at']?.toString()),
-                      fieldBg: fieldBg,
-                      borderColor: borderColor,
-                      textColor: textColor,
-                      mutedText: mutedText,
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGridItem({
-    required IconData icon,
-    required String label,
-    required String val,
-    required Color fieldBg,
-    required Color borderColor,
-    required Color textColor,
-    required Color mutedText,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: fieldBg,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: borderColor),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 15, color: _kPrimary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w700,
-                    color: mutedText,
-                  ),
-                ),
-                Text(
-                  val,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: textColor,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
+          const SizedBox(height: CubagSpace.sm),
+          const Divider(height: 1, color: CubagColors.line),
+          const SizedBox(height: CubagSpace.xs),
+          AdminDetailRow('Email', v('member_email')),
+          AdminDetailRow('Phone', v('member_phone')),
+          AdminDetailRow('Sent in', _fmt(v('created_at'))),
+          if (showPayment) ...[
+            AdminDetailRow('Payment', payment),
+            if (v('payment_ref').isNotEmpty) AdminDetailRow('Payment reference', v('payment_ref')),
+          ],
         ],
       ),
     );
@@ -2624,7 +2396,7 @@ class _AdminDocRowState extends State<_AdminDocRow> {
                               child: CircularProgressIndicator(color: _kPrimary),
                             ),
                             errorWidget: const Center(
-                              child: Text('Failed to load image preview.'),
+                              child: Text('Could not show this file. Use Open in a new tab.'),
                             ),
                           ),
                         )
