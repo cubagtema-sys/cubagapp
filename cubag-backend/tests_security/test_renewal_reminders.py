@@ -43,3 +43,34 @@ def test_other_days_send_nothing(monkeypatch):
 def test_no_email_address_still_notifies_in_app(monkeypatch):
     cur, sent = _run(monkeypatch, 3, email=None)
     assert cur.inserted == [2] and sent == []
+
+
+class _ExpiredCur(_Cur):
+    """Serves the expired-members query and records suspensions."""
+
+    def __init__(self, expired):
+        super().__init__([])
+        self.expired = expired
+        self.suspended = []
+
+    def execute(self, sql, params=None):
+        s = ' '.join(sql.split())
+        if s.startswith('SELECT id, name, email, fcm_token, license_expiry_date FROM members') and 'license_expiry_date < %s' in s:
+            self._rows = self.expired
+        elif s.startswith("UPDATE members SET status = 'suspended'"):
+            self.suspended.append(params[0])
+        else:
+            super().execute(sql, params)
+
+
+def test_paid_but_unapproved_member_stays_active(monkeypatch):
+    ended = date.today() - timedelta(days=2)
+    cur = _ExpiredCur([
+        {'id': 5, 'name': 'Paid', 'email': None, 'fcm_token': None, 'license_expiry_date': ended},
+        {'id': 6, 'name': 'Unpaid', 'email': None, 'fcm_token': None, 'license_expiry_date': ended},
+    ])
+    monkeypatch.setattr(jobs, 'get_db', lambda: _Conn(cur))
+    monkeypatch.setattr(jobs, 'renewal_paid_this_cycle', lambda c, mid, exp: mid == 5)
+    monkeypatch.setattr(jobs, '_send_email', lambda *a: True)
+    jobs.check_expired_licenses()
+    assert cur.suspended == [6]

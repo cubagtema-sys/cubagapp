@@ -18,7 +18,7 @@ class _Cur:
 
     def execute(self, sql, params=None):
         s = ' '.join(sql.split())
-        if s.startswith('SELECT id, name, email, fcm_token, license_expiry_date'):
+        if s.startswith('SELECT id, name, email, fcm_token, license_expiry_date') and 'license_expiry_date > %s' in s:
             self._rows = self.members
         elif s.startswith('SELECT COUNT(*) as cnt FROM notifications'):
             self._rows = [{'cnt': 0}]

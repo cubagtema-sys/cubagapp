@@ -94,13 +94,20 @@ def check_expired_licenses():
 
             # Find active members whose license has already expired
             cursor.execute("""
-                SELECT id, name, email, fcm_token
+                SELECT id, name, email, fcm_token, license_expiry_date
                 FROM members
                 WHERE status = 'active'
                   AND license_expiry_date IS NOT NULL
                   AND license_expiry_date < %s
             """, (today,))
             expired_members = cursor.fetchall()
+
+            # Paid this year's renewal but not yet approved: stay active until an
+            # admin decides (owner decision 2026-11-15). Only unpaid members are suspended.
+            expired_members = [
+                m for m in expired_members
+                if not renewal_paid_this_cycle(cursor, m['id'], m['license_expiry_date'])
+            ]
 
             for m in expired_members:
                 # Update status to suspended
