@@ -1,3 +1,7 @@
+import '../components/custom_dropdown.dart';
+import '../components/filter_tabs.dart';
+import '../components/cubag_ui.dart';
+import '../components/admin_list.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../components/app_layout.dart';
@@ -13,7 +17,6 @@ const _kBlue = Color(0xFF3b82f6);
 const _kRed = CubagColors.lapsed;
 const _kAmber = CubagColors.due;
 const _kPurple = Color(0xFF8b5cf6);
-const _kIndigo = Color(0xFF6366f1);
 const _kCardBg = Color(0xFF22140E);
 
 // All available permission modules — must match backend ALL_PERMISSIONS list.
@@ -401,9 +404,6 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
     final borderCol = isDark
         ? const Color(0xFF3D261C)
         : CubagColors.line;
-    final headerBg = isDark
-        ? CubagColors.ink
-        : const Color(0xFFFAF6F0);
     final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
     final subTextCol = isDark
         ? const Color(0xFFB0A298)
@@ -415,7 +415,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
     // Only full admins and super admins may access this page
     if (auth.userRole != 'admin' && auth.userRole != 'super_admin') {
       return AppLayout(
-        title: 'Sub-Admins',
+        title: 'Admins',
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -447,477 +447,121 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
     return AppLayout(
       title: 'Admins',
       scrollable: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AdminHeader(
-            title: 'Admins',
-            subtitle:
-                'Staff who help run CUBAG, and which sections each one can use.',
-            actions: [
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kAdminOrange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                onPressed: () => _showCreateSheet(
-                  isDark,
-                  cardBg,
-                  borderCol,
-                  textCol,
-                  subTextCol,
-                  inputBg,
-                ),
-                icon: const Icon(Icons.person_add_rounded, size: 18),
-                label: Text(
-                  'Add admin',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // ── Metric Summary Cards ─────────────────────────────────────────────
-          Row(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1000),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Total',
-                  value: totalSubAdmins.toString(),
-                  icon: Icons.admin_panel_settings_rounded,
-                  color: kAdminBlue,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Full access',
-                  value: fullAccessCount.toString(),
-                  icon: Icons.verified_user_rounded,
-                  color: kAdminGreen,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Limited access',
-                  value: scopedCount.toString(),
-                  icon: Icons.tune_rounded,
-                  color: kAdminPurple,
-                ),
-              ),
-            ],
-          ),
-          // ── Search & Filter Controls ─────────────────────────────────────────
-          AdminToolbar(
-            searchHint: 'Search admins',
-            onSearchChanged: (v) => setState(() => _searchQuery = v),
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? CubagColors.ink.withAlpha(150)
-                    : CubagColors.sand,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: borderCol),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _filterRole,
-                  icon: const Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    size: 20,
-                    color: kAdminOrange,
-                  ),
-                  dropdownColor: cardBg,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: textCol,
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'all', child: Text('All roles')),
-                    DropdownMenuItem(
-                      value: 'compliance',
-                      child: Text('Compliance'),
-                    ),
-                    DropdownMenuItem(value: 'finance', child: Text('Finance')),
-                    DropdownMenuItem(
-                      value: 'membership',
-                      child: Text('Membership'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'operations',
-                      child: Text('Operations'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'communications',
-                      child: Text('Communications'),
-                    ),
-                    DropdownMenuItem(value: 'full', child: Text('Full Access')),
-                  ],
-                  onChanged: (v) {
-                    if (v != null) {
-                      setState(() => _filterRole = v);
-                    }
-                  },
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // ── Tabular Sub-Admins DataTable ─────────────────────────────────────
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.all(40),
-              child: Center(child: CircularProgressIndicator(color: _kOrange)),
-            )
-          else if (displaySubAdmins.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(48),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderCol),
-              ),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.admin_panel_settings_outlined,
-                    size: 48,
-                    color: subTextCol,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'No admins found',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: textCol,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Use Add admin to give a staff member access to some or all sections.',
-                    style: TextStyle(fontSize: 15, color: subTextCol),
+              AdminHeader(
+                title: 'Admins',
+                subtitle: 'Staff who help run CUBAG, and which sections each one can open. Open an admin to change their access.',
+                actions: [
+                  FilledButton.icon(
+                    onPressed: () => _showCreateSheet(isDark, cardBg, borderCol, textCol, subTextCol, inputBg),
+                    icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+                    label: const Text('Add admin'),
                   ),
                 ],
               ),
-            )
-          else
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderCol),
+              AdminFigureStrip(figures: [
+                AdminFigure('All', '$totalSubAdmins', selected: _filterRole == 'all', onTap: () => setState(() => _filterRole = 'all')),
+                AdminFigure('Full access', '$fullAccessCount', selected: _filterRole == 'full', onTap: () => setState(() => _filterRole = 'full')),
+                AdminFigure('Limited access', '$scopedCount'),
+              ]),
+              const SizedBox(height: CubagSpace.md),
+              LayoutBuilder(
+                builder: (context, c) {
+                  final search = AdminSearchField(
+                    hint: 'Search name, email or section',
+                    onChanged: (v) => setState(() => _searchQuery = v),
+                  );
+                  final role = SizedBox(
+                    width: c.maxWidth < 560 ? double.infinity : 210,
+                    child: CustomDropdown<String>(
+                      value: _filterRole,
+                      items: const [
+                        DropdownItem(value: 'all', label: 'All roles'),
+                        DropdownItem(value: 'compliance', label: 'Compliance'),
+                        DropdownItem(value: 'finance', label: 'Finance'),
+                        DropdownItem(value: 'membership', label: 'Membership'),
+                        DropdownItem(value: 'operations', label: 'Operations'),
+                        DropdownItem(value: 'communications', label: 'Communications'),
+                        DropdownItem(value: 'full', label: 'Full access'),
+                        DropdownItem(value: 'custom', label: 'Custom'),
+                      ],
+                      onChanged: (v) => setState(() => _filterRole = v),
+                    ),
+                  );
+                  if (c.maxWidth < 560) {
+                    return Column(children: [search, const SizedBox(height: CubagSpace.xs), role]);
+                  }
+                  return Row(children: [Expanded(child: search), const SizedBox(width: CubagSpace.sm), role]);
+                },
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minWidth: constraints.maxWidth,
-                        ),
-                        child: DataTable(
-                          headingRowColor: WidgetStateProperty.all(headerBg),
-                          headingTextStyle: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 14,
-                            color: subTextCol,
+              const SizedBox(height: CubagSpace.md),
+              if (_loading)
+                const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()))
+              else if (displaySubAdmins.isEmpty)
+                EmptyMessage(
+                  icon: Icons.admin_panel_settings_outlined,
+                  title: _subAdmins.isEmpty ? 'No other admins yet' : 'No admins match',
+                  message: _subAdmins.isEmpty
+                      ? 'Use Add admin to give a staff member access to some or all sections.'
+                      : 'Try another role, or clear the search.',
+                )
+              else
+                AdminRowGroup(
+                  dividerIndent: 68,
+                  children: [
+                    for (final sa in displaySubAdmins)
+                      () {
+                        final map = Map<String, dynamic>.from(sa as Map);
+                        final name = map['name']?.toString() ?? 'Admin';
+                        final email = map['email']?.toString() ?? '';
+                        final perms = List<String>.from(map['permissions'] ?? []);
+                        final template = _getMatchingTemplate(perms);
+                        final access = perms.isEmpty
+                            ? 'No access'
+                            : (perms.length >= _kAllPermissions.length
+                                ? 'Full access'
+                                : (template?.label ?? 'Custom: ${perms.length} sections'));
+                        final sections = perms.map((p) => _kPermissionLabels[p] ?? p).join(', ');
+                        return AdminListRow(
+                          leading: AdminRowMark(initials: adminInitials(name)),
+                          title: name,
+                          subtitle: email,
+                          meta: sections.isEmpty ? null : sections,
+                          status: StatusChip(
+                            access,
+                            kind: perms.isEmpty ? StatusKind.bad : (perms.length >= _kAllPermissions.length ? StatusKind.good : StatusKind.neutral),
                           ),
-                          dataTextStyle: TextStyle(
-                            fontSize: 15,
-                            color: textCol,
+                          onTap: () => _showEditModal(map),
+                          trailing: PopupMenuButton<String>(
+                            tooltip: 'More',
+                            icon: const Icon(Icons.more_vert_rounded, color: CubagColors.muted),
+                            onSelected: (v) {
+                              if (v == 'edit') _showEditModal(map);
+                              if (v == 'remove') _remove(map, cardBg, borderCol, textCol, subTextCol);
+                            },
+                            itemBuilder: (_) => [
+                              const PopupMenuItem(value: 'edit', child: Text('Change access')),
+                              PopupMenuItem(value: 'remove', child: Text('Remove admin', style: TextStyle(color: CubagColors.lapsed))),
+                            ],
                           ),
-                          columnSpacing: 24,
-                          horizontalMargin: 24,
-                          dataRowMinHeight: 64,
-                          dataRowMaxHeight: 76,
-                          columns: const [
-                            DataColumn(label: Text('Sub-admin officer')),
-                            DataColumn(label: Text('Role template')),
-                            DataColumn(
-                              label: Text('Module scope / permissions'),
-                            ),
-                            DataColumn(label: Text('Status')),
-                            DataColumn(label: Text('Actions')),
-                          ],
-                          rows: displaySubAdmins.map((sa) {
-                            final name = sa['name']?.toString() ?? 'Sub-Admin';
-                            final email = sa['email']?.toString() ?? '—';
-                            final perms = List<String>.from(
-                              sa['permissions'] ?? [],
-                            );
-                            final match = _getMatchingTemplate(perms);
-                            final roleLabel =
-                                match?.label ??
-                                (perms.isEmpty
-                                    ? 'No Access'
-                                    : (perms.length >= _kAllPermissions.length
-                                          ? 'Full Access Admin'
-                                          : 'Custom Scope (${perms.length})'));
-                            final roleColor =
-                                match?.color ??
-                                (perms.isEmpty
-                                    ? _kRed
-                                    : (perms.length >= _kAllPermissions.length
-                                          ? _kGreen
-                                          : _kIndigo));
-
-                            return DataRow(
-                              cells: [
-                                // 1. Sub-Admin Officer (Avatar + Name + Email)
-                                DataCell(
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 16,
-                                        backgroundColor: roleColor.withAlpha(
-                                          35,
-                                        ),
-                                        child: Text(
-                                          name.isNotEmpty
-                                              ? name[0].toUpperCase()
-                                              : 'A',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: roleColor,
-                                            fontSize: 15,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            name,
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                              color: textCol,
-                                            ),
-                                          ),
-                                          Text(
-                                            email,
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              color: subTextCol,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // 2. Role Template Badge
-                                DataCell(
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: roleColor.withAlpha(25),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: roleColor.withAlpha(60),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      roleLabel,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w800,
-                                        color: roleColor,
-                                        letterSpacing: 0.3,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                // 3. Module Scope / Permissions Preview
-                                DataCell(
-                                  Container(
-                                    constraints: BoxConstraints(
-                                      minWidth: 180,
-                                      maxWidth: constraints.maxWidth > 900
-                                          ? constraints.maxWidth * 0.30
-                                          : 280,
-                                    ),
-                                    child: perms.isEmpty
-                                        ? Text(
-                                            'No modules granted',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: _kRed,
-                                              fontStyle: FontStyle.italic,
-                                            ),
-                                          )
-                                        : Text(
-                                            perms
-                                                .map(
-                                                  (p) =>
-                                                      _kPermissionLabels[p] ??
-                                                      p,
-                                                )
-                                                .join(', '),
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: subTextCol,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                  ),
-                                ),
-
-                                // 4. Status
-                                DataCell(
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 3,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _kGreen.withAlpha(25),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          width: 6,
-                                          height: 6,
-                                          decoration: const BoxDecoration(
-                                            color: _kGreen,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          'Active',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                            color: _kGreen,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-
-                                // 5. Action Buttons
-                                DataCell(
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          color: _kOrange.withAlpha(20),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          border: Border.all(
-                                            color: _kOrange.withAlpha(50),
-                                          ),
-                                        ),
-                                        child: IconButton(
-                                          constraints: const BoxConstraints(
-                                            minWidth: 34,
-                                            minHeight: 34,
-                                          ),
-                                          padding: const EdgeInsets.all(6),
-                                          icon: const Icon(
-                                            Icons.admin_panel_settings_outlined,
-                                            size: 18,
-                                            color: _kOrange,
-                                          ),
-                                          tooltip:
-                                              'Configure Module Privileges',
-                                          onPressed: () => _showEditModal(
-                                            Map<String, dynamic>.from(sa),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          color: _kRed.withAlpha(20),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          border: Border.all(
-                                            color: _kRed.withAlpha(50),
-                                          ),
-                                        ),
-                                        child: IconButton(
-                                          constraints: const BoxConstraints(
-                                            minWidth: 34,
-                                            minHeight: 34,
-                                          ),
-                                          padding: const EdgeInsets.all(6),
-                                          icon: const Icon(
-                                            Icons.delete_outline_rounded,
-                                            size: 18,
-                                            color: _kRed,
-                                          ),
-                                          tooltip: 'Revoke Access & Remove',
-                                          onPressed: () => _remove(
-                                            Map<String, dynamic>.from(sa),
-                                            cardBg,
-                                            borderCol,
-                                            textCol,
-                                            subTextCol,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    );
-                  },
+                        );
+                      }(),
+                  ],
                 ),
-              ),
-            ),
-          const SizedBox(height: 32),
-        ],
+              const SizedBox(height: CubagSpace.xl),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-// ── Create Sub-Admin bottom sheet ──────────────────────────────────────────────
 class _CreateSubAdminSheet extends StatefulWidget {
   final VoidCallback onCreated;
   final bool isDark;

@@ -1,14 +1,13 @@
+import '../components/filter_tabs.dart';
+import '../components/admin_list.dart';
 import 'package:flutter/material.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../services/api_service.dart';
 import '../utils/app_logger.dart';
-import '../utils/app_colors.dart';
 import '../design/cubag_design.dart';
 
 const _kOrange = CubagColors.action;
-const _kGreen = CubagColors.valid;
-const _kCardBg = Color(0xFF22140E);
 
 class AdminPortsPage extends StatefulWidget {
   const AdminPortsPage({super.key});
@@ -243,347 +242,77 @@ class _AdminPortsPageState extends State<AdminPortsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
-    final borderCol = isDark
-        ? const Color(0xFF3D261C)
-        : CubagColors.line;
-    final headerBg = isDark
-        ? CubagColors.ink
-        : const Color(0xFFFAF6F0);
-    final textCol = isDark ? Colors.white : const Color(0xFF1F1612);
-    final subTextCol = isDark
-        ? const Color(0xFFB0A298)
-        : const Color(0xFF6B5E55);
-
-    final totalPorts = _ports.length;
+    final total = _ports.length;
     final activePorts = _ports.where((p) => p['is_active'] == true).length;
-    final inactivePorts = totalPorts - activePorts;
-    final displayPorts = _filteredPorts;
+    final ports = _filteredPorts;
 
     return AppLayout(
       title: 'Ports',
       scrollable: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AdminHeader(
-            title: 'Ports',
-            subtitle:
-                'Ports, terminals and border posts members can choose from.',
-            actions: [
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kAdminOrange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                onPressed: () => _showPortDialog(),
-                icon: const Icon(Icons.add_location_alt_rounded, size: 18),
-                label: Text(
-                  'Add New Port',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // ── Metric Stats Cards ───────────────────────────────────────────────
-          Row(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Total Ports',
-                  value: '$totalPorts',
-                  icon: Icons.anchor_rounded,
-                  color: kAdminBlue,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Active',
-                  value: '$activePorts',
-                  icon: Icons.check_circle_outline_rounded,
-                  color: kAdminGreen,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AdminStatCard(
-                  label: 'Inactive',
-                  value: '$inactivePorts',
-                  icon: Icons.pause_circle_outline_rounded,
-                  color: Colors.grey,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // ── Search & Filter Controls ─────────────────────────────────────────
-          AdminToolbar(
-            searchHint: 'Search ports',
-            onSearchChanged: (v) => setState(() => _searchQuery = v),
-            filters: [
-              AdminFilterChip(
-                label: 'All Ports',
-                count: totalPorts,
-                isSelected: _filterTab == 0,
-                onTap: () => setState(() => _filterTab = 0),
-              ),
-              AdminFilterChip(
-                label: 'Active',
-                count: activePorts,
-                isSelected: _filterTab == 1,
-                onTap: () => setState(() => _filterTab = 1),
-                selectedColor: kAdminGreen,
-              ),
-              AdminFilterChip(
-                label: 'Inactive',
-                count: inactivePorts,
-                isSelected: _filterTab == 2,
-                onTap: () => setState(() => _filterTab = 2),
-                selectedColor: Colors.grey.shade700,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // ── Tabular Ports DataTable ──────────────────────────────────────────
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.all(40),
-              child: Center(child: CircularProgressIndicator(color: _kOrange)),
-            )
-          else if (_error != null)
-            Center(
-              child: Text(_error!, style: const TextStyle(color: Colors.red)),
-            )
-          else if (displayPorts.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(40),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderCol),
-              ),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.location_off_outlined,
-                    size: 48,
-                    color: subTextCol,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'No ports match your filter.',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                      color: textCol,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Try clearing the search filter or adding a new port location.',
-                    style: TextStyle(fontSize: 17, color: subTextCol),
+              AdminHeader(
+                title: 'Ports',
+                subtitle: 'Ports, terminals and border posts members can pick as their district. Switch one off to hide it from new choices.',
+                actions: [
+                  FilledButton.icon(
+                    onPressed: () => _showPortDialog(),
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text('Add port'),
                   ),
                 ],
               ),
-            )
-          else
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderCol),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minWidth: constraints.maxWidth,
+              AdminFigureStrip(figures: [
+                AdminFigure('All', '$total', selected: _filterTab == 0, onTap: () => setState(() => _filterTab = 0)),
+                AdminFigure('In use', '$activePorts', selected: _filterTab == 1, onTap: () => setState(() => _filterTab = 1)),
+                AdminFigure('Switched off', '${total - activePorts}', selected: _filterTab == 2, onTap: () => setState(() => _filterTab = 2)),
+              ]),
+              const SizedBox(height: CubagSpace.md),
+              AdminSearchField(hint: 'Search name or code', onChanged: (v) => setState(() => _searchQuery = v)),
+              const SizedBox(height: CubagSpace.md),
+              if (_loading)
+                const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator()))
+              else if (_error != null)
+                EmptyMessage(
+                  icon: Icons.cloud_off_rounded,
+                  title: 'Could not load ports',
+                  message: _error,
+                  action: OutlinedButton(onPressed: _fetchPorts, child: const Text('Try again')),
+                )
+              else if (ports.isEmpty)
+                EmptyMessage(
+                  icon: Icons.anchor_rounded,
+                  title: total == 0 ? 'No ports yet' : 'No ports match',
+                  message: total == 0 ? 'Add the ports and border posts members work at.' : 'Try another filter, or clear the search.',
+                )
+              else
+                AdminRowGroup(
+                  dividerIndent: 68,
+                  children: [
+                    for (final p in ports)
+                      AdminListRow(
+                        leading: AdminRowMark(
+                          icon: Icons.anchor_rounded,
+                          color: p['is_active'] == true ? CubagColors.cocoa : CubagColors.muted,
                         ),
-                        child: DataTable(
-                          headingRowColor: WidgetStateProperty.all(headerBg),
-                          headingTextStyle: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                            color: subTextCol,
-                          ),
-                          dataTextStyle: TextStyle(
-                            fontSize: 17,
-                            color: textCol,
-                          ),
-                          columnSpacing: 24,
-                          horizontalMargin: 24,
-                          dataRowMinHeight: 62,
-                          dataRowMaxHeight: 74,
-                          columns: const [
-                            DataColumn(label: Text('Port')),
-                            DataColumn(label: Text('Port code')),
-                            DataColumn(label: Text('Status')),
-                            DataColumn(label: Text('Actions')),
-                          ],
-                          rows: displayPorts.map((p) {
-                            final name =
-                                p['name']?.toString() ?? 'Unnamed Port';
-                            final code = p['code']?.toString() ?? '—';
-                            final isActive = p['is_active'] == true;
-
-                            return DataRow(
-                              cells: [
-                                // 1. Port Name
-                                DataCell(
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: isActive
-                                              ? _kGreen.withAlpha(25)
-                                              : Colors.grey.withAlpha(25),
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          Icons.anchor_rounded,
-                                          size: 18,
-                                          color: isActive
-                                              ? _kGreen
-                                              : Colors.grey,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        name,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18,
-                                          color: textCol,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // 2. Port Code
-                                DataCell(
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? const Color(
-                                              0xFF1A0F0A,
-                                            ).withAlpha(150)
-                                          : CubagColors.sand,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: borderCol),
-                                    ),
-                                    child: Text(
-                                      code.isNotEmpty ? code : '—',
-                                      style: TextStyle(fontFeatures: const [FontFeature.tabularFigures()], 
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.accentOrangeText,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                // 3. Status Switch & Badge
-                                DataCell(
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: isActive
-                                              ? _kGreen.withAlpha(25)
-                                              : Colors.grey.withAlpha(25),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          isActive
-                                              ? 'Operational / Active'
-                                              : 'Inactive',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: isActive
-                                                ? _kGreen
-                                                : Colors.grey,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Switch(
-                                        value: isActive,
-                                        activeThumbColor: _kGreen,
-                                        onChanged: (_) => _togglePortStatus(p),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // 4. Actions
-                                DataCell(
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.edit_outlined,
-                                          size: 18,
-                                          color: _kOrange,
-                                        ),
-                                        tooltip: 'Edit Port Details',
-                                        onPressed: () => _showPortDialog(p),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            );
-                          }).toList(),
+                        title: p['name']?.toString() ?? 'Unnamed port',
+                        subtitle: (p['code']?.toString() ?? '').isEmpty ? null : 'Code ${p['code']}',
+                        onTap: () => _showPortDialog(p),
+                        trailing: Tooltip(
+                          message: p['is_active'] == true ? 'In use' : 'Switched off',
+                          child: Switch(value: p['is_active'] == true, onChanged: (_) => _togglePortStatus(p)),
                         ),
                       ),
-                    );
-                  },
+                  ],
                 ),
-              ),
-            ),
-          const SizedBox(height: 32),
-        ],
+              const SizedBox(height: CubagSpace.xl),
+            ],
+          ),
+        ),
       ),
     );
   }

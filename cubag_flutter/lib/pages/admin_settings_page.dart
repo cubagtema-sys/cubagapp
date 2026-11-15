@@ -1,14 +1,13 @@
+import '../components/cubag_ui.dart';
 import 'package:flutter/material.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
 import '../utils/session_storage.dart';
 import '../services/api_service.dart';
-import '../utils/app_colors.dart';
 import '../design/cubag_design.dart';
 
 const _kOrange = CubagColors.action;
 const _kGreen = CubagColors.valid;
-const _kBlue = Color(0xFF3b82f6);
 const _kRed = CubagColors.lapsed;
 const _kCardBg = Color(0xFF22140E);
 
@@ -253,7 +252,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? _kCardBg : const Color(0xFFFBF8F3);
+    final cardBg = isDark ? _kCardBg : CubagColors.paper;
     final borderCol = isDark
         ? const Color(0xFF3D261C)
         : CubagColors.line;
@@ -279,35 +278,12 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                 subtitle:
                     'Your admin account, password, and how compliance scores are worked out.',
                 actions: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: kAdminOrange.withAlpha(20),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: kAdminOrange.withAlpha(60)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.shield_outlined,
-                          color: kAdminOrange,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          (_user['role']?.toString() ?? 'ADMIN').toUpperCase(),
-                          style: TextStyle(
-                            color: AppColors.accentOrangeText,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
+                  StatusChip(
+                    switch ((_user['role']?.toString() ?? 'admin').toLowerCase()) {
+                      'super_admin' => 'Super admin',
+                      'sub_admin' => 'Sub-admin',
+                      _ => 'Admin',
+                    },
                   ),
                 ],
               ),
@@ -322,9 +298,9 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                 ),
                 child: TabBar(
                   controller: _tabController,
-                  indicatorColor: _kOrange,
+                  indicatorColor: CubagColors.cocoa,
                   indicatorWeight: 3,
-                  labelColor: _kOrange,
+                  labelColor: CubagColors.cocoa,
                   unselectedLabelColor: subTextCol,
                   labelStyle: TextStyle(
                     fontWeight: FontWeight.bold,
@@ -352,7 +328,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                 const Padding(
                   padding: EdgeInsets.all(40),
                   child: Center(
-                    child: CircularProgressIndicator(color: _kOrange),
+                    child: CircularProgressIndicator(),
                   ),
                 )
               else
@@ -411,12 +387,12 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: _kBlue.withAlpha(25),
+                      color: CubagColors.sand,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.person_outline_rounded,
-                      color: _kBlue,
+                      color: CubagColors.cocoa,
                       size: 20,
                     ),
                   ),
@@ -506,8 +482,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                             Expanded(
                               child: _readOnlyField(
                                 'Role',
-                                (_user['role']?.toString() ?? 'admin')
-                                    .toUpperCase(),
+                                _roleLabel(),
                                 inputBg,
                                 borderCol,
                                 textCol,
@@ -531,8 +506,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                           children: [
                             _readOnlyField(
                               'Role',
-                              (_user['role']?.toString() ?? 'admin')
-                                  .toUpperCase(),
+                              _roleLabel(),
                               inputBg,
                               borderCol,
                               textCol,
@@ -572,12 +546,12 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: _kOrange.withAlpha(25),
+                      color: CubagColors.sand,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.lock_reset_rounded,
-                      color: _kOrange,
+                      color: CubagColors.cocoa,
                       size: 20,
                     ),
                   ),
@@ -750,7 +724,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                         )
                       : const Icon(Icons.key_rounded, size: 16),
                   label: Text(
-                    'Update',
+                    'Change password',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
@@ -775,7 +749,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
     if (_fetchingSettings) {
       return const Padding(
         padding: EdgeInsets.all(40),
-        child: Center(child: CircularProgressIndicator(color: _kOrange)),
+        child: Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -794,12 +768,12 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: _kGreen.withAlpha(25),
+                  color: CubagColors.sand,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.rule_folder_outlined,
-                  color: _kGreen,
+                  color: CubagColors.cocoa,
                   size: 20,
                 ),
               ),
@@ -808,7 +782,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Compliance Scoring Weights',
+                    'Scoring weights',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
@@ -816,7 +790,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                     ),
                   ),
                   Text(
-                    'Configure point weights used to calculate member rating scores (0 - 100%).',
+                    'How many points each item adds to a member\'s standing score (out of 100).',
                     style: TextStyle(fontSize: 13, color: subTextCol),
                   ),
                 ],
@@ -879,7 +853,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
             children: [
               Expanded(
                 child: _weightField(
-                  'Punctual Annual Payments (pts)',
+                  'Dues paid on time (points)',
                   _payPunctualCtrl,
                   inputBg,
                   borderCol,
@@ -890,7 +864,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
               const SizedBox(width: 14),
               Expanded(
                 child: _weightField(
-                  'Payment History (pts)',
+                  'Payment history (points)',
                   _payHistoryCtrl,
                   inputBg,
                   borderCol,
@@ -916,7 +890,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
             children: [
               Expanded(
                 child: _weightField(
-                  'Active Valid License (pts)',
+                  'Licence active (points)',
                   _licActiveCtrl,
                   inputBg,
                   borderCol,
@@ -927,7 +901,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
               const SizedBox(width: 14),
               Expanded(
                 child: _weightField(
-                  'Expired License (pts)',
+                  'Licence expired (points)',
                   _licInactiveCtrl,
                   inputBg,
                   borderCol,
@@ -964,7 +938,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
               const SizedBox(width: 14),
               Expanded(
                 child: _weightField(
-                  'Survey Participation (pts)',
+                  'Answered polls (points)',
                   _surveyCtrl,
                   inputBg,
                   borderCol,
@@ -1040,7 +1014,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
                     )
                   : const Icon(Icons.save_rounded, size: 16),
               label: Text(
-                'Save Scoring Weights',
+                'Save weights',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
@@ -1052,6 +1026,12 @@ class _AdminSettingsPageState extends State<AdminSettingsPage>
       ),
     );
   }
+
+  String _roleLabel() => switch ((_user['role']?.toString() ?? 'admin').toLowerCase()) {
+        'super_admin' => 'Super admin',
+        'sub_admin' => 'Sub-admin',
+        _ => 'Admin',
+      };
 
   Widget _readOnlyField(
     String label,

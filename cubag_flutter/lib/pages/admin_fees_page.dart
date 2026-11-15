@@ -1,3 +1,5 @@
+import '../components/filter_tabs.dart';
+import '../components/admin_list.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../components/app_layout.dart';
@@ -611,7 +613,6 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? CubagColors.ink : const Color(0xFFFAF6F0);
     final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
     final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
     final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
@@ -684,323 +685,142 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
     return AppLayout(
       title: 'Fees',
       scrollable: true,
-      child: Container(
-        color: bg,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── TOP EXECUTIVE HEADER ─────────────────────────────────────────
-            AdminHeader(
-              title: 'Fees',
-              subtitle: 'Set what members pay to register and renew, and which account each fee goes to.',
-              actions: [
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _kOrange,
-                    side: const BorderSide(color: _kOrange, width: 1.2),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: _saving ? null : _saveAllFees,
-                  icon: _saving
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _kOrange))
-                      : const Icon(Icons.cloud_upload_rounded, size: 18),
-                  label: Text(
-                    _saving ? 'Saving…' : 'Save and publish',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // ── SETTLEMENT ROUTING CALLOUT ────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: _kBlue.withAlpha(20),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _kBlue.withAlpha(80), width: 1.2),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.account_balance_rounded, color: _kBlue, size: 22),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: RichText(
-                      text: TextSpan(
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isDark ? Colors.white70 : const Color(0xFF6B5E55),
-                        ),
-                        children: const [
-                          TextSpan(
-                            text: 'One payment, several accounts. ',
-                            style: TextStyle(fontWeight: FontWeight.bold, color: _kBlue),
-                          ),
-                          TextSpan(
-                            text: 'Members pay their total in one MoMo payment; each fee below is settled into the account shown next to it.',
-                          ),
-                        ],
-                      ),
-                    ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AdminHeader(
+                title: 'Fees',
+                subtitle: 'What members pay to register and renew. Members pay the total in one MoMo payment; '
+                    'each fee is then settled into the account shown with it. Changes reach members after you publish.',
+                actions: [
+                  FilledButton.icon(
+                    onPressed: _saving ? null : _saveAllFees,
+                    icon: _saving
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.publish_rounded, size: 18),
+                    label: Text(_saving ? 'Publishing…' : 'Publish changes'),
                   ),
                 ],
               ),
-            ),
-
-            if (_message.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: (_isSuccess ? _kGreen : _kRed).withAlpha(20),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: (_isSuccess ? _kGreen : _kRed).withAlpha(80)),
+              if (_message.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(CubagSpace.md),
+                  decoration: BoxDecoration(
+                    color: _isSuccess ? CubagColors.validTint : CubagColors.lapsedTint,
+                    borderRadius: BorderRadius.circular(CubagRadius.card),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _isSuccess ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+                        color: _isSuccess ? CubagColors.valid : CubagColors.lapsed,
+                        size: 20,
+                      ),
+                      const SizedBox(width: CubagSpace.sm),
+                      Expanded(
+                        child: Text(
+                          _message,
+                          style: CubagType.label.copyWith(color: _isSuccess ? CubagColors.valid : CubagColors.lapsed),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    Icon(_isSuccess ? Icons.check_circle_rounded : Icons.error_outline_rounded, color: _isSuccess ? _kGreen : _kRed, size: 18),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(_message, style: TextStyle(color: _isSuccess ? _kGreen : _kRed, fontWeight: FontWeight.bold, fontSize: 14)),
-                    ),
-                  ],
-                ),
+                const SizedBox(height: CubagSpace.md),
+              ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final w = constraints.maxWidth;
+                  final perRow = w < 520 ? 2 : (w < 900 ? 3 : 5);
+                  final cardWidth = (w - CubagSpace.sm * (perRow - 1)) / perRow;
+                  return Wrap(
+                    spacing: CubagSpace.sm,
+                    runSpacing: CubagSpace.sm,
+                    children: [
+                      for (final s in [
+                        ('new_reg', 'New registration', '${newRegFees.length} fees', Icons.person_add_alt_1_outlined),
+                        ('national', 'National renewal', '${nationalFees.length} fees', Icons.shield_outlined),
+                        ('district', 'District renewal', '${districtFees.length} fees', Icons.location_city_outlined),
+                        ('variable', 'Add-ons', '${variableFees.length} fees', Icons.tune_rounded),
+                        ('settlement', 'Accounts', '4 bank accounts', Icons.account_balance_outlined),
+                      ])
+                        _buildCategoryKpiCard(
+                          key: s.$1,
+                          title: s.$2,
+                          subtitle: s.$3,
+                          itemCount: 0,
+                          color: CubagColors.cocoa,
+                          icon: s.$4,
+                          width: cardWidth,
+                          isDark: isDark,
+                          cardBg: cardBg,
+                          border: border,
+                          textPrimary: textPrimary,
+                          textMuted: textMuted,
+                        ),
+                    ],
+                  );
+                },
               ),
-            ],
-
-            const SizedBox(height: 18),
-
-            // ── CATEGORY KPI CARDS ───────────────────────────────────────────
-            Text(
-              'Sections',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.8),
-            ),
-            const SizedBox(height: 10),
-
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isMobile = constraints.maxWidth < 650;
-                final isTablet = constraints.maxWidth < 1100;
-                final cardWidth = isMobile
-                    ? constraints.maxWidth
-                    : (isTablet ? (constraints.maxWidth - 12) / 2 : (constraints.maxWidth - 48) / 5);
-
-                return Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
+              const SizedBox(height: CubagSpace.xl),
+              if (_selectedCategory == 'settlement')
+                _buildSettlementDashboard(isDark, cardBg, border, textPrimary, textMuted)
+              else ...[
+                Row(
                   children: [
-                    _buildCategoryKpiCard(
-                      key: 'new_reg',
-                      title: 'New registration',
-                      subtitle: '${newRegFees.length} fees',
-                      itemCount: newRegFees.length,
-                      color: _kOrange,
-                      icon: Icons.person_add_alt_1_rounded,
-                      width: cardWidth,
-                      isDark: isDark,
-                      cardBg: cardBg,
-                      border: border,
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
-                    ),
-                    _buildCategoryKpiCard(
-                      key: 'national',
-                      title: 'National renewal',
-                      subtitle: '${nationalFees.length} fees',
-                      itemCount: nationalFees.length,
-                      color: _kBlue,
-                      icon: Icons.shield_rounded,
-                      width: cardWidth,
-                      isDark: isDark,
-                      cardBg: cardBg,
-                      border: border,
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
-                    ),
-                    _buildCategoryKpiCard(
-                      key: 'district',
-                      title: 'District renewal',
-                      subtitle: '${districtFees.length} fees',
-                      itemCount: districtFees.length,
-                      color: _kGreen,
-                      icon: Icons.location_city_rounded,
-                      width: cardWidth,
-                      isDark: isDark,
-                      cardBg: cardBg,
-                      border: border,
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
-                    ),
-                    _buildCategoryKpiCard(
-                      key: 'variable',
-                      title: 'Add-ons',
-                      subtitle: '${variableFees.length} fees',
-                      itemCount: variableFees.length,
-                      color: _kPurple,
-                      icon: Icons.tune_rounded,
-                      width: cardWidth,
-                      isDark: isDark,
-                      cardBg: cardBg,
-                      border: border,
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
-                    ),
-                    _buildCategoryKpiCard(
-                      key: 'settlement',
-                      title: 'Accounts',
-                      subtitle: 'Zenith, GCB, Ecobank, NIB',
-                      itemCount: 4,
-                      color: _kTeal,
-                      icon: Icons.account_balance_wallet_rounded,
-                      width: cardWidth,
-                      isDark: isDark,
-                      cardBg: cardBg,
-                      border: border,
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
+                    Expanded(child: Text(activeTitle, style: CubagType.title)),
+                    OutlinedButton.icon(
+                      onPressed: () => _showFeeDialog(
+                        null,
+                        null,
+                        _selectedCategory == 'new_reg' ? 'new_membership' : _selectedCategory,
+                      ),
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: const Text('Add fee'),
                     ),
                   ],
-                );
-              },
-            ),
-
-            const SizedBox(height: 20),
-
-            // If Settlement tab is selected, show Settlement Dashboard
-            if (_selectedCategory == 'settlement') ...[
-              _buildSettlementDashboard(isDark, cardBg, border, textPrimary, textMuted),
-            ] else ...[
-              // TOOLBAR & SEARCH
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: border, width: 1.2),
                 ),
-                child: Column(
-                  children: [
-                    Row(
+                const SizedBox(height: CubagSpace.sm),
+                if (_selectedCategory == 'national') ...[
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: activeThemeColor.withAlpha(25),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: activeThemeColor.withAlpha(80)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(color: activeThemeColor, shape: BoxShape.circle),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                activeTitle,
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: activeThemeColor),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-
-                        // Sub-filter Pills (for National)
-                        if (_selectedCategory == 'national') ...[
-                          Expanded(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: [
-                                  _pill('all', 'All Statutory Fees'),
-                                  const SizedBox(width: 6),
-                                  _pill('small', 'Small / SME'),
-                                  const SizedBox(width: 6),
-                                  _pill('large', 'Large Corporate'),
-                                  const SizedBox(width: 6),
-                                  _pill('multinational', 'Multinational'),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ] else
-                          const Spacer(),
-
-                        // Add Item Button
-                        OutlinedButton.icon(
-                          onPressed: () => _showFeeDialog(null, null, _selectedCategory == 'new_reg' ? 'new_membership' : _selectedCategory),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: activeThemeColor,
-                            side: BorderSide(color: activeThemeColor.withAlpha(100)),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                          icon: const Icon(Icons.add_rounded, size: 16),
-                          label: Text('Add fee', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                        ),
+                        _pill('all', 'All firms'),
+                        const SizedBox(width: CubagSpace.xs),
+                        _pill('small', 'Small firms'),
+                        const SizedBox(width: CubagSpace.xs),
+                        _pill('large', 'Large firms'),
+                        const SizedBox(width: CubagSpace.xs),
+                        _pill('multinational', 'Multinationals'),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    const Divider(height: 1),
-                    const SizedBox(height: 12),
-
-                    // Search Bar
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: isDark ? CubagColors.ink : CubagColors.sand,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: border),
-                            ),
-                            child: TextField(
-                              onChanged: _onSearchChanged,
-                              style: TextStyle(fontSize: 14, color: textPrimary),
-                              decoration: InputDecoration(
-                                hintText: 'Search fees or accounts',
-                                hintStyle: TextStyle(fontSize: 13, color: textMuted),
-                                prefixIcon: Icon(Icons.search_rounded, size: 16, color: textMuted),
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          '${filteredDisplayList.length} fees',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textMuted),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
+                  const SizedBox(height: CubagSpace.sm),
+                ],
+                AdminSearchField(hint: 'Search fees or accounts', onChanged: _onSearchChanged),
+                const SizedBox(height: CubagSpace.md),
+                _buildFeeTable(
+                  filteredDisplayList,
+                  isDark,
+                  cardBg,
+                  border,
+                  textPrimary,
+                  textMuted,
+                  activeThemeColor: activeThemeColor,
                 ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // STRUCTURED TARIFF DATA TABLE
-              _buildFeeTable(
-                filteredDisplayList,
-                isDark,
-                cardBg,
-                border,
-                textPrimary,
-                textMuted,
-                activeThemeColor: activeThemeColor,
-              ),
+                const SizedBox(height: CubagSpace.xs),
+                Text(
+                  filteredDisplayList.length == 1 ? '1 fee' : '${filteredDisplayList.length} fees',
+                  style: CubagType.caption,
+                ),
+              ],
+              const SizedBox(height: CubagSpace.xl),
             ],
-
-            const SizedBox(height: 24),
-          ],
+          ),
         ),
       ),
     );
@@ -1021,74 +841,44 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
     required Color textMuted,
   }) {
     final isSelected = _selectedCategory == key;
-
-    return InkWell(
-      onTap: () {
-        setState(() {
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      child: InkWell(
+        onTap: () => setState(() {
           _selectedCategory = key;
           _subFilter = 'all';
-        });
-      },
-      borderRadius: BorderRadius.circular(16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: width,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (isDark ? color.withAlpha(35) : color.withAlpha(18))
-              : cardBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? color : border,
-            width: isSelected ? 2.0 : 1.2,
+        }),
+        borderRadius: BorderRadius.circular(CubagRadius.card),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: width,
+          padding: const EdgeInsets.all(CubagSpace.md),
+          decoration: BoxDecoration(
+            color: isSelected ? CubagColors.cocoa : CubagColors.paper,
+            borderRadius: BorderRadius.circular(CubagRadius.card),
+            border: Border.all(color: isSelected ? CubagColors.cocoa : CubagColors.line),
           ),
-          boxShadow: isSelected
-              ? [BoxShadow(color: color.withAlpha(40), blurRadius: 10, offset: const Offset(0, 4))]
-              : [BoxShadow(color: Colors.black.withAlpha(isDark ? 15 : 4), blurRadius: 6, offset: const Offset(0, 2))],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withAlpha(isSelected ? 255 : (isDark ? 40 : 25)),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(icon, color: isSelected ? Colors.white : color, size: 18),
-                ),
-                if (isSelected)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10)),
-                    child: Text('Active', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white)),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w900,
-                color: isSelected ? (isDark ? Colors.white : color) : textPrimary,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, size: 20, color: isSelected ? CubagColors.onCocoaMuted : CubagColors.cocoa),
+              const SizedBox(height: CubagSpace.sm),
+              Text(
+                title,
+                style: CubagType.bodyStrong.copyWith(color: isSelected ? CubagColors.onCocoa : CubagColors.ink),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 12,
-                color: isSelected ? (isDark ? Colors.white70 : CubagColors.inkSoft) : textMuted,
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: CubagType.caption.copyWith(color: isSelected ? CubagColors.onCocoaMuted : CubagColors.muted),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1097,10 +887,14 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
   Widget _pill(String value, String label) {
     final isSelected = _subFilter == value;
     return ChoiceChip(
-      label: Text(label, style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600)),
+      label: Text(label),
       selected: isSelected,
-      selectedColor: _kBlue,
-      labelStyle: TextStyle(color: isSelected ? Colors.white : const Color(0xFF6B5E55)),
+      showCheckmark: false,
+      labelStyle: CubagType.label.copyWith(color: isSelected ? CubagColors.onCocoa : CubagColors.inkSoft),
+      selectedColor: CubagColors.cocoa,
+      backgroundColor: CubagColors.paper,
+      side: BorderSide(color: isSelected ? CubagColors.cocoa : CubagColors.line),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       onSelected: (val) {
         if (val) setState(() => _subFilter = value);
       },
@@ -1108,64 +902,37 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
   }
 
   Widget _buildSettlementDashboard(bool isDark, Color cardBg, Color border, Color textPrimary, Color textMuted) {
-    final zenithItems = _fees.where((f) => (f['bank_name'] ?? '').toString().toLowerCase().contains('zenith')).toList();
-    final gcbItems = _fees.where((f) => (f['bank_name'] ?? '').toString().toLowerCase().contains('gcb')).toList();
-    final ecobankItems = _fees.where((f) => (f['bank_name'] ?? '').toString().toLowerCase().contains('ecobank')).toList();
-    final nibItems = _fees.where((f) => (f['bank_name'] ?? '').toString().toLowerCase().contains('nib')).toList();
-
+    List<Map<String, dynamic>> at(String bank) =>
+        _fees.where((f) => (f['bank_name'] ?? '').toString().toLowerCase().contains(bank)).toList();
+    final banks = [
+      ('Zenith Bank', '6010309212', 'Subscription and development levy', at('zenith')),
+      ('GCB Bank', '107113005326', 'Operations, administration and legal', at('gcb')),
+      ('Ecobank Ghana', '1441002452360', 'District branches and welfare', at('ecobank')),
+      ('National Investment Bank', '1110045585101', 'Training and professional development', at('nib')),
+    ];
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildBankSettlementCard(
-          bank: 'Zenith Bank',
-          account: '6010309212',
-          badge: 'Primary Subscription & Development Levy',
-          color: const Color(0xFF003366),
-          items: zenithItems,
-          isDark: isDark,
-          cardBg: cardBg,
-          border: border,
-          textPrimary: textPrimary,
-          textMuted: textMuted,
+        Text(
+          'Which fees are paid into each account. To change an account, edit the fee.',
+          style: CubagType.small,
         ),
-        const SizedBox(height: 12),
-        _buildBankSettlementCard(
-          bank: 'GCB Bank',
-          account: '107113005326',
-          badge: 'Operations, Administration & Legal Compliance',
-          color: _kOrange,
-          items: gcbItems,
-          isDark: isDark,
-          cardBg: cardBg,
-          border: border,
-          textPrimary: textPrimary,
-          textMuted: textMuted,
-        ),
-        const SizedBox(height: 12),
-        _buildBankSettlementCard(
-          bank: 'Ecobank Ghana',
-          account: '1441002452360',
-          badge: 'District Branches, Clearance & District Welfare',
-          color: _kTeal,
-          items: ecobankItems,
-          isDark: isDark,
-          cardBg: cardBg,
-          border: border,
-          textPrimary: textPrimary,
-          textMuted: textMuted,
-        ),
-        const SizedBox(height: 12),
-        _buildBankSettlementCard(
-          bank: 'NIB (National Investment Bank)',
-          account: '1110045585101',
-          badge: 'CPD Training & Professional Development',
-          color: _kGreen,
-          items: nibItems,
-          isDark: isDark,
-          cardBg: cardBg,
-          border: border,
-          textPrimary: textPrimary,
-          textMuted: textMuted,
-        ),
+        const SizedBox(height: CubagSpace.md),
+        for (final b in banks) ...[
+          _buildBankSettlementCard(
+            bank: b.$1,
+            account: b.$2,
+            badge: b.$3,
+            color: CubagColors.cocoa,
+            items: b.$4,
+            isDark: isDark,
+            cardBg: cardBg,
+            border: border,
+            textPrimary: textPrimary,
+            textMuted: textMuted,
+          ),
+          const SizedBox(height: CubagSpace.md),
+        ],
       ],
     );
   }
@@ -1182,81 +949,39 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
     required Color textPrimary,
     required Color textMuted,
   }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: border, width: 1.2),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: color.withAlpha(25), borderRadius: BorderRadius.circular(10)),
-                child: Icon(Icons.account_balance_rounded, color: color, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(bank, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary)),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(color: color.withAlpha(25), borderRadius: BorderRadius.circular(6)),
-                          child: Text('Acc: $account', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(badge, style: TextStyle(fontSize: 12, color: textMuted)),
-                  ],
+    final total = items.fold<double>(0, (s, f) => s + (double.tryParse('${f['amount'] ?? 0}') ?? 0));
+    return AdminRowGroup(
+      children: [
+        AdminListRow(
+          leading: const AdminRowMark(icon: Icons.account_balance_outlined),
+          title: bank,
+          subtitle: '$badge · Account $account',
+          meta: items.length == 1 ? '1 fee' : '${items.length} fees',
+          status: Text('GH₵ ${_money(total)}', style: CubagType.bodyStrong.copyWith(fontFeatures: const [FontFeature.tabularFigures()])),
+          trailing: const SizedBox(width: CubagSpace.xs),
+        ),
+        for (final item in items)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(68, 10, CubagSpace.md, 10),
+            child: Row(
+              children: [
+                Expanded(child: Text(item['label']?.toString() ?? '', style: CubagType.small.copyWith(color: CubagColors.inkSoft))),
+                Text(
+                  'GH₵ ${_money(double.tryParse('${item['amount'] ?? 0}') ?? 0)}',
+                  style: CubagType.small.copyWith(color: CubagColors.ink, fontFeatures: const [FontFeature.tabularFigures()]),
                 ),
-              ),
-              Text(
-                '${items.length} Tariffs Mapped',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          const Divider(height: 1),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: items.map((item) {
-              final amt = item['amount']?.toString() ?? '0.00';
-              final label = item['label']?.toString() ?? '';
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: isDark ? CubagColors.ink : CubagColors.sand,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: border),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(label, style: TextStyle(fontSize: 12, color: textPrimary)),
-                    const SizedBox(width: 6),
-                    Text('GHS $amt', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
+      ],
     );
+  }
+
+  String _money(double v) {
+    final whole = v.truncate();
+    final s = whole.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+    final cents = ((v - whole) * 100).round();
+    return cents == 0 ? s : '$s.${cents.toString().padLeft(2, '0')}';
   }
 
   Widget _buildFeeTable(
@@ -1269,237 +994,90 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
     required Color activeThemeColor,
   }) {
     if (_fetching) {
-      return ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: 4,
-        separatorBuilder: (_, index) => const SizedBox(height: 8),
-        itemBuilder: (_, index) => const ShimmerListTile(),
+      return Column(
+        children: List.generate(
+          4,
+          (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile()),
+        ),
       );
     }
-
     if (items.isEmpty) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: border),
-        ),
-        child: Column(
-          children: [
-            Icon(Icons.search_off_rounded, size: 36, color: textMuted),
-            const SizedBox(height: 10),
-            Text(
-              'No fee tariffs found in this section.',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Click "Add Fee Item" above to create an entry with custom settlement accounts.',
-              style: TextStyle(fontSize: 13, color: textMuted),
-            ),
-          ],
-        ),
+      return const EmptyMessage(
+        icon: Icons.receipt_long_outlined,
+        title: 'No fees in this section',
+        message: 'Use Add fee to create one and choose the account it is paid into.',
       );
     }
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: border, width: 1.2),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final tableWidth = constraints.maxWidth > 950 ? constraints.maxWidth : 950.0;
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minWidth: tableWidth),
-              child: DataTable(
-                horizontalMargin: 16,
-                columnSpacing: 16,
-                headingRowColor: WidgetStateProperty.all(isDark ? const Color(0xFF22140E) : const Color(0xFFFAF6F0)),
-                headingTextStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: textMuted, letterSpacing: 0.5),
-                columns: const [
-                  DataColumn(label: Text('Section')),
-                  DataColumn(label: Text('Fee')),
-                  DataColumn(label: Text('Paid into')),
-                  DataColumn(label: Text('Amount (GHS)')),
-                  DataColumn(label: Text('Unit / freq')),
-                  DataColumn(label: Text('Actions')),
-                ],
-                rows: items.map((item) {
-                  final originalIndex = _fees.indexOf(item);
-                  final label = item['label']?.toString() ?? '';
-                  final amt = item['amount']?.toString() ?? '0.00';
-                  final freq = item['frequency']?.toString() ?? 'Annual';
-                  final unit = item['unit']?.toString() ?? 'flat';
-                  final sec = (item['section'] ?? '').toString();
-                  final scale = (item['target_scale'] ?? '').toString();
-                  final bankName = item['bank_name']?.toString() ?? 'GCB';
-                  final accNum = item['account_number']?.toString() ?? '107113005326';
+    return AdminRowGroup(
+      dividerIndent: CubagSpace.md,
+      children: [
+        for (final item in items)
+          () {
+            final originalIndex = _fees.indexOf(item);
+            final label = item['label']?.toString() ?? '';
+            final amt = double.tryParse('${item['amount'] ?? 0}') ?? 0;
+            final freq = item['frequency']?.toString() ?? 'Annual';
+            final unit = (item['unit']?.toString() ?? 'flat').replaceAll('_', ' ');
+            final scale = (item['target_scale'] ?? '').toString();
+            final lower = label.toLowerCase();
+            final scaleLabel = scale == 'small' || lower.contains('small')
+                ? 'Small firms'
+                : (scale == 'large' || lower.contains('large')
+                    ? 'Large firms'
+                    : (scale == 'multinational' || lower.contains('multinational') ? 'Multinationals' : ''));
+            final bankName = item['bank_name']?.toString() ?? '';
+            final accNum = item['account_number']?.toString() ?? '';
+            final desc = (item['description'] ?? '').toString();
 
-                  String scaleLabel = 'All Scales';
-                  Color scaleColor = _kBlue;
-                  if (scale == 'small' || label.toLowerCase().contains('small')) {
-                    scaleLabel = 'Small / SME';
-                    scaleColor = _kOrange;
-                  } else if (scale == 'large' || label.toLowerCase().contains('large')) {
-                    scaleLabel = 'Large Corporate';
-                    scaleColor = _kPurple;
-                  } else if (scale == 'multinational' || label.toLowerCase().contains('multinational')) {
-                    scaleLabel = 'Multinational';
-                    scaleColor = _kRed;
-                  } else if (sec == 'district') {
-                    scaleLabel = 'District Clearance';
-                    scaleColor = _kGreen;
-                  } else if (sec == 'new_membership') {
-                    scaleLabel = 'Onboarding';
-                    scaleColor = _kTeal;
-                  }
-
-                  Color bankBadgeColor = _kOrange;
-                  if (bankName.toLowerCase().contains('zenith')) {
-                    bankBadgeColor = const Color(0xFF003366);
-                  } else if (bankName.toLowerCase().contains('ecobank')) {
-                    bankBadgeColor = _kTeal;
-                  } else if (bankName.toLowerCase().contains('nib')) {
-                    bankBadgeColor = _kGreen;
-                  }
-
-                  return DataRow(
-                    cells: [
-                      // SCALE BADGE
-                      DataCell(
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: scaleColor.withAlpha(20),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: scaleColor.withAlpha(80)),
+            return InkWell(
+              onTap: () => _showFeeDialog(item, originalIndex),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(CubagSpace.md, 12, CubagSpace.xs, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(label, style: CubagType.bodyStrong, maxLines: 2, overflow: TextOverflow.ellipsis),
+                          if (desc.isNotEmpty)
+                            Text(desc, style: CubagType.small, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          const SizedBox(height: 2),
+                          Text(
+                            [
+                              if (scaleLabel.isNotEmpty) scaleLabel,
+                              '$freq${unit == 'flat' ? '' : ', $unit'}',
+                              if (bankName.isNotEmpty) 'Paid into $bankName${accNum.isEmpty ? '' : ' $accNum'}',
+                            ].join(' · '),
+                            style: CubagType.caption,
                           ),
-                          child: Text(
-                            scaleLabel,
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: scaleColor),
-                          ),
-                        ),
+                        ],
                       ),
-
-                      // NAME
-                      DataCell(
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 240),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                label,
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textPrimary),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if ((item['description'] ?? '').toString().isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  item['description'].toString(),
-                                  style: TextStyle(fontSize: 11, color: textMuted),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      // SETTLEMENT ACCOUNT
-                      DataCell(
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: bankBadgeColor.withAlpha(18),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: bankBadgeColor.withAlpha(60)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.account_balance_rounded, size: 14, color: bankBadgeColor),
-                              const SizedBox(width: 6),
-                              Text(
-                                '$bankName • $accNum',
-                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: bankBadgeColor),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      // AMOUNT
-                      DataCell(
-                        Text(
-                          'GHS ${double.tryParse(amt)?.toStringAsFixed(2) ?? amt}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w900,
-                            color: activeThemeColor,
-                          ),
-                        ),
-                      ),
-
-                      // UNIT / FREQ
-                      DataCell(
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(freq, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: textPrimary)),
-                            if (unit != 'flat')
-                              Text(unit.replaceAll('_', ' '), style: TextStyle(fontSize: 10, color: AppColors.accentOrangeText)),
-                          ],
-                        ),
-                      ),
-
-                      // ACTIONS
-                      DataCell(
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: () => _showFeeDialog(item, originalIndex),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: activeThemeColor,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                minimumSize: Size.zero,
-                              ),
-                              icon: const Icon(Icons.edit_outlined, size: 12),
-                              label: Text('Edit', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            ),
-                            const SizedBox(width: 6),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline_rounded, size: 16, color: _kRed),
-                              tooltip: 'Remove',
-                              onPressed: () => _removeFee(originalIndex),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList(),
+                    ),
+                    const SizedBox(width: CubagSpace.sm),
+                    Text(
+                      'GH₵ ${_money(amt)}',
+                      style: CubagType.bodyStrong.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                    ),
+                    PopupMenuButton<String>(
+                      tooltip: 'More',
+                      icon: const Icon(Icons.more_vert_rounded, color: CubagColors.muted),
+                      onSelected: (v) {
+                        if (v == 'edit') _showFeeDialog(item, originalIndex);
+                        if (v == 'remove') _removeFee(originalIndex);
+                      },
+                      itemBuilder: (_) => [
+                        const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                        PopupMenuItem(value: 'remove', child: Text('Remove', style: TextStyle(color: CubagColors.lapsed))),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
-      ),
+            );
+          }(),
+      ],
     );
   }
 }

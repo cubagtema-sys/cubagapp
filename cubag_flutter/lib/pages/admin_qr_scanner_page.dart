@@ -3,7 +3,6 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:go_router/go_router.dart';
 import '../design/cubag_design.dart';
 
-const _kOrange = CubagColors.action;
 
 class AdminQrScannerPage extends StatefulWidget {
   final Function(String memberId) onScan;
@@ -59,10 +58,8 @@ class _AdminQrScannerPageState extends State<AdminQrScannerPage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          'Scan QR Code',
-          style: TextStyle(color: Colors.white),
-        ),
+        foregroundColor: Colors.white,
+        title: const Text('Scan a member card', style: TextStyle(color: Colors.white)),
       ),
       body: Stack(
         children: [
@@ -74,8 +71,8 @@ class _AdminQrScannerPageState extends State<AdminQrScannerPage> {
               width: 250,
               height: 250,
               decoration: BoxDecoration(
-                border: Border.all(color: _kOrange, width: 4),
-                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white, width: 3),
+                borderRadius: BorderRadius.circular(CubagRadius.hero),
               ),
             ),
           ),
@@ -86,13 +83,17 @@ class _AdminQrScannerPageState extends State<AdminQrScannerPage> {
             right: 0,
             child: Column(
               children: [
-                const Text(
-                  'Position the QR code within the frame',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: CubagSpace.xl),
+                  child: Text(
+                    'Hold the QR code on the member card or event ticket inside the frame.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white, fontSize: 16, height: 1.4),
+                  ),
                 ),
                 const SizedBox(height: 20),
                 if (_isProcessing)
-                  const CircularProgressIndicator(color: _kOrange),
+                  const CircularProgressIndicator(color: Colors.white),
               ],
             ),
           ),

@@ -1,3 +1,7 @@
+import '../components/shimmer_loader.dart';
+import '../components/filter_tabs.dart';
+import '../components/cubag_ui.dart';
+import '../components/admin_list.dart';
 import 'package:flutter/material.dart';
 import '../components/app_layout.dart';
 import '../components/admin_components.dart';
@@ -9,8 +13,6 @@ import '../design/cubag_design.dart';
 const _kOrange = CubagColors.action;
 const _kGreen = CubagColors.valid;
 const _kRed = CubagColors.lapsed;
-const _kAmber = CubagColors.due;
-const _kIndigo = Color(0xFF6366F1);
 
 class AdminDocumentRulesPage extends StatefulWidget {
   const AdminDocumentRulesPage({super.key});
@@ -294,719 +296,157 @@ class _AdminDocumentRulesPageState extends State<AdminDocumentRulesPage>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? CubagColors.ink : CubagColors.sand;
-    final cardBg = isDark ? const Color(0xFF281710) : Colors.white;
-    final borderColor = isDark
-        ? const Color(0xFF4D2D20)
-        : CubagColors.line;
-    final textPrimary = isDark ? Colors.white : CubagColors.ink;
-    final textMuted = isDark ? const Color(0xFF5F6B7E) : CubagColors.muted;
-
-    final currentRules = _currentRules;
-    final totalRules = currentRules.length;
-    final mandatoryRules = currentRules.where((r) => r['is_required'] == true).length;
-    final optionalRules = currentRules.where((r) => r['is_required'] != true).length;
-    final activeRules = currentRules.where((r) => r['is_active'] == true).length;
-
-    const String catTitle = 'Corporate Members';
+    final rules = _currentRules;
+    final required = rules.where((r) => r['is_required'] == true).length;
+    final active = rules.where((r) => r['is_active'] == true).length;
 
     return AppLayout(
       title: 'Requirements',
-      scrollable: false,
-      child: Container(
-        color: bg,
-        alignment: Alignment.topCenter,
+      scrollable: true,
+      child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1440),
+          constraints: const BoxConstraints(maxWidth: 1000),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Page Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
-              child: AdminHeader(
+              AdminHeader(
                 title: 'Requirements',
-                subtitle:
-                    'The documents members must upload when they apply and when they renew.',
+                subtitle: 'The documents members must upload when they apply and when they renew. '
+                    'Switch one off to stop asking for it; members already approved are not affected.',
                 actions: [
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _kOrange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 0,
-                    ),
+                  OutlinedButton.icon(
+                    onPressed: _fetch,
+                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    label: const Text('Refresh'),
+                  ),
+                  FilledButton.icon(
                     onPressed: () => _openAddEditDialog(),
                     icon: const Icon(Icons.add_rounded, size: 18),
-                    label: Text(
-                      'Add document',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: isDark ? Colors.white : CubagColors.ink,
-                      side: BorderSide(color: borderColor, width: 1.0),
-                      backgroundColor: cardBg,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: _fetch,
-                    icon: const Icon(Icons.refresh_rounded, size: 18, color: _kOrange),
-                    label: Text(
-                      'Refresh',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                      ),
-                    ),
+                    label: const Text('Add document'),
                   ),
                 ],
               ),
-            ),
-
-            const SizedBox(height: 6),
-
-            // Scope Sub-Tabs + Search + KPIs
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: borderColor, width: 1.2),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        // Scope selector
-                        Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? CubagColors.ink
-                                : CubagColors.sand,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: borderColor),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _buildScopePill(
-                                'New members',
-                                'new',
-                                Icons.assignment_rounded,
-                                _countFor(_selectedCategory, 'new'),
-                              ),
-                              const SizedBox(width: 4),
-                              _buildScopePill(
-                                'Renewals',
-                                'renewal',
-                                Icons.autorenew_rounded,
-                                _countFor(_selectedCategory, 'renewal'),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        // Search box
-                        Expanded(
-                          child: Container(
-                              height: 38,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? CubagColors.ink
-                                  : CubagColors.sand,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: borderColor),
-                            ),
-                            child: TextField(
-                              onChanged: (v) => setState(() => _searchQuery = v),
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: textPrimary,
-                              ),
-                              decoration: InputDecoration(
-                                hintText:
-                                    'Search documents',
-                                hintStyle: TextStyle(
-                                  fontSize: 12,
-                                  color: textMuted,
-                                ),
-                                prefixIcon: Icon(
-                                  Icons.search_rounded,
-                                  size: 17,
-                                  color: textMuted,
-                                ),
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 10,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Counter mini-badges & Bulk Toggle Actions (wraps on narrow
-                    // screens; the bulk button overflowed in a Row).
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        _buildCounterBadge(
-                          'Total',
-                          '$totalRules',
-                          Icons.rule_folder_rounded,
-                          _kIndigo,
-                          isDark,
-                        ),
-                        _buildCounterBadge(
-                          'Required',
-                          '$mandatoryRules',
-                          Icons.lock_rounded,
-                          _kRed,
-                          isDark,
-                        ),
-                        _buildCounterBadge(
-                          'Optional',
-                          '$optionalRules',
-                          Icons.help_outline_rounded,
-                          _kAmber,
-                          isDark,
-                        ),
-                        _buildCounterBadge(
-                          'Active',
-                          '$activeRules',
-                          Icons.check_circle_outline_rounded,
-                          _kGreen,
-                          isDark,
-                        ),
-                        if (totalRules > 0) ...[
-                          if (activeRules > 0)
-                            OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: _kRed,
-                                side: const BorderSide(color: _kRed, width: 1.2),
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                              onPressed: () => _bulkToggleCategory(false),
-                              icon: const Icon(Icons.power_settings_new_rounded, size: 15, color: _kRed),
-                              label: Text('Turn all off', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                            )
-                          else
-                            ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: _kGreen,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                elevation: 0,
-                              ),
-                              onPressed: () => _bulkToggleCategory(true),
-                              icon: const Icon(Icons.check_circle_outline_rounded, size: 15),
-                              label: Text('Turn all on', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                            ),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
+              FilterTabs(
+                tabs: [
+                  ('new', 'New members · ${_countFor(_selectedCategory, 'new')}'),
+                  ('renewal', 'Renewals · ${_countFor(_selectedCategory, 'renewal')}'),
+                ],
+                selected: _selectedScope,
+                onSelected: (s) => setState(() => _selectedScope = s),
               ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Table Header Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF4D2D20)
-                      : CubagColors.sand,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
-                  ),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 50,
-                      child: Text('Order', style: _headerColStyle(textMuted)),
-                    ),
-                    Expanded(
-                      flex: 4,
-                      child: Text(
-                        'Document name',
-                        style: _headerColStyle(textMuted),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 4,
-                      child: Text(
-                        'Instructions',
-                        style: _headerColStyle(textMuted),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 110,
-                      child: Text(
-                        'Required',
-                        style: _headerColStyle(textMuted),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    SizedBox(
-                      width: 90,
-                      child: Text(
-                        'Status',
-                        style: _headerColStyle(textMuted),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    SizedBox(
-                      width: 110,
-                      child: Text(
-                        'Actions',
-                        style: _headerColStyle(textMuted),
-                        textAlign: TextAlign.end,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // List of Rules
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: cardBg,
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(12),
-                    ),
-                    border: Border(
-                      left: BorderSide(color: borderColor),
-                      right: BorderSide(color: borderColor),
-                      bottom: BorderSide(color: borderColor),
+              const SizedBox(height: CubagSpace.sm),
+              AdminSearchField(hint: 'Search documents', onChanged: (v) => setState(() => _searchQuery = v)),
+              const SizedBox(height: CubagSpace.md),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${rules.length} documents · $required required · $active switched on',
+                      style: CubagType.small.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
                     ),
                   ),
-                  child: _loading
-                      ? const Center(
-                          child: CircularProgressIndicator(color: _kOrange),
+                  if (rules.isNotEmpty)
+                    PopupMenuButton<bool>(
+                      tooltip: 'Switch all',
+                      onSelected: _bulkToggleCategory,
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(value: true, child: Text('Switch all on')),
+                        PopupMenuItem(value: false, child: Text('Switch all off')),
+                      ],
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('Switch all'),
+                            Icon(Icons.arrow_drop_down_rounded),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: CubagSpace.xs),
+              if (_loading)
+                Column(
+                  children: List.generate(
+                    4,
+                    (i) => const Padding(padding: EdgeInsets.only(bottom: 8), child: ShimmerListTile()),
+                  ),
+                )
+              else if (rules.isEmpty)
+                EmptyMessage(
+                  icon: Icons.rule_folder_outlined,
+                  title: _searchQuery.isNotEmpty ? 'No documents match' : 'No documents set',
+                  message: _searchQuery.isNotEmpty
+                      ? 'Try other words, or clear the search.'
+                      : (_selectedScope == 'new'
+                          ? 'Add the documents new members must upload.'
+                          : 'Add the documents members must upload to renew.'),
+                  action: _searchQuery.isEmpty
+                      ? FilledButton.icon(
+                          onPressed: () => _openAddEditDialog(),
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: const Text('Add document'),
                         )
-                      : currentRules.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.rule_folder_outlined,
-                                    size: 48,
-                                    color: textMuted.withAlpha(120),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'No rules configured for $catTitle (${_selectedScope == "new" ? "New Application" : "Annual Renewal"})',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Click "Add Rule" to configure required compliance certificates.',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: textMuted,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: _kOrange,
-                                      foregroundColor: Colors.white,
-                                    ),
-                                    onPressed: () => _openAddEditDialog(),
-                                    icon: const Icon(Icons.add_rounded, size: 16),
-                                    label: Text(
-                                      'Add First Rule',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : ListView.separated(
-                              padding: EdgeInsets.zero,
-                              itemCount: currentRules.length,
-                              separatorBuilder: (_, index) => Divider(
-                                color: borderColor.withAlpha(80),
-                                height: 1,
-                              ),
-                              itemBuilder: (ctx, i) {
-                                final r = currentRules[i];
-                                return _buildRuleRow(
-                                  r,
-                                  i,
-                                  isDark,
-                                  borderColor,
-                                  textPrimary,
-                                  textMuted,
-                                );
-                              },
-                            ),
+                      : null,
+                )
+              else
+                AdminRowGroup(
+                  dividerIndent: 68,
+                  children: [for (var i = 0; i < rules.length; i++) _ruleRow(rules[i], i)],
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-  Widget _buildScopePill(
-    String label,
-    String scope,
-    IconData icon,
-    int count,
-  ) {
-    final isSel = _selectedScope == scope;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return InkWell(
-      onTap: () => setState(() => _selectedScope = scope),
-      borderRadius: BorderRadius.circular(8),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSel
-              ? _kOrange
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 14,
-              color: isSel ? Colors.white : (isDark ? Colors.white70 : CubagColors.muted),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
-                color: isSel ? Colors.white : (isDark ? Colors.white70 : CubagColors.inkSoft),
-              ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-              decoration: BoxDecoration(
-                color: isSel ? Colors.black.withAlpha(40) : (isDark ? Colors.white12 : Colors.black12),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '$count',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.bold,
-                  color: isSel ? Colors.white : (isDark ? Colors.white70 : CubagColors.inkSoft),
-                ),
-              ),
-            ),
-          ],
+              const SizedBox(height: CubagSpace.xl),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildCounterBadge(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-    bool isDark,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withAlpha(isDark ? 25 : 15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withAlpha(isDark ? 50 : 35)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 5),
-          Text(
-            '$label: ',
-            style: TextStyle(
-              fontSize: 11,
-              color: isDark ? Colors.white70 : CubagColors.inkSoft,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ).copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRuleRow(
-    Map<String, dynamic> r,
-    int index,
-    bool isDark,
-    Color borderColor,
-    Color textPrimary,
-    Color textMuted,
-  ) {
+  Widget _ruleRow(Map<String, dynamic> r, int index) {
     final order = (r['display_order'] as num?)?.toInt() ?? (index + 1);
-    final label = (r['label'] as String?) ?? 'Document Rule';
+    final label = (r['label'] as String?) ?? 'Document';
     final desc = (r['description'] as String?) ?? '';
     final isRequired = r['is_required'] == true;
     final isActive = r['is_active'] == true;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-      child: Row(
+    return AdminListRow(
+      leading: AdminRowMark(
+        initials: '$order',
+        color: isActive ? CubagColors.cocoa : CubagColors.muted,
+      ),
+      title: label,
+      subtitle: desc.isEmpty ? null : desc,
+      subtitleLines: 2,
+      meta: isActive ? null : 'Switched off · members are not asked for it',
+      status: isRequired ? const StatusChip('Required', kind: StatusKind.pending) : const StatusChip('Optional'),
+      onTap: () => _openAddEditDialog(r),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Order Number
-          SizedBox(
-            width: 50,
-            child: Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF4D2D20) : CubagColors.sand,
-                shape: BoxShape.circle,
-                border: Border.all(color: borderColor),
-              ),
-              child: Center(
-                child: Text(
-                  '$order',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: textPrimary,
-                  ),
-                ),
-              ),
-            ),
+          Tooltip(
+            message: isActive ? 'Members are asked for it' : 'Switched off',
+            child: Switch(value: isActive, onChanged: (_) => _toggleActive(r)),
           ),
-
-          // Document Name
-          Expanded(
-            flex: 4,
-            child: SelectableText(
-              label,
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w700,
-                color: textPrimary,
-              ),
-            ),
-          ),
-
-          // Instructions & Scope
-          Expanded(
-            flex: 4,
-            child: Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: SelectableText(
-                desc.isNotEmpty
-                    ? desc
-                    : 'Statutory credential verification required for compliance.',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  color: textMuted,
-                  height: 1.35,
-                ),
-              ),
-            ),
-          ),
-
-          // Mandatory Pill
-          SizedBox(
-            width: 110,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 9,
-                  vertical: 3,
-                ),
-                decoration: BoxDecoration(
-                  color: isRequired
-                      ? _kRed.withAlpha(isDark ? 30 : 15)
-                      : _kAmber.withAlpha(isDark ? 30 : 15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isRequired
-                        ? _kRed.withAlpha(60)
-                        : _kAmber.withAlpha(60),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isRequired ? Icons.lock_rounded : Icons.info_outline_rounded,
-                      size: 11,
-                      color: isRequired ? _kRed : _kAmber,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      isRequired ? 'Required' : 'Optional',
-                      style: TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                        color: isRequired ? _kRed : _kAmber,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Active Status Pill
-          SizedBox(
-            width: 90,
-            child: Center(
-              child: InkWell(
-                onTap: () => _toggleActive(r),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? _kGreen.withAlpha(isDark ? 30 : 15)
-                        : Colors.grey.withAlpha(isDark ? 30 : 15),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isActive
-                          ? _kGreen.withAlpha(60)
-                          : Colors.grey.withAlpha(60),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isActive ? _kGreen : Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        isActive ? 'On' : 'Off',
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w800,
-                          color: isActive ? _kGreen : Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Action Buttons
-          SizedBox(
-            width: 110,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                IconButton(
-                  tooltip: 'Edit Rule',
-                  icon: const Icon(Icons.edit_outlined, size: 17),
-                  color: _kOrange,
-                  onPressed: () => _openAddEditDialog(r),
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                  padding: EdgeInsets.zero,
-                ),
-                const SizedBox(width: 4),
-                IconButton(
-                  tooltip: 'Delete Rule',
-                  icon: const Icon(Icons.delete_outline_rounded, size: 17),
-                  color: _kRed,
-                  onPressed: () => _deleteRule(r),
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                  padding: EdgeInsets.zero,
-                ),
-              ],
-            ),
+          PopupMenuButton<String>(
+            tooltip: 'More',
+            icon: const Icon(Icons.more_vert_rounded, color: CubagColors.muted),
+            onSelected: (v) {
+              if (v == 'edit') _openAddEditDialog(r);
+              if (v == 'delete') _deleteRule(r);
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'edit', child: Text('Edit')),
+              PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: CubagColors.lapsed))),
+            ],
           ),
         ],
       ),
     );
   }
-
-  TextStyle _headerColStyle(Color color) {
-    return TextStyle(
-      fontSize: 10.5,
-      fontWeight: FontWeight.w800,
-      color: color,
-    );
-  }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ADD / EDIT RULE MODAL DIALOG
-// ─────────────────────────────────────────────────────────────────────────────
 class _AddEditRuleDialog extends StatefulWidget {
   final Map<String, dynamic>? existing;
   final String defaultCategory;
