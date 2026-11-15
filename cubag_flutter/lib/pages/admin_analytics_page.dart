@@ -1,3 +1,5 @@
+import '../components/filter_tabs.dart';
+import '../components/admin_list.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../components/app_layout.dart';
@@ -420,11 +422,11 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Export Spreadsheet',
+                    'Export',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 21, color: textPrimary),
                   ),
                   Text(
-                    'Microsoft Excel & CSV Compatible',
+                    'CSV file, opens in Excel',
                     style: TextStyle(color: _kGreen, fontSize: 15.5, fontWeight: FontWeight.w600),
                   ),
                 ],
@@ -464,7 +466,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Financial Ledger Export',
+                            'Payments',
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: textPrimary),
                           ),
                           Text(
@@ -503,7 +505,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Members Roster Export',
+                            'Members',
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: textPrimary),
                           ),
                           Text(
@@ -765,11 +767,12 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF22140E) : const Color(0xFFFBF8F3);
+    final cardBg = isDark ? const Color(0xFF22140E) : CubagColors.paper;
     final border = isDark ? const Color(0xFF3D261C) : CubagColors.line;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF1F1612);
-    final textMuted = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
-    final innerBg = isDark ? CubagColors.ink : const Color(0xFFFAF6F0);
+    final textPrimary = isDark ? Colors.white : CubagColors.ink;
+    final textMuted = isDark ? const Color(0xFFB0A298) : CubagColors.muted;
+    final innerBg = isDark ? CubagColors.ink : CubagColors.sand;
+    final tab = _tabController.index;
 
     return AppLayout(
       title: 'Revenue',
@@ -777,186 +780,72 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
       scrollable: true,
       child: _loading
           ? const DashboardSkeleton()
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (_error != null)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0x19ef4444),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0x33ef4444)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.warning_amber_rounded,
-                          color: CubagColors.lapsed,
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AdminHeader(
+                      title: 'Revenue and activity',
+                      subtitle: 'Money received, members and service activity for the period you choose.',
+                      actions: [
+                        CustomDropdown<String>(
+                          value: _dateFilter,
+                          width: 160,
+                          dense: true,
+                          items: const [
+                            DropdownItem(value: 'All Time', label: 'All time'),
+                            DropdownItem(value: 'Last 7 Days', label: 'Last 7 days'),
+                            DropdownItem(value: 'Last 30 Days', label: 'Last 30 days'),
+                            DropdownItem(value: 'Year to Date', label: 'This year'),
+                          ],
+                          onChanged: (v) => setState(() => _dateFilter = v),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                          _error!,
-                          style: TextStyle(
-                            color: CubagColors.lapsed,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        ),
-                        IconButton(
-                          tooltip: 'Refresh',
-                          icon: const Icon(
-                            Icons.refresh,
-                            color: CubagColors.lapsed,
-                            size: 18,
-                          ),
-                          onPressed: _fetchData,
+                        OutlinedButton.icon(
+                          onPressed: () => _showExportDialog(isDark, cardBg, textPrimary, textMuted),
+                          icon: const Icon(Icons.download_rounded, size: 18),
+                          label: const Text('Export'),
                         ),
                       ],
                     ),
-                  ),
-
-                AdminHeader(
-                  title: 'Revenue and activity',
-                  subtitle:
-                      'Money received, members and service activity for the period you choose.',
-                  actions: [
-                    OutlinedButton.icon(
-                      onPressed: () => _showExportDialog(isDark, cardBg, textPrimary, textMuted),
-                      icon: const Icon(Icons.download_rounded, size: 16),
-                      label: Text(
-                        'Export',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
+                    if (_error != null)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: CubagSpace.md),
+                        padding: const EdgeInsets.all(CubagSpace.md),
+                        decoration: BoxDecoration(
+                          color: CubagColors.lapsedTint,
+                          borderRadius: BorderRadius.circular(CubagRadius.card),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.warning_amber_rounded, color: CubagColors.lapsed, size: 20),
+                            const SizedBox(width: CubagSpace.sm),
+                            Expanded(child: Text(_error!, style: CubagType.label.copyWith(color: CubagColors.lapsed))),
+                            TextButton(onPressed: _fetchData, child: const Text('Try again')),
+                          ],
                         ),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: _kOrange,
-                        side: const BorderSide(color: _kOrange),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                      ),
+                    AdminFigureStrip(figures: [
+                      AdminFigure('Money received', _cedis(_filteredRevenue), color: CubagColors.valid),
+                      AdminFigure('Members', '$_filteredTotalMembersCount'),
+                      AdminFigure('Cargo schedules', '$_cargoSchedulesCount'),
+                      AdminFigure('Open tickets', '$_openTickets', color: _openTickets > 0 ? CubagColors.due : null),
+                    ]),
+                    const SizedBox(height: CubagSpace.lg),
+                    FilterTabs(
+                      tabs: const [('0', 'Money'), ('1', 'Members'), ('2', 'Operations')],
+                      selected: '$tab',
+                      onSelected: (k) => setState(() => _tabController.index = int.parse(k)),
                     ),
-                    const SizedBox(width: 8),
-                    CustomDropdown<String>(
-                      value: _dateFilter,
-                      width: 140,
-                      dense: true,
-                      items: const [
-                        DropdownItem(value: 'All Time', label: 'All Time'),
-                        DropdownItem(
-                          value: 'Last 7 Days',
-                          label: 'Last 7 Days',
-                        ),
-                        DropdownItem(
-                          value: 'Last 30 Days',
-                          label: 'Last 30 Days',
-                        ),
-                        DropdownItem(
-                          value: 'Year to Date',
-                          label: 'Year to Date',
-                        ),
-                      ],
-                      onChanged: (newValue) {
-                        setState(() {
-                          _dateFilter = newValue;
-                        });
-                      },
-                    ),
+                    const SizedBox(height: CubagSpace.md),
+                    if (tab == 0) _buildFinancialTab(isDark, cardBg, border, textPrimary, textMuted, innerBg),
+                    if (tab == 1) _buildMembershipTab(isDark, cardBg, border, textPrimary, textMuted, innerBg),
+                    if (tab == 2) _buildOperationsTab(isDark, cardBg, border, textPrimary, textMuted, innerBg),
+                    const SizedBox(height: CubagSpace.xl),
                   ],
                 ),
-                const SizedBox(height: 18),
-
-                // Top Stats Summary Grid
-                LayoutBuilder(
-                  builder: (ctx, constraints) {
-                    final isMobile = constraints.maxWidth < 600;
-                    return GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: isMobile ? 2 : 4,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: isMobile ? 1.4 : 1.8,
-                      children: [
-                        AdminStatCard(
-                          label: 'Revenue',
-                          value: _cedis(_filteredRevenue),
-                          icon: Icons.payments_rounded,
-                          color: _kGreen,
-                        ),
-                        AdminStatCard(
-                          label: 'Members',
-                          value: '$_filteredTotalMembersCount',
-                          icon: Icons.people_alt_rounded,
-                          color: _kBrown,
-                        ),
-                        AdminStatCard(
-                          label: 'Cargo logs',
-                          value: '$_cargoSchedulesCount',
-                          icon: Icons.local_shipping_rounded,
-                          color: _kOrange,
-                        ),
-                        AdminStatCard(
-                          label: 'Open tickets',
-                          value: '$_openTickets',
-                          icon: Icons.support_agent_rounded,
-                          color: _kRed,
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-
-                // Tab Bar
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: border),
-                    ),
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    labelColor: _kOrange,
-                    unselectedLabelColor: isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55),
-                    indicatorColor: _kOrange,
-                    indicatorWeight: 3,
-                    labelStyle: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    tabs: const [
-                      Tab(text: 'Money'),
-                      Tab(text: 'Members'),
-                      Tab(text: 'Operations'),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Tab Body
-                SizedBox(
-                  height: 980,
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildFinancialTab(isDark, cardBg, border, textPrimary, textMuted, innerBg),
-                      _buildMembershipTab(isDark, cardBg, border, textPrimary, textMuted, innerBg),
-                      _buildOperationsTab(isDark, cardBg, border, textPrimary, textMuted, innerBg),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
     );
   }
@@ -978,7 +867,15 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
   ) {
     // Generate monthly revenue list
     final filteredMonthly = _filteredMonthlyRevenueMap;
-    final sortedMonths = filteredMonthly.keys.toList()..sort();
+    // Keys look like 'Aug 26'; order them by date, not alphabetically.
+    const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    int monthKey(String k) {
+      final parts = k.split(' ');
+      final m = monthOrder.indexOf(parts.first);
+      final y = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+      return y * 12 + (m < 0 ? 0 : m);
+    }
+    final sortedMonths = filteredMonthly.keys.toList()..sort((a, b) => monthKey(a).compareTo(monthKey(b)));
     final values = sortedMonths.map((m) => filteredMonthly[m] ?? 0.0).toList();
 
     final maxVal = values.isNotEmpty
@@ -1002,6 +899,8 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
     final otherPct = (otherAmt / totalRev * 100).clamp(0, 100).toStringAsFixed(1);
 
     return SingleChildScrollView(
+      primary: false,
+      physics: const NeverScrollableScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1089,7 +988,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                             children: [
                               Expanded(
                                 child: _buildStreamCard(
-                                  title: 'Annual Renewal Dues',
+                                  title: 'Renewal dues',
                                   subtitle: 'Member compliance & renewals',
                                   amount: renewalAmt,
                                   percentage: renewalPct,
@@ -1105,7 +1004,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                               const SizedBox(width: 10),
                               Expanded(
                                 child: _buildStreamCard(
-                                  title: 'New Membership',
+                                  title: 'New members',
                                   subtitle: 'Applications & entrance dues',
                                   amount: newMemAmt,
                                   percentage: newMemPct,
@@ -1121,7 +1020,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                               const SizedBox(width: 10),
                               Expanded(
                                 child: _buildStreamCard(
-                                  title: 'CTI Training Courses',
+                                  title: 'Courses',
                                   subtitle: 'Accredited academy courses',
                                   amount: courseAmt,
                                   percentage: coursePct,
@@ -1137,8 +1036,8 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                               const SizedBox(width: 10),
                               Expanded(
                                 child: _buildStreamCard(
-                                  title: 'Other Platform Fees',
-                                  subtitle: 'ID Cards, badges & misc',
+                                  title: 'Other fees',
+                                  subtitle: 'ID cards, badges and other items',
                                   amount: otherAmt,
                                   percentage: otherPct,
                                   count: catCounts['Other Services'] ?? 0,
@@ -1155,7 +1054,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                         : Column(
                             children: [
                               _buildStreamCard(
-                                title: 'Annual Renewal Dues',
+                                title: 'Renewal dues',
                                 subtitle: 'Member compliance & renewals',
                                 amount: renewalAmt,
                                 percentage: renewalPct,
@@ -1169,7 +1068,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                               ),
                               const SizedBox(height: 10),
                               _buildStreamCard(
-                                title: 'New Membership Dues',
+                                title: 'New members',
                                 subtitle: 'Applications & entrance dues',
                                 amount: newMemAmt,
                                 percentage: newMemPct,
@@ -1183,7 +1082,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                               ),
                               const SizedBox(height: 10),
                               _buildStreamCard(
-                                title: 'CTI Training Courses',
+                                title: 'Courses',
                                 subtitle: 'Accredited academy courses',
                                 amount: courseAmt,
                                 percentage: coursePct,
@@ -1197,8 +1096,8 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                               ),
                               const SizedBox(height: 10),
                               _buildStreamCard(
-                                title: 'Other Platform Fees',
-                                subtitle: 'ID Cards, badges & misc',
+                                title: 'Other fees',
+                                subtitle: 'ID cards, badges and other items',
                                 amount: otherAmt,
                                 percentage: otherPct,
                                 count: catCounts['Other Services'] ?? 0,
@@ -1279,10 +1178,10 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                       spacing: 12,
                       runSpacing: 6,
                       children: [
-                        _buildLegendItem('Renewal Dues ($renewalPct%)', _kGreen, textMuted),
-                        _buildLegendItem('New Membership ($newMemPct%)', _kOrange, textMuted),
-                        _buildLegendItem('CTI Courses ($coursePct%)', _kAmber, textMuted),
-                        _buildLegendItem('Other Services ($otherPct%)', _kBrown, textMuted),
+                        _buildLegendItem('Renewal dues ($renewalPct%)', _kGreen, textMuted),
+                        _buildLegendItem('New members ($newMemPct%)', _kOrange, textMuted),
+                        _buildLegendItem('Courses ($coursePct%)', _kAmber, textMuted),
+                        _buildLegendItem('Other fees ($otherPct%)', _kBrown, textMuted),
                       ],
                     ),
                   ],
@@ -1376,7 +1275,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                       ),
                       const SizedBox(height: 16),
                       _financialMetricBar(
-                        'Paid Revenue',
+                        'Received',
                         _filteredRevenue,
                         _kGreen,
                         isDark,
@@ -1384,7 +1283,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                         textMuted,
                       ),
                       _financialMetricBar(
-                        'Pending Receivables',
+                        'Waiting to be paid',
                         _filteredPendingRevenue,
                         _kAmber,
                         isDark,
@@ -1392,7 +1291,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                         textMuted,
                       ),
                       _financialMetricBar(
-                        'Failed/Overdue Dues',
+                        'Failed or overdue',
                         _filteredFailedRevenue,
                         _kRed,
                         isDark,
@@ -1438,40 +1337,16 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                 const SizedBox(height: 12),
 
                 // Stream Filter Chips
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      'All Streams',
-                      'Renewal Dues',
-                      'New Membership',
-                      'CTI Courses',
-                      'Other',
-                    ].map((filter) {
-                      final isSelected = _financialStreamFilter == filter;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(
-                            filter,
-                            style: TextStyle(
-                              fontSize: 15.5,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                              color: isSelected ? Colors.white : (isDark ? Colors.white70 : CubagColors.inkSoft),
-                            ),
-                          ),
-                          selected: isSelected,
-                          selectedColor: _kOrange,
-                          backgroundColor: isDark ? const Color(0xFF4D2D20) : CubagColors.sand,
-                          onSelected: (selected) {
-                            if (selected) {
-                              setState(() => _financialStreamFilter = filter);
-                            }
-                          },
-                        ),
-                      );
-                    }).toList(),
-                  ),
+                FilterTabs(
+                  tabs: const [
+                    ('All Streams', 'All'),
+                    ('Renewal Dues', 'Renewal dues'),
+                    ('New Membership', 'New members'),
+                    ('CTI Courses', 'Courses'),
+                    ('Other', 'Other'),
+                  ],
+                  selected: _financialStreamFilter,
+                  onSelected: (f) => setState(() => _financialStreamFilter = f),
                 ),
                 const SizedBox(height: 12),
 
@@ -1480,7 +1355,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                     padding: const EdgeInsets.all(24),
                     child: Center(
                       child: Text(
-                        'No transaction records found matching the filter criteria',
+                        'No payments in this list',
                         style: TextStyle(
                           color: textMuted,
                           fontSize: 17,
@@ -1632,65 +1507,30 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
     required Color textMuted,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(CubagSpace.md),
       decoration: BoxDecoration(
-        color: color.withAlpha(isDark ? 25 : 10),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withAlpha(isDark ? 60 : 45)),
+        color: CubagColors.paper,
+        borderRadius: BorderRadius.circular(CubagRadius.card),
+        border: Border.all(color: CubagColors.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: color, size: 16),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: textPrimary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '$percentage%',
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
+              Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              const SizedBox(width: CubagSpace.xs),
+              Expanded(child: Text(title, style: CubagType.label, overflow: TextOverflow.ellipsis)),
+              Text('$percentage%', style: CubagType.caption.copyWith(fontFeatures: const [FontFeature.tabularFigures()])),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: CubagSpace.xs),
           Text(
             'GH₵ ${_formatCurrency(amount)}',
-            style: TextStyle(
-              fontSize: 19.5,
-              fontWeight: FontWeight.w900,
-              color: color,
-            ),
+            style: CubagType.title.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
           const SizedBox(height: 2),
-          Text(
-            '$count $countSuffix',
-            style: TextStyle(
-              fontSize: 14.5,
-              fontWeight: FontWeight.w600,
-              color: textMuted,
-            ),
-          ),
+          Text('$count $countSuffix', style: CubagType.caption),
         ],
       ),
     );
@@ -1799,6 +1639,8 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
     final filteredTotal = _filteredTotalMembersCount;
 
     return SingleChildScrollView(
+      primary: false,
+      physics: const NeverScrollableScrollPhysics(),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1917,6 +1759,8 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
     Color innerBg,
   ) {
     return SingleChildScrollView(
+      primary: false,
+      physics: const NeverScrollableScrollPhysics(),
       child: Column(
         children: [
           Row(
