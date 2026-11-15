@@ -1,3 +1,4 @@
+import re
 """
 Compliance Centre — License Renewal & Member ID Application
 -----------------------------------------------------------------
@@ -333,32 +334,25 @@ def _get_member_fcm_and_email(member_id, cursor):
 
 
 def _send_compliance_email(to_email, member_name, subject, body_html):
-    """Send a compliance decision email via Resend."""
-    resend.api_key = os.getenv('RESEND_API_KEY')
-    if not resend.api_key or not to_email:
+    """Send a compliance decision email in the CUBAG email design (Resend, or
+    SMTP when Resend is unavailable)."""
+    if not to_email:
         return
-    sender = os.getenv('SMTP_USER', 'support@cubag.org')
-    html = f"""
-    <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
-      <h2 style="color:#0f62fe">CUBAG Compliance Centre</h2>
-      <p>Hi <strong>{member_name}</strong>,</p>
-      {body_html}
-      <p style="margin-top:24px;color:#888;font-size:0.85em">This is an automated message from the CUBAG Compliance System.</p>
-    </div>
-    """
+    import html as _h
+    from config.email_template import FONT, INK, branded
+    from routes.auth import _send_email
+    first = _h.escape((member_name or 'Member').split()[0])
+    inner = (f'<p style="margin:0 0 14px;font-family:{FONT};font-size:16px;color:{INK};">Hello {first},</p>'
+             f'{body_html}')
+    text = re.sub(r'<[^>]+>', ' ', body_html or '')
+    text = re.sub(r'\s+', ' ', text).strip()
     try:
-        resend.Emails.send({"from": f"CUBAG <{sender}>", "to": [to_email], "subject": subject, "html": html})
+        _send_email(to_email, subject, f"Hello {first},\n\n{text}", branded(inner, subject=subject))
         logger.info(f'[Compliance] Email sent to {to_email}: {subject}')
     except Exception as e:
-        logger.warning(f'[Compliance] Email failed: {e}')
+        logger.error(f'[Compliance] Email failed for {to_email}: {e}')
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# MEMBER ENDPOINTS
-# ─────────────────────────────────────────────────────────────────────────────
-
-@compliance_bp.route('/my-applications', methods=['GET'])
-@jwt_required()
 def my_applications():
     """List all compliance applications for the logged-in member."""
     raw_mid = get_jwt_identity()

@@ -22,238 +22,35 @@ resend.api_key = os.getenv('RESEND_API_KEY')
 
 
 def _send_complaint_confirmation_email(to_email, name, comp_id, subject, category, port, target_entity=None, description=""):
-    """
-    Sends an executive confirmation email to the complainant with their tracking ID,
-    complaint summary, and tracking instructions.
-    """
+    """Confirmation to the person who made a complaint: their tracking ID and
+    how to follow it, in the CUBAG email design."""
     if not to_email:
         return False
-
-    sender_email = os.getenv('SMTP_USER', 'eaap2026@eventslabs.org')
-    sender_name = os.getenv('SMTP_SENDER_NAME', 'CUBAG Secretariat')
-    email_subject = f"[CUBAG Grievance Registry] Complaint Received — Tracking ID: {comp_id}"
-    now_str = datetime.utcnow().strftime("%B %d, %Y at %I:%M UTC")
-
-    target_entity_html = ""
-    if target_entity:
-        target_entity_html = f"""
-        <tr>
-          <td style="padding:10px 14px;color:#64748B;font-size:13px;font-weight:600;border-bottom:1px solid #E2E8F0;background:#F8FAFC;">Party / Entity Involved</td>
-          <td style="padding:10px 14px;color:#0F172A;font-size:13.5px;font-weight:700;border-bottom:1px solid #E2E8F0;">{target_entity}</td>
-        </tr>
-        """
-
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>CUBAG Grievance & Complaint Confirmation</title>
-    </head>
-    <body style="margin:0;padding:0;background-color:#F1F5F9;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#F1F5F9;padding:30px 15px;">
-        <tr>
-          <td align="center">
-            <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.06);border:1px solid #E2E8F0;">
-              
-              <!-- TOP EXECUTIVE HEADER -->
-              <tr>
-                <td style="background:linear-gradient(135deg, #1E110B 0%, #381E13 100%);padding:28px 32px;text-align:left;border-bottom:3px solid #FF5000;">
-                  <table width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td>
-                        <div style="display:inline-block;background:#FF5000;color:#ffffff;font-size:11px;font-weight:900;letter-spacing:1px;padding:4px 10px;border-radius:6px;margin-bottom:8px;">CUBAG SECRETARIAT</div>
-                        <h1 style="margin:0;color:#ffffff;font-size:18px;font-weight:800;letter-spacing:0.3px;">CUSTOMS BROKERS ASSOCIATION OF GHANA</h1>
-                        <p style="margin:4px 0 0 0;color:#E2E8F0;font-size:12px;opacity:0.85;">Grievance & Disciplinary Standing Committee</p>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-
-              <!-- BODY CONTAINER -->
-              <tr>
-                <td style="padding:32px 32px 24px 32px;">
-                  
-                  <!-- STATUS BADGE -->
-                  <div style="background:#FFF7ED;border:1px solid #FFD8A8;border-radius:10px;padding:12px 16px;margin-bottom:24px;">
-                    <table width="100%" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td width="24" valign="middle" style="color:#FF5000;font-size:16px;font-weight:bold;">📋</td>
-                        <td style="color:#9A3412;font-size:13.5px;font-weight:700;padding-left:8px;">Grievance Logged & Under Secretariat Review</td>
-                      </tr>
-                    </table>
-                  </div>
-
-                  <p style="margin:0 0 16px 0;color:#1E293B;font-size:15px;line-height:1.5;">
-                    Dear <strong>{name}</strong>,
-                  </p>
-                  <p style="margin:0 0 20px 0;color:#475569;font-size:13.5px;line-height:1.6;">
-                    Your complaint has been formally registered into the central records of the Customs Brokers Association of Ghana (CUBAG). The Secretariat Grievance Committee has been notified and will conduct a merit review.
-                  </p>
-
-                  <!-- TRACKING ID HIGHLIGHT BOX -->
-                  <div style="background:linear-gradient(135deg, #FFF8F2 0%, #FFF1E6 100%);border:2px dashed #FF5000;border-radius:14px;padding:20px;text-align:center;margin-bottom:26px;">
-                    <div style="color:#C2410C;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Official Complaint Tracking ID</div>
-                    <div style="color:#1E110B;font-size:24px;font-weight:900;letter-spacing:1.5px;font-family:monospace;">{comp_id}</div>
-                    <div style="color:#78350F;font-size:12px;margin-top:6px;">Please save this reference number for all follow-ups and status checks.</div>
-                  </div>
-
-                  <!-- COMPLAINT SUMMARY TABLE -->
-                  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;margin-bottom:24px;border-collapse:collapse;">
-                    <tr style="background:#F8FAFC;">
-                      <th colspan="2" style="padding:12px 14px;text-align:left;color:#0F172A;font-size:13px;font-weight:800;border-bottom:1px solid #E2E8F0;">
-                        COMPLAINT PARTICULARS
-                      </th>
-                    </tr>
-                    <tr>
-                      <td width="38%" style="padding:10px 14px;color:#64748B;font-size:13px;font-weight:600;border-bottom:1px solid #E2E8F0;background:#F8FAFC;">Subject / Title</td>
-                      <td style="padding:10px 14px;color:#0F172A;font-size:13.5px;font-weight:700;border-bottom:1px solid #E2E8F0;">{subject}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding:10px 14px;color:#64748B;font-size:13px;font-weight:600;border-bottom:1px solid #E2E8F0;background:#F8FAFC;">Category</td>
-                      <td style="padding:10px 14px;color:#0F172A;font-size:13.5px;border-bottom:1px solid #E2E8F0;">{category}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding:10px 14px;color:#64748B;font-size:13px;font-weight:600;border-bottom:1px solid #E2E8F0;background:#F8FAFC;">Port / Operation Station</td>
-                      <td style="padding:10px 14px;color:#0F172A;font-size:13.5px;border-bottom:1px solid #E2E8F0;">{port}</td>
-                    </tr>
-                    {target_entity_html}
-                    <tr>
-                      <td style="padding:10px 14px;color:#64748B;font-size:13px;font-weight:600;border-bottom:1px solid #E2E8F0;background:#F8FAFC;">Current Status</td>
-                      <td style="padding:10px 14px;color:#059669;font-size:13.5px;font-weight:700;border-bottom:1px solid #E2E8F0;">Received</td>
-                    </tr>
-                    <tr>
-                      <td style="padding:10px 14px;color:#64748B;font-size:13px;font-weight:600;border-bottom:1px solid #E2E8F0;background:#F8FAFC;">Assigned Handler</td>
-                      <td style="padding:10px 14px;color:#0F172A;font-size:13.5px;border-bottom:1px solid #E2E8F0;">Secretariat Grievance Committee</td>
-                    </tr>
-                    <tr>
-                      <td style="padding:10px 14px;color:#64748B;font-size:13px;font-weight:600;background:#F8FAFC;">Date Lodged</td>
-                      <td style="padding:10px 14px;color:#475569;font-size:13px;">{now_str}</td>
-                    </tr>
-                  </table>
-
-                  <!-- HOW TO TRACK BOX -->
-                  <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:18px;margin-bottom:24px;">
-                    <div style="color:#0F172A;font-size:13.5px;font-weight:800;margin-bottom:8px;">🔍 How to Track Your Complaint:</div>
-                    <ol style="margin:0;padding-left:18px;color:#475569;font-size:13px;line-height:1.6;">
-                      <li>Open the <strong>CUBAG Portal or Mobile App</strong>.</li>
-                      <li>Navigate to <strong>Complaints & Grievance Hub</strong> or <strong>Track Grievance</strong>.</li>
-                      <li>Enter your Tracking ID: <strong style="color:#FF5000;">{comp_id}</strong> to view real-time stage updates, investigation findings, and resolution notices.</li>
-                    </ol>
-                  </div>
-
-                  <!-- WHAT HAPPENS NEXT -->
-                  <div style="border-left:3px solid #0284C7;background:#F0F9FF;padding:14px 16px;border-radius:0 8px 8px 0;margin-bottom:24px;">
-                    <div style="color:#0369A1;font-size:13px;font-weight:700;margin-bottom:4px;">Next Steps:</div>
-                    <p style="margin:0;color:#0C4A6E;font-size:12.5px;line-height:1.5;">
-                      The committee will assess the particulars of your report. If additional documentation is required, an assigned secretariat officer will contact you directly via this email or phone.
-                    </p>
-                  </div>
-
-                  <p style="margin:0;color:#64748B;font-size:13px;line-height:1.5;">
-                    Warm regards,<br>
-                    <strong>CUBAG Grievance & Disciplinary Standing Committee</strong><br>
-                    Customs Brokers Association of Ghana
-                  </p>
-
-                </td>
-              </tr>
-
-              <!-- FOOTER -->
-              <tr>
-                <td style="background:#F8FAFC;padding:20px 32px;text-align:center;border-top:1px solid #E2E8F0;">
-                  <p style="margin:0 0 6px 0;color:#94A3B8;font-size:11.5px;">
-                    Customs Brokers Association of Ghana (CUBAG) • Secretariat Office, Tema Port & KIA Chapter
-                  </p>
-                  <p style="margin:0;color:#CBD5E1;font-size:11px;">
-                    This is an automated administrative notification. Please do not reply directly to this email.
-                  </p>
-                </td>
-              </tr>
-
-            </table>
-          </td>
-        </tr>
-      </table>
-    </body>
-    </html>
-    """
-
-    body_text = f"""CUBAG GRIEVANCE & COMPLAINT CONFIRMATION
-Customs Brokers Association of Ghana (CUBAG)
-
-Dear {name},
-
-Your complaint has been formally lodged into the CUBAG Central Registry.
-
---------------------------------------------------
-OFFICIAL TRACKING ID: {comp_id}
---------------------------------------------------
-Subject: {subject}
-Category: {category}
-Port / Location: {port}
-Party Involved: {target_entity or 'N/A'}
-Status: Received
-Assigned To: Secretariat Grievance Committee
-Date Lodged: {now_str}
-
-HOW TO TRACK:
-1. Open the CUBAG Portal or App.
-2. Go to Complaints & Grievance Hub -> Track Grievance.
-3. Enter Tracking ID: {comp_id} to view live status and updates.
-
-Warm regards,
-CUBAG Grievance & Disciplinary Standing Committee
-Customs Brokers Association of Ghana
-"""
-
-    # 1. Try Resend
-    if resend.api_key:
-        try:
-            params = {
-                "from": f"{sender_name} <{sender_email}>",
-                "to": [to_email],
-                "subject": email_subject,
-                "text": body_text,
-                "html": html,
-            }
-            resend.Emails.send(params)
-            logger.info(f"[Resend] Complaint confirmation sent to {to_email} for {comp_id}")
-            return True
-        except Exception as e:
-            logger.error(f"[Resend] Failed sending complaint confirmation: {e}. Trying SMTP...")
-
-    # 2. Try SMTP
-    smtp_host = os.getenv('SMTP_HOST')
-    if smtp_host:
-        try:
-            smtp_port = int(os.getenv('SMTP_PORT', '587'))
-            smtp_pass = os.getenv('SMTP_PASS') or os.getenv('SMTP_PASSWORD')
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = email_subject
-            msg['From'] = f"{sender_name} <{sender_email}>"
-            msg['To'] = to_email
-            msg.attach(MIMEText(body_text, 'plain'))
-            msg.attach(MIMEText(html, 'html'))
-
-            if smtp_port == 465 or os.getenv('SMTP_SECURE', '').lower() == 'true':
-                server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=10)
-            else:
-                server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
-                server.starttls()
-            if smtp_pass:
-                server.login(sender_email, smtp_pass)
-            server.sendmail(sender_email, to_email, msg.as_string())
-            server.quit()
-            logger.info(f"[SMTP] Complaint confirmation sent to {to_email} for {comp_id}")
-            return True
-        except Exception as e:
-            logger.error(f"[SMTP] Failed sending complaint confirmation: {e}")
-
-    logger.info(f"[Email] Complaint confirmation logged for {to_email} (Tracking ID: {comp_id})")
-    return False
+    import html as _h
+    from datetime import datetime as _dt
+    from config.email_template import FONT, INK, LINE, MUTED, _base_url, branded, button, code_box, paragraph
+    from routes.auth import _send_email
+    first = _h.escape((name or 'there').split()[0])
+    when = _dt.now().strftime('%d %B %Y').lstrip('0')
+    rows = [('Subject', subject), ('Category', category), ('Port', port), ('Against', target_entity), ('Received', when)]
+    table = ''.join(
+        f'<tr><td style="padding:9px 0;border-bottom:1px solid {LINE};font-family:{FONT};font-size:14px;color:{MUTED};">{k}</td>'
+        f'<td style="padding:9px 0;border-bottom:1px solid {LINE};font-family:{FONT};font-size:14px;color:{INK};text-align:right;">{_h.escape(str(v))}</td></tr>'
+        for k, v in rows if v)
+    inner = (
+        paragraph(f'Hello {first},')
+        + paragraph('We have received your complaint. Keep this tracking ID to follow it:')
+        + code_box(comp_id)
+        + f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">{table}</table>'
+        + button('Track your complaint', f"{_base_url()}/#/track-complaint")
+        + paragraph('Enter your tracking ID on that page to see its progress.', muted=True, small=True)
+        + paragraph('The Secretariat\'s complaints committee will look into it and update the status.', muted=True, small=True)
+    )
+    text = (f"Hello {first},\n\nWe have received your complaint. Your tracking ID is {comp_id}.\n\n"
+            f"Subject: {subject}\nCategory: {category}\nPort: {port}\nReceived: {when}\n\n"
+            f"To see its progress, go to {_base_url()}/#/track-complaint and enter the tracking ID.")
+    return _send_email(to_email, f'Complaint received: {comp_id}', text,
+                       branded(inner, subject='Complaint received', preheader=f'Tracking ID {comp_id}'))
 
 
 def _generate_complaint_id():

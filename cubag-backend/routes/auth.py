@@ -88,6 +88,9 @@ def renewal_cycle_start(comp_app, license_expiry):
 
 def _send_email(to_email: str, subject: str, body_text: str, body_html: str = None):
     """Send an email using Resend API or fallback to standard SMTP. Returns True on success."""
+    # Every email gets the CUBAG design (logo, card, footer), whatever the caller built.
+    from config.email_template import branded
+    body_html = branded(body_html, body_text, subject)
     sender_email = os.getenv('SMTP_USER', 'eaap2026@eventslabs.org')
     sender_name = os.getenv('SMTP_SENDER_NAME', 'CUBAG Support')
 
@@ -209,7 +212,7 @@ SUPABASE_KEY  = os.getenv('SUPABASE_SERVICE_KEY', '')
 PHOTO_BUCKET  = os.getenv('SUPABASE_BUCKET', 'uploads')
 
 def send_verification_email(to_email, token):
-    subject   = 'Your CUBAG Verification Code'
+    subject   = 'Your CUBAG verification code'
     body_text = (
         f'Hello,\n\n'
         f'Your CUBAG email verification code is:\n\n'
@@ -219,15 +222,12 @@ def send_verification_email(to_email, token):
         f'If you did not request this, please ignore this email.\n\n'
         f'Thanks,\nCUBAG Secretariat'
     )
+    from config.email_template import code_box, paragraph
     body_html = (
-        f'<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e2e8f0;border-radius:12px;">'
-        f'<h2 style="color:#FF5000;margin-bottom:8px;">CUBAG Email Verification</h2>'
-        f'<p style="color:#475569;">Enter the code below in the app to verify your email address:</p>'
-        f'<div style="font-size:36px;font-weight:900;letter-spacing:12px;text-align:center;'
-        f'background:#f8fafc;border:2px solid #FF5000;border-radius:10px;padding:20px 0;margin:24px 0;color:#0f172a;">'
-        f'{token}</div>'
-        f'<p style="color:#94a3b8;font-size:12px;">This code expires in 15 minutes. If you did not register on CUBAG, ignore this email.</p>'
-        f'</div>'
+        paragraph('Hello,')
+        + paragraph('Enter this code in the CUBAG app to confirm your email address:')
+        + code_box(token)
+        + paragraph('It expires in 15 minutes. If you did not sign up for CUBAG, ignore this email.', muted=True, small=True)
     )
     return _send_email(to_email, subject, body_text, body_html)
 
@@ -756,6 +756,15 @@ def login():
         conn.close()
 
 
+def _admin_code_html(code):
+    from config.email_template import code_box, paragraph
+    return (paragraph('Hello,')
+            + paragraph('Use this code to finish signing in to the CUBAG admin portal:')
+            + code_box(code)
+            + paragraph(f'It expires in {admin_mfa.CODE_TTL_MINUTES} minutes. If you did not just sign in, '
+                        'change your password now and tell the Secretariat.', muted=True, small=True))
+
+
 def _start_admin_mfa(cursor, conn, member):
     """SEC-12: password was right; email a one-time code instead of a token."""
     # Suspended / deleted / unverified accounts get the normal refusal, and
@@ -770,6 +779,7 @@ def _start_admin_mfa(cursor, conn, member):
         f'Your CUBAG admin sign-in code is {code}. It expires in '
         f'{admin_mfa.CODE_TTL_MINUTES} minutes.\n\n'
         'If you did not just sign in, change your password now and tell the Secretariat.',
+        _admin_code_html(code),
     )
     if not sent:
         conn.rollback()
@@ -1907,19 +1917,15 @@ def send_reset_email(to_email, token):
         f'If you did not ask to reset your password, ignore this email; your password will not change.\n\n'
         f'CUBAG Secretariat'
     )
+    from config.email_template import button, code_box, paragraph
     body_html = (
-        f'<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:32px;'
-        f'border:1px solid #E9E2DB;border-radius:14px;color:#2A1810;">'
-        f'<h2 style="font-family:Georgia,serif;font-weight:600;color:#2A1810;margin:0 0 8px;">Reset your password</h2>'
-        f'<p style="color:#4A3A32;margin:0 0 20px;">Enter this code in the CUBAG app. It expires in 1 hour.</p>'
-        f'<p style="font-size:32px;letter-spacing:6px;font-weight:bold;color:#5C3421;'
-        f'background:#F7F4F1;border-radius:10px;padding:16px;text-align:center;margin:0 0 20px;">{escape(spaced)}</p>'
-        f'<p style="color:#4A3A32;margin:0 0 8px;">Or reset it in your browser:</p>'
-        f'<a href="{escape(reset_link)}" style="display:inline-block;background:#C2410C;color:#fff;'
-        f'font-weight:bold;padding:12px 20px;border-radius:10px;text-decoration:none;">Reset password</a>'
-        f'<p style="color:#6E625B;font-size:12px;margin-top:24px;">If you did not ask to reset your password, '
-        f'ignore this email; your password will not change.</p>'
-        f'</div>'
+        paragraph('Hello,')
+        + paragraph('Enter this code in the CUBAG app to reset your password. It expires in 1 hour.')
+        + code_box(spaced)
+        + paragraph('Or reset it in your browser:')
+        + button('Reset password', reset_link)
+        + paragraph('If you did not ask to reset your password, ignore this email; your password will not change.',
+                    muted=True, small=True)
     )
     return _send_email(to_email, subject, body_text, body_html)
 

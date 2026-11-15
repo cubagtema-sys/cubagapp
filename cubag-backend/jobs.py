@@ -27,13 +27,13 @@ def renewal_reminder_message(name, days_left, exp_date):
         "Open the CUBAG app and tap Pay dues to renew. "
         "Renewing early does not lose any days: your new year starts when the current one ends."
     )
+    from config.email_template import paragraph
     html = (
-        f"<p>Hello {first},</p>"
-        f"<p>Your CUBAG licence ends on <strong>{when}</strong> ({days_left} {day_word} from today).</p>"
-        "<p>To renew, open the CUBAG app and tap <strong>Pay dues</strong>.</p>"
-        "<p>Renewing early does not lose any days: your new year starts when the current one ends.</p>"
-        "<p>If you have already paid, you can ignore this message.</p>"
-        "<p>CUBAG Secretariat</p>"
+        paragraph(f'Hello {first},')
+        + paragraph(f'Your CUBAG licence ends on <strong>{when}</strong> ({days_left} {day_word} from today).')
+        + paragraph('To renew, open the CUBAG app and tap <strong>Pay dues</strong>.')
+        + paragraph('Renewing early does not lose any days: your new year starts when the current one ends.')
+        + paragraph('If you have already paid, you can ignore this message.', muted=True, small=True)
     )
     return title, body, html
 
