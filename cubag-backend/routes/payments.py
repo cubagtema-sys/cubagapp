@@ -1,3 +1,4 @@
+import json
 import os
 import uuid
 import requests
@@ -160,6 +161,13 @@ def test_gateway_connectivity():
     }), 200
 
 
+def _guest_narration(service_type, amount, tx_ref, course_name):
+    """Guest MoMo narration with its payment code first (courses: CUB-CTI)."""
+    from config.payment_codes import narration, single_code
+    code = 'CUB-CTI' if 'cti' in (service_type or '').lower() or 'course' in (service_type or '').lower() else 'CUB-GST'
+    return narration(single_code(code, amount), tx_ref, f"CTI: {course_name}" if code == 'CUB-CTI' else course_name)
+
+
 # ─── POST /payments/public/initiate-momo — Public MoMo Prompt for CTI Course Enrollment ───
 @payments_bp.route('/public/initiate-momo', methods=['POST', 'OPTIONS'])
 @cross_origin()
@@ -250,7 +258,7 @@ def public_initiate_momo():
         if WHITSUNPAY_CLIENT_ID and WHITSUNPAY_API_KEY:
             payload = {
                 'transactionReference': tx_ref,
-                'description': f"CUBAG CTI: {course_name[:40]}",
+                'description': _guest_narration(service_type, amount, tx_ref, course_name),
                 'amount': round(amount, 2),
                 'debitParty': {
                     'msisdn': clean_phone,
@@ -729,8 +737,22 @@ def create_payment():
                 except Exception as ex_ren:
                     logger.warning(f"Could not auto-generate settlement distribution: {ex_ren}")
 
+            # Payment codes: which CUBAG account each part settles into (WhitsunPay routes by code).
+            payment_codes = []
+            try:
+                from config.payment_codes import codes_for_new_payment
+                from config.payment_validation import payment_kind
+                _kind = (fee_plan or {}).get('kind') or payment_kind(fee_key, description)
+                with conn.cursor() as cur:
+                    payment_codes = codes_for_new_payment(cur, member_id, amount, description, _kind, comp_app_id)
+            except Exception as ex_codes:
+                logger.warning(f"Could not work out payment codes: {ex_codes}")
+
             # Store payment reference and settlement distribution in DB
             with conn.cursor() as cursor:
+                cursor.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_codes JSONB")
+                if payment_codes:
+                    cursor.execute("UPDATE payments SET payment_codes = %s WHERE id = %s", (json.dumps(payment_codes), payment_id))
                 cursor.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS settlement_distribution JSONB")
                 cursor.execute(
                     "UPDATE payments SET payment_ref = %s, settlement_distribution = %s WHERE id = %s",
@@ -753,9 +775,11 @@ def create_payment():
                 conn.commit()
 
             if WHITSUNPAY_CLIENT_ID and WHITSUNPAY_API_KEY:
+                from config.payment_codes import narration as _narration
                 payload = {
                     'transactionReference': tx_ref,
-                    'description': description,
+                    # Codes and amounts first: WhitsunPay settles each part by its code.
+                    'description': _narration(payment_codes, tx_ref, description) if payment_codes else description,
                     'amount': round(float(amount), 2),
                     'debitParty': {
                         'msisdn': clean_phone,
@@ -765,6 +789,7 @@ def create_payment():
                 if settlement_dist:
                     payload['settlementBreakdown'] = settlement_dist
                     payload['metadata'] = {
+                        'payment_codes': payment_codes,
                         'settlement_distribution': settlement_dist,
                         'member_id': member_id,
                         'purpose': description
@@ -2624,3 +2649,83 @@ def admin_approve_license(payment_id):
         return jsonify({'message': 'License approved and payment confirmed'}), 200
     except Exception as e:
         return jsonify({'message': str(e)}), 500
+
+
+# ─── GET /payments/admin/settlement-report ─────────────────────────────────────
+# What WhitsunPay should pay into each CUBAG account for a period, by payment
+# code. ?from=YYYY-MM-DD&to=YYYY-MM-DD (default: last 7 days); &format=csv
+# downloads one line per day, code and account for finance.
+@payments_bp.route('/admin/settlement-report', methods=['GET'])
+@sub_admin_required('payments')
+def settlement_report():
+    import csv
+    import io
+    import json as _json
+    from config.payment_codes import settlement_summary
+
+    try:
+        to_day = date.fromisoformat(request.args.get('to')) if request.args.get('to') else date.today()
+        from_day = date.fromisoformat(request.args.get('from')) if request.args.get('from') else to_day - timedelta(days=6)
+    except ValueError:
+        return jsonify({'message': 'Dates must look like 2026-11-15.'}), 400
+    if from_day > to_day:
+        from_day, to_day = to_day, from_day
+    if (to_day - from_day).days > 366:
+        return jsonify({'message': 'Choose a period of one year or less.'}), 400
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_codes JSONB")
+            cursor.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS settlement_distribution JSONB")
+            cursor.execute("""
+                SELECT p.id, p.amount, p.description, p.payment_ref, p.payment_codes, p.settlement_distribution,
+                       COALESCE(p.payment_method, 'momo') AS method,
+                       DATE(COALESCE(p.paid_at, p.created_at)) AS day
+                FROM payments p
+                WHERE LOWER(p.status) IN ('paid', 'completed', 'success', 'successful')
+                  AND DATE(COALESCE(p.paid_at, p.created_at)) BETWEEN %s AND %s
+            """, (from_day, to_day))
+            rows = []
+            for r in cursor.fetchall():
+                ref = r.get('payment_ref') or ''
+                rows.append({
+                    'ref': ref or f"P{r['id']}", 'amount': r['amount'], 'description': r.get('description'),
+                    'payment_codes': r.get('payment_codes'), 'settlement_distribution': r.get('settlement_distribution'),
+                    'day': r['day'],
+                    'via_whitsun': ref.startswith('CUBAG-') and str(r['method']).lower() == 'momo',
+                })
+            try:
+                cursor.execute("""
+                    SELECT reference_no, amount, service_type, course_name, DATE(COALESCE(updated_at, created_at)) AS day
+                    FROM guest_payments
+                    WHERE LOWER(status) = 'paid' AND DATE(COALESCE(updated_at, created_at)) BETWEEN %s AND %s
+                """, (from_day, to_day))
+                for g in cursor.fetchall():
+                    code = 'CUB-CTI' if 'cti' in str(g.get('service_type') or '').lower() else 'CUB-GST'
+                    rows.append({
+                        'ref': g['reference_no'], 'amount': g['amount'], 'day': g['day'], 'via_whitsun': True,
+                        'description': g.get('course_name'),
+                        'payment_codes': _json.dumps([{'code': code, 'amount': float(g['amount'] or 0)}]),
+                    })
+            except Exception:
+                conn.rollback()
+    finally:
+        conn.close()
+
+    report = settlement_summary(rows)
+    report.update({'from': from_day.isoformat(), 'to': to_day.isoformat()})
+
+    if request.args.get('format') == 'csv':
+        buf = io.StringIO()
+        w = csv.writer(buf)
+        w.writerow(['Date', 'Payment code', 'Bank', 'Account number', 'Amount (GHS)', 'Payments'])
+        for d in report['days']:
+            w.writerow([d['date'], d['code'], d['bank_name'], d['account_number'], f"{d['total']:.2f}", d['count']])
+        w.writerow([])
+        w.writerow(['Total via WhitsunPay', '', '', '', f"{report['whitsun_total']:.2f}", report['whitsun_count']])
+        w.writerow(['Paid straight to bank or office (not for WhitsunPay)', '', '', '', f"{report['direct_total']:.2f}", report['direct_count']])
+        from flask import Response
+        return Response(buf.getvalue(), mimetype='text/csv', headers={
+            'Content-Disposition': f'attachment; filename=CUBAG_settlement_{from_day}_{to_day}.csv'})
+    return jsonify(report), 200

@@ -1,3 +1,4 @@
+import '../utils/payment_codes.dart';
 import '../components/admin_dialog.dart';
 import '../components/filter_tabs.dart';
 import '../components/admin_list.dart';
@@ -99,6 +100,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
     final descCtrl = TextEditingController(text: existingFee?['description']?.toString() ?? '');
     final bankCtrl = TextEditingController(text: existingFee?['bank_name']?.toString() ?? 'GCB');
     final accCtrl = TextEditingController(text: existingFee?['account_number']?.toString() ?? '107113005326');
+    final codeCtrl = TextEditingController(text: existingFee?['payment_code']?.toString() ?? '');
     String frequency = existingFee?['frequency']?.toString() ?? 'Annual';
     if (!const ['One-Time', 'Annual'].contains(frequency)) frequency = 'Annual';
     String section = existingFee?['section']?.toString() ?? defaultSection;
@@ -141,6 +143,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
               'unit': unit,
               'target_scale': targetScale,
               'description': descCtrl.text.trim(),
+              if (codeCtrl.text.trim().isNotEmpty) 'payment_code': codeCtrl.text.trim().toUpperCase(),
             };
             setState(() {
               if (isEdit && index != null && index >= 0 && index < _fees.length) {
@@ -276,6 +279,20 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                   ],
                 ),
               ),
+              Builder(builder: (_) {
+                final def = defaultPaymentCode(section, bankCtrl.text);
+                return AdminField(
+                  label: 'Payment code',
+                  help: 'WhitsunPay uses this code to pay the money into the right account. '
+                      'Leave it empty to use $def (${paymentCodeLabels[def] ?? 'default'}). '
+                      'One code can only go to one account.',
+                  child: TextField(
+                    controller: codeCtrl,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: InputDecoration(hintText: def),
+                  ),
+                );
+              }),
               AdminField(
                 label: 'Note (optional)',
                 child: TextField(
@@ -330,7 +347,14 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
     try {
       final res = await _api.post('admin/fees', data: _fees);
       if ((res.statusCode ?? 500) >= 300) {
-        await _api.post('settings/cubag_fees_v2', data: _fees);
+        // Refused (for example a payment code pointing at two accounts): say why, publish nothing.
+        final msg = res.data is Map ? res.data['message']?.toString() : null;
+        setState(() {
+          _saving = false;
+          _isSuccess = false;
+          _message = msg ?? 'The fees were not saved. Try again.';
+        });
+        return;
       }
       final regItem = _fees.firstWhere(
         (f) => f['id'] == 'reg_form_fee' || f['id'] == 'new_reg_fee',
@@ -342,19 +366,21 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
       setState(() {
         _saving = false;
         _isSuccess = true;
-        _message = 'Tariff schedule saved and published successfully.';
+        _message = 'Fees saved and published.';
       });
     } catch (e, st) {
       AppLogger.error('admin_fees_save', e, st);
       setState(() {
         _saving = false;
         _isSuccess = false;
-        _message = 'Saved locally to platform settings.';
+        _message = 'The fees were not saved. Check the connection and try again.';
       });
     } finally {
-      Future.delayed(const Duration(seconds: 4), () {
-        if (mounted) setState(() => _message = '');
-      });
+      if (_isSuccess) {
+        Future.delayed(const Duration(seconds: 4), () {
+          if (mounted) setState(() => _message = '');
+        });
+      }
     }
   }
 
@@ -815,6 +841,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
                               if (scaleLabel.isNotEmpty) scaleLabel,
                               '$freq${unit == 'flat' ? '' : ', $unit'}',
                               if (bankName.isNotEmpty) 'Paid into $bankName${accNum.isEmpty ? '' : ' $accNum'}',
+                              paymentCodeFor(item),
                             ].join(' · '),
                             style: CubagType.caption,
                           ),

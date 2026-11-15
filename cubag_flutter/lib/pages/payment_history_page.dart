@@ -305,6 +305,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                 _buildPdfTableRow('Date & Time', dateStr),
                 _buildPdfTableRow('Status', configLabel),
                 _buildPdfTableRow('Payment Purpose', desc),
+                if (_codesText(payment).isNotEmpty) _buildPdfTableRow('Payment code', _codesText(payment)),
                 _buildPdfTableRow('Payment Method', paymentMethod?.toUpperCase() ?? 'N/A'),
                 _buildPdfTableRow('Payment Gateway', 'WhitsunPay / CUBAG Secure Portal'),
                 pw.SizedBox(height: 8),
@@ -409,6 +410,16 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
       bytes: await pdf.save(),
       filename: 'CUBAG_Receipt_$ref.pdf',
     );
+  }
+
+  /// "CUB-SUB 233.00, CUB-ADM 300.00": which CUBAG account each part went to.
+  String _codesText(Map<String, dynamic> pay) {
+    final raw = pay['payment_codes'];
+    if (raw is! List || raw.isEmpty) return '';
+    return raw.whereType<Map>().map((c) {
+      final amt = double.tryParse('${c['amount']}') ?? 0;
+      return raw.length == 1 ? '${c['code']}' : '${c['code']} ${amt.toStringAsFixed(2)}';
+    }).join(', ');
   }
 
   pw.Widget _buildPdfTableRow(String label, String value) {

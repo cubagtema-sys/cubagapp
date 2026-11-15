@@ -1,3 +1,4 @@
+import '../components/settlement_report.dart';
 import '../components/admin_dialog.dart';
 import '../components/filter_tabs.dart';
 import '../components/admin_list.dart';
@@ -494,7 +495,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _fetchData();
   }
 
@@ -735,7 +736,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                     ]),
                     const SizedBox(height: CubagSpace.lg),
                     FilterTabs(
-                      tabs: const [('0', 'Money'), ('1', 'Members'), ('2', 'Operations')],
+                      tabs: const [('0', 'Money'), ('1', 'Members'), ('2', 'Operations'), ('3', 'Settlement')],
                       selected: '$tab',
                       onSelected: (k) => setState(() => _tabController.index = int.parse(k)),
                     ),
@@ -743,6 +744,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                     if (tab == 0) _buildFinancialTab(isDark, cardBg, border, textPrimary, textMuted, innerBg),
                     if (tab == 1) _buildMembershipTab(isDark, cardBg, border, textPrimary, textMuted, innerBg),
                     if (tab == 2) _buildOperationsTab(isDark, cardBg, border, textPrimary, textMuted, innerBg),
+                    if (tab == 3) SettlementReport(onExport: _exportCSV),
                     const SizedBox(height: CubagSpace.xl),
                   ],
                 ),
