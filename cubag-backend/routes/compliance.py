@@ -353,6 +353,12 @@ def _send_compliance_email(to_email, member_name, subject, body_html):
         logger.error(f'[Compliance] Email failed for {to_email}: {e}')
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# MEMBER ENDPOINTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+@compliance_bp.route('/my-applications', methods=['GET'])
+@jwt_required()
 def my_applications():
     """List all compliance applications for the logged-in member."""
     raw_mid = get_jwt_identity()

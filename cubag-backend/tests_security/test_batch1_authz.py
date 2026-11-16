@@ -304,3 +304,16 @@ def test_admin_dashboard_has_queue_and_revenue_trend(client, auth, db):
 def test_dashboard_queue_respects_sub_admin_permissions(client, auth, db):
     body = client.get(f'{API}/admin/dashboard', headers=auth(2)).get_json()  # sub-admin, no perms
     assert body.get('queue', {}) == {} and body.get('revenue_by_month', []) == []
+
+
+# ── Compliance my-applications endpoint protection & availability ────────────
+
+def test_compliance_my_applications_requires_auth(client):
+    assert client.get(f'{API}/compliance/my-applications').status_code == 401
+
+
+def test_compliance_my_applications_returns_list_for_member(client, auth, db):
+    r = client.get(f'{API}/compliance/my-applications', headers=auth(10))
+    assert r.status_code == 200
+    assert 'applications' in r.get_json()
+
