@@ -99,6 +99,7 @@ from routes.tasks import tasks_bp
 from routes.payments import payments_bp
 from routes.events_surveys import events_bp, surveys_bp
 from routes.sub_admins import sub_admins_bp
+from file_storage import UploadStorageError
 
 # ── Resolve static file path (Flutter web build or fallback) ─────────────────
 FLUTTER_BUILD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'cubag_flutter', 'build', 'web'))
@@ -109,8 +110,12 @@ else:
     if not os.path.isdir(STATIC_DIR):
         STATIC_DIR = os.path.join(os.path.dirname(__file__), 'dist')
 
-# Create Flask app
-app = Flask(__name__, static_folder=STATIC_DIR, static_url_path='')
+# Create Flask app. The implicit static route is disabled because it shadows
+# the SPA catch-all below (both match "/<path>"), which made deep links 404
+# instead of falling back to index.html. serve_spa() serves static files and
+# the SPA shell.
+app = Flask(__name__, static_folder=None)
+app.static_folder = STATIC_DIR
 app.url_map.strict_slashes = False
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
@@ -199,18 +204,15 @@ if not IS_DEBUG:
         sys.exit(1)
 
 # Extensions — restrict CORS to explicitly allowed origins
-_RAW_ORIGINS = os.getenv(
-    'CORS_ALLOWED_ORIGINS',
-    'https://cubag-backend.onrender.com,https://cubag-production.up.railway.app,http://localhost:8080,http://127.0.0.1:8080'
-)
-# Mobile apps (Android/iOS APK/IPA) send requests with no Origin header (null origin).
-# We must include "*" OR handle the null case to allow native apps to reach the API.
-_CORS_ORIGINS = [o.strip() for o in _RAW_ORIGINS.split(',') if o.strip()]
+_RAW_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').strip()
+# Set CORS_ALLOWED_ORIGINS to a comma-separated allow-list to restrict web
+# origins; empty or "*" allows all (native apps send no Origin either way).
+_CORS_ORIGINS = '*' if _RAW_ORIGINS in ('', '*') else [o.strip() for o in _RAW_ORIGINS.split(',') if o.strip()]
 
 CORS(
     app,
-    origins="*",          # Allow ALL origins — mobile APKs send null/no Origin
-    supports_credentials=False,   # Must be False when origins="*"
+    origins=_CORS_ORIGINS,
+    supports_credentials=False,
     allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With", "Cache-Control", "cache-control", "Pragma", "Origin", "X-CSRF-Token", "X-Tracking-Token", "X-API-Key", "X-Client-Platform"],
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 )
@@ -835,10 +837,10 @@ def serve_spa(path):
         if path and os.path.isfile(full_path):
             resp = send_from_directory(app.static_folder, path, conditional=True)
             if resp:
-                if is_static_asset and path not in ('index.html', 'flutter_bootstrap.js', 'flutter_service_worker.js'):
-                    resp.headers['Cache-Control'] = 'public, max-age=86400, must-revalidate'
-                else:
-                    resp.headers['Cache-Control'] = 'no-cache'
+                # Flutter web filenames are not content-hashed, so a long
+                # max-age would pin a stale bundle after a deploy. Serve
+                # no-cache and let the ETag answer with 304.
+                resp.headers['Cache-Control'] = 'no-cache'
                 return resp
         elif is_static_asset or is_upload_path:
             # Never return HTML for missing static assets or upload files
@@ -857,6 +859,17 @@ def serve_spa(path):
 
 
 # ── Global API Error Handlers ────────────────────────────────────────────────
+@app.errorhandler(UploadStorageError)
+def handle_upload_storage_error(e):
+    logger.error("Upload storage unavailable: %s", e)
+    return jsonify({
+        'success': False,
+        'status': 503,
+        'error': 'Storage Unavailable',
+        'message': 'File storage is unavailable. Please try the upload again.',
+    }), 503
+
+
 @app.errorhandler(500)
 def handle_internal_server_error(e):
     logger.exception("Global 500 handler intercepted exception: %s", e)

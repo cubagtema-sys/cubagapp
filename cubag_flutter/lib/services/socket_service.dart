@@ -66,7 +66,6 @@ class SocketService {
 
     if (token != null && token.isNotEmpty) {
       socketOptions.setAuth({'token': token});
-      socketOptions.setQuery({'token': token});
       if (!kIsWeb) {
         socketOptions.setExtraHeaders({'Authorization': 'Bearer $token'});
       }

@@ -243,11 +243,16 @@ class MobileMenuPage extends StatelessWidget {
                 subtitle: 'Have your say on CUBAG decisions'),
           ]),
           _buildSection(context, 'Work tools', [
-            _MenuItem('Messages', Icons.chat_bubble_outline_rounded, '/messaging'),
-            _MenuItem('Tasks', Icons.task_alt_rounded, '/tasks'),
-            _MenuItem('Vessel movements', Icons.directions_boat_outlined, '/vessel-movements'),
-            _MenuItem('Cargo schedules', Icons.inventory_2_outlined, '/cargo-schedules'),
-            _MenuItem('Port insights', Icons.insights_outlined, '/live-data'),
+            _MenuItem('Messages', Icons.chat_bubble_outline_rounded, '/messaging',
+                subtitle: 'Chat with members and Secretariat'),
+            _MenuItem('Tasks', Icons.task_alt_rounded, '/tasks',
+                subtitle: 'Document uploads and action items'),
+            _MenuItem('Vessel movements', Icons.directions_boat_outlined, '/vessel-movements',
+                subtitle: 'Live port arrivals and berthing'),
+            _MenuItem('Cargo schedules', Icons.inventory_2_outlined, '/cargo-schedules',
+                subtitle: 'Vessel manifests and container tracking'),
+            _MenuItem('Port insights', Icons.insights_outlined, '/live-data',
+                subtitle: 'Port performance and clearance metrics'),
           ]),
           _buildSection(context, 'Help', [
             _MenuItem('Support', Icons.support_agent_outlined, '/engagement',
@@ -278,11 +283,13 @@ class MobileMenuPage extends StatelessWidget {
                     (isAdmin || role == 'sub_admin')
                         ? '/admin/settings'
                         : '/settings',
+                    subtitle: 'Profile, security and preferences',
                   ),
                 _MenuItem(
                   'Sign out',
                   Icons.logout_rounded,
                   '/login',
+                  subtitle: 'Log out of your account',
                   isLogout: true,
                 ),
               ]),
