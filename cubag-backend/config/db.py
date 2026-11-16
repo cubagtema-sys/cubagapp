@@ -527,6 +527,14 @@ def init_db():
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_members_license_number ON members (license_number) WHERE license_number IS NOT NULL AND license_number != '' AND license_number != 'PENDING';
             """)
 
+            # Ensure staff/admin accounts never carry membership or license numbers
+            cursor.execute("""
+                UPDATE members 
+                SET membership_number = NULL, license_number = NULL 
+                WHERE LOWER(COALESCE(role, 'member')) IN ('admin', 'super_admin', 'sub_admin', 'staff')
+                  AND (membership_number IS NOT NULL OR license_number IS NOT NULL);
+            """)
+
             # Configurable fee schedules
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS fee_schedules (

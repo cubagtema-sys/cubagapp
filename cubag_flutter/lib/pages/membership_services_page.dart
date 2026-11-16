@@ -326,10 +326,19 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
             ? _memberInfo['membership_number'].toString().trim()
             : null);
 
-    final memNo = resolvedMemNo ??
-        (isPkgPaid
-            ? 'CUBAG-2026-${(_memberInfo['id'] ?? '001').toString().padLeft(4, '0')}'
-            : (_loadingFees ? '—' : 'PENDING DUES SETTLEMENT'));
+    final role = (authService.userRole ?? _memberInfo['role'] ?? '').toString().toLowerCase().trim();
+    final bool isStaff = role == 'admin' || role == 'super_admin' || role == 'sub_admin';
+    final String staffId = authService.userId ??
+        (_memberInfo['user_id']?.toString().isNotEmpty == true
+            ? _memberInfo['user_id'].toString()
+            : 'USR-${(_memberInfo['id'] ?? '1').toString().padLeft(4, '0')}');
+
+    final memNo = isStaff
+        ? staffId
+        : (resolvedMemNo ??
+            (isPkgPaid
+                ? 'CUBAG-2026-${(_memberInfo['id'] ?? '001').toString().padLeft(4, '0')}'
+                : (_loadingFees ? '—' : 'PENDING DUES SETTLEMENT')));
 
     final rawMemberType = (_memberInfo['member_type'] ?? _memberInfo['memberType'] ?? authService.memberType ?? '').toString().toLowerCase();
     final isLicentiate = rawMemberType.contains('licentiate') || rawMemberType.contains('individual');
@@ -478,7 +487,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Membership ID',
+                                        isStaff ? 'User ID' : 'Membership ID',
                                         style: TextStyle(
                                           color: CubagColors.onCocoaMuted,
                                           fontSize: 11,
@@ -663,7 +672,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              'Membership ID',
+                                              isStaff ? 'User ID' : 'Membership ID',
                                               style: TextStyle(
                                                 color: CubagColors.onCocoaMuted,
                                                 fontSize: 11,

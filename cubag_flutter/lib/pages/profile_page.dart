@@ -485,6 +485,29 @@ class _ProfilePageState extends State<ProfilePage> {
     return initials.length > 2 ? initials.substring(0, 2) : initials;
   }
 
+  bool get _isAdminRole {
+    final role = _user['role']?.toString().toLowerCase().trim() ?? '';
+    return role == 'admin' || role == 'super_admin' || role == 'sub_admin';
+  }
+
+  String get _userId {
+    final rawUserId = _user['user_id']?.toString().trim() ?? '';
+    if (rawUserId.isNotEmpty && rawUserId != 'null' && rawUserId != 'None') {
+      return rawUserId;
+    }
+    final id = _user['id']?.toString() ?? '1';
+    return 'USR-${id.padLeft(4, '0')}';
+  }
+
+  String get _displayId {
+    if (_isAdminRole) {
+      return _userId;
+    }
+    return _membershipId;
+  }
+
+  String get _idLabel => _isAdminRole ? 'User ID' : 'Membership ID';
+
   String get _membershipId {
     final isPkgPaid = _user['package_fee_paid'] == true;
     if (!isPkgPaid) return 'PENDING SETTLEMENT';
@@ -700,30 +723,40 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _user['company']?.toString() ?? scaleLabel,
+                        _user['company']?.toString() ?? (_isAdminRole ? 'CUBAG Secretariat' : scaleLabel),
                         style: CubagType.small.copyWith(color: CubagColors.onCocoaMuted),
                       ),
                       const SizedBox(height: CubagSpace.sm),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: isGoodStanding ? CubagColors.validTint : CubagColors.dueTint,
+                          color: _isAdminRole
+                              ? CubagColors.action.withAlpha(40)
+                              : (isGoodStanding ? CubagColors.validTint : CubagColors.dueTint),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              isGoodStanding ? Icons.verified_rounded : Icons.schedule_rounded,
+                              _isAdminRole
+                                  ? Icons.admin_panel_settings_rounded
+                                  : (isGoodStanding ? Icons.verified_rounded : Icons.schedule_rounded),
                               size: 14,
-                              color: isGoodStanding ? CubagColors.valid : CubagColors.due,
+                              color: _isAdminRole
+                                  ? Colors.white
+                                  : (isGoodStanding ? CubagColors.valid : CubagColors.due),
                             ),
                             const SizedBox(width: 5),
                             Text(
-                              isGoodStanding ? 'In good standing' : 'Membership pending',
+                              _isAdminRole
+                                  ? (_user['role'] == 'super_admin' ? 'Super Admin · Staff' : (_user['role'] == 'sub_admin' ? 'Staff · Sub-admin' : 'Administrator · Staff'))
+                                  : (isGoodStanding ? 'In good standing' : 'Membership pending'),
                               style: CubagType.caption.copyWith(
                                 fontWeight: FontWeight.w700,
-                                color: isGoodStanding ? CubagColors.valid : CubagColors.due,
+                                color: _isAdminRole
+                                    ? Colors.white
+                                    : (isGoodStanding ? CubagColors.valid : CubagColors.due),
                               ),
                             ),
                           ],
@@ -742,15 +775,15 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: FilledButton.icon(
                   onPressed: () => _openDigitalIdDialog(tier, expiry, daysLeft, isGoodStanding, isPackagePending),
                   icon: const Icon(Icons.qr_code_2_rounded, size: 18),
-                  label: const Text('Digital ID'),
+                  label: Text(_isAdminRole ? 'Staff ID' : 'Digital ID'),
                 ),
               ),
               const SizedBox(width: CubagSpace.sm),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => context.go('/compliance'),
-                  icon: const Icon(Icons.verified_user_outlined, size: 18),
-                  label: const Text('Compliance'),
+                  onPressed: () => context.go(_isAdminRole ? '/admin' : '/compliance'),
+                  icon: Icon(_isAdminRole ? Icons.admin_panel_settings_outlined : Icons.verified_user_outlined, size: 18),
+                  label: Text(_isAdminRole ? 'Admin Console' : 'Compliance'),
                 ),
               ),
             ],
@@ -770,55 +803,57 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: CubagSpace.xs),
           _group([
-            _detailRow('Membership ID', _membershipId, copy: true, figure: true),
+            _detailRow(_idLabel, _displayId, copy: true, figure: true),
             _detailRow('Email', _user['email']?.toString() ?? '—', copy: true),
             _detailRow('Phone', _user['phone']?.toString() ?? 'Not provided', copy: _user['phone'] != null),
             _detailRow('District', _portFullName(portStr)),
           ]),
 
-          // ── Compliance ──
-          const SizedBox(height: CubagSpace.xxl),
-          Text('Compliance', style: CubagType.headline),
-          const SizedBox(height: CubagSpace.xs),
-          _group([
-            Padding(
-              padding: const EdgeInsets.all(CubagSpace.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '$complianceScore',
-                        style: CubagType.figure.copyWith(fontFamily: CubagType.serif, fontSize: 36, height: 1.1),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4, left: 4),
-                        child: Text('/ 100', style: CubagType.small),
-                      ),
-                      const Spacer(),
-                      StatusChip(
-                        scoreGood ? 'Excellent' : 'Being monitored',
-                        kind: scoreGood ? StatusKind.good : StatusKind.pending,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: CubagSpace.xxs),
-                  Text('Your compliance score over the last 30 days', style: CubagType.small),
-                  const SizedBox(height: CubagSpace.md),
-                  TrendLineWidget(
-                    points: (_user['rating_history'] as List?)
-                            ?.map((h) => double.tryParse(h['compliance_score']?.toString() ?? '') ?? 100.0)
-                            .toList() ??
-                        [complianceScore.toDouble()],
-                    color: scoreGood ? CubagColors.valid : CubagColors.due,
-                    height: 72,
-                  ),
-                ],
+          // ── Compliance (Members only) ──
+          if (!_isAdminRole) ...[
+            const SizedBox(height: CubagSpace.xxl),
+            Text('Compliance', style: CubagType.headline),
+            const SizedBox(height: CubagSpace.xs),
+            _group([
+              Padding(
+                padding: const EdgeInsets.all(CubagSpace.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '$complianceScore',
+                          style: CubagType.figure.copyWith(fontFamily: CubagType.serif, fontSize: 36, height: 1.1),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4, left: 4),
+                          child: Text('/ 100', style: CubagType.small),
+                        ),
+                        const Spacer(),
+                        StatusChip(
+                          scoreGood ? 'Excellent' : 'Being monitored',
+                          kind: scoreGood ? StatusKind.good : StatusKind.pending,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: CubagSpace.xxs),
+                    Text('Your compliance score over the last 30 days', style: CubagType.small),
+                    const SizedBox(height: CubagSpace.md),
+                    TrendLineWidget(
+                      points: (_user['rating_history'] as List?)
+                              ?.map((h) => double.tryParse(h['compliance_score']?.toString() ?? '') ?? 100.0)
+                              .toList() ??
+                          [complianceScore.toDouble()],
+                      color: scoreGood ? CubagColors.valid : CubagColors.due,
+                      height: 72,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ]),
+            ]),
+          ],
         ],
       ),
     );
@@ -896,19 +931,27 @@ class _ProfilePageState extends State<ProfilePage> {
     bool isGoodStanding,
     bool isPackagePending,
   ) {
-    final badgeText = isPackagePending
-        ? 'Pending'
-        : (isGoodStanding ? 'Active' : 'Inactive');
-    final badgeColor = isPackagePending
-        ? CubagColors.due
-        : (isGoodStanding ? CubagColors.valid : CubagColors.lapsed);
+    final badgeText = _isAdminRole
+        ? (_user['role'] == 'super_admin' ? 'Super Admin' : (_user['role'] == 'sub_admin' ? 'Staff' : 'Admin'))
+        : (isPackagePending
+            ? 'Pending'
+            : (isGoodStanding ? 'Active' : 'Inactive'));
+    final badgeColor = _isAdminRole
+        ? CubagColors.action
+        : (isPackagePending
+            ? CubagColors.due
+            : (isGoodStanding ? CubagColors.valid : CubagColors.lapsed));
 
-    final expireText = (!isGoodStanding || isPackagePending)
-        ? 'Pending Renewal'
-        : (expiry != null ? _formatDate(expiry) : 'Valid Member');
+    final expireText = _isAdminRole
+        ? 'Staff / Secretariat'
+        : ((!isGoodStanding || isPackagePending)
+            ? 'Pending Renewal'
+            : (expiry != null ? _formatDate(expiry) : 'Valid Member'));
 
     final memberName = _user['name']?.toString().trim() ?? 'Member';
-    final companyName = _user['company']?.toString().trim() ?? 'Member Enterprise / Firm';
+    final companyName = _user['company']?.toString().trim().isNotEmpty == true
+        ? _user['company'].toString().trim()
+        : (_isAdminRole ? 'CUBAG Secretariat' : 'Member Enterprise / Firm');
     final port = _formatPortAbbreviation((_user['port_of_operation'] ?? _user['port'] ?? 'Tema').toString());
 
     return ConstrainedBox(
@@ -991,7 +1034,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                             ),
                             Text(
-                              'Digital ID',
+                              _isAdminRole ? 'Staff ID' : 'Digital ID',
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 8.5,
@@ -1122,7 +1165,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Member ID',
+                          _isAdminRole ? 'User ID' : 'Member ID',
                           style: TextStyle(
                             fontSize: 9.5,
                             fontWeight: FontWeight.bold,
@@ -1131,7 +1174,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _membershipId,
+                          _displayId,
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 14,
@@ -1166,7 +1209,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         border: Border.all(color: CubagColors.line, width: 1),
                       ),
                       child: QrImageView(
-                        data: 'https://cubag-api-server.fly.dev/#/verify-member?id=${_membershipId.isNotEmpty && _membershipId != 'Pending' ? _membershipId : (_user['id']?.toString() ?? '')}',
+                        data: 'https://cubag-api-server.fly.dev/#/verify-member?id=${_displayId.isNotEmpty && _displayId != 'Pending' ? _displayId : (_user['id']?.toString() ?? '')}',
                         version: QrVersions.auto,
                         size: 52.0,
                         errorCorrectionLevel: QrErrorCorrectLevel.H,

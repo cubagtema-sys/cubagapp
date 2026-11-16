@@ -651,17 +651,18 @@ def _complete_login(cursor, member):
         'permissions': sub_perms,
         'user': {
             'id': member['id'],
+            'user_id': f"USR-{member['id']:04d}" if is_admin_role else None,
             'name': member['name'],
             'email': member['email'],
-            'company': member['company'],
-            'memberType': member['member_type'],
-            'member_type': member['member_type'],
-            'fee_category': member.get('fee_category'),
-            'member_scale': member.get('member_scale'),
-            'licenseNumber': user_license,
-            'license_number': user_license,
-            'membershipNumber': mem_no,
-            'membership_number': mem_no,
+            'company': member['company'] or ('CUBAG Secretariat' if is_admin_role else None),
+            'memberType': None if is_admin_role else member['member_type'],
+            'member_type': None if is_admin_role else member['member_type'],
+            'fee_category': None if is_admin_role else member.get('fee_category'),
+            'member_scale': None if is_admin_role else member.get('member_scale'),
+            'licenseNumber': None if is_admin_role else user_license,
+            'license_number': None if is_admin_role else user_license,
+            'membershipNumber': None if is_admin_role else mem_no,
+            'membership_number': None if is_admin_role else mem_no,
             'licenseExpiryDate': None if is_admin_role else expiry,
             'license_expiry_date': None if is_admin_role else expiry,
             'portOfOperation': member['port_of_operation'],
@@ -1446,12 +1447,16 @@ def get_me():
             if result.get('role') in ('admin', 'sub_admin', 'super_admin'):
                 result['license_number'] = None
                 result['membership_number'] = None
+                result['user_id'] = f"USR-{result['id']:04d}"
+                result['staff_id'] = f"STAFF-{result['id']:04d}"
                 result['agency_code'] = None
                 result['compliance_score'] = None
                 result['star_rating'] = None
                 result['manual_review_score'] = None
                 result['good_standing'] = None
                 result['is_good_standing'] = None
+                if not result.get('company'):
+                    result['company'] = 'CUBAG Secretariat'
 
             if result.get('role') == 'sub_admin':
                 cursor.execute(

@@ -288,10 +288,11 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                         },
                         {
                           'icon': Icons.badge,
-                          'label': 'Membership ID',
-                          'value':
-                              _member!['membership_number'] ??
-                              _member!['license_number'],
+                          'label': (_member!['role'] == 'admin' || _member!['role'] == 'super_admin' || _member!['role'] == 'sub_admin') ? 'User ID' : 'Membership ID',
+                          'value': (_member!['role'] == 'admin' || _member!['role'] == 'super_admin' || _member!['role'] == 'sub_admin')
+                              ? (_member!['user_id'] ?? 'USR-${(_member!['id'] ?? '').toString().padLeft(4, '0')}')
+                              : (_member!['membership_number'] ??
+                                  _member!['license_number']),
                         },
                         {
                           'icon': Icons.fingerprint,
@@ -338,10 +339,11 @@ class _MemberDetailPageState extends State<MemberDetailPage> {
                                   },
                                   {
                                     'icon': Icons.badge,
-                                    'label': 'Membership ID',
-                                    'value':
-                                        _member!['membership_number'] ??
-                                        _member!['license_number'],
+                                    'label': (_member!['role'] == 'admin' || _member!['role'] == 'super_admin' || _member!['role'] == 'sub_admin') ? 'User ID' : 'Membership ID',
+                                    'value': (_member!['role'] == 'admin' || _member!['role'] == 'super_admin' || _member!['role'] == 'sub_admin')
+                                        ? (_member!['user_id'] ?? 'USR-${(_member!['id'] ?? '').toString().padLeft(4, '0')}')
+                                        : (_member!['membership_number'] ??
+                                            _member!['license_number']),
                                   },
                                   {
                                     'icon': Icons.fingerprint,

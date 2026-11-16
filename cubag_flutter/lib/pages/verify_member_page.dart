@@ -476,9 +476,15 @@ class _VerifyMemberPageState extends State<VerifyMemberPage> {
                   'icon': Icons.business_outlined,
                 },
                 {
-                  'label': 'Membership ID / Number',
-                  'val': m['membership_number'] ?? m['license_number'] ?? _currentQuery,
-                  'icon': Icons.card_membership_rounded,
+                  'label': (m['role'] == 'admin' || m['role'] == 'super_admin' || m['role'] == 'sub_admin')
+                      ? 'User ID'
+                      : 'Membership ID / Number',
+                  'val': (m['role'] == 'admin' || m['role'] == 'super_admin' || m['role'] == 'sub_admin')
+                      ? (m['user_id'] ?? 'USR-${(m['id'] ?? '').toString().padLeft(4, '0')}')
+                      : (m['membership_number'] ?? m['license_number'] ?? _currentQuery),
+                  'icon': (m['role'] == 'admin' || m['role'] == 'super_admin' || m['role'] == 'sub_admin')
+                      ? Icons.badge_outlined
+                      : Icons.card_membership_rounded,
                 },
                 {
                   'label': 'Operating Port(s)',

@@ -1066,10 +1066,14 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
           ['Membership type', m['member_type']],
           ['District(s)', m['port_of_operation']],
           [
-            'Membership ID / Number',
-            (m['membership_number'] ?? m['license_number'] ?? m['id'])
-                    ?.toString() ??
-                'N/A',
+            (m['role'] == 'admin' || m['role'] == 'super_admin' || m['role'] == 'sub_admin')
+                ? 'User ID'
+                : 'Membership ID / Number',
+            (m['role'] == 'admin' || m['role'] == 'super_admin' || m['role'] == 'sub_admin')
+                ? (m['user_id'] ?? 'USR-${(m['id'] ?? '').toString().padLeft(4, '0')}')
+                : ((m['membership_number'] ?? m['license_number'] ?? m['id'])
+                        ?.toString() ??
+                    'N/A'),
           ],
           [
             'Agency code',

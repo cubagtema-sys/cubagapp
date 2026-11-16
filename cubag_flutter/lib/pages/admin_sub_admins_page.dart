@@ -477,7 +477,7 @@ class _AdminSubAdminsPageState extends State<AdminSubAdminsPage> {
                         return AdminListRow(
                           leading: AdminRowMark(initials: adminInitials(name)),
                           title: name,
-                          subtitle: email,
+                          subtitle: '${map['user_id'] ?? 'USR-${(map['id'] ?? '').toString().padLeft(4, '0')}'} · $email',
                           meta: sections.isEmpty ? null : sections,
                           status: StatusChip(
                             access,

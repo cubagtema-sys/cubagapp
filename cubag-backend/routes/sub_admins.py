@@ -62,6 +62,7 @@ def list_sub_admins():
             """)
             sub_admins = cursor.fetchall()
             for s in sub_admins:
+                s['user_id'] = f"USR-{s['id']:04d}"
                 if hasattr(s.get('created_at'), 'isoformat'):
                     s['created_at'] = s['created_at'].isoformat()
         return jsonify({'sub_admins': sub_admins, 'all_permissions': ALL_PERMISSIONS}), 200

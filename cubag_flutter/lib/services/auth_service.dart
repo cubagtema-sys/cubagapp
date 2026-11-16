@@ -26,6 +26,7 @@ class AuthService extends ChangeNotifier {
   String? _userName;
   String? _userEmail;
   String? _userCompany;
+  String? _userId;
   String? _membershipNumber;
   String? _licenseNumber;
   String _membershipStatus = 'none';
@@ -40,14 +41,19 @@ class AuthService extends ChangeNotifier {
 
   bool get isAuthenticated => _isAuthenticated;
   String? get userRole => _userRole;
+  bool get isAdmin =>
+      _userRole == 'admin' ||
+      _userRole == 'super_admin' ||
+      _userRole == 'sub_admin';
   String? get userPhotoUrl => _userPhotoUrl != null && _userPhotoUrl!.isNotEmpty
       ? ApiService.resolveImageUrl(_userPhotoUrl)
       : null;
   String? get userName => _userName;
   String? get userEmail => _userEmail;
   String? get userCompany => _userCompany;
-  String? get membershipNumber => _membershipNumber;
-  String? get licenseNumber => _licenseNumber;
+  String? get userId => _userId;
+  String? get membershipNumber => isAdmin ? null : _membershipNumber;
+  String? get licenseNumber => isAdmin ? null : _licenseNumber;
   String get membershipStatus => _membershipStatus;
   bool get goodStanding => _goodStanding;
   bool get isPackageFeePaid => _packageFeePaid;
@@ -108,6 +114,7 @@ class AuthService extends ChangeNotifier {
       SessionStorage.instance.getString('cubag_good_standing'),
       SessionStorage.instance.getString('cubag_company_scale'),
       SessionStorage.instance.getString('cubag_member_type'),
+      SessionStorage.instance.getString('cubag_user_id'),
     ]);
 
     final token = results[0] as String?;
@@ -127,6 +134,12 @@ class AuthService extends ChangeNotifier {
     _goodStanding = (results[13] as String?) == 'true';
     _companyScale = results[14] as String?;
     _memberType = results[15] as String?;
+    _userId = results.length > 16 ? (results[16] as String?) : null;
+
+    if (isAdmin) {
+      _membershipNumber = null;
+      _licenseNumber = null;
+    }
 
     if (token != null && token.isNotEmpty) {
       _isAuthenticated = true;
@@ -265,8 +278,15 @@ class AuthService extends ChangeNotifier {
     _userName = user['name']?.toString();
     _userEmail = user['email']?.toString();
     _userCompany = user['company']?.toString() ?? user['company_name']?.toString();
-    _membershipNumber = user['membership_number']?.toString() ?? user['membershipNumber']?.toString();
-    _licenseNumber = user['license_number']?.toString() ?? user['licenseNumber']?.toString();
+    final bool isUserAdmin = role == 'admin' || role == 'super_admin' || role == 'sub_admin';
+    _userId = user['user_id']?.toString() ??
+        (isUserAdmin ? 'USR-${(user['id'] ?? '').toString().padLeft(4, '0')}' : null);
+    _membershipNumber = isUserAdmin
+        ? null
+        : (user['membership_number']?.toString() ?? user['membershipNumber']?.toString());
+    _licenseNumber = isUserAdmin
+        ? null
+        : (user['license_number']?.toString() ?? user['licenseNumber']?.toString());
     _companyScale = user['company_scale']?.toString() ?? user['member_scale']?.toString();
     _memberType = user['member_type']?.toString() ?? user['memberType']?.toString();
 
@@ -282,6 +302,9 @@ class AuthService extends ChangeNotifier {
       SessionStorage.instance.setString('cubag_status', status),
       SessionStorage.instance.setStringList('cubag_permissions', perms),
     ];
+    if (_userId != null) {
+      futures.add(SessionStorage.instance.setString('cubag_user_id', _userId!));
+    }
     if (_userCompany != null) {
       futures.add(SessionStorage.instance.setString('cubag_company', _userCompany!));
     }
@@ -513,6 +536,7 @@ class AuthService extends ChangeNotifier {
     _userName = null;
     _userEmail = null;
     _userCompany = null;
+    _userId = null;
     _membershipNumber = null;
     _licenseNumber = null;
     _membershipStatus = 'none';
