@@ -220,6 +220,32 @@ class _PaymentsPageState extends State<PaymentsPage>
     final expiryRaw = _memberInfo['license_expiry_date'];
     _licenseExpiry = expiryRaw != null ? DateTime.tryParse(expiryRaw.toString()) : null;
     _isLicenseBlocked = false;
+
+    // Auto-populate MoMo phone and carrier network from the member's profile
+    final phone = _memberInfo['phone']?.toString();
+    if (_momoPhone.isEmpty && phone != null && phone.trim().isNotEmpty) {
+      final clean = _normalizeGhanaPhone(phone);
+      if (clean.isNotEmpty) {
+        _momoPhone = clean;
+        if (_momoNetwork.isEmpty) {
+          if (clean.startsWith('024') ||
+              clean.startsWith('025') ||
+              clean.startsWith('053') ||
+              clean.startsWith('054') ||
+              clean.startsWith('055') ||
+              clean.startsWith('059')) {
+            _momoNetwork = 'MTN';
+          } else if (clean.startsWith('020') || clean.startsWith('050')) {
+            _momoNetwork = 'Telecel';
+          } else if (clean.startsWith('026') ||
+              clean.startsWith('027') ||
+              clean.startsWith('056') ||
+              clean.startsWith('057')) {
+            _momoNetwork = 'AirtelTigo';
+          }
+        }
+      }
+    }
   }
 
   void _onFeesUpdatedSocket(dynamic _) {
@@ -839,8 +865,8 @@ class _PaymentsPageState extends State<PaymentsPage>
             : null;
         if (mounted) {
           setState(() {
-            // Return to step 4 (review) so the user can try again
-            _step = 4;
+            // Return to step 4 (review) or step 3 so the user can try again
+            _step = _method == 'momo' ? 3 : 4;
             _errorMsg = serverMsg ?? 'Payment failed. Please try again.';
             _showError = true;
           });
@@ -854,8 +880,8 @@ class _PaymentsPageState extends State<PaymentsPage>
       }
       if (mounted) {
         setState(() {
-          // Return to step 4 if already on step 5 (momo early-advance)
-          if (_step == 5) _step = 4;
+          // Return to step 3 if momo, or step 4
+          if (_step == 5) _step = _method == 'momo' ? 3 : 4;
           _errorMsg = msg;
           _showError = true;
         });
@@ -1200,7 +1226,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                 _errorMsg =
                     resData['message'] ?? 'Payment was declined or cancelled.';
                 _showError = true;
-                _step = 1;
+                if (_method == 'momo') _step = 3;
               });
             }
           }
@@ -1275,7 +1301,7 @@ class _PaymentsPageState extends State<PaymentsPage>
         setState(() {
           _errorMsg = resData['message'] ?? 'Payment declined.';
           _showError = true;
-          _step = 1;
+          if (_method == 'momo') _step = 3;
         });
       } else {
         ScaffoldMessenger.of(context).clearSnackBars();
@@ -1416,36 +1442,46 @@ class _PaymentsPageState extends State<PaymentsPage>
       title: 'Pay dues',
       scrollable: false,
       background: CubagColors.paper,
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: CubagSpace.md, horizontal: CubagSpace.lg),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SizedBox(
+            width: constraints.maxWidth,
+            height: constraints.maxHeight,
             child: Stack(
               children: [
-                RefreshIndicator(
-                  onRefresh: () => _loadData(),
-                  color: _kOrange,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Column(
-                    children: [
-                      // Plain page: no card around the whole flow.
-                      Column(
-                          children: [
-                            // ── Sleek Segmented Flow Stepper ──
-                            Container(
-                              padding: const EdgeInsets.only(bottom: 14),
-                              decoration: BoxDecoration(
-                                color: CubagColors.paper,
-                                border: Border(
-                                  bottom: BorderSide(
-                                    color: isDark ? const Color(0xFF3D261C) : CubagColors.line,
-                                    width: 1.0,
-                                  ),
-                                ),
-                              ),
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 600),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: CubagSpace.md,
+                        horizontal: CubagSpace.lg,
+                      ),
+                      child: RefreshIndicator(
+                        onRefresh: () => _loadData(),
+                        color: _kOrange,
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Column(
+                            children: [
+                              // Plain page: no card around the whole flow.
+                              Column(
+                                children: [
+                                  // ── Sleek Segmented Flow Stepper ──
+                                  Container(
+                                    padding: const EdgeInsets.only(bottom: 14),
+                                    decoration: BoxDecoration(
+                                      color: CubagColors.paper,
+                                      border: Border(
+                                        bottom: BorderSide(
+                                          color: isDark
+                                              ? const Color(0xFF3D261C)
+                                              : CubagColors.line,
+                                          width: 1.0,
+                                        ),
+                                      ),
+                                    ),
                               child: Builder(
                                 builder: (ctx) {
                                   final reqDocs = _requiresDocuments;
@@ -1528,19 +1564,22 @@ class _PaymentsPageState extends State<PaymentsPage>
                             ),
                           ],
                         ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.lock_outline_rounded, size: 14, color: CubagColors.muted),
-                          const SizedBox(width: 6),
-                          Text('Secure payment by WhitsunPay', style: CubagType.caption),
-                        ],
-                      ),
-                    ],
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.lock_outline_rounded, size: 14, color: CubagColors.muted),
+                            const SizedBox(width: 6),
+                            Text('Secure payment by WhitsunPay', style: CubagType.caption),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
+            ),
+          ),
 
                 // Success Modal Overlay
                 if (_showSuccess)
@@ -1689,8 +1728,8 @@ class _PaymentsPageState extends State<PaymentsPage>
                 if (_showError) _failurePanel(),
               ],
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -1699,7 +1738,7 @@ class _PaymentsPageState extends State<PaymentsPage>
   Widget _failurePanel() {
     final reason = _errorMsg.trim().isEmpty ? 'The payment was not completed.' : _errorMsg.trim();
     Widget tip(String t) => Padding(
-          padding: const EdgeInsets.only(bottom: CubagSpace.sm),
+          padding: const EdgeInsets.only(bottom: CubagSpace.xs),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1708,71 +1747,121 @@ class _PaymentsPageState extends State<PaymentsPage>
                 child: Icon(Icons.check_rounded, size: 16, color: CubagColors.muted),
               ),
               const SizedBox(width: CubagSpace.sm),
-              Expanded(child: Text(t, style: CubagType.body.copyWith(color: CubagColors.inkSoft))),
+              Expanded(child: Text(t, style: CubagType.small.copyWith(color: CubagColors.inkSoft))),
             ],
           ),
         );
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
     return Positioned.fill(
       child: Container(
-        color: CubagColors.ink.withAlpha(110),
+        color: CubagColors.ink.withAlpha(140),
         alignment: Alignment.center,
-        child: SingleChildScrollView(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 520),
-            padding: const EdgeInsets.fromLTRB(CubagSpace.xl, CubagSpace.xl, CubagSpace.xl, CubagSpace.lg),
-            decoration: BoxDecoration(
-              color: CubagColors.paper,
-              borderRadius: BorderRadius.circular(CubagRadius.card + 4),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: const BoxDecoration(color: CubagColors.lapsedTint, shape: BoxShape.circle),
-                  child: Icon(_errorIsCheck ? Icons.edit_note_rounded : Icons.error_outline_rounded, color: CubagColors.lapsed, size: 28),
-                ),
-                const SizedBox(height: CubagSpace.lg),
-                Semantics(
-                  header: true,
-                  child: Text(_errorIsCheck ? 'Check your details' : 'Payment didn\'t go through', style: CubagType.display.copyWith(fontSize: 26)),
-                ),
-                const SizedBox(height: CubagSpace.sm),
-                Text(reason, style: CubagType.body),
-                if (!_errorIsCheck) ...[
-                  const SizedBox(height: CubagSpace.lg),
-                  const Divider(height: 1, color: CubagColors.line),
-                  const SizedBox(height: CubagSpace.md),
-                  const Text('What you can do', style: CubagType.label),
-                  const SizedBox(height: CubagSpace.sm),
-                  tip('Check you have enough money in your Mobile Money wallet.'),
-                  tip('Approve the prompt on your phone as soon as it appears.'),
-                  tip('Make sure the number and network are correct, then try again.'),
-                ],
-                const SizedBox(height: CubagSpace.lg),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () => setState(() {
-                      _showError = false;
-                      _errorIsCheck = false;
-                    }),
-                    child: Text(_errorIsCheck ? 'OK' : 'Try again'),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + bottomInset),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 480),
+              padding: const EdgeInsets.all(CubagSpace.lg),
+              decoration: BoxDecoration(
+                color: CubagColors.paper,
+                borderRadius: BorderRadius.circular(CubagRadius.card + 4),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(40),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
                   ),
-                ),
-                if (!_errorIsCheck) ...[
-                  const SizedBox(height: CubagSpace.xs),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: const BoxDecoration(
+                          color: CubagColors.lapsedTint,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _errorIsCheck ? Icons.edit_note_rounded : Icons.error_outline_rounded,
+                          color: CubagColors.lapsed,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: CubagSpace.sm),
+                      Expanded(
+                        child: Text(
+                          _errorIsCheck ? 'Check your details' : 'Payment didn\'t go through',
+                          style: CubagType.title.copyWith(fontSize: 20),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 22, color: CubagColors.muted),
+                        onPressed: () => setState(() => _showError = false),
+                        tooltip: 'Close',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: CubagSpace.sm),
+                  Text(reason, style: CubagType.body),
+                  if (!_errorIsCheck) ...[
+                    const SizedBox(height: CubagSpace.md),
+                    const Divider(height: 1, color: CubagColors.line),
+                    const SizedBox(height: CubagSpace.sm),
+                    const Text('What you can do', style: CubagType.label),
+                    const SizedBox(height: CubagSpace.xs),
+                    tip('Check you have enough money in your Mobile Money wallet.'),
+                    tip('If no prompt pops up, check pending approvals on your phone (*170# for MTN).'),
+                    tip('Make sure the number and network are correct, then try again.'),
+                  ],
+                  const SizedBox(height: CubagSpace.lg),
                   SizedBox(
                     width: double.infinity,
-                    child: TextButton(
-                      onPressed: () => setState(() => _showError = false),
-                      child: const Text('Close'),
+                    height: 48,
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _kOrange,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () => setState(() {
+                        _showError = false;
+                        _errorIsCheck = false;
+                        if (_method == 'momo') {
+                          _step = 3;
+                        }
+                      }),
+                      child: Text(
+                        _errorIsCheck ? 'OK' : 'Try again',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
                     ),
                   ),
+                  if (!_errorIsCheck) ...[
+                    const SizedBox(height: CubagSpace.xs),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () => setState(() => _showError = false),
+                        child: const Text('Close', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -3974,7 +4063,7 @@ class _PaymentsPageState extends State<PaymentsPage>
           () {
             String noticeTitle = 'MTN MoMo Approval Notice';
             String noticeText =
-                'If the prompt does not pop up, dial *170# → Option 6 (My Wallet) → Option 3 (My Approvals) on your phone to approve.';
+                'If the prompt does not pop up, dial *170# → Option 6 (My Wallet) → Option 3 (My Approvals) on your phone to approve.\n\nNote: On iOS/iPhone, MoMo prompts frequently do not appear as automatic popups. Please dial *170# to approve.';
 
             if (_momoNetwork == 'Telecel' || _momoNetwork == 'Vodafone') {
               noticeTitle = 'Telecel Cash Approval Notice';

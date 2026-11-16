@@ -154,6 +154,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
   Future<void> _pickAndUpload(Map<String, dynamic> req) async {
     final key = req['key']?.toString() ?? '';
     final label = req['label']?.toString() ?? '';
+    final alreadyUploaded = req['uploaded'] == true;
     if (key.isEmpty) return;
     setState(() => _uploading[key] = true);
     try {
@@ -202,7 +203,12 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
       await Future.wait(uploadTasks);
 
       if (mounted) {
-        _showSnack('$label uploaded successfully', _kGreen);
+        _showSnack(
+          alreadyUploaded
+              ? '$label replaced successfully'
+              : '$label uploaded successfully',
+          _kGreen,
+        );
         _fetchRequirements();
       }
     } catch (e) {
@@ -353,7 +359,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
       'pending' => ('Under review', StatusKind.pending),
       _ => (uploaded ? 'Under review' : 'Not uploaded', uploaded ? StatusKind.pending : StatusKind.neutral),
     };
-    final canUpload = !uploaded || status == 'rejected';
+    final canUpload = status != 'approved';
 
     return Padding(
       padding: const EdgeInsets.all(CubagSpace.md),
@@ -386,11 +392,23 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
             const SizedBox(height: CubagSpace.sm),
             OutlinedButton.icon(
               onPressed: isUploading ? null : () => _pickAndUpload(req),
-              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 44),
+                foregroundColor: uploaded ? CubagColors.action : null,
+              ),
               icon: isUploading
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.upload_rounded, size: 20),
-              label: Text(isUploading ? 'Uploading…' : (status == 'rejected' ? 'Upload again' : 'Upload')),
+                  : Icon(
+                      uploaded ? Icons.change_circle_outlined : Icons.upload_rounded,
+                      size: 20,
+                    ),
+              label: Text(
+                isUploading
+                    ? 'Uploading…'
+                    : (uploaded
+                        ? 'Replace document'
+                        : (status == 'rejected' ? 'Upload again' : 'Upload')),
+              ),
             ),
           ],
         ],
