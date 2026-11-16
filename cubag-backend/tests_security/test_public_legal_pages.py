@@ -52,6 +52,21 @@ def test_terms_of_service_html(client):
     assert 'Alternative Dispute Resolution Act' in html
 
 
+def test_public_courses_aliases(client):
+    """GET /courses and /api/v1/courses should return public CTI courses for WordPress."""
+    res1 = client.get('/courses')
+    assert res1.status_code == 200
+    data1 = res1.get_json()
+    assert 'items' in data1
+
+    res2 = client.get('/api/v1/courses')
+    assert res2.status_code == 200
+    data2 = res2.get_json()
+    assert 'items' in data2
+
+
+
+
 def test_delete_account_get_html(client):
     """GET /delete-account should render the interactive web deletion request form."""
     res = client.get('/delete-account')
@@ -119,3 +134,4 @@ def test_delete_account_missing_confirmation(client):
     html = res.data.decode('utf-8')
     assert 'Unable to Process Request' in html
     assert 'confirm' in html
+

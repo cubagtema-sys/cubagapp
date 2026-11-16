@@ -33,7 +33,6 @@ class MobileMenuPage extends StatelessWidget {
           _MenuItem('Payments', Icons.payments_outlined, '/admin/payments'),
           _MenuItem('Revenue', Icons.trending_up_rounded, '/admin/analytics'),
           _MenuItem('Fees', Icons.receipt_long_outlined, '/admin/fees'),
-          _MenuItem('Bank accounts', Icons.account_balance_outlined, '/admin/payment-settings'),
         ]),
         _buildSection(context, 'Communication', [
           _MenuItem('Announcements', Icons.campaign_outlined, '/admin/announcements'),

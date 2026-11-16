@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'cubag_ui.dart';
 import '../design/cubag_design.dart';
 
 // ── Shared Admin Design System Palette (Editorial Stone & Ink) ───────────────
@@ -41,6 +42,10 @@ class AdminHeader extends StatelessWidget {
     final subtitleColor = isDark ? const Color(0xFFB0A298) : const Color(0xFF6B5E55);
     final hasActions = actions != null && actions!.isNotEmpty;
     final hasLeading = leading != null;
+    // Show a page's name once: skip the big title when the top bar already
+    // shows the same words (the explanation stays).
+    final barTitle = PageTitleScope.of(context);
+    final showTitle = barTitle == null || barTitle.trim().toLowerCase() != title.trim().toLowerCase();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -52,16 +57,18 @@ class AdminHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (hasLeading) ...[
-                    leading!,
-                    const SizedBox(width: 10),
-                  ],
-                  Flexible(
-                    child: Text(
-                      title,
+              if (showTitle || hasLeading)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (hasLeading) ...[
+                      leading!,
+                      const SizedBox(width: 10),
+                    ],
+                    if (showTitle)
+                      Flexible(
+                        child: Text(
+                          title,
                       style: TextStyle(
                         fontSize: isSmall ? 22 : 26,
                         fontWeight: FontWeight.w800,
@@ -73,7 +80,7 @@ class AdminHeader extends StatelessWidget {
                 ],
               ),
               if (subtitle != null && subtitle!.isNotEmpty) ...[
-                const SizedBox(height: 4),
+                if (showTitle) const SizedBox(height: 4),
                 Text(
                   subtitle!,
                   style: TextStyle(

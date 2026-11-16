@@ -4,7 +4,22 @@ import '../design/cubag_design.dart';
 
 /// Shared building blocks for redesigned member screens.
 
+/// The title the surrounding [AppLayout] already shows in its top bar.
+class PageTitleScope extends InheritedWidget {
+  final String title;
+  const PageTitleScope({super.key, required this.title, required super.child});
+
+  static String? of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<PageTitleScope>()?.title;
+
+  @override
+  bool updateShouldNotify(PageTitleScope old) => old.title != title;
+}
+
 /// Screen title (serif) with an optional one-line explanation.
+///
+/// A page shows its name once: when the top bar already shows the same
+/// title, only the explanation is drawn here.
 class PageIntro extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -12,6 +27,11 @@ class PageIntro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final barTitle = PageTitleScope.of(context);
+    final repeated = barTitle != null && barTitle.trim().toLowerCase() == title.trim().toLowerCase();
+    if (repeated) {
+      return subtitle == null ? const SizedBox.shrink() : Text(subtitle!, style: CubagType.body);
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

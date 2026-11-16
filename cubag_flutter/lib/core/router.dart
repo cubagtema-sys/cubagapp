@@ -65,7 +65,6 @@ import '../pages/admin_intelligence_page.dart';
 import '../pages/admin_license_renewal_page.dart';
 import '../pages/admin_members_page.dart';
 import '../pages/admin_payments_page.dart';
-import '../pages/admin_payment_settings_page.dart';
 import '../pages/admin_settings_page.dart';
 import '../pages/admin_surveys_page.dart';
 import '../pages/admin_tasks_page.dart';
@@ -243,6 +242,7 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(path: '/landing', redirect: (c, s) => '/login'),
     GoRoute(path: '/public-services', redirect: (c, s) => '/login'),
+    GoRoute(path: '/admin/payment-settings', redirect: (c, s) => '/admin/fees'),
     GoRoute(path: '/login', builder: (c, s) => const LoginPage()),
     GoRoute(path: '/register', builder: (c, s) => const RegisterPage()),
     GoRoute(
@@ -765,15 +765,6 @@ final GoRouter appRouter = GoRouter(
                       initialAction: s.uri.queryParameters['action'],
                     ),
                   ),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/admin/payment-settings',
-              pageBuilder: (c, s) =>
-                  const NoTransitionPage(child: AdminPaymentSettingsPage()),
             ),
           ],
         ),

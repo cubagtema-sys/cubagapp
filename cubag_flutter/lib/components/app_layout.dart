@@ -13,6 +13,7 @@ import '../utils/app_logger.dart';
 import '../utils/session_storage.dart';
 import '../utils/app_colors.dart';
 import '../design/cubag_design.dart';
+import 'cubag_ui.dart';
 
 class AppLayout extends StatefulWidget {
   final Widget child;
@@ -230,7 +231,7 @@ class _AppLayoutState extends State<AppLayout> {
                                         top: 20,
                                         bottom: 20 + MediaQuery.of(context).padding.bottom,
                                       ),
-                                      child: widget.child,
+                                      child: PageTitleScope(title: widget.title, child: widget.child),
                                     )
                                   : Padding(
                                       padding: EdgeInsets.only(
@@ -239,7 +240,7 @@ class _AppLayoutState extends State<AppLayout> {
                                         top: 20,
                                         bottom: 20 + MediaQuery.of(context).padding.bottom,
                                       ),
-                                      child: widget.child,
+                                      child: PageTitleScope(title: widget.title, child: widget.child),
                                     ),
                             ),
                           ),
@@ -262,8 +263,8 @@ class _AppLayoutState extends State<AppLayout> {
                                 vertical: isNarrow ? 10 : 16,
                               );
                         return widget.scrollable
-                            ? SingleChildScrollView(padding: pad, child: widget.child)
-                            : Padding(padding: pad, child: widget.child);
+                            ? SingleChildScrollView(padding: pad, child: PageTitleScope(title: widget.title, child: widget.child))
+                            : Padding(padding: pad, child: PageTitleScope(title: widget.title, child: widget.child));
                       },
                     ),
                   ),
@@ -2098,7 +2099,6 @@ class _AppLayoutState extends State<AppLayout> {
           _NavItemData('Payments', Icons.account_balance_wallet_rounded, '/admin/payments'),
           _NavItemData('Revenue', Icons.insights_rounded, '/admin/analytics'),
           _NavItemData('Fees', Icons.receipt_rounded, '/admin/fees'),
-          _NavItemData('Bank accounts', Icons.tune_rounded, '/admin/payment-settings'),
         ]),
         _buildSection(context, 'Communication', currentRoute, [
           _NavItemData('Announcements', Icons.campaign_rounded, '/admin/announcements'),
