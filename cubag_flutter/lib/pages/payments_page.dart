@@ -30,6 +30,7 @@ class _PaymentsPageState extends State<PaymentsPage>
     with SingleTickerProviderStateMixin {
   int _step = 1;
   final _amountCtrl = TextEditingController();
+  final _momoPhoneCtrl = TextEditingController();
   String _reason = '';
   final String _method = 'momo';
   String _momoNetwork = '';
@@ -227,6 +228,7 @@ class _PaymentsPageState extends State<PaymentsPage>
       final clean = _normalizeGhanaPhone(phone);
       if (clean.isNotEmpty) {
         _momoPhone = clean;
+        _momoPhoneCtrl.text = clean;
         if (_momoNetwork.isEmpty) {
           if (clean.startsWith('024') ||
               clean.startsWith('025') ||
@@ -258,6 +260,7 @@ class _PaymentsPageState extends State<PaymentsPage>
     SocketService().socket?.off('payment_approved');
     _pulseController.dispose();
     _amountCtrl.dispose();
+    _momoPhoneCtrl.dispose();
     super.dispose();
   }
 
@@ -3554,7 +3557,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextFormField(
-                      initialValue: _momoPhone,
+                      controller: _momoPhoneCtrl,
                       onChanged: (v) {
                         final clean = _normalizeGhanaPhone(v);
                         setState(() {
