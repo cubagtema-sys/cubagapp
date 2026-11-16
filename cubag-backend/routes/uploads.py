@@ -173,6 +173,7 @@ def proxy_image():
         'supabase.co',
         'storage.googleapis.com',
         'firebasestorage.googleapis.com',
+        'cubag-api-server.fly.dev',
         'cubag-backend.onrender.com',
         'cubag-production.up.railway.app',
         'cubag-web-app.onrender.com',

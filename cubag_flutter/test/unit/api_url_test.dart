@@ -17,7 +17,7 @@ void main() {
 
       // Simulate the URL that would be produced for each env
       const localUrl = 'http://127.0.0.1:5005/api/v1';
-      const prodUrl = 'https://cubag-backend.onrender.com/api/v1';
+      const prodUrl = 'https://cubag-api-server.fly.dev/api/v1';
 
       for (final url in [localUrl, prodUrl]) {
         for (final pattern in expectedPatterns) {

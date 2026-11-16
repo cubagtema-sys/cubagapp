@@ -142,7 +142,7 @@ Future<void> _initFirebase() async {
   }
 }
 
-/// Pings the backend immediately on startup to wake it up from "Sleep" (Render.com free tier)
+/// Pings the backend immediately on startup to ensure API connectivity
 Future<void> _backendHeartbeat() async {
   try {
     // A simple GET to the health endpoint or base URL

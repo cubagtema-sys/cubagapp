@@ -266,12 +266,14 @@ def public_initiate_momo():
             clean_desc = course_name or service_type or 'CTI Course'
             if not clean_desc.lower().startswith('cubag'):
                 clean_desc = f"CUBAG - {clean_desc}"
-            if len(clean_desc) > 60:
-                clean_desc = clean_desc[:57] + '...'
+            code_label = 'CUB-CTI' if 'course' in clean_desc.lower() or 'cti' in clean_desc.lower() else 'CUB-GST'
+            user_prompt_desc = f"{clean_desc} - {code_label} {amount:.2f}"
+            if len(user_prompt_desc) > 95:
+                user_prompt_desc = user_prompt_desc[:92] + '...'
 
             payload = {
                 'transactionReference': tx_ref,
-                'description': clean_desc,
+                'description': user_prompt_desc,
                 'amount': round(amount, 2),
                 'debitParty': {
                     'msisdn': clean_phone,
@@ -791,11 +793,26 @@ def create_payment():
 
             if WHITSUNPAY_CLIENT_ID and WHITSUNPAY_API_KEY:
                 from config.payment_codes import narration as _narration
-                user_prompt_desc = description.strip() if description else 'Payment'
-                if not user_prompt_desc.lower().startswith('cubag'):
-                    user_prompt_desc = f"CUBAG - {user_prompt_desc}"
-                if len(user_prompt_desc) > 60:
-                    user_prompt_desc = user_prompt_desc[:57] + '...'
+                base_desc = description.strip() if description else 'Payment'
+                if not base_desc.lower().startswith('cubag'):
+                    base_desc = f"CUBAG - {base_desc}"
+
+                # Append payment codes summary so WhitsunPay settlement engine sees codes in description,
+                # while keeping the human-friendly description visible first to the user on USSD/MoMo prompt.
+                codes_str = ''
+                if payment_codes and isinstance(payment_codes, list):
+                    codes_str = ', '.join(
+                        f"{c['code']} {float(c.get('amount', 0)):.2f}"
+                        for c in payment_codes if isinstance(c, dict) and c.get('code')
+                    )
+
+                if codes_str:
+                    user_prompt_desc = f"{base_desc} - {codes_str}"
+                else:
+                    user_prompt_desc = base_desc
+
+                if len(user_prompt_desc) > 100:
+                    user_prompt_desc = user_prompt_desc[:97] + '...'
 
                 code_narration = _narration(payment_codes, tx_ref, description) if payment_codes else description
 

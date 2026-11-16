@@ -22,4 +22,4 @@ EXPOSE 8080
 # in-process room state, and APScheduler (jobs.py) runs in-process. More than
 # one worker would split socket rooms and fire scheduled jobs multiple times.
 # gunicorn auto-selects the gthread worker when --threads > 1.
-CMD gunicorn -w 1 --threads 8 -b 0.0.0.0:${PORT} server:app
+CMD gunicorn -w 1 --threads 32 -b 0.0.0.0:${PORT} server:app

@@ -106260,7 +106260,7 @@ o=A.cvr()
 $.iD.$1("[Socket] Connecting to "+A.k(o))
 l=t.N
 j=A.E(l,m)
-j.n(0,"transports",A.a(["polling"],t.s))
+j.n(0,"transports",A.a(["websocket","polling"],t.s))
 j.n(0,"autoConnect",!1)
 j.P(0,"reconnection")
 j.n(0,"reconnectionAttempts",999)

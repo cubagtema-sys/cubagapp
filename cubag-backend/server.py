@@ -117,10 +117,11 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 @app.after_request
 def add_security_headers(response):
     """Add comprehensive security headers to prevent common vulnerabilities."""
-    # Cache control (already present)
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
+    # Cache control: apply no-store to API responses; let static files retain caching headers
+    if request.path.startswith('/api/') or request.path.startswith('/auth/'):
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
     
     # Security headers for XSS, clickjacking, and other attacks
     response.headers['X-Content-Type-Options'] = 'nosniff'
@@ -590,7 +591,21 @@ def ping():
 @app.route('/api/health', methods=['GET'])
 @app.route('/api/v1/health', methods=['GET'])
 def health():
-    return {'status': 'CUBAG API is running'}, 200
+    db_ok = True
+    try:
+        from config.db import get_db
+        conn = get_db()
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1")
+            cur.fetchone()
+        conn.close()
+    except Exception as e:
+        logger.warning("[Health] DB check failed: %s", e)
+        db_ok = False
+
+    if db_ok:
+        return {'status': 'CUBAG API is running', 'database': 'connected'}, 200
+    return {'status': 'Degraded', 'database': 'unreachable'}, 503
 
 # Public CTI Courses aliases for WordPress / external web integration
 @app.route('/courses', methods=['GET'])
@@ -817,9 +832,14 @@ def serve_spa(path):
     # Check if the requested path is a real file (like an image or JS)
     if app.static_folder:
         full_path = os.path.join(app.static_folder, path)
-        resp = None
         if path and os.path.isfile(full_path):
-            resp = send_from_directory(app.static_folder, path, conditional=False)
+            resp = send_from_directory(app.static_folder, path, conditional=True)
+            if resp:
+                if is_static_asset and path not in ('index.html', 'flutter_bootstrap.js', 'flutter_service_worker.js'):
+                    resp.headers['Cache-Control'] = 'public, max-age=86400, must-revalidate'
+                else:
+                    resp.headers['Cache-Control'] = 'no-cache'
+                return resp
         elif is_static_asset or is_upload_path:
             # Never return HTML for missing static assets or upload files
             return jsonify({'error': 'File not found', 'path': path}), 404
@@ -827,17 +847,10 @@ def serve_spa(path):
             # Otherwise, always serve index.html to let Flutter web router handle the URL
             index_path = os.path.join(app.static_folder, 'index.html')
             if os.path.isfile(index_path):
-                resp = send_from_directory(app.static_folder, 'index.html', conditional=False)
-        
-        if resp:
-            resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
-            resp.headers['Pragma'] = 'no-cache'
-            resp.headers['Expires'] = '0'
-            if 'ETag' in resp.headers:
-                del resp.headers['ETag']
-            if 'Last-Modified' in resp.headers:
-                del resp.headers['Last-Modified']
-            return resp
+                resp = send_from_directory(app.static_folder, 'index.html', conditional=True)
+                if resp:
+                    resp.headers['Cache-Control'] = 'no-cache'
+                    return resp
 
     # Fallback if no static files exist
     return jsonify({'status': 'CUBAG API is running', 'message': 'No frontend build found. Use /api/health for API status.'}), 200

@@ -56,7 +56,7 @@ class SocketService {
     debugPrint('[Socket] Connecting to $url');
 
     final socketOptions = socket_io.OptionBuilder()
-        .setTransports(kIsWeb ? ['polling'] : ['websocket', 'polling'])
+        .setTransports(['websocket', 'polling'])
         .disableAutoConnect()
         .enableReconnection()
         .setReconnectionAttempts(999)
