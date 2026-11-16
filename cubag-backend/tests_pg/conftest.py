@@ -87,15 +87,6 @@ _DATA_TABLES = ('members', 'cti_courses', 'otp_codes', 'member_blocks', 'message
 def app():
     import server
     server.app.config['TESTING'] = True
-    # Tables production has but the repository never creates (see schema_gaps.sql).
-    import psycopg2
-    conn = psycopg2.connect(TEST_DSN)
-    try:
-        with conn.cursor() as cur:
-            cur.execute(open(os.path.join(HERE, 'schema_gaps.sql')).read())
-        conn.commit()
-    finally:
-        conn.close()
     return server.app
 
 
