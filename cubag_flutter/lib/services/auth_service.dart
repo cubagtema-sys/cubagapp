@@ -184,8 +184,8 @@ class AuthService extends ChangeNotifier {
       if (res.statusCode == 200 && res.data is Map) {
         final status = res.data['status']?.toString() ?? 'none';
         final isPkgPaid = res.data['package_fee_paid'] == true;
-        final isGood = res.data['good_standing'] == true ||
-            res.data['is_good_standing'] == true ||
+        final isGood = (res.data['good_standing'] == true ||
+                res.data['is_good_standing'] == true) &&
             isPkgPaid;
         final regPaid = res.data['registration_fee_paid'] == true ||
             res.data['application_fee_paid'] == true;
@@ -262,8 +262,8 @@ class AuthService extends ChangeNotifier {
     final regPaid = user['registration_fee_paid'] == true ||
         user['application_fee_paid'] == true;
     final isPkgPaid = user['package_fee_paid'] == true;
-    final isGood = user['good_standing'] == true ||
-        user['is_good_standing'] == true ||
+    final isGood = (user['good_standing'] == true ||
+            user['is_good_standing'] == true) &&
         isPkgPaid;
 
     _isAuthenticated = true;

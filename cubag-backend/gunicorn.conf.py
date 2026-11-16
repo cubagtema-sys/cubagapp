@@ -4,14 +4,15 @@ Gunicorn configuration for CUBAG Backend.
 Local dev:  gunicorn -c gunicorn.conf.py server:app
 Production: Procfile already references gunicorn — this file is auto-detected.
 """
-import multiprocessing
 import os
 
 # ── Workers ────────────────────────────────────────────────────────────────────
-# Rule of thumb: (2 × CPU cores) + 1 for I/O-bound apps (DB, HTTP calls)
-workers = int(os.getenv('WEB_CONCURRENCY', multiprocessing.cpu_count() * 2 + 1))
-worker_class = 'sync'   # Use 'gthread' if you add threading support
-threads = 2             # Threads per worker (handles concurrent Socket.IO polls)
+# Single worker is REQUIRED: Flask-SocketIO keeps room state in-process and
+# APScheduler runs in-process, so extra workers would split rooms and fire
+# scheduled jobs more than once. Scale with threads, not workers.
+workers = int(os.getenv('WEB_CONCURRENCY', 1))
+worker_class = 'sync'   # gunicorn switches to gthread automatically when threads > 1
+threads = int(os.getenv('GUNICORN_THREADS', 32))
 
 # ── Binding ────────────────────────────────────────────────────────────────────
 port = int(os.getenv('PORT', 5005))
@@ -26,7 +27,8 @@ keepalive = 5           # Reuse HTTP connections for 5s
 accesslog = '-'         # Stdout
 errorlog  = '-'         # Stderr
 loglevel  = os.getenv('LOG_LEVEL', 'info')
-access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s %(D)sµs'
+# Path only (no query string): the socket client used to put the JWT in ?token=.
+access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(m)s %(U)s %(H)s" %(s)s %(b)s %(D)sµs'
 
 # ── Process naming ─────────────────────────────────────────────────────────────
 proc_name = 'cubag-backend'

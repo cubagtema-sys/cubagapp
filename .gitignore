@@ -33,8 +33,7 @@ cubag-backend/.env
 cubag-react/.env
 firebase-key.json
 
-# IDE / OS / Workflows
-.github/
+# IDE / OS
 .vscode/
 .idea/
 *.DS_Store

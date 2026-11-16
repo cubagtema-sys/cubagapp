@@ -55,11 +55,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
   void initState() {
     super.initState();
     final auth = AuthService();
-    _isPackageFeePaid = auth.isPackageFeePaid ||
-        auth.goodStanding ||
-        auth.membershipStatus == 'active' ||
-        (auth.membershipNumber?.isNotEmpty == true &&
-            !auth.membershipNumber!.toLowerCase().contains('pending'));
+    _isPackageFeePaid = auth.isPackageFeePaid;
     _isRegFeePaid = auth.isRegistrationFeePaid;
     _loadMemberServices();
     SocketService().socket?.on('member_updated', _onSocketUpdate);
@@ -311,12 +307,17 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
     final memberName = authService.userName ?? (_memberInfo['name']?.toString() ?? 'CUBAG Member');
     final companyName = authService.userCompany ?? (_memberInfo['company']?.toString() ?? 'Licensed Freight Forwarder');
 
-    final bool isPkgPaid = _isPackageFeePaid ||
+    final role = (authService.userRole ?? _memberInfo['role'] ?? '').toString().toLowerCase().trim();
+    final bool isStaff = role == 'admin' || role == 'super_admin' || role == 'sub_admin';
+    final String staffId = authService.userId ??
+        (_memberInfo['user_id']?.toString().isNotEmpty == true
+            ? _memberInfo['user_id'].toString()
+            : 'USR-${(_memberInfo['id'] ?? '1').toString().padLeft(4, '0')}');
+
+    final bool isPkgPaid = isStaff ||
+        _isPackageFeePaid ||
         authService.isPackageFeePaid ||
-        authService.goodStanding ||
-        authService.membershipStatus == 'active' ||
-        _memberInfo['package_fee_paid'] == true ||
-        _memberInfo['is_good_standing'] == true;
+        _memberInfo['package_fee_paid'] == true;
 
     final String? resolvedMemNo = (authService.membershipNumber?.isNotEmpty == true &&
             !authService.membershipNumber!.toLowerCase().contains('pending'))
@@ -326,19 +327,11 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
             ? _memberInfo['membership_number'].toString().trim()
             : null);
 
-    final role = (authService.userRole ?? _memberInfo['role'] ?? '').toString().toLowerCase().trim();
-    final bool isStaff = role == 'admin' || role == 'super_admin' || role == 'sub_admin';
-    final String staffId = authService.userId ??
-        (_memberInfo['user_id']?.toString().isNotEmpty == true
-            ? _memberInfo['user_id'].toString()
-            : 'USR-${(_memberInfo['id'] ?? '1').toString().padLeft(4, '0')}');
-
     final memNo = isStaff
         ? staffId
-        : (resolvedMemNo ??
-            (isPkgPaid
-                ? 'CUBAG-2026-${(_memberInfo['id'] ?? '001').toString().padLeft(4, '0')}'
-                : (_loadingFees ? '—' : 'PENDING DUES SETTLEMENT')));
+        : (isPkgPaid
+            ? (resolvedMemNo ?? 'CUBAG-2026-${(_memberInfo['id'] ?? '001').toString().padLeft(4, '0')}')
+            : (_loadingFees ? '—' : 'PENDING DUES SETTLEMENT'));
 
     final rawMemberType = (_memberInfo['member_type'] ?? _memberInfo['memberType'] ?? authService.memberType ?? '').toString().toLowerCase();
     final isLicentiate = rawMemberType.contains('licentiate') || rawMemberType.contains('individual');
@@ -347,7 +340,7 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
 
     final rawScale = _memberInfo['company_scale'] ?? _memberInfo['member_scale'] ?? authService.companyScale;
     final scaleStr = rawScale != null ? _formatScale(rawScale) : (_loadingFees ? '—' : 'SME');
-    final verifyUrl = (resolvedMemNo != null && resolvedMemNo.isNotEmpty)
+    final verifyUrl = (isPkgPaid && resolvedMemNo != null && resolvedMemNo.isNotEmpty)
         ? 'https://cubag-api-server.fly.dev/#/verify-member?id=$resolvedMemNo'
         : (isPkgPaid && memNo != '—' && !memNo.contains('PENDING') ? 'https://cubag-api-server.fly.dev/#/verify-member?id=$memNo' : '');
 
@@ -381,12 +374,11 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
     final bool isUnderReview = renewalStatus == 'submitted' || renewalStatus == 'under_review';
     final bool isRevision = renewalStatus == 'revision_requested';
 
-    final bool isGoodStanding = _memberInfo['is_good_standing'] == true ||
-        _memberInfo['good_standing'] == true ||
-        _isPackageFeePaid ||
-        _memberInfo['status'] == 'active' ||
-        authService.goodStanding ||
-        authService.membershipStatus == 'active';
+    final bool isGoodStanding = isStaff ||
+        (isPkgPaid &&
+            (_memberInfo['is_good_standing'] == true ||
+                _memberInfo['good_standing'] == true ||
+                authService.goodStanding));
 
     return AppLayout(
       title: 'Membership',
@@ -425,12 +417,12 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                 decoration: BoxDecoration(
                                   color: isGoodStanding
                                       ? CubagColors.valid.withAlpha(30)
-                                      : _kOrange.withAlpha(30),
+                                      : CubagColors.due.withAlpha(30),
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
                                     color: isGoodStanding
                                         ? CubagColors.valid.withAlpha(120)
-                                        : _kOrange.withAlpha(120),
+                                        : CubagColors.due.withAlpha(120),
                                   ),
                                 ),
                                 child: Row(
@@ -443,15 +435,15 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                         shape: BoxShape.circle,
                                         color: isGoodStanding
                                             ? CubagColors.valid
-                                            : _kOrange,
+                                            : CubagColors.due,
                                       ),
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
                                       isGoodStanding
                                           ? 'Active, in good standing'
-                                          : (_loadingFees ? 'Checking status…' : 'Membership dues not yet paid'),
-                                      style: TextStyle(
+                                          : (_loadingFees ? 'Checking status…' : 'Pending dues settlement'),
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 11.5,
                                         fontWeight: FontWeight.w800,
@@ -550,20 +542,35 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                             size: 72.0,
                                             errorCorrectionLevel: QrErrorCorrectLevel.H,
                                           )
-                                        : const SizedBox(
-                                            width: 72,
-                                            height: 72,
-                                            child: Center(
-                                              child: SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  color: CubagColors.onCocoaMuted,
+                                        : (_loadingFees
+                                            ? const SizedBox(
+                                                width: 72,
+                                                height: 72,
+                                                child: Center(
+                                                  child: SizedBox(
+                                                    width: 20,
+                                                    height: 20,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: CubagColors.onCocoaMuted,
+                                                    ),
+                                                  ),
                                                 ),
-                                              ),
-                                            ),
-                                          ),
+                                              )
+                                            : const SizedBox(
+                                                width: 72,
+                                                height: 72,
+                                                child: Center(
+                                                  child: Column(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Icon(Icons.lock_outline_rounded, color: CubagColors.onCocoaMuted, size: 22),
+                                                      SizedBox(height: 2),
+                                                      Text('Locked', style: TextStyle(color: CubagColors.onCocoaMuted, fontSize: 9.5, fontWeight: FontWeight.bold)),
+                                                    ],
+                                                  ),
+                                                ),
+                                              )),
                                   ),
                                   const SizedBox(width: 14),
                                   Expanded(
@@ -610,12 +617,12 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                       decoration: BoxDecoration(
                                         color: isGoodStanding
                                             ? CubagColors.valid.withAlpha(30)
-                                            : _kOrange.withAlpha(30),
+                                            : CubagColors.due.withAlpha(30),
                                         borderRadius: BorderRadius.circular(6),
                                         border: Border.all(
                                           color: isGoodStanding
                                               ? CubagColors.valid.withAlpha(120)
-                                              : _kOrange.withAlpha(120),
+                                              : CubagColors.due.withAlpha(120),
                                         ),
                                       ),
                                       child: Row(
@@ -628,15 +635,15 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                               shape: BoxShape.circle,
                                               color: isGoodStanding
                                                   ? CubagColors.valid
-                                                  : _kOrange,
+                                                  : CubagColors.due,
                                             ),
                                           ),
                                           const SizedBox(width: 6),
                                           Text(
                                             isGoodStanding
                                                 ? 'Active, in good standing'
-                                                : (_loadingFees ? 'Checking status…' : 'Membership dues not yet paid'),
-                                            style: TextStyle(
+                                                : (_loadingFees ? 'Checking status…' : 'Pending dues settlement'),
+                                            style: const TextStyle(
                                               color: Colors.white,
                                               fontSize: 11.5,
                                               fontWeight: FontWeight.w800,
@@ -739,20 +746,35 @@ class _MembershipServicesPageState extends State<MembershipServicesPage> {
                                             size: 100.0,
                                             errorCorrectionLevel: QrErrorCorrectLevel.H,
                                           )
-                                        : const SizedBox(
-                                            width: 100,
-                                            height: 100,
-                                            child: Center(
-                                              child: SizedBox(
-                                                width: 26,
-                                                height: 26,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  color: CubagColors.onCocoaMuted,
+                                        : (_loadingFees
+                                            ? const SizedBox(
+                                                width: 100,
+                                                height: 100,
+                                                child: Center(
+                                                  child: SizedBox(
+                                                    width: 26,
+                                                    height: 26,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: CubagColors.onCocoaMuted,
+                                                    ),
+                                                  ),
                                                 ),
-                                              ),
-                                            ),
-                                          ),
+                                              )
+                                            : const SizedBox(
+                                                width: 100,
+                                                height: 100,
+                                                child: Center(
+                                                  child: Column(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Icon(Icons.lock_outline_rounded, color: CubagColors.onCocoaMuted, size: 28),
+                                                      SizedBox(height: 4),
+                                                      Text('Locked', style: TextStyle(color: CubagColors.onCocoaMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+                                                    ],
+                                                  ),
+                                                ),
+                                              )),
                                   ),
                                   const SizedBox(height: 6),
                                   Text(

@@ -185,7 +185,8 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
           Row(
             children: [
               Expanded(child: Text("This year's renewal", style: CubagType.headline)),
-              StatusChip(chipLabel, kind: chipKind),
+              if (chipLabel != 'Pending Dues Settlement')
+                StatusChip(chipLabel, kind: chipKind),
             ],
           ),
           const SizedBox(height: CubagSpace.lg),
@@ -240,7 +241,6 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
             ),
             const SizedBox(width: CubagSpace.sm),
             Expanded(child: Text(step.title, style: CubagType.label)),
-            Text(step.subtitle, style: CubagType.small),
           ],
         ),
       ),
@@ -255,7 +255,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
       _StepState.pending => (CubagColors.sand, CubagColors.muted),
     };
     return Semantics(
-      label: '${step.title}: ${step.subtitle}',
+      label: step.title,
       child: Column(
         children: [
           Row(
@@ -283,8 +283,6 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
           ),
           const SizedBox(height: CubagSpace.sm),
           Text(step.title, style: CubagType.label, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
-          const SizedBox(height: 2),
-          Text(step.subtitle, style: CubagType.caption, textAlign: TextAlign.center, maxLines: 2),
         ],
       ),
     );
