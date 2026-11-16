@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'api_service.dart';
 import 'cache_service.dart';
 import 'push_notification_service.dart';
+import 'notification_service.dart';
 
 class SocketService {
   static final SocketService _instance = SocketService._internal();
@@ -109,6 +110,20 @@ class SocketService {
             );
           }
         }
+        try {
+          NotificationService().fetchUnreadCount(force: true);
+          CacheService().invalidatePattern('notifications');
+          dataUpdateNotifier.value = 'notification';
+        } catch (_) {}
+      });
+
+      _socket!.on('notifications_updated', (data) {
+        debugPrint('[Socket] notifications_updated: $data');
+        try {
+          NotificationService().fetchUnreadCount(force: true);
+          CacheService().invalidatePattern('notifications');
+          dataUpdateNotifier.value = 'notifications_updated';
+        } catch (_) {}
       });
     } catch (e) {
       _connecting = false;
@@ -137,6 +152,8 @@ class SocketService {
       'member_updated': ['member', 'auth/me', 'tasks', 'documents', 'requirements'],
       'member_approved': ['member', 'auth/me', 'tasks', 'documents', 'requirements'],
       'payment_approved': ['payments', 'member', 'auth/me', 'fees', 'tasks', 'documents'],
+      'notifications_updated': ['notifications'],
+      'notification': ['notifications'],
     };
 
     eventsToPurge.forEach((eventName, cachePatterns) {

@@ -4,7 +4,7 @@ import datetime
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from config.db import get_db
-from utils import admin_required, log_admin_action, sub_admin_required
+from utils import admin_required, log_admin_action, sub_admin_required, create_notification
 from config.cache import cache
 
 logger = logging.getLogger(__name__)
@@ -751,6 +751,20 @@ def approve_member_application(member_id):
                 INSERT INTO admin_audit_logs (admin_id, action, target_type, target_id, target_name, old_value, new_value, details, ip_address)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (caller_id, 'approve_membership', 'member', member_id, m.get('company') or m.get('name'), old_val_json, new_val_json, formatted_details, ip_addr))
+
+            # Member in-app & push notification
+            try:
+                create_notification(
+                    cursor=cursor,
+                    member_id=member_id,
+                    title='Membership Approved! 🎉',
+                    body=f'Congratulations! Your CUBAG membership application has been approved. Membership No: {mem_no}.',
+                    category='System',
+                    notification_type='membership',
+                    data={'screen': 'membership', 'member_id': str(member_id)}
+                )
+            except Exception as app_notif_err:
+                logger.debug("[Admin] Approve member notif error: %s", app_notif_err)
 
             conn.commit()
             log_admin_action(caller_id, 'Approved membership', 'member', member_id,

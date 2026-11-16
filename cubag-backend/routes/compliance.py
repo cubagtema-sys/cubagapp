@@ -24,7 +24,7 @@ from flask import Blueprint, jsonify, request, Response
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from config.db import get_db
 from config.cache import cache
-from utils import sub_admin_required, send_push_notification, log_admin_action
+from utils import sub_admin_required, send_push_notification, log_admin_action, create_notification
 
 logger = logging.getLogger(__name__)
 compliance_bp = Blueprint('compliance', __name__)
@@ -755,6 +755,20 @@ def _notify_admins_doc_updated(cursor, app_id, member_id, label, is_replacement=
                     send_push_notification(adm['fcm_token'], alert_title, alert_body, {'app_id': str(app_id), 'type': 'compliance'})
                 except Exception:
                     pass
+
+        # In-app notification for the member
+        try:
+            create_notification(
+                cursor=cursor,
+                member_id=member_id,
+                title='Document Submitted 📤',
+                body=f"Your document '{label}' has been uploaded and submitted for Secretariat review.",
+                category='Compliance',
+                notification_type='compliance',
+                data={'screen': 'compliance', 'application_id': str(app_id)}
+            )
+        except Exception as mem_notif_err:
+            logger.debug("[Compliance] Member upload notif error: %s", mem_notif_err)
         cursor.execute("RELEASE SAVEPOINT notify_admins")
     except Exception as e:
         logger.warning(f"[Compliance] Failed notifying admins of doc update: {e}")
@@ -1998,6 +2012,37 @@ def admin_update_doc_status(app_id, doc_id):
                 """, (new_app_status, app_id))
 
             conn.commit()
+
+            # Member in-app & push notification
+            if current_app and current_app.get('member_id'):
+                try:
+                    target_mid = current_app['member_id']
+                    doc_lbl = (doc_meta.get('file_name') or doc_meta.get('requirement') or 'Document') if doc_meta else 'Document'
+                    if status == 'approved':
+                        create_notification(
+                            cursor=cursor,
+                            member_id=target_mid,
+                            title='Document Approved ✅',
+                            body=f"Your document '{doc_lbl}' has been approved by the Secretariat.",
+                            category='Compliance',
+                            notification_type='compliance',
+                            data={'screen': 'compliance', 'application_id': str(app_id), 'doc_id': str(doc_id)}
+                        )
+                    elif status == 'rejected':
+                        reason_s = f": {note}" if note else ". Please check notes and re-upload."
+                        create_notification(
+                            cursor=cursor,
+                            member_id=target_mid,
+                            title='Document Requires Attention ⚠️',
+                            body=f"Your document '{doc_lbl}' was not approved{reason_s}",
+                            category='Compliance',
+                            notification_type='compliance',
+                            data={'screen': 'compliance', 'application_id': str(app_id), 'doc_id': str(doc_id)}
+                        )
+                    conn.commit()
+                except Exception as n_err:
+                    logger.debug("[Compliance] Doc status notification error: %s", n_err)
+
             log_admin_action(admin_id, f'Compliance Doc {status.capitalize()}', target_type='compliance_document', target_id=doc_id, details={'application_id': app_id, 'status': status, 'note': note})
 
             if post_mark_pay_id:
@@ -2058,6 +2103,20 @@ def admin_request_revision(app_id):
 
             type_label = 'License Renewal' if app['type'] == 'renewal' else 'Member ID Application'
             fcm_token, email, name = app.get('fcm_token'), app.get('email', ''), app.get('name', '')
+
+        # In-app notification for the member
+        try:
+            reason_str = f" Notes: {note}" if note else ""
+            create_notification(
+                member_id=app['member_id'],
+                title='Revision Required 📋',
+                body=f'Your {type_label} requires updates.{reason_str} Please review and resubmit.',
+                category='Compliance',
+                notification_type='compliance',
+                data={'screen': 'compliance', 'application_id': str(app_id)}
+            )
+        except Exception as rev_err:
+            logger.debug("[Compliance] Revision notification error: %s", rev_err)
 
         # FIX #5: Push notification + email
         send_push_notification(
@@ -2312,6 +2371,19 @@ def admin_approve_application(app_id):
             type_label = 'License Renewal' if app['type'] == 'renewal' else 'Member ID Application'
             fcm_token, email, name = app.get('fcm_token'), app.get('email', ''), app.get('name', '')
 
+        # Member in-app notification
+        try:
+            create_notification(
+                member_id=mid,
+                title='Application Approved! ✅',
+                body=f'Your {type_label} has been approved by CUBAG. Your compliance certificate is ready.',
+                category='Compliance',
+                notification_type='compliance',
+                data={'screen': 'compliance', 'application_id': str(app_id)}
+            )
+        except Exception as ap_notif_err:
+            logger.debug("[Compliance] Approve notif error: %s", ap_notif_err)
+
         # FIX #5: Push + email on approval
         send_push_notification(
             fcm_token,
@@ -2375,6 +2447,20 @@ def admin_reject_application(app_id):
 
             type_label = 'License Renewal' if app['type'] == 'renewal' else 'Member ID Application'
             fcm_token, email, name = app.get('fcm_token'), app.get('email', ''), app.get('name', '')
+
+        # Member in-app notification
+        try:
+            r_reason = f" Reason: {note}" if note else ""
+            create_notification(
+                member_id=app['member_id'],
+                title='Application Not Approved ⚠️',
+                body=f'Your {type_label} was not approved.{r_reason}',
+                category='Compliance',
+                notification_type='compliance',
+                data={'screen': 'compliance', 'application_id': str(app_id)}
+            )
+        except Exception as rej_notif_err:
+            logger.debug("[Compliance] Reject notif error: %s", rej_notif_err)
 
         # FIX #5: Push + email on rejection
         send_push_notification(

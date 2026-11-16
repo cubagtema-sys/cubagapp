@@ -5,6 +5,7 @@ import '../components/app_layout.dart';
 import '../services/api_service.dart';
 import '../services/cache_service.dart';
 import '../services/notification_service.dart';
+import '../services/socket_service.dart';
 import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
 import '../design/cubag_design.dart';
@@ -55,10 +56,19 @@ class _NotificationsPageState extends State<NotificationsPage> {
   void initState() {
     super.initState();
     _fetch();
+    SocketService().dataUpdateNotifier.addListener(_onDataUpdated);
+  }
+
+  void _onDataUpdated() {
+    final event = SocketService().dataUpdateNotifier.value;
+    if (event == 'notification' || event == 'notifications_updated') {
+      if (mounted) _fetch();
+    }
   }
 
   @override
   void dispose() {
+    SocketService().dataUpdateNotifier.removeListener(_onDataUpdated);
     _searchCtrl.dispose();
     super.dispose();
   }

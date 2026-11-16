@@ -13,7 +13,7 @@ from flask_cors import cross_origin
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from config.db import get_db
 from socket_instance import socketio
-from utils import admin_required, sub_admin_required, log_backend_error, log_admin_action, emit_to_member
+from utils import admin_required, sub_admin_required, log_backend_error, log_admin_action, emit_to_member, create_notification
 from config.security import verify_payment_ownership, verify_member_ownership
 from config.cache import cache
 from config.rate_limit import rate_limit
@@ -898,6 +898,19 @@ def create_payment():
                 )
                 t.start()
 
+            # Record in-app notification for the member
+            try:
+                create_notification(
+                    member_id=member_id,
+                    title='Payment Prompt Sent 💳',
+                    body=f'Payment of GHS {float(amount):,.2f} for {description} initiated (Ref: {tx_ref}). Please check your phone and enter your PIN to approve.',
+                    category='Payment',
+                    notification_type='payment',
+                    data={'screen': 'payments', 'payment_id': str(payment_id), 'tx_ref': tx_ref}
+                )
+            except Exception as notif_err:
+                logger.warning(f"[Payments] Failed to send payment initiated notification: {notif_err}")
+
             # Return immediately — Flutter picks up payment_id + tx_ref and starts polling
             return jsonify({
                 'payment_id': payment_id,
@@ -984,6 +997,18 @@ def create_payment():
             )
         except Exception as push_err:
             logger.warning(f"[Push] Admin alert error: {push_err}")
+
+        try:
+            create_notification(
+                member_id=member_id,
+                title='Deposit Slip Submitted 📄',
+                body=f'Bank deposit slip for {description} (GHS {float(amount):,.2f}) submitted for Secretariat verification.',
+                category='Payment',
+                notification_type='payment',
+                data={'screen': 'payments', 'payment_id': str(payment_id)}
+            )
+        except Exception as bnk_notif_err:
+            logger.warning(f"[Payments] Failed to send bank deposit notification: {bnk_notif_err}")
 
         try:
             emit_to_member(socketio, member_id, 'tasks_updated', {})
@@ -1225,7 +1250,7 @@ def _mark_payment_as_failed(payment_id):
     conn = get_db()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT status FROM payments WHERE id = %s", (payment_id,))
+            cursor.execute("SELECT status, member_id, description, amount, payment_ref FROM payments WHERE id = %s", (payment_id,))
             p = cursor.fetchone()
             if p and str(p['status']).lower() == 'pending':
                 cursor.execute(
@@ -1233,6 +1258,28 @@ def _mark_payment_as_failed(payment_id):
                     (payment_id,)
                 )
                 conn.commit()
+                if p.get('member_id'):
+                    mid = p['member_id']
+                    desc = p.get('description') or 'Payment'
+                    amt = float(p.get('amount') or 0)
+                    try:
+                        create_notification(
+                            cursor=cursor,
+                            member_id=mid,
+                            title='Payment Unsuccessful ❌',
+                            body=f"Payment of GHS {amt:,.2f} for {desc} could not be completed. Please check your wallet balance or try again.",
+                            category='Payment',
+                            notification_type='payment',
+                            data={'screen': 'payments', 'payment_id': str(payment_id)}
+                        )
+                        conn.commit()
+                    except Exception as fe:
+                        logger.warning(f"[Payments] Failed to record failure notification: {fe}")
+                    try:
+                        emit_to_member(socketio, mid, 'payment_failed', {'payment_id': payment_id, 'status': 'failed'})
+                        emit_to_member(socketio, mid, 'payments_updated', {'payment_id': payment_id, 'status': 'failed'})
+                    except Exception:
+                        pass
     finally:
         conn.close()
 
@@ -1586,6 +1633,34 @@ def _mark_payment_as_paid(payment_id, force=False):
                             pass
             except Exception as cti_err:
                 logger.warning(f"[CTI] Failed to update course enrollment after payment: {cti_err}")
+
+            # In-app and Push notification for payment confirmation
+            try:
+                p_desc = p.get('description') or 'Payment'
+                p_amt = float(p.get('amount') or 0)
+                p_ref = p.get('payment_ref') or f"PAY-{payment_id}"
+                create_notification(
+                    cursor=cursor,
+                    member_id=member_id,
+                    title='Payment Confirmed ✅',
+                    body=f"Your payment of GHS {p_amt:,.2f} for {p_desc} has been confirmed (Ref: {p_ref}). Thank you!",
+                    category='Payment',
+                    notification_type='payment',
+                    data={'screen': 'payments', 'payment_id': str(payment_id), 'ref': p_ref}
+                )
+                if license_issued:
+                    create_notification(
+                        cursor=cursor,
+                        member_id=member_id,
+                        title='Licence Issued 🎉',
+                        body=f"Your CUBAG licence ({license_number}) has been issued/renewed and is valid until {expiry_date_str}.",
+                        category='Compliance',
+                        notification_type='license',
+                        data={'screen': 'license', 'license_number': license_number}
+                    )
+                conn.commit()
+            except Exception as pay_notif_err:
+                logger.warning(f"[Payments] Failed to create payment confirmation notification: {pay_notif_err}")
 
             # Fetch for receipt email
             cursor.execute("""
@@ -2480,6 +2555,18 @@ def admin_reject_payment(payment_id):
             conn.commit()
 
         if row:
+            try:
+                create_notification(
+                    member_id=row['member_id'],
+                    title="Payment Receipt Rejected ⚠️",
+                    body=f"Your deposit slip for {row.get('description', 'Payment')} was not approved: {reason}",
+                    category='Payment',
+                    notification_type='payment',
+                    data={'screen': 'payments', 'payment_id': str(payment_id), 'status': 'rejected'}
+                )
+            except Exception as rej_notif_err:
+                logger.warning(f"[Payments] Failed to record rejection notification: {rej_notif_err}")
+
             try:
                 emit_to_member(socketio, row['member_id'], 'payments_updated', {'payment_id': payment_id, 'status': 'rejected'})
                 emit_to_member(socketio, row['member_id'], 'compliance_updated', {})

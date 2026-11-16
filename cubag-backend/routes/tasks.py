@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
 from config.db import get_db
 from routes.admin import log_admin_action
-from utils import admin_required, sub_admin_required
+from utils import admin_required, sub_admin_required, create_notification
 from file_storage import save_file
 
 tasks_bp = Blueprint('tasks', __name__)
@@ -489,10 +489,11 @@ def submit_task(task_id):
         with conn.cursor() as cursor:
             # BUG-B27 fix: verify ownership before allowing submission
             cursor.execute(
-                "SELECT id FROM tasks WHERE id = %s AND member_id = %s",
+                "SELECT id, title FROM tasks WHERE id = %s AND member_id = %s",
                 (task_id, member_id)
             )
-            if not cursor.fetchone():
+            task_row = cursor.fetchone()
+            if not task_row:
                 return jsonify({'message': 'Task not found or not assigned to you'}), 404
 
             # BUG-B29 fix: prevent duplicate submissions
@@ -533,6 +534,22 @@ def submit_task(task_id):
 
             # Mark task as submitted (done = TRUE pending admin verify)
             cursor.execute("UPDATE tasks SET done = TRUE WHERE id = %s AND member_id = %s", (task_id, member_id))
+
+            # Member in-app notification
+            try:
+                task_title = task_row.get('title') if task_row else 'Task'
+                create_notification(
+                    cursor=cursor,
+                    member_id=member_id,
+                    title='Task Submission Received 📤',
+                    body=f"Your submission for task '{task_title}' has been received and is awaiting Secretariat review.",
+                    category='Compliance',
+                    notification_type='task',
+                    data={'screen': 'tasks', 'task_id': str(task_id)}
+                )
+            except Exception as ts_err:
+                logger.debug("[Tasks] Submit notif error: %s", ts_err)
+
             conn.commit()
 
         return jsonify({'message': 'Submission received', 'submission_id': submission_id, 'files': saved}), 201
@@ -720,7 +737,7 @@ def verify_task_submission(submission_id):
         with conn.cursor() as cursor:
             # Get task and member info for audit
             cursor.execute("""
-                SELECT ts.task_id, t.title, m.name as member_name
+                SELECT ts.task_id, ts.member_id, t.title, m.name as member_name
                 FROM task_submissions ts
                 JOIN tasks t ON ts.task_id = t.id
                 LEFT JOIN members m ON ts.member_id = m.id
@@ -735,6 +752,21 @@ def verify_task_submission(submission_id):
                     admin_notes = %s
                 WHERE id = %s
             """, (admin_notes, submission_id))
+
+            if info and info.get('member_id'):
+                try:
+                    create_notification(
+                        cursor=cursor,
+                        member_id=info['member_id'],
+                        title='Task Verified ✅',
+                        body=f"Your submission for task '{info.get('title', 'Task')}' has been verified by the Secretariat.",
+                        category='Compliance',
+                        notification_type='task',
+                        data={'screen': 'tasks', 'task_id': str(info.get('task_id'))}
+                    )
+                except Exception as tv_err:
+                    logger.debug("[Tasks] Verify notif error: %s", tv_err)
+
             conn.commit()
 
         # Audit log

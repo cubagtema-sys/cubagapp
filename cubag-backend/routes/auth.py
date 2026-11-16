@@ -446,6 +446,22 @@ def register():
                     logger.debug(f'Error saving member_district: {ex_md}')
 
             cursor.execute("DELETE FROM otp_codes WHERE LOWER(email) = LOWER(%s)", (email,))
+
+            # Welcome notification
+            try:
+                from utils import create_notification
+                create_notification(
+                    cursor=cursor,
+                    member_id=new_id,
+                    title='Welcome to CUBAG! 🎉',
+                    body='Welcome to the Customs Brokers Association of Ghana. Please upload your mandatory business registration documents in Tasks to complete onboarding.',
+                    category='System',
+                    notification_type='welcome',
+                    data={'screen': 'tasks'}
+                )
+            except Exception as w_err:
+                logger.debug('[register] Welcome notification error: %s', w_err)
+
             conn.commit()
 
             from datetime import timedelta

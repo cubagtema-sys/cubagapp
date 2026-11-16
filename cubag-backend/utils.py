@@ -629,3 +629,120 @@ def emit_to_member(socketio, member_id, event: str, data: dict = None):
     except Exception as e:
         logger.debug('[emit_to_member] %s failed: %s', event, e)
 
+
+def create_notification(
+    cursor=None,
+    member_id=None,
+    title='',
+    body='',
+    category='System',
+    notification_type='general',
+    data=None,
+    send_push=True,
+    socketio=None,
+):
+    """
+    Creates an in-app notification in the `notifications` table,
+    dispatches FCM push notification, and emits real-time Socket.IO events.
+    Safe: handles both provided cursors or standalone connections, and suppresses
+    identical duplicates within 2 minutes.
+    """
+    if not member_id or not title:
+        return None
+
+    own_conn = False
+    conn = None
+    if cursor is None:
+        try:
+            from config.db import get_db
+            conn = get_db()
+            cursor = conn.cursor()
+            own_conn = True
+        except Exception as e:
+            logger.warning('[create_notification] Failed to acquire DB connection: %s', e)
+            return None
+
+    try:
+        # Check duplicate within 2 minutes
+        try:
+            cursor.execute("""
+                SELECT id FROM notifications
+                WHERE member_id = %s AND title = %s AND body = %s
+                  AND created_at > NOW() - INTERVAL '2 minutes'
+            """, (member_id, title, body))
+            existing = cursor.fetchone()
+            if existing:
+                return existing.get('id') if isinstance(existing, dict) else existing[0]
+        except Exception:
+            pass
+
+        # Insert in-app notification
+        notif_id = None
+        try:
+            cursor.execute("""
+                INSERT INTO notifications (member_id, title, body, category, notification_type, created_at)
+                VALUES (%s, %s, %s, %s, %s, NOW())
+                RETURNING id
+            """, (member_id, title, body, category, notification_type))
+            row = cursor.fetchone()
+            if row:
+                notif_id = row.get('id') if isinstance(row, dict) else row[0]
+            if own_conn and conn:
+                conn.commit()
+        except Exception as ie:
+            logger.warning('[create_notification] Insert failed: %s', ie)
+
+        # Real-time Socket.IO delivery
+        if socketio is None:
+            try:
+                from socket_instance import socketio as _sio
+                socketio = _sio
+            except Exception:
+                pass
+
+        if socketio:
+            try:
+                from datetime import datetime
+                payload = {
+                    'id': notif_id,
+                    'title': title,
+                    'body': body,
+                    'category': category,
+                    'type': notification_type,
+                    'data': data or {},
+                    'created_at': datetime.now().isoformat(),
+                }
+                emit_to_member(socketio, member_id, 'notification', payload)
+                emit_to_member(socketio, member_id, 'notifications_updated', {'id': notif_id})
+            except Exception as se:
+                logger.debug('[create_notification] Socket emit failed: %s', se)
+
+        # FCM Push notification
+        if send_push:
+            try:
+                cursor.execute("SELECT fcm_token FROM members WHERE id = %s", (member_id,))
+                m = cursor.fetchone()
+                fcm_token = m.get('fcm_token') if isinstance(m, dict) else (m[0] if m else None)
+                if fcm_token:
+                    fcm_data = dict(data or {})
+                    fcm_data.setdefault('type', notification_type)
+                    fcm_data.setdefault('category', category)
+                    send_push_notification(fcm_token, title, body, data=fcm_data)
+            except Exception as pe:
+                logger.debug('[create_notification] Push notification failed: %s', pe)
+
+        return notif_id
+    except Exception as e:
+        logger.warning('[create_notification] Error: %s', e)
+        return None
+    finally:
+        if own_conn:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+            try:
+                conn.close()
+            except Exception:
+                pass
+
