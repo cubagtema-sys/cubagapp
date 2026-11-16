@@ -148,23 +148,154 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
   String? _error;
   String _filter = 'all'; // 'all', 'in_progress', 'completed'
 
+  bool _loadingFoundational = true;
+  List<dynamic> _foundationalDocs = [];
+  int _foundationalTotal = 0;
+  int _foundationalUploaded = 0;
+  int _foundationalApproved = 0;
+  int _foundationalUnderReview = 0;
+  int _foundationalRejected = 0;
+  bool _foundationalExpanded = false;
+  String? _uploadingDocKey;
+
   @override
   void initState() {
     super.initState();
     _fetch();
+    _fetchFoundational();
     SocketService().on('compliance_updated', _onRealtimeComplianceUpdate);
+    SocketService().on('document_reviewed', _onRealtimeComplianceUpdate);
   }
 
   void _onRealtimeComplianceUpdate(dynamic _) {
     if (mounted) {
       _fetch();
+      _fetchFoundational();
     }
   }
 
   @override
   void dispose() {
     SocketService().off('compliance_updated', _onRealtimeComplianceUpdate);
+    SocketService().off('document_reviewed', _onRealtimeComplianceUpdate);
     super.dispose();
+  }
+
+  Future<void> _fetchFoundational({bool forceRefresh = false}) async {
+    if (forceRefresh) {
+      await ApiService.deleteCacheKeysMatching('requirements');
+    }
+    if (_foundationalDocs.isEmpty) {
+      setState(() => _loadingFoundational = true);
+    }
+    try {
+      await ApiService().fetchDataWithCache('/documents/requirements', (
+        data,
+        isCached, {
+        bool hasError = false,
+      }) {
+        if (!mounted) return;
+        if (hasError) {
+          if (!isCached) {
+            setState(() => _loadingFoundational = false);
+          }
+          return;
+        }
+        if (data != null && data is Map) {
+          final reqs = ApiService.ensureList(data['requirements']);
+          final total = int.tryParse(data['total']?.toString() ?? '') ?? reqs.length;
+          final uploaded = int.tryParse(data['uploaded']?.toString() ?? '') ??
+              reqs.where((d) => d is Map && d['uploaded'] == true).length;
+          final approved = int.tryParse(data['approved']?.toString() ?? '') ??
+              reqs.where((d) => d is Map && (d['status'] == 'approved' || d['status'] == 'verified')).length;
+          final underReview = int.tryParse(data['under_review']?.toString() ?? '') ??
+              reqs.where((d) => d is Map && d['uploaded'] == true && d['status'] != 'approved' && d['status'] != 'verified' && d['status'] != 'rejected').length;
+          final rejected = int.tryParse(data['rejected']?.toString() ?? '') ??
+              reqs.where((d) => d is Map && d['status'] == 'rejected').length;
+
+          setState(() {
+            _loadingFoundational = false;
+            _foundationalDocs = reqs;
+            _foundationalTotal = total;
+            _foundationalUploaded = uploaded;
+            _foundationalApproved = approved;
+            _foundationalUnderReview = underReview;
+            _foundationalRejected = rejected;
+          });
+        }
+      });
+    } catch (e, st) {
+      AppLogger.error('compliance_foundational_fetch', e, st);
+      if (mounted) setState(() => _loadingFoundational = false);
+    }
+  }
+
+  Future<void> _replaceFoundationalDoc(Map<String, dynamic> doc) async {
+    final key = doc['key']?.toString() ?? '';
+    final label = doc['label']?.toString() ?? 'Document';
+    if (key.isEmpty) return;
+
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+      allowMultiple: false,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+
+    setState(() => _uploadingDocKey = key);
+    try {
+      late dynamic mpFile;
+      if (file.bytes != null) {
+        mpFile = MultipartFile.fromBytes(Uint8List.fromList(file.bytes!), filename: file.name);
+      } else if (file.path != null && file.path!.isNotEmpty) {
+        mpFile = await MultipartFile.fromFile(file.path!, filename: file.name);
+      } else {
+        final bytes = await file.xFile.readAsBytes();
+        mpFile = MultipartFile.fromBytes(Uint8List.fromList(bytes), filename: file.name);
+      }
+
+      final formData = FormData.fromMap({
+        'requirement': key,
+        'document_key': key,
+        'label': label,
+        'file': mpFile,
+      });
+
+      final res = await ApiService().upload('/documents/upload', formData);
+      if (res.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Updated "$label" successfully', style: const TextStyle(fontWeight: FontWeight.bold)),
+              backgroundColor: _kGreen,
+            ),
+          );
+        }
+        await _fetchFoundational(forceRefresh: true);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(res.data?['message']?.toString() ?? 'Upload failed', style: const TextStyle(fontWeight: FontWeight.bold)),
+              backgroundColor: _kRed,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Upload error: $e', style: const TextStyle(fontWeight: FontWeight.bold)),
+            backgroundColor: _kRed,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingDocKey = null);
+    }
   }
 
   Future<void> _fetch({bool forceRefresh = false}) async {
@@ -427,12 +558,19 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
     final revisionCount = _applications
         .where((a) => a['status'] == 'revision_requested')
         .length;
+    final totalRevisions = revisionCount + _foundationalRejected;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AppLayout(
       title: 'Compliance',
       scrollable: false,
       child: RefreshIndicator(
-        onRefresh: () => _fetch(forceRefresh: true),
+        onRefresh: () async {
+          await Future.wait([
+            _fetch(forceRefresh: true),
+            _fetchFoundational(forceRefresh: true),
+          ]);
+        },
         color: _kPrimary,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -455,7 +593,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                         constraints: const BoxConstraints(maxWidth: 520),
                         child: const PageIntro(
                           'Compliance',
-                          subtitle: 'Your licence and renewal applications, and the documents each one needs.',
+                          subtitle: 'Your foundational accreditation documents and statutory applications.',
                         ),
                       ),
                       if (_applications.isNotEmpty)
@@ -469,15 +607,31 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                   const SizedBox(height: CubagSpace.lg),
 
                   // ── Revision Alert ──────────────────────────────────────
-                  if (revisionCount > 0) ...[
+                  if (totalRevisions > 0) ...[
                     _AlertBanner(
                       icon: Icons.edit_note_rounded,
                       message:
-                          '$revisionCount application${revisionCount > 1 ? 's require' : ' requires'} your attention. Please review admin notes and resubmit.',
+                          '$totalRevisions item${totalRevisions > 1 ? 's require' : ' requires'} your attention. Please review admin notes and resubmit.',
                       color: _kAmber,
                     ),
                     const SizedBox(height: 16),
                   ],
+
+                  // ── Foundational Accreditation Documents (1 Single Expandable Item) ──
+                  _buildFoundationalCard(isDark),
+                  const SizedBox(height: CubagSpace.xl),
+
+                  // ── Section Title: Statutory Applications & Filings ──
+                  Text(
+                    'Statutory Applications & Filings',
+                    style: CubagType.headline.copyWith(fontSize: 16.5),
+                  ),
+                  const SizedBox(height: CubagSpace.xxs),
+                  Text(
+                    'Annual renewals, customs licenses, and member ID applications.',
+                    style: CubagType.small.copyWith(fontSize: 13, color: CubagColors.muted),
+                  ),
+                  const SizedBox(height: CubagSpace.md),
 
                   if (_applications.isNotEmpty && !_loading) ...[
                     // Filter chips (same pattern as Payment history)
@@ -613,6 +767,400 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFoundationalCard(bool isDark) {
+    if (_loadingFoundational && _foundationalDocs.isEmpty) {
+      return const SkeletonLoader(
+        width: double.infinity,
+        height: 76,
+        borderRadius: 14,
+      );
+    }
+
+    final isAllApproved = _foundationalTotal > 0 && _foundationalApproved == _foundationalTotal;
+    final hasRejected = _foundationalRejected > 0;
+    final hasUnderReview = _foundationalUnderReview > 0;
+
+    final StatusKind overallKind;
+    final String overallLabel;
+    final Color iconColor;
+    final Color iconBg;
+
+    if (_foundationalTotal == 0) {
+      overallKind = StatusKind.neutral;
+      overallLabel = 'No requirements';
+      iconColor = CubagColors.muted;
+      iconBg = CubagColors.sand;
+    } else if (isAllApproved) {
+      overallKind = StatusKind.good;
+      overallLabel = 'All $_foundationalTotal Verified & Approved';
+      iconColor = CubagColors.valid;
+      iconBg = CubagColors.validTint;
+    } else if (hasRejected) {
+      overallKind = StatusKind.bad;
+      overallLabel = '$_foundationalRejected Revision Required';
+      iconColor = CubagColors.lapsed;
+      iconBg = CubagColors.lapsedTint;
+    } else if (hasUnderReview) {
+      overallKind = StatusKind.pending;
+      overallLabel = '$_foundationalUnderReview in Review';
+      iconColor = CubagColors.due;
+      iconBg = CubagColors.dueTint;
+    } else {
+      overallKind = StatusKind.neutral;
+      overallLabel = '$_foundationalUploaded of $_foundationalTotal Uploaded';
+      iconColor = CubagColors.inkSoft;
+      iconBg = CubagColors.sand;
+    }
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: CubagColors.paper,
+        borderRadius: BorderRadius.circular(CubagRadius.card),
+        border: Border.all(
+          color: hasRejected ? CubagColors.lapsed.withAlpha(90) : CubagColors.line,
+          width: hasRejected ? 1.4 : 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isDark ? 30 : 6),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                setState(() => _foundationalExpanded = !_foundationalExpanded);
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(CubagSpace.md),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: iconBg,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        isAllApproved
+                            ? Icons.verified_user_rounded
+                            : (hasRejected ? Icons.warning_amber_rounded : Icons.folder_shared_outlined),
+                        color: iconColor,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: CubagSpace.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Foundational Accreditation Documents',
+                            style: CubagType.bodyStrong.copyWith(fontSize: 15.5),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            _foundationalTotal > 0
+                                ? '$_foundationalTotal onboarding records · Tap to ${_foundationalExpanded ? 'collapse' : 'view breakdown'}'
+                                : 'Tap to inspect documents',
+                            style: CubagType.small.copyWith(
+                              fontSize: 12.5,
+                              color: CubagColors.muted,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          StatusChip(overallLabel, kind: overallKind),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: CubagSpace.xs),
+                    AnimatedRotation(
+                      turns: _foundationalExpanded ? 0.5 : 0.0,
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeInOut,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: CubagColors.sand,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 20,
+                          color: CubagColors.ink,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (_foundationalExpanded) ...[
+            const Divider(height: 1, color: CubagColors.line),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: CubagSpace.md, vertical: 12),
+              color: CubagColors.sand.withAlpha(120),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, size: 16, color: CubagColors.muted),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'These permanent corporate documents were filed during registration. Preview existing files or replace any document if expired or flagged for correction.',
+                      style: CubagType.caption.copyWith(color: CubagColors.inkSoft),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1, color: CubagColors.line),
+            if (_foundationalDocs.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: Text(
+                    'No foundational documents found.',
+                    style: CubagType.small,
+                  ),
+                ),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _foundationalDocs.length,
+                separatorBuilder: (_, _) => const Divider(height: 1, indent: 64, color: CubagColors.line),
+                itemBuilder: (ctx, index) {
+                  final doc = _foundationalDocs[index] is Map ? _foundationalDocs[index] as Map<String, dynamic> : <String, dynamic>{};
+                  return _buildFoundationalDocItem(doc, isDark);
+                },
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFoundationalDocItem(Map<String, dynamic> doc, bool isDark) {
+    final key = doc['key']?.toString() ?? '';
+    final label = doc['label']?.toString() ?? 'Document';
+    final desc = doc['description']?.toString() ?? '';
+    final isUploaded = doc['uploaded'] == true;
+    final fileUrl = doc['file_url']?.toString();
+    final isUploading = _uploadingDocKey == key;
+    final rawStatus = (doc['status']?.toString() ?? '').toLowerCase().trim();
+    final docStatus = rawStatus.isNotEmpty ? rawStatus : (isUploaded ? 'pending' : 'not_uploaded');
+    final isApproved = docStatus == 'approved' || docStatus == 'verified';
+    final isRejected = docStatus == 'rejected';
+    final isUnderReview = isUploaded && !isApproved && !isRejected;
+    final adminNote = doc['admin_note']?.toString();
+    final uploadedAt = doc['uploaded_at']?.toString();
+
+    final StatusKind kind;
+    final String statusText;
+    final IconData statusIcon;
+    final Color iconFg;
+    final Color iconBg;
+
+    if (isRejected) {
+      kind = StatusKind.bad;
+      statusText = 'Revision Required';
+      statusIcon = Icons.error_outline_rounded;
+      iconFg = CubagColors.lapsed;
+      iconBg = CubagColors.lapsedTint;
+    } else if (isApproved) {
+      kind = StatusKind.good;
+      statusText = 'Verified & Approved';
+      statusIcon = Icons.verified_rounded;
+      iconFg = CubagColors.valid;
+      iconBg = CubagColors.validTint;
+    } else if (isUnderReview) {
+      kind = StatusKind.pending;
+      statusText = 'Under Review';
+      statusIcon = Icons.hourglass_top_rounded;
+      iconFg = CubagColors.due;
+      iconBg = CubagColors.dueTint;
+    } else {
+      kind = StatusKind.neutral;
+      statusText = 'Not Uploaded';
+      statusIcon = Icons.upload_file_rounded;
+      iconFg = CubagColors.muted;
+      iconBg = CubagColors.sand;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: CubagSpace.md, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(statusIcon, color: iconFg, size: 20),
+              ),
+              const SizedBox(width: CubagSpace.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: CubagType.bodyStrong.copyWith(fontSize: 14.5),
+                    ),
+                    if (desc.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        desc,
+                        style: CubagType.small.copyWith(
+                          fontSize: 12,
+                          color: CubagColors.muted,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        StatusChip(statusText, kind: kind),
+                        if (uploadedAt != null && uploadedAt.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            _fmtDate(uploadedAt),
+                            style: CubagType.caption.copyWith(color: CubagColors.muted),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Admin note alert if revision requested
+          if (isRejected && adminNote != null && adminNote.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: CubagColors.lapsedTint,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: CubagColors.lapsed.withAlpha(60)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline_rounded, size: 16, color: CubagColors.lapsed),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Secretariat Note: $adminNote',
+                      style: CubagType.caption.copyWith(
+                        color: CubagColors.lapsed,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 12),
+          // Action buttons: Preview + Replace/Upload
+          Row(
+            children: [
+              if (isUploaded && fileUrl != null && fileUrl.isNotEmpty) ...[
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: CubagColors.ink,
+                    side: const BorderSide(color: CubagColors.lineStrong),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    minimumSize: const Size(0, 36),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () {
+                    InAppDocumentViewer.show(
+                      context,
+                      url: fileUrl,
+                      title: label,
+                      subtitle: 'Foundational Accreditation Document',
+                    );
+                  },
+                  icon: const Icon(Icons.visibility_outlined, size: 16),
+                  label: const Text('Preview', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                ),
+                const SizedBox(width: 10),
+              ],
+              if (isUploading)
+                Container(
+                  height: 36,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: CubagColors.sand,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: CubagColors.line),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: _kPrimary),
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Uploading...',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: isRejected ? CubagColors.lapsed : CubagColors.action,
+                    side: BorderSide(
+                      color: isRejected ? CubagColors.lapsed.withAlpha(120) : CubagColors.action.withAlpha(120),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    minimumSize: const Size(0, 36),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () => _replaceFoundationalDoc(doc),
+                  icon: Icon(isUploaded ? Icons.sync_rounded : Icons.upload_file_rounded, size: 16),
+                  label: Text(
+                    isUploaded ? 'Replace' : 'Upload',
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
