@@ -212,13 +212,19 @@ class _TasksPageState extends State<TasksPage> {
 
     return AppLayout(
       title: 'Tasks',
+      scrollable: false,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 880),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                20,
+                16,
+                100 + MediaQuery.of(context).padding.bottom,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

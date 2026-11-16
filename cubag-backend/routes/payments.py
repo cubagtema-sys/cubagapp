@@ -263,13 +263,24 @@ def public_initiate_momo():
 
         prompt_sent = False
         if WHITSUNPAY_CLIENT_ID and WHITSUNPAY_API_KEY:
+            clean_desc = course_name or service_type or 'CTI Course'
+            if not clean_desc.lower().startswith('cubag'):
+                clean_desc = f"CUBAG - {clean_desc}"
+            if len(clean_desc) > 60:
+                clean_desc = clean_desc[:57] + '...'
+
             payload = {
                 'transactionReference': tx_ref,
-                'description': _guest_narration(service_type, amount, tx_ref, course_name),
+                'description': clean_desc,
                 'amount': round(amount, 2),
                 'debitParty': {
                     'msisdn': clean_phone,
                     'provider': provider
+                },
+                'metadata': {
+                    'narration': _guest_narration(service_type, amount, tx_ref, course_name),
+                    'service_type': service_type,
+                    'course_name': course_name
                 }
             }
             try:
@@ -780,24 +791,32 @@ def create_payment():
 
             if WHITSUNPAY_CLIENT_ID and WHITSUNPAY_API_KEY:
                 from config.payment_codes import narration as _narration
+                user_prompt_desc = description.strip() if description else 'Payment'
+                if not user_prompt_desc.lower().startswith('cubag'):
+                    user_prompt_desc = f"CUBAG - {user_prompt_desc}"
+                if len(user_prompt_desc) > 60:
+                    user_prompt_desc = user_prompt_desc[:57] + '...'
+
+                code_narration = _narration(payment_codes, tx_ref, description) if payment_codes else description
+
                 payload = {
                     'transactionReference': tx_ref,
-                    # Codes and amounts first: WhitsunPay settles each part by its code.
-                    'description': _narration(payment_codes, tx_ref, description) if payment_codes else description,
+                    'description': user_prompt_desc,
                     'amount': round(float(amount), 2),
                     'debitParty': {
                         'msisdn': clean_phone,
                         'provider': provider
+                    },
+                    'metadata': {
+                        'payment_codes': payment_codes,
+                        'settlement_distribution': settlement_dist or [],
+                        'member_id': member_id,
+                        'purpose': description,
+                        'narration': code_narration,
                     }
                 }
                 if settlement_dist:
                     payload['settlementBreakdown'] = settlement_dist
-                    payload['metadata'] = {
-                        'payment_codes': payment_codes,
-                        'settlement_distribution': settlement_dist,
-                        'member_id': member_id,
-                        'purpose': description
-                    }
 
                 # ── Fire WhitsunPay in a background thread so the API returns
                 # immediately (< 1s). WhitsunPay currently takes 60-70s to respond
