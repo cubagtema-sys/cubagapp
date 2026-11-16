@@ -156,6 +156,8 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
     final label = req['label']?.toString() ?? '';
     final alreadyUploaded = req['uploaded'] == true;
     if (key.isEmpty) return;
+    final docStatus = (req['status']?.toString() ?? '').toLowerCase().trim();
+    if (docStatus == 'approved' || docStatus == 'verified') return;
     setState(() => _uploading[key] = true);
     try {
       // Pick file
@@ -359,7 +361,7 @@ class _ApplicationDocumentsPageState extends State<ApplicationDocumentsPage> wit
       'pending' => ('Under review', StatusKind.pending),
       _ => (uploaded ? 'Under review' : 'Not uploaded', uploaded ? StatusKind.pending : StatusKind.neutral),
     };
-    final canUpload = status != 'approved';
+    final canUpload = status != 'approved' && status != 'verified';
 
     return Padding(
       padding: const EdgeInsets.all(CubagSpace.md),

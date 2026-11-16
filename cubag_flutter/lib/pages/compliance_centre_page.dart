@@ -235,6 +235,14 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
     final label = doc['label']?.toString() ?? 'Document';
     if (key.isEmpty) return;
 
+    final rawStatus = (doc['status']?.toString() ?? '').toLowerCase().trim();
+    if (rawStatus == 'approved' || rawStatus == 'verified') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Verified and approved documents cannot be replaced.')),
+      );
+      return;
+    }
+
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
@@ -922,7 +930,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'These permanent corporate documents were filed during registration. Preview existing files or replace any document if expired or flagged for correction.',
+                      'These permanent corporate documents were filed during registration. Once verified and approved by the Secretariat, documents are locked and preserved. You can preview your files anytime.',
                       style: CubagType.caption.copyWith(color: CubagColors.inkSoft),
                     ),
                   ),
@@ -1140,7 +1148,7 @@ class _ComplianceCentrePageState extends State<ComplianceCentrePage> {
                     ],
                   ),
                 )
-              else
+              else if (!isApproved)
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: isRejected ? CubagColors.lapsed : CubagColors.action,
