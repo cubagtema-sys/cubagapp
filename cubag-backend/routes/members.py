@@ -606,23 +606,52 @@ def submit_renewal():
 @members_bp.route('/license-history', methods=['GET'])
 @jwt_required()
 def get_license_history():
+    import datetime
     member_id = get_jwt_identity()
     conn = get_db()
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
                 SELECT id, name, email, company, license_number, member_type,
-                       port_of_operation, status, payment_ref, created_at
+                       port_of_operation, status, payment_ref, created_at,
+                       package_fee_paid, license_expiry_date
                 FROM members WHERE id = %s
             """, (member_id,))
             member = cursor.fetchone()
             if not member:
                 return jsonify({'message': 'Member not found'}), 404
 
-            # BUG-09: no licence-number assignment on a read (see get_member).
+            # Check if subscription/renewal dues or package fee have been settled
+            cursor.execute("""
+                SELECT COUNT(*) as cnt FROM payments
+                WHERE member_id = %s
+                  AND LOWER(status) IN ('paid', 'completed', 'success', 'successful')
+                  AND (
+                      LOWER(description) LIKE '%%renewal%%'
+                      OR LOWER(description) LIKE '%%annual dues%%'
+                      OR LOWER(description) LIKE '%%license renewal%%'
+                      OR LOWER(description) LIKE '%%package%%'
+                      OR LOWER(description) LIKE '%%subscription%%'
+                      OR fee_key IN ('renewal', 'package', 'subscription')
+                  )
+            """, (member_id,))
+            p_row = cursor.fetchone()
+            has_dues_payment = (p_row['cnt'] > 0) if p_row else False
+            today = datetime.date.today()
+            expiry = member.get('license_expiry_date')
+            has_valid_expiry = bool(expiry and expiry >= today)
 
-        # Always build a history entry from the member's current record.
-        # A record is considered "submitted" if payment_ref is set OR status is active/pending.
+            dues_settled = bool(
+                member.get('package_fee_paid') or
+                has_dues_payment or
+                has_valid_expiry
+            )
+
+        member_dict = dict(member)
+        member_dict['dues_settled'] = dues_settled
+        member_dict['has_active_license'] = bool(member['status'] == 'active' and dues_settled)
+
+        # Build history entry from member's current record
         history = []
         has_activity = (
             member.get('payment_ref') or
@@ -633,17 +662,18 @@ def get_license_history():
                 'id': member['id'],
                 'payment_ref': member.get('payment_ref') or 'N/A',
                 'status': member['status'],
-                'license_number': member.get('license_number'),
+                'license_number': member.get('license_number') if dues_settled else None,
                 'member_type': member.get('member_type'),
                 'company': member.get('company'),
                 'name': member.get('name'),
                 'email': member.get('email'),
                 'port_of_operation': member.get('port_of_operation'),
                 'submitted_at': str(member['created_at']) if member.get('created_at') else '',
-                'approved': member['status'] == 'active',
+                'dues_settled': dues_settled,
+                'approved': bool(member['status'] == 'active' and dues_settled),
             })
 
-        return jsonify({'member': member, 'history': history}), 200
+        return jsonify({'member': member_dict, 'history': history}), 200
     except Exception as e:
         return jsonify({'message': str(e)}), 500
     finally:

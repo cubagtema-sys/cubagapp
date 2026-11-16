@@ -138,14 +138,20 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
   // ── License Status Timeline ──
   Widget _buildStatusTimeline(Color primary, Map<String, dynamic> user) {
     final status = user['status']?.toString() ?? 'pending';
-    final paid = status != 'pending';
-    final verify = status == 'pending'
+    final isDuesSettled = user['dues_settled'] == true ||
+        user['has_active_license'] == true ||
+        user['package_fee_paid'] == true ||
+        user['is_renewal_paid'] == true ||
+        user['renewal_paid'] == true;
+    final isActive = status == 'active' && isDuesSettled;
+    final paid = isDuesSettled;
+    final verify = !isDuesSettled
         ? _StepState.pending
         : status == 'suspended'
             ? _StepState.error
             : _StepState.done;
     final steps = [
-      _TimelineStep('Application', 'Submitted', _StepState.done),
+      _TimelineStep('Application', 'Submitted & Vetted', _StepState.done),
       _TimelineStep('Payment', paid ? 'Paid' : 'Waiting for payment',
           paid ? _StepState.done : _StepState.active),
       _TimelineStep(
@@ -153,17 +159,17 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
         switch (verify) {
           _StepState.done => 'Approved',
           _StepState.error => 'Suspended',
-          _ => 'Not started',
+          _ => 'Pending dues',
         },
         verify,
       ),
-      _TimelineStep('Licence', status == 'active' ? 'Issued' : 'Not yet issued',
-          status == 'active' ? _StepState.done : _StepState.pending),
+      _TimelineStep('Licence', isActive ? 'Issued' : 'Pending settlement',
+          isActive ? _StepState.done : _StepState.pending),
     ];
     final (chipLabel, chipKind) = switch (status) {
-      'active' => ('Active', StatusKind.good),
+      'active' when isDuesSettled => ('Active', StatusKind.good),
       'suspended' => ('Suspended', StatusKind.bad),
-      _ => ('In progress', StatusKind.pending),
+      _ => ('Pending Dues Settlement', StatusKind.pending),
     };
 
     return Container(
@@ -523,14 +529,21 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
   }
 
   Widget _buildRecordCard(Map<String, dynamic> rec, Color primary, int yr) {
-    final approved = rec['approved'] == true;
+    final isDuesSettled = rec['dues_settled'] == true ||
+        _memberInfo?['dues_settled'] == true ||
+        _memberInfo?['has_active_license'] == true ||
+        _memberInfo?['package_fee_paid'] == true ||
+        _memberInfo?['is_renewal_paid'] == true ||
+        _memberInfo?['renewal_paid'] == true;
+    final approved = (rec['approved'] == true) && isDuesSettled;
     final suspended = rec['status'] == 'suspended';
     final (statusLabel, statusFg, statusBg) = approved
         ? ('Active', CubagColors.valid, CubagColors.validTint)
         : suspended
             ? ('Suspended', CubagColors.lapsed, CubagColors.lapsedTint)
-            : ('Waiting for approval', CubagColors.due, CubagColors.dueTint);
-    final licenceNo = rec['license_number']?.toString();
+            : ('Pending Dues Settlement', CubagColors.due, CubagColors.dueTint);
+    final rawLicenceNo = rec['license_number']?.toString();
+    final licenceNo = isDuesSettled ? rawLicenceNo : 'PENDING DUES SETTLEMENT';
     final expiry = DateTime.tryParse((_memberInfo?['license_expiry_date'] ?? '').toString());
     final expiryStr = expiry == null ? null : '${expiry.day} ${_monthName(expiry.month)} ${expiry.year}';
 
@@ -638,17 +651,30 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
               );
             })
           else if (!suspended)
-            Row(
-              children: [
-                const Icon(Icons.schedule_rounded, size: 16, color: CubagColors.due),
-                const SizedBox(width: CubagSpace.xs),
-                Expanded(
-                  child: Text(
-                    'CUBAG is reviewing your licence. We will notify you when it is approved.',
-                    style: CubagType.small,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: CubagColors.actionTint,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: CubagColors.lineStrong),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, size: 18, color: CubagColors.action),
+                  const SizedBox(width: CubagSpace.sm),
+                  Expanded(
+                    child: Text(
+                      'Annual dues settlement is required to activate and issue your licence certificate.',
+                      style: CubagType.small.copyWith(fontWeight: FontWeight.w600),
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: CubagSpace.xs),
+                  TextButton(
+                    onPressed: () => context.go('/payments?fee=Annual%20Dues'),
+                    child: const Text('Pay Dues'),
+                  ),
+                ],
+              ),
             ),
         ],
       ),
