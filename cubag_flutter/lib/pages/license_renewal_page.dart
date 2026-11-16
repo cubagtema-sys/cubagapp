@@ -184,7 +184,7 @@ class _LicenseRenewalPageState extends State<LicenseRenewalPage> {
         children: [
           Row(
             children: [
-              Expanded(child: Text("This year's renewal", style: CubagType.headline)),
+              Expanded(child: Text("Licence & Membership Status", style: CubagType.headline)),
               if (chipLabel != 'Pending Dues Settlement')
                 StatusChip(chipLabel, kind: chipKind),
             ],

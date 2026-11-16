@@ -95675,7 +95675,7 @@ break B}l=j.a
 i=A.m(14)
 p=A.X(B.U,1)
 o=t.p
-n=A.a([A.M(A.c("This year's renewal",k,k,k,k,B.cw,k,k,k),1)],o)
+n=A.a([A.M(A.c("Licence & Membership Status",k,k,k,k,B.cw,k,k,k),1)],o)
 if(l!=="Pending Dues Settlement")n.push(new A.dD(l,j.b,k))
 return A.o(k,A.x(A.a([A.C(n,B.t,B.i,B.j,0,k),B.ac,A.fc(new A.byR(this,m))],o),B.A,k,B.i,B.j,0,B.u),B.r,k,k,new A.w(B.v,k,p,i,k,k,B.x),k,k,k,k,B.au,k,k,k)},
 b8g(a,b){var s,r,q,p=null,o=a.c
