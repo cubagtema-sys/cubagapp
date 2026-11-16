@@ -1106,6 +1106,45 @@ def init_db():
             if cursor.fetchone()['count'] == 0:
                 cursor.execute("INSERT INTO compliance_settings DEFAULT VALUES")
 
+            # Grievances (public complaint tracking) and CTI course enrollments.
+            # Both are used by routes/jobs but had no DDL here, so a fresh
+            # database started without them (DB-01).
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS complaints (
+                    id SERIAL PRIMARY KEY,
+                    complaint_id VARCHAR(40) UNIQUE NOT NULL,
+                    name VARCHAR(150),
+                    email VARCHAR(150),
+                    phone VARCHAR(30),
+                    category VARCHAR(100),
+                    port VARCHAR(100),
+                    target_entity VARCHAR(255),
+                    subject VARCHAR(255),
+                    description TEXT,
+                    status VARCHAR(40) DEFAULT 'Received',
+                    priority VARCHAR(20),
+                    assigned_to VARCHAR(150),
+                    resolution_notes TEXT,
+                    tracking_secret VARCHAR(255),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS cti_course_enrollments (
+                    id SERIAL PRIMARY KEY,
+                    course_id INT NOT NULL REFERENCES cti_courses(id) ON DELETE CASCADE,
+                    member_id INT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+                    status VARCHAR(30) DEFAULT 'enrolled',
+                    payment_method VARCHAR(30),
+                    payment_ref VARCHAR(100),
+                    amount DECIMAL(10,2),
+                    payment_confirmed_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE (course_id, member_id)
+                )
+            """)
+
             # ── Performance Indexes ──────────────────────────────────────────
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_members_status ON members(status)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_members_role ON members(role)")
@@ -1162,6 +1201,10 @@ def init_db():
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_sub_admin_permissions_sub_admin ON sub_admin_permissions(sub_admin_id, permission_key)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_target_type ON audit_log(target_type)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_audit_log_admin_id ON audit_log(admin_id)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_complaints_created_at ON complaints(created_at DESC)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_complaints_status ON complaints(status)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_cti_enrollments_member ON cti_course_enrollments(member_id)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_cti_enrollments_course ON cti_course_enrollments(course_id, status)")
 
             # GDPR compliance tables
             cursor.execute("""
