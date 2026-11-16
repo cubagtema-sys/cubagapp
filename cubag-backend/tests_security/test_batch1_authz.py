@@ -317,3 +317,53 @@ def test_compliance_my_applications_returns_list_for_member(client, auth, db):
     assert r.status_code == 200
     assert 'applications' in r.get_json()
 
+
+# ── Registration tests (Districts validation & list parsing) ─────────────────
+
+def test_register_requires_district(client):
+    payload = {
+        'name': 'Test User',
+        'email': 'newuser@example.com',
+        'phone': '0244123456',
+        'company': 'Logistics Ltd',
+        'location': 'Tema Community 1',
+        'digitalAddress': 'GA-183-9023',
+        'tin': 'C0012345678',
+        'memberType': 'Corporate',
+        'password': 'Password123!',
+        'otp': '123456',
+    }
+    r = client.post(f'{API}/auth/register', json=payload)
+    assert r.status_code == 400
+    assert 'district' in r.get_json()['message'].lower()
+
+
+def test_register_with_districts_list_succeeds(client, db):
+    db.on(r"FROM otp_codes\s+WHERE LOWER\(email\)", [{'id': 1, 'code': '123456'}])
+    db.on(r"FROM members WHERE LOWER\(email\)", [])
+    db.on(r"INSERT INTO members", [{'id': 88}])
+    db.on(r"INSERT INTO member_districts", [])
+    db.on(r"DELETE FROM otp_codes", [])
+
+    payload = {
+        'name': 'Test User',
+        'email': 'newuser@example.com',
+        'phone': '0244123456',
+        'company': 'Logistics Ltd',
+        'location': 'Tema Community 1',
+        'digitalAddress': 'GA-183-9023',
+        'tin': 'C0012345678',
+        'memberType': 'Corporate',
+        'password': 'Password123!',
+        'otp': '123456',
+        'districts': ['Tema Port', 'Takoradi Port'],
+        'portOfOperation': 'Tema Port, Takoradi Port',
+    }
+    r = client.post(f'{API}/auth/register', json=payload)
+    assert r.status_code == 201
+    data = r.get_json()
+    assert 'token' in data
+    assert data['user']['id'] == 88
+    assert data['user']['portOfOperation'] == 'Tema Port, Takoradi Port'
+
+

@@ -38,10 +38,10 @@ class _RegisterPageState extends State<RegisterPage> {
   final _pwCtrl = TextEditingController();
   final _cpwCtrl = TextEditingController();
 
-  List<String> _selectedDistricts = ['Tema Port'];
+  final List<String> _selectedDistricts = [];
 
   final Map<String, String?> _form = {
-    'portOfOperation': 'Tema Port',
+    'portOfOperation': null,
     'memberType': 'Corporate',
     'companyScale': null,
     'feeCategory': null,
@@ -59,10 +59,6 @@ class _RegisterPageState extends State<RegisterPage> {
       if (mounted && res is List && res.isNotEmpty) {
         setState(() {
           _portsList = res;
-          if (_selectedDistricts.isEmpty) {
-            _selectedDistricts = [res.first['name'].toString()];
-          }
-          _form['portOfOperation'] = _selectedDistricts.join(', ');
         });
       }
     } catch (_) {}
@@ -168,7 +164,7 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     if (_selectedDistricts.isEmpty) {
-      _err('Choose at least one district.');
+      _err('Please select at least one district you operate in to proceed.');
       return;
     }
 
@@ -575,14 +571,29 @@ class _RegisterPageState extends State<RegisterPage> {
                     : (on) => setState(() {
                           if (on) {
                             if (!_selectedDistricts.contains(d)) _selectedDistricts.add(d);
-                          } else if (_selectedDistricts.length > 1) {
+                          } else {
                             _selectedDistricts.remove(d);
                           }
-                          _form['portOfOperation'] = _selectedDistricts.join(', ');
+                          _form['portOfOperation'] = _selectedDistricts.isEmpty
+                              ? null
+                              : _selectedDistricts.join(', ');
+                          if (_selectedDistricts.isNotEmpty && _error.contains('district')) {
+                            _error = '';
+                          }
                         }),
               ),
           ],
         ),
+        if (_selectedDistricts.isEmpty) ...[
+          const SizedBox(height: CubagSpace.xs),
+          Text(
+            'Required: Please select at least one district to proceed.',
+            style: CubagType.small.copyWith(
+              color: CubagColors.lapsed,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
         const SizedBox(height: CubagSpace.xl),
         _primary('Send verification code', _step2Next),
       ],

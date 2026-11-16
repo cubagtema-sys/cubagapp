@@ -361,10 +361,12 @@ def resend_otp():
 def register():
     data = request.get_json() or {}
     # licenseNumber and agencyCode are now OPTIONAL
-    required = ['name', 'email', 'phone', 'company', 'location', 'digitalAddress', 'tin', 'memberType', 'portOfOperation', 'password']
+    required = ['name', 'email', 'phone', 'company', 'location', 'digitalAddress', 'tin', 'memberType', 'password']
     for field in required:
         if not data.get(field):
             return jsonify({'message': f'{field} is required'}), 400
+    if not data.get('portOfOperation') and not data.get('districts'):
+        return jsonify({'message': 'Please select at least one operating district.'}), 400
 
     conn = get_db()
     try:
@@ -404,13 +406,16 @@ def register():
             fee_category = (data.get('feeCategory') or data.get('fee_category') or 'cf_only')
             consolidation_scope = ('with_consolidation' if fee_category in ('consolidation', 'cf_consolidation') else 'without_consolidation')
             tin = (data.get('tin') or '').strip().upper()[:11]
-            raw_ports = data.get('districts') or data.get('portOfOperation') or 'Tema Port'
+            raw_ports = data.get('districts') or data.get('portOfOperation') or []
             if isinstance(raw_ports, list):
-                port_of_op = ", ".join(str(p).strip() for p in raw_ports if str(p).strip())
+                ports_list = [str(p).strip() for p in raw_ports if str(p).strip()]
+                port_of_op = ", ".join(ports_list)
             else:
                 port_of_op = str(raw_ports).strip()
-            if not port_of_op:
-                port_of_op = 'Tema Port'
+                ports_list = [p.strip() for p in port_of_op.split(',') if p.strip()]
+
+            if not port_of_op or not ports_list:
+                return jsonify({'message': 'Please select at least one operating district.'}), 400
 
             cursor.execute("""
                 INSERT INTO members (name, email, phone, company, license_number, agency_code,
@@ -428,7 +433,6 @@ def register():
             new_id = cursor.fetchone()['id']
 
             # Insert registered districts into 1-to-many member_districts junction table
-            ports_list = [p.strip() for p in raw_ports.split(',') if p.strip()]
             for p_name in ports_list:
                 try:
                     cursor.execute("""
