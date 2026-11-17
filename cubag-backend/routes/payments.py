@@ -2651,8 +2651,8 @@ def admin_issue_bill():
 
             # Insert in-app notification
             cursor.execute("""
-                INSERT INTO notifications (member_id, title, message, type, created_at)
-                VALUES (%s, %s, %s, 'payment', NOW())
+                INSERT INTO notifications (member_id, title, body, category, notification_type, created_at)
+                VALUES (%s, %s, %s, 'payment', 'bill_issued', NOW())
             """, (member_id, f"🧾 New Bill Issued: {title}", f"An official bill of GH₵ {total_amount:,.2f} has been issued. Due: {due_date.isoformat()}."))
 
             conn.commit()

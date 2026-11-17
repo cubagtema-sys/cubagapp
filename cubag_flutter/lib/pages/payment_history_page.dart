@@ -1141,27 +1141,33 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                   borderRadius: BorderRadius.circular(CubagRadius.card),
                   border: Border.all(color: CubagColors.line),
                 ),
-                child: IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _summaryFigure('Paid', 'GH₵ ${_fmt(paidTotal)}', CubagColors.ink),
-                      const VerticalDivider(width: 1, color: CubagColors.line),
-                      _summaryFigure(
-                        'Waiting for approval',
-                        'GH₵ ${_fmt(pendingTotal)}',
-                        pendingTotal > 0 ? CubagColors.due : CubagColors.ink,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isNarrow = constraints.maxWidth < 440;
+                    return IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _summaryFigure('Paid', 'GH₵ ${_fmt(paidTotal)}', CubagColors.ink, isNarrow: isNarrow),
+                          const VerticalDivider(width: 1, color: CubagColors.line),
+                          _summaryFigure(
+                            isNarrow ? 'Waiting approval' : 'Waiting for approval',
+                            'GH₵ ${_fmt(pendingTotal)}',
+                            pendingTotal > 0 ? CubagColors.due : CubagColors.ink,
+                            isNarrow: isNarrow,
+                          ),
+                          if (failedTotal > 0) ...[
+                            const VerticalDivider(width: 1, color: CubagColors.line),
+                            _summaryFigure('Failed', 'GH₵ ${_fmt(failedTotal)}', CubagColors.lapsed, isNarrow: isNarrow),
+                          ],
+                          if (isTablet || isDesktop) ...[
+                            const VerticalDivider(width: 1, color: CubagColors.line),
+                            _summaryFigure('Payments', '$totalCount', CubagColors.ink, isNarrow: false),
+                          ],
+                        ],
                       ),
-                      if (failedTotal > 0) ...[
-                        const VerticalDivider(width: 1, color: CubagColors.line),
-                        _summaryFigure('Failed', 'GH₵ ${_fmt(failedTotal)}', CubagColors.lapsed),
-                      ],
-                      if (isTablet || isDesktop) ...[
-                        const VerticalDivider(width: 1, color: CubagColors.line),
-                        _summaryFigure('Payments', '$totalCount', CubagColors.ink),
-                      ],
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
 
@@ -1386,13 +1392,13 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     return InkWell(
       onTap: () => _showReceiptDialog(context, pay),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(CubagSpace.md, 14, CubagSpace.md, 14),
+        padding: const EdgeInsets.symmetric(horizontal: CubagSpace.md, vertical: 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
               child: Icon(icon, size: 18, color: fg),
             ),
@@ -1401,53 +1407,106 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(desc, style: CubagType.bodyStrong, maxLines: 2, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 2),
-                  Text(
-                    _formatDateTime(pay['created_at']),
-                    style: CubagType.small.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-                  ),
-                  if (status != 'paid') ...[
-                    const SizedBox(height: 6),
-                    StatusChip(label, kind: kind),
-                  ],
-                  if (status == 'pending') ...[
-                    const SizedBox(height: CubagSpace.xs),
-                    SizedBox(
-                      height: 36,
-                      child: OutlinedButton(
-                        onPressed: checking ? null : () => _checkStatus(pay),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: CubagSpace.md),
-                          minimumSize: const Size(0, 36),
+                  // Top line: description and amount side-by-side using full width
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          desc,
+                          style: CubagType.bodyStrong,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        child: checking
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: CubagColors.action),
-                              )
-                            : const Text('Check status'),
+                      ),
+                      const SizedBox(width: CubagSpace.xs),
+                      Text(
+                        'GH₵ ${_fmt(amount)}',
+                        style: CubagType.figure,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // Second line: date and status badge across full width
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: CubagSpace.xs,
+                    runSpacing: 4,
+                    children: [
+                      Text(
+                        _formatDateTime(pay['created_at']),
+                        style: CubagType.small.copyWith(
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                      if (status != 'paid')
+                        StatusChip(label, kind: kind),
+                    ],
+                  ),
+                  // Action buttons for pending / waiting for approval
+                  if (status == 'pending') ...[
+                    const SizedBox(height: CubagSpace.xs + 2),
+                    Wrap(
+                      spacing: CubagSpace.xs,
+                      runSpacing: 4,
+                      children: [
+                        SizedBox(
+                          height: 32,
+                          child: OutlinedButton(
+                            onPressed: checking ? null : () => _checkStatus(pay),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: CubagSpace.sm + 2),
+                              minimumSize: const Size(0, 32),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: checking
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: CubagColors.action),
+                                  )
+                                : const Text('Check status', style: TextStyle(fontSize: 12)),
+                          ),
+                        ),
+                        SizedBox(
+                          height: 32,
+                          child: TextButton(
+                            onPressed: () => _showReceiptDialog(context, pay),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: CubagSpace.xs),
+                              minimumSize: const Size(0, 32),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text('View details', style: TextStyle(fontSize: 12, color: CubagColors.inkSoft)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  // Receipt action when paid
+                  if (status == 'paid') ...[
+                    const SizedBox(height: 2),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: InkWell(
+                        onTap: () => _downloadPdf(pay),
+                        borderRadius: BorderRadius.circular(4),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.file_download_outlined, size: 16, color: CubagColors.action),
+                              SizedBox(width: 4),
+                              Text('Receipt', style: TextStyle(fontSize: 11.5, color: CubagColors.action, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ],
               ),
-            ),
-            const SizedBox(width: CubagSpace.sm),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text('GH₵ ${_fmt(amount)}', style: CubagType.figure),
-                if (status == 'paid')
-                  IconButton(
-                    tooltip: 'Download PDF receipt',
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    onPressed: () => _downloadPdf(pay),
-                    icon: const Icon(Icons.file_download_outlined, size: 20, color: CubagColors.action),
-                  ),
-              ],
             ),
           ],
         ),
@@ -1551,19 +1610,37 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     );
   }
 
-  Widget _summaryFigure(String label, String value, Color color) {
+  Widget _summaryFigure(String label, String value, Color color, {bool isNarrow = false}) {
     return Expanded(
       child: Padding(
-        padding: const EdgeInsets.all(CubagSpace.md),
+        padding: EdgeInsets.symmetric(
+          horizontal: isNarrow ? CubagSpace.xs + 2 : CubagSpace.md,
+          vertical: CubagSpace.md,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(label, style: CubagType.small, maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(
+              label,
+              style: CubagType.small.copyWith(
+                fontSize: isNarrow ? 11 : 12,
+                height: 1.2,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
             const SizedBox(height: 4),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: Text(value, style: CubagType.title.copyWith(color: color)),
+              child: Text(
+                value,
+                style: CubagType.title.copyWith(
+                  color: color,
+                  fontSize: isNarrow ? 15.5 : 18,
+                ),
+              ),
             ),
           ],
         ),

@@ -3700,14 +3700,17 @@ class _PaymentsPageState extends State<PaymentsPage>
                       ? null
                       : () => setState(() => _step = 4),
                   icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                  label: Text(
-                    _momoNetwork.isNotEmpty
-                        ? 'Continue with ${_carrierName(_momoNetwork)}'
-                        : 'Select Carrier to Continue',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 17,
+                  label: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      _momoNetwork.isNotEmpty
+                          ? 'Continue with ${_carrierName(_momoNetwork)}'
+                          : 'Select Carrier to Continue',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -4016,12 +4019,15 @@ class _PaymentsPageState extends State<PaymentsPage>
                             strokeWidth: 2,
                           ),
                         )
-                      : Text(
-                          'Initiate Mobile Payment',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                      : const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'Initiate Mobile Payment',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
                 ),

@@ -1693,21 +1693,24 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
                 children: [
                   Text(
                     'Bank settlement share',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: textMuted,
                     ),
                   ),
                   Text(
-                    'Based on official payment codes',
+                    'Official payment codes',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: textMuted.withAlpha(180),
                     ),

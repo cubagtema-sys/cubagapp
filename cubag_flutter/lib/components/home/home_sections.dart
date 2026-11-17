@@ -144,7 +144,8 @@ class ShortcutGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, c) {
         const gap = CubagSpace.sm;
-        final w = (c.maxWidth - gap) / 2;
+        // Floor to double to guard against sub-pixel wrapping on Android devices
+        final w = ((c.maxWidth - gap) / 2).floorToDouble() - 0.1;
         return Wrap(
           spacing: gap,
           runSpacing: gap,

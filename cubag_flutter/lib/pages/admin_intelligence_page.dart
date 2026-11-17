@@ -1050,13 +1050,14 @@ class _State extends State<AdminIntelligencePage> {
             LayoutBuilder(
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth > 550;
+                final isNarrow = constraints.maxWidth < 420;
                 return GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   crossAxisCount: isWide ? 4 : 2,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
-                  childAspectRatio: isWide ? 2.1 : 2.2,
+                  childAspectRatio: isWide ? 2.1 : (isNarrow ? 1.75 : 1.95),
                   children: [
                     _buildCurrencyInput(
                       '\$',

@@ -1989,6 +1989,7 @@ class _IssueBillDialogState extends State<IssueBillDialog> {
                 const SizedBox(height: CubagSpace.xs),
                 DropdownButtonFormField<String>(
                   initialValue: _lineItems[i].paymentCode,
+                  isExpanded: true,
                   isDense: true,
                   decoration: const InputDecoration(
                     labelText: 'Settlement bank & payment code',
@@ -1996,7 +1997,11 @@ class _IssueBillDialogState extends State<IssueBillDialog> {
                   ),
                   items: _codeAccounts.map((ca) => DropdownMenuItem(
                     value: ca['code'],
-                    child: Text(ca['label']!, style: const TextStyle(fontSize: 12.5)),
+                    child: Text(
+                      ca['label']!,
+                      style: const TextStyle(fontSize: 12.5),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   )).toList(),
                   onChanged: (val) {
                     if (val != null) {

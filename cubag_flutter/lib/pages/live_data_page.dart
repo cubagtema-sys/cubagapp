@@ -150,7 +150,7 @@ class _LiveDataPageState extends State<LiveDataPage> {
         .toList();
 
     return AppLayout(
-      title: 'Insights',
+      title: 'Port insights',
       scrollable: false,
       child: Center(
         child: ConstrainedBox(
@@ -250,110 +250,120 @@ class _LiveDataPageState extends State<LiveDataPage> {
                                   ),
                                 ],
                                 const SizedBox(height: 14),
-                                if (_forexLoading)
-                                  GridView.count(
-                                    shrinkWrap: true,
-                                    physics: const NeverScrollableScrollPhysics(),
-                                    crossAxisCount: 2,
-                                    mainAxisSpacing: 10,
-                                    crossAxisSpacing: 10,
-                                    childAspectRatio: 2.4,
-                                    children: List.generate(
-                                      4,
-                                      (i) => const ShimmerListTile(),
-                                    ),
-                                  )
-                                else
-                                  GridView.count(
-                                    shrinkWrap: true,
-                                    physics: const NeverScrollableScrollPhysics(),
-                                    crossAxisCount: 2,
-                                    mainAxisSpacing: 10,
-                                    crossAxisSpacing: 10,
-                                    childAspectRatio: 2.4,
-                                    children: _forex.entries.map((e) {
-                                      final symbols = {
-                                        'USD': '\$',
-                                        'EUR': '€',
-                                        'GBP': '£',
-                                        'CNY': '¥',
-                                      };
-                                      final symbol = symbols[e.key] ?? '';
+                                LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final isNarrow = constraints.maxWidth < 460;
+                                    final crossCount = constraints.maxWidth > 700 ? 4 : 2;
+                                    // Use generous aspect ratio on mobile so content never clips or overflows
+                                    final ratio = isNarrow ? 1.85 : 2.4;
 
-                                      return Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 8,
-                                          horizontal: 12,
+                                    if (_forexLoading) {
+                                      return GridView.count(
+                                        shrinkWrap: true,
+                                        physics: const NeverScrollableScrollPhysics(),
+                                        crossAxisCount: crossCount,
+                                        mainAxisSpacing: 10,
+                                        crossAxisSpacing: 10,
+                                        childAspectRatio: ratio,
+                                        children: List.generate(
+                                          4,
+                                          (i) => const ShimmerListTile(),
                                         ),
-                                        decoration: BoxDecoration(
-                                          color: surfaceRaised,
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: border,
-                                            width: 1.0,
+                                      );
+                                    }
+
+                                    return GridView.count(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      crossAxisCount: crossCount,
+                                      mainAxisSpacing: 10,
+                                      crossAxisSpacing: 10,
+                                      childAspectRatio: ratio,
+                                      children: _forex.entries.map((e) {
+                                        final symbols = {
+                                          'USD': '\$',
+                                          'EUR': '€',
+                                          'GBP': '£',
+                                          'CNY': '¥',
+                                        };
+                                        final symbol = symbols[e.key] ?? '';
+
+                                        return Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 10,
                                           ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              width: 32,
-                                              height: 32,
-                                              decoration: BoxDecoration(
-                                                color: cardBg,
-                                                borderRadius: BorderRadius.circular(6),
-                                                border: Border.all(color: border, width: 1.0),
-                                              ),
-                                              child: Center(
-                                                child: Text(
-                                                  symbol,
-                                                  style: TextStyle(
-                                                    color: text,
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w700,
+                                          decoration: BoxDecoration(
+                                            color: surfaceRaised,
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: border,
+                                              width: 1.0,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 32,
+                                                height: 32,
+                                                decoration: BoxDecoration(
+                                                  color: cardBg,
+                                                  borderRadius: BorderRadius.circular(6),
+                                                  border: Border.all(color: border, width: 1.0),
+                                                ),
+                                                child: Center(
+                                                  child: Text(
+                                                    symbol,
+                                                    style: TextStyle(
+                                                      color: text,
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.w700,
+                                                    ),
                                                   ),
                                                 ),
                                               ),
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Expanded(
-                                              child: Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    '${e.key} / GHS',
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      color: muted,
-                                                      fontWeight: FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 2),
-                                                  FittedBox(
-                                                    fit: BoxFit.scaleDown,
-                                                    child: Text(
-                                                      e.value,
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Column(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      '${e.key} / GHS',
                                                       style: TextStyle(
-                                                        fontWeight: FontWeight.w700,
-                                                        fontSize: 16.5,
-                                                        color: text,
-                                                        letterSpacing: -0.3,
-                                                        fontFeatures: const [
-                                                          FontFeature.tabularFigures(),
-                                                        ],
+                                                        fontSize: 11,
+                                                        color: muted,
+                                                        fontWeight: FontWeight.w600,
                                                       ),
                                                     ),
-                                                  ),
-                                                ],
+                                                    const SizedBox(height: 2),
+                                                    FittedBox(
+                                                      fit: BoxFit.scaleDown,
+                                                      alignment: Alignment.centerLeft,
+                                                      child: Text(
+                                                        e.value,
+                                                        style: TextStyle(
+                                                          fontWeight: FontWeight.w700,
+                                                          fontSize: 16,
+                                                          color: text,
+                                                          letterSpacing: -0.3,
+                                                          fontFeatures: const [
+                                                            FontFeature.tabularFigures(),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                    );
+                                  },
+                                ),
                               ],
                             ),
                           ),
