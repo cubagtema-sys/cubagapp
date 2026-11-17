@@ -25,8 +25,10 @@ class PaymentCode {
   factory PaymentCode.fromJson(Map<String, dynamic> j) {
     List<String> words(dynamic v) =>
         (v is List ? v : (v?.toString() ?? '').split(',')).map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
+    final rawCode = (j['code'] ?? '').toString().trim().toUpperCase();
+    final code = rawCode.startsWith('CUB-') ? rawCode.substring(4) : rawCode;
     return PaymentCode(
-      code: (j['code'] ?? '').toString().trim().toUpperCase(),
+      code: code,
       label: (j['label'] ?? '').toString(),
       bankName: (j['bank_name'] ?? '').toString(),
       accountNumber: (j['account_number'] ?? '').toString().replaceAll(RegExp(r'\s+'), ''),
@@ -88,12 +90,13 @@ String defaultPaymentCode(List<PaymentCode> codes, {String? section, String? ban
   for (final c in active) {
     if (s.isNotEmpty && c.sections.contains(s)) return c.code;
   }
-  return 'CUB-OTH';
+  return 'OTH';
 }
 
 /// A fee's code: the one an admin chose, else the default.
 String paymentCodeFor(Map<String, dynamic> fee, List<PaymentCode> codes) {
-  final own = (fee['payment_code'] ?? '').toString().trim().toUpperCase();
+  var own = (fee['payment_code'] ?? '').toString().trim().toUpperCase();
+  if (own.startsWith('CUB-')) own = own.substring(4);
   if (own.isNotEmpty) return own;
   return defaultPaymentCode(
     codes,

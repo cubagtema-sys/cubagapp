@@ -412,13 +412,15 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     );
   }
 
-  /// "CUB-SUB 233.00, CUB-ADM 300.00": which CUBAG account each part went to.
+  /// "SUB 233.00, ADM 300.00": which CUBAG account each part went to.
   String _codesText(Map<String, dynamic> pay) {
     final raw = pay['payment_codes'];
     if (raw is! List || raw.isEmpty) return '';
     return raw.whereType<Map>().map((c) {
       final amt = double.tryParse('${c['amount']}') ?? 0;
-      return raw.length == 1 ? '${c['code']}' : '${c['code']} ${amt.toStringAsFixed(2)}';
+      var code = '${c['code'] ?? ''}'.trim().toUpperCase();
+      if (code.startsWith('CUB-')) code = code.substring(4);
+      return raw.length == 1 ? code : '$code ${amt.toStringAsFixed(2)}';
     }).join(', ');
   }
 

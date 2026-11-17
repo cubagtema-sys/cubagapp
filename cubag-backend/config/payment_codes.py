@@ -3,7 +3,7 @@ payment settles into.
 
 Every payment lands in CUBAG's one WhitsunPay merchant account. The
 narration starts with the payment code(s) and the amount for each, e.g.
-``CUB-SUB 233.00, CUB-ADM 300.00, CUB-DST 250.00 | CUBAG-42-ab12cd34``, and
+``SUB 233.00, ADM 300.00, DST 250.00 | CUBAG-42-ab12cd34``, and
 WhitsunPay settles each amount to the account registered for that code.
 
 The list of codes is data, not code: admins edit it in Admin > Fees >
@@ -22,29 +22,29 @@ from decimal import ROUND_HALF_UP, Decimal
 SETTING_KEY = 'cubag_payment_codes'
 NARRATION_MAX = 120
 CODE_PATTERN = re.compile(r'^[A-Z0-9][A-Z0-9-]{1,19}$')
-FALLBACK_CODE = 'CUB-OTH'
+FALLBACK_CODE = 'OTH'
 
 # Starting list. For payments with no fee breakdown, the longest matching word
 # in a payment's purpose picks the code.
 DEFAULT_CATALOGUE = [
-    {'code': 'CUB-CTI', 'label': 'Training Institute courses', 'bank_name': 'NIB',
+    {'code': 'CTI', 'label': 'Training Institute courses', 'bank_name': 'NIB',
      'account_number': '1110045585101', 'sections': ['cti'], 'keywords': ['cti', 'course', 'training'], 'active': True},
-    {'code': 'CUB-CPD', 'label': 'CPD and refresher courses', 'bank_name': 'NIB',
+    {'code': 'CPD', 'label': 'CPD and refresher courses', 'bank_name': 'NIB',
      'account_number': '1110045585101', 'sections': ['national', 'variable'], 'keywords': ['cpd', 'refresher'], 'active': True},
-    {'code': 'CUB-DST', 'label': 'District registration, clearance and welfare', 'bank_name': 'Ecobank',
+    {'code': 'DST', 'label': 'District registration, clearance and welfare', 'bank_name': 'Ecobank',
      'account_number': '1441002452360', 'sections': [], 'keywords': ['district', 'clearance'], 'active': True},
-    {'code': 'CUB-SUB', 'label': 'Subscription and development levy', 'bank_name': 'Zenith Bank',
+    {'code': 'SUB', 'label': 'Subscription and development levy', 'bank_name': 'Zenith Bank',
      'account_number': '6010309212', 'sections': [], 'keywords': ['subscription', 'levy'], 'active': True},
-    {'code': 'CUB-REG', 'label': 'New member registration (registration, vetting, C&F fee, cloth)', 'bank_name': 'GCB',
+    {'code': 'REG', 'label': 'New member registration (registration, vetting, C&F fee, cloth)', 'bank_name': 'GCB',
      'account_number': '107113005326', 'sections': ['new_membership', 'new_reg', 'corporate'],
      'keywords': ['registration', 'onboarding', 'new member', 'vetting'], 'active': True},
-    {'code': 'CUB-GST', 'label': 'Public and guest services', 'bank_name': 'GCB',
+    {'code': 'GST', 'label': 'Public and guest services', 'bank_name': 'GCB',
      'account_number': '107113005326', 'sections': ['guest'], 'keywords': ['guest', 'public'], 'active': True},
-    {'code': 'CUB-ADM', 'label': 'Administrative, legal and audit, welfare and other charges', 'bank_name': 'GCB',
+    {'code': 'ADM', 'label': 'Administrative, legal and audit, welfare and other charges', 'bank_name': 'GCB',
      'account_number': '107113005326', 'sections': ['national', 'district', 'variable'],
      'keywords': ['renewal', 'annual', 'dues', 'admin', 'legal', 'audit', 'welfare', 'consolidation', 'card',
                   'badge', 'cloth', 'bond'], 'active': True},
-    {'code': 'CUB-OTH', 'label': 'Other payments', 'bank_name': 'GCB',
+    {'code': 'OTH', 'label': 'Other payments', 'bank_name': 'GCB',
      'account_number': '107113005326', 'sections': [], 'keywords': [], 'active': True},
 ]
 
@@ -57,8 +57,10 @@ def clean_entry(e):
         if isinstance(v, str):
             v = v.split(',')
         return [str(x).strip().lower() for x in (v or []) if str(x).strip()]
+    raw_code = str(e.get('code') or '').strip().upper()
+    code = raw_code[4:] if raw_code.startswith('CUB-') else raw_code
     return {
-        'code': str(e.get('code') or '').strip().upper(),
+        'code': code,
         'label': str(e.get('label') or '').strip(),
         'bank_name': str(e.get('bank_name') or '').strip(),
         'account_number': re.sub(r'\s+', '', str(e.get('account_number') or '')),
@@ -79,7 +81,7 @@ def validate_catalogue(entries):
         e = clean_entry(raw)
         if not CODE_PATTERN.match(e['code']):
             return (f"'{e['code'] or '(empty)'}' is not a valid code. Use 2 to 20 capital letters, "
-                    "numbers or hyphens, for example CUB-LEV.")
+                    "numbers or hyphens, for example LEV, SUB, ADM.")
         if e['code'] in seen:
             return f"The code {e['code']} is listed twice."
         seen.add(e['code'])
@@ -136,7 +138,7 @@ def code_for_item(item, catalogue=None):
     listing the fee's type first), so a default never points at two banks."""
     own = str(item.get('payment_code') or '').strip().upper()
     if own:
-        return own
+        return own[4:] if own.startswith('CUB-') else own
     cat = [e for e in (catalogue or DEFAULT_CATALOGUE) if e.get('active', True)]
     section = str(item.get('section') or '').strip().lower()
     acc = re.sub(r'\s+', '', str(item.get('account_number') or ''))
@@ -257,13 +259,20 @@ def single_code(code, amount, catalogue=None):
 def narration(codes, reference, purpose=''):
     """Text sent to WhitsunPay: codes and amounts first (never cut), then the
     reference, then as much of the purpose as fits."""
-    parts = ', '.join(f"{c['code']} {_money(c['amount'])}" for c in codes) or FALLBACK_CODE
+    clean_codes = []
+    for c in codes or []:
+        if isinstance(c, dict):
+            c_copy = dict(c)
+            raw = str(c_copy.get('code') or '').strip().upper()
+            c_copy['code'] = raw[4:] if raw.startswith('CUB-') else raw
+            clean_codes.append(c_copy)
+    parts = ', '.join(f"{c['code']} {_money(c['amount'])}" for c in clean_codes) or FALLBACK_CODE
     text = f"{parts} | {reference}"
     if purpose:
         room = NARRATION_MAX - len(text) - 3
         if room > 8:
             text += ' | ' + purpose[:room]
-    return text
+    return text[:NARRATION_MAX]
 
 
 def codes_for_payment(row, catalogue=None):
@@ -275,8 +284,15 @@ def codes_for_payment(row, catalogue=None):
             saved = json.loads(saved)
         except ValueError:
             saved = None
-    if saved:
-        return saved
+    if saved and isinstance(saved, list):
+        clean = []
+        for c in saved:
+            if isinstance(c, dict):
+                raw = str(c.get('code') or '').strip().upper()
+                clean.append({**c, 'code': raw[4:] if raw.startswith('CUB-') else raw})
+            else:
+                clean.append(c)
+        return clean
     amount = row.get('amount') or 0
     dist = row.get('settlement_distribution')
     if isinstance(dist, str):

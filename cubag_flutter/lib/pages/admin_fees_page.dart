@@ -676,7 +676,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
   }
 
   Future<void> _showCodeDialog([PaymentCode? existing]) async {
-    final codeCtrl = TextEditingController(text: existing?.code ?? 'CUB-');
+    final codeCtrl = TextEditingController(text: existing?.code ?? '');
     final labelCtrl = TextEditingController(text: existing?.label ?? '');
     final bankCtrl = TextEditingController(text: existing?.bankName ?? '');
     final accCtrl = TextEditingController(text: existing?.accountNumber ?? '');
@@ -742,7 +742,7 @@ class _AdminFeesPageState extends State<AdminFeesPage> {
               AdminFieldPair(
                 AdminField(
                   label: 'Code',
-                  help: 'Capital letters, numbers and hyphens. For example CUB-LEV.',
+                  help: 'Capital letters, numbers and hyphens. For example LEV, SUB, ADM.',
                   child: TextField(
                     controller: codeCtrl,
                     enabled: existing == null,

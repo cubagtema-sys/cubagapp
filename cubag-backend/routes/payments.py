@@ -266,10 +266,14 @@ def public_initiate_momo():
             clean_desc = course_name or service_type or 'CTI Course'
             if not clean_desc.lower().startswith('cubag'):
                 clean_desc = f"CUBAG - {clean_desc}"
-            code_label = 'CUB-CTI' if 'course' in clean_desc.lower() or 'cti' in clean_desc.lower() else 'CUB-GST'
-            user_prompt_desc = f"{clean_desc} - {code_label} {amount:.2f}"
-            if len(user_prompt_desc) > 95:
-                user_prompt_desc = user_prompt_desc[:92] + '...'
+            code_label = 'CTI' if 'course' in clean_desc.lower() or 'cti' in clean_desc.lower() else 'GST'
+            codes_str = f"{code_label} {amount:.2f}"
+            available_for_base = 120 - len(codes_str) - 3
+            if available_for_base < len(clean_desc):
+                clean_desc = clean_desc[:max(0, available_for_base - 1)].rstrip() + '…'
+            user_prompt_desc = f"{clean_desc} - {codes_str}"
+            if len(user_prompt_desc) > 120:
+                user_prompt_desc = user_prompt_desc[:120]
 
             payload = {
                 'transactionReference': tx_ref,
@@ -799,20 +803,32 @@ def create_payment():
 
                 # Append payment codes summary so WhitsunPay settlement engine sees codes in description,
                 # while keeping the human-friendly description visible first to the user on USSD/MoMo prompt.
+                # Payment codes must not have the 'CUB-' prefix (e.g. SUB, ADM, CPD) and total description <= 120 chars.
                 codes_str = ''
                 if payment_codes and isinstance(payment_codes, list):
-                    codes_str = ', '.join(
-                        f"{c['code']} {float(c.get('amount', 0)):.2f}"
-                        for c in payment_codes if isinstance(c, dict) and c.get('code')
-                    )
+                    formatted_codes = []
+                    for c in payment_codes:
+                        if isinstance(c, dict) and c.get('code'):
+                            raw_c = str(c['code']).strip().upper()
+                            code_name = raw_c[4:] if raw_c.startswith('CUB-') else raw_c
+                            formatted_codes.append(f"{code_name} {float(c.get('amount', 0)):.2f}")
+                    codes_str = ', '.join(formatted_codes)
 
                 if codes_str:
-                    user_prompt_desc = f"{base_desc} - {codes_str}"
+                    available_for_base = 120 - len(codes_str) - 3
+                    if available_for_base < len(base_desc):
+                        if available_for_base >= 8:
+                            base_desc = base_desc[:available_for_base - 1].rstrip() + '…'
+                            user_prompt_desc = f"{base_desc} - {codes_str}"
+                        else:
+                            user_prompt_desc = f"{base_desc} - {codes_str}"[:120]
+                    else:
+                        user_prompt_desc = f"{base_desc} - {codes_str}"
                 else:
-                    user_prompt_desc = base_desc
+                    user_prompt_desc = base_desc[:120]
 
-                if len(user_prompt_desc) > 100:
-                    user_prompt_desc = user_prompt_desc[:97] + '...'
+                if len(user_prompt_desc) > 120:
+                    user_prompt_desc = user_prompt_desc[:120]
 
                 code_narration = _narration(payment_codes, tx_ref, description) if payment_codes else description
 
