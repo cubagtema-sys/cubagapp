@@ -367,3 +367,30 @@ def test_register_with_districts_list_succeeds(client, db):
     assert data['user']['portOfOperation'] == 'Tema Port, Takoradi Port'
 
 
+def test_issue_adhoc_bill_authz_and_success(client, auth, db):
+    assert client.post(f'{API}/payments/admin/issue-bill', json={}).status_code == 401
+    assert client.post(f'{API}/payments/admin/issue-bill', headers=auth(10), json={}).status_code == 403
+
+    db.on(r"SELECT id, name, email, phone, fcm_token FROM members WHERE id = %s", [{'id': 10, 'name': 'John Doe', 'email': 'john@example.com', 'phone': '0241234567', 'fcm_token': None}])
+    db.on(r"INSERT INTO payments", [{'id': 99}])
+    db.on(r"INSERT INTO tasks", [])
+    db.on(r"INSERT INTO notifications", [])
+    db.on(r"INSERT INTO admin_audit_logs", [])
+
+    payload = {
+        'member_id': 10,
+        'title': 'Association Cloth',
+        'items': [{'label': 'Association Cloth', 'amount': 180.0, 'payment_code': 'ADM'}],
+        'total_amount': 180.0,
+        'due_date': '2026-12-01',
+        'notes': 'Official 2026 regalia',
+    }
+    r = client.post(f'{API}/payments/admin/issue-bill', headers=auth(1), json=payload)
+    assert r.status_code == 201
+    data = r.get_json()
+    assert data['payment_id'] == 99
+    assert data['payment_ref'].startswith('BILL-10-')
+    assert data['amount'] == 180.0
+
+
+

@@ -1974,7 +1974,8 @@ def get_all_payments_admin():
             # Get paginated data
             data_query = f"""
                 SELECT p.id as id, p.id as tx_id, p.amount, p.description, p.status,
-                       p.payment_ref, p.momo_tx_id, p.created_at, p.paid_at,
+                       p.payment_ref, p.momo_tx_id, p.created_at, p.paid_at, p.due_date,
+                       p.payment_codes, p.settlement_distribution,
                        COALESCE(p.payment_method, 'momo') as payment_method,
                        p.receipt_url, p.bank_name, p.account_name, p.account_number, p.notes,
                        p.verified_at, m.name as member_name, m.email as member_email, m.phone as member_phone,
@@ -2528,6 +2529,202 @@ def admin_record_counter_payment():
         'message': f'Office payment of GH₵ {amount:.2f} recorded and marked as PAID successfully.',
         'payment_id': payment_id,
         'payment_ref': payment_ref,
+    }), 201
+
+
+# ─── POST /payments/admin/issue-bill ──────────────────────────────────────────
+@payments_bp.route('/admin/issue-bill', methods=['POST'])
+@sub_admin_required('payments')
+def admin_issue_bill():
+    """Issue an ad-hoc bill or invoice directly to any member for one-off fees."""
+    from urllib.parse import quote
+    admin_id = get_jwt_identity()
+    data = request.get_json() or {}
+
+    member_id = data.get('member_id')
+    if not member_id:
+        return jsonify({'message': 'Please select a member.'}), 400
+
+    title = str(data.get('title') or '').strip()
+    if not title:
+        title = 'Official Association Bill'
+
+    raw_items = data.get('items')
+    items = []
+    total_amount = 0.0
+
+    if isinstance(raw_items, list) and raw_items:
+        for it in raw_items:
+            if not isinstance(it, dict):
+                continue
+            lbl = str(it.get('label') or '').strip()
+            if not lbl:
+                continue
+            try:
+                amt = float(str(it.get('amount', 0)).replace(',', ''))
+                if amt <= 0:
+                    continue
+            except (TypeError, ValueError):
+                continue
+            code = str(it.get('payment_code') or '').strip().upper()
+            acc = str(it.get('account_number') or '').strip()
+            bank = str(it.get('bank_name') or '').strip()
+            items.append({
+                'label': lbl,
+                'amount': amt,
+                'payment_code': code,
+                'account_number': acc,
+                'bank_name': bank,
+            })
+            total_amount += amt
+
+    if not items:
+        # Fall back to top-level total_amount
+        try:
+            total_amount = float(str(data.get('total_amount', 0)).replace(',', ''))
+        except (TypeError, ValueError):
+            total_amount = 0.0
+        if total_amount <= 0:
+            return jsonify({'message': 'Please provide a valid bill amount greater than zero.'}), 400
+        items = [{'label': title, 'amount': total_amount, 'payment_code': 'ADM'}]
+
+    due_date = data.get('due_date')
+    if due_date:
+        try:
+            due_date = date.fromisoformat(str(due_date)[:10])
+        except (ValueError, TypeError):
+            due_date = date.today() + timedelta(days=14)
+    else:
+        due_date = date.today() + timedelta(days=14)
+
+    notes = str(data.get('notes') or '').strip()
+    time_stamp = datetime.now().strftime("%y%m%d%H%M")
+    suffix = uuid.uuid4().hex[:6].upper()
+    payment_ref = f"BILL-{member_id}-{time_stamp}-{suffix}"
+
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id, name, email, phone, fcm_token FROM members WHERE id = %s", (member_id,))
+            member = cursor.fetchone()
+            if not member:
+                return jsonify({'message': 'Selected member does not exist.'}), 404
+
+            from config.payment_codes import load_catalogue, code_split
+            catalogue = load_catalogue(cursor)
+            codes_distribution = code_split(items, total=total_amount, catalogue=catalogue)
+
+            cursor.execute("""
+                INSERT INTO payments (
+                    member_id, amount, description, status, payment_ref,
+                    due_date, notes, fee_key, payment_codes, settlement_distribution,
+                    created_at
+                ) VALUES (
+                    %s, %s, %s, 'pending', %s,
+                    %s, %s, 'ad_hoc_bill', %s, %s,
+                    NOW()
+                ) RETURNING id
+            """, (
+                member_id, total_amount, title, payment_ref,
+                due_date, notes,
+                json.dumps(codes_distribution), json.dumps(items)
+            ))
+            payment_row = cursor.fetchone()
+            payment_id = payment_row['id']
+
+            # Insert task for the member
+            task_title = f"🧾 {title} (GH₵ {total_amount:,.2f})"
+            task_desc = f"Official bill issued by Secretariat: GH₵ {total_amount:,.2f}. Due by {due_date.isoformat()}."
+            if notes:
+                task_desc += f" Note: {notes}"
+            action_url = f"/payments?fee={quote(title)}&amount={total_amount:.2f}&bill_ref={payment_ref}&bill_id={payment_id}"
+
+            cursor.execute("""
+                INSERT INTO tasks (
+                    member_id, title, description, due_date, priority, done,
+                    created_at
+                ) VALUES (
+                    %s, %s, %s, %s, 'High', false,
+                    NOW()
+                )
+            """, (member_id, task_title, task_desc, due_date))
+
+            # Insert in-app notification
+            cursor.execute("""
+                INSERT INTO notifications (member_id, title, message, type, created_at)
+                VALUES (%s, %s, %s, 'payment', NOW())
+            """, (member_id, f"🧾 New Bill Issued: {title}", f"An official bill of GH₵ {total_amount:,.2f} has been issued. Due: {due_date.isoformat()}."))
+
+            conn.commit()
+
+            # Audit log
+            log_admin_action(
+                admin_id,
+                'Issued Member Bill',
+                target_type='payment',
+                target_id=payment_id,
+                target_name=member.get('name'),
+                details={
+                    'amount': total_amount,
+                    'title': title,
+                    'ref': payment_ref,
+                    'due_date': due_date.isoformat(),
+                    'items': items,
+                    'notes': notes,
+                }
+            )
+
+            # Push notification
+            fcm = member.get('fcm_token')
+            if fcm:
+                try:
+                    from utils import send_push_notification
+                    send_push_notification(
+                        fcm,
+                        title=f"New Bill Issued: {title} 💳",
+                        body=f"An official bill of GH₵ {total_amount:,.2f} has been issued by CUBAG Secretariat. Due: {due_date.isoformat()}.",
+                        data={'screen': 'payments', 'type': 'bill', 'route': action_url}
+                    )
+                except Exception as p_err:
+                    logger.warning("[Issue Bill Push Error] %s", p_err)
+
+            # Email notification
+            mem_email = member.get('email')
+            if mem_email:
+                from routes.auth import _send_email
+                email_body = f"""Hello {member.get('name')},\n\nAn official bill has been issued to you by the CUBAG Secretariat.\n\nBill Title: {title}\nAmount Due: GH₵ {total_amount:,.2f}\nDue Date: {due_date.isoformat()}\nReference: {payment_ref}\n\nPlease log in to your CUBAG portal to review and settle this bill.\n\nThank you,\nCUBAG Secretariat"""
+                try:
+                    _send_email(mem_email, f"New Bill Issued: {title} - CUBAG", email_body)
+                except Exception as ex:
+                    logger.warning("[Issue Bill Email Error] %s", ex)
+
+            # Socket emissions
+            try:
+                emit_to_member(socketio, member_id, 'bill_issued', {
+                    'member_id': member_id,
+                    'payment_id': payment_id,
+                    'title': title,
+                    'amount': total_amount,
+                    'due_date': due_date.isoformat(),
+                    'ref': payment_ref,
+                    'items': items
+                })
+                emit_to_member(socketio, member_id, 'tasks_updated', {})
+                emit_to_member(socketio, member_id, 'fees_updated', {})
+            except Exception:
+                pass
+    except Exception as e:
+        logger.exception("[Admin Issue Bill Error] %s", e)
+        return jsonify({'message': str(e)}), 500
+    finally:
+        conn.close()
+
+    return jsonify({
+        'message': f'Bill "{title}" for GH₵ {total_amount:.2f} issued successfully to {member.get("name")}.',
+        'payment_id': payment_id,
+        'payment_ref': payment_ref,
+        'amount': total_amount,
+        'due_date': due_date.isoformat(),
     }), 201
 
 

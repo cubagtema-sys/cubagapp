@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/services.dart';
 import '../components/settlement_report.dart';
 import '../components/admin_dialog.dart';
@@ -158,6 +159,141 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
       }
     }
     return catCounts;
+  }
+
+  Map<String, Map<String, dynamic>> get _filteredBankRevenue {
+    final Map<String, Map<String, dynamic>> banks = {
+      '107113005326': {
+        'name': 'GCB Bank',
+        'account': '107113005326',
+        'purpose': 'Operations, Registration, Vetting & Cloth',
+        'codes': ['REG', 'ADM', 'GST', 'OTH'],
+        'color': const Color(0xFFE89A3C),
+        'icon': Icons.account_balance_rounded,
+        'amount': 0.0,
+        'count': 0,
+      },
+      '6010309212': {
+        'name': 'Zenith Bank',
+        'account': '6010309212',
+        'purpose': 'Subscription Dues & Development Levy',
+        'codes': ['SUB'],
+        'color': const Color(0xFFD32F2F),
+        'icon': Icons.account_balance_wallet_rounded,
+        'amount': 0.0,
+        'count': 0,
+      },
+      '1441002452360': {
+        'name': 'Ecobank',
+        'account': '1441002452360',
+        'purpose': 'District Registration, Clearance & Welfare',
+        'codes': ['DST'],
+        'color': const Color(0xFF0288D1),
+        'icon': Icons.domain_rounded,
+        'amount': 0.0,
+        'count': 0,
+      },
+      '1110045585101': {
+        'name': 'NIB',
+        'account': '1110045585101',
+        'purpose': 'CTI Courses & CPD Professional Training',
+        'codes': ['CTI', 'CPD'],
+        'color': const Color(0xFF2E7D32),
+        'icon': Icons.school_rounded,
+        'amount': 0.0,
+        'count': 0,
+      },
+    };
+
+    for (var tx in _transactions) {
+      final statusStr = tx['status']?.toString().toLowerCase() ?? '';
+      final isPaid = statusStr == 'paid' || statusStr == 'success' || statusStr == 'completed';
+      if (!isPaid || !_isWithinDateRange(tx['date']?.toString() ?? tx['created_at']?.toString())) {
+        continue;
+      }
+
+      final amt = double.tryParse(tx['amount']?.toString() ?? '0') ?? 0.0;
+      if (amt <= 0) continue;
+
+      dynamic rawDist = tx['settlement_distribution'] ?? tx['payment_codes'];
+      List<dynamic>? distList;
+      if (rawDist is String && rawDist.trim().startsWith('[')) {
+        try {
+          distList = jsonDecode(rawDist) as List<dynamic>?;
+        } catch (_) {}
+      } else if (rawDist is List) {
+        distList = rawDist;
+      }
+
+      if (distList != null && distList.isNotEmpty) {
+        bool distributed = false;
+        for (var item in distList) {
+          if (item is Map) {
+            final acc = (item['account_number'] ?? '').toString().replaceAll(RegExp(r'\s+'), '');
+            final itemAmt = double.tryParse(item['amount']?.toString() ?? '0') ?? 0.0;
+            final code = (item['code'] ?? item['payment_code'] ?? '').toString().toUpperCase();
+
+            String? targetAcc;
+            if (banks.containsKey(acc)) {
+              targetAcc = acc;
+            } else if (code == 'SUB') {
+              targetAcc = '6010309212';
+            } else if (code == 'DST') {
+              targetAcc = '1441002452360';
+            } else if (code == 'CTI' || code == 'CPD') {
+              targetAcc = '1110045585101';
+            } else if (code == 'REG' || code == 'ADM' || code == 'GST' || code == 'OTH') {
+              targetAcc = '107113005326';
+            }
+
+            if (targetAcc != null && banks.containsKey(targetAcc) && itemAmt > 0) {
+              banks[targetAcc]!['amount'] = (banks[targetAcc]!['amount'] as double) + itemAmt;
+              banks[targetAcc]!['count'] = (banks[targetAcc]!['count'] as int) + 1;
+              distributed = true;
+            }
+          }
+        }
+        if (distributed) continue;
+      }
+
+      // Fallback classification based on category
+      final cat = _classifyTransactionCategory(tx is Map<String, dynamic> ? tx : Map<String, dynamic>.from(tx));
+      if (cat == 'CTI Courses') {
+        banks['1110045585101']!['amount'] = (banks['1110045585101']!['amount'] as double) + amt;
+        banks['1110045585101']!['count'] = (banks['1110045585101']!['count'] as int) + 1;
+      } else if (cat == 'Annual Renewal') {
+        final subAmt = (amt >= 370) ? 120.0 : (amt * 0.15);
+        final dstAmt = (amt >= 370) ? 250.0 : (amt * 0.25);
+        final gcbAmt = (amt - subAmt - dstAmt).clamp(0.0, amt);
+
+        banks['6010309212']!['amount'] = (banks['6010309212']!['amount'] as double) + subAmt;
+        banks['6010309212']!['count'] = (banks['6010309212']!['count'] as int) + 1;
+
+        banks['1441002452360']!['amount'] = (banks['1441002452360']!['amount'] as double) + dstAmt;
+        banks['1441002452360']!['count'] = (banks['1441002452360']!['count'] as int) + 1;
+
+        banks['107113005326']!['amount'] = (banks['107113005326']!['amount'] as double) + gcbAmt;
+        banks['107113005326']!['count'] = (banks['107113005326']!['count'] as int) + 1;
+      } else if (cat == 'New Membership') {
+        final subAmt = (amt >= 370) ? 120.0 : (amt * 0.10);
+        final dstAmt = (amt >= 370) ? 250.0 : (amt * 0.15);
+        final gcbAmt = (amt - subAmt - dstAmt).clamp(0.0, amt);
+
+        banks['6010309212']!['amount'] = (banks['6010309212']!['amount'] as double) + subAmt;
+        banks['6010309212']!['count'] = (banks['6010309212']!['count'] as int) + 1;
+
+        banks['1441002452360']!['amount'] = (banks['1441002452360']!['amount'] as double) + dstAmt;
+        banks['1441002452360']!['count'] = (banks['1441002452360']!['count'] as int) + 1;
+
+        banks['107113005326']!['amount'] = (banks['107113005326']!['amount'] as double) + gcbAmt;
+        banks['107113005326']!['count'] = (banks['107113005326']!['count'] as int) + 1;
+      } else {
+        banks['107113005326']!['amount'] = (banks['107113005326']!['amount'] as double) + amt;
+        banks['107113005326']!['count'] = (banks['107113005326']!['count'] as int) + 1;
+      }
+    }
+
+    return banks;
   }
 
   // Getters for filtered Financial metrics
@@ -1077,6 +1213,10 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
           ),
           const SizedBox(height: 14),
 
+          // ── BANK ACCOUNT SETTLEMENT DISTRIBUTION SECTION ─────────────────
+          _buildBankSettlementSection(isDark, cardBg, border, textPrimary, textMuted, innerBg),
+          const SizedBox(height: 14),
+
           // ── TREND CHART & STATUS DISTRIBUTION ─────────────────────────
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1417,6 +1557,355 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
           ),
           const SizedBox(height: 2),
           Text('$count $countSuffix', style: CubagType.caption),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBankSettlementSection(
+    bool isDark,
+    Color cardBg,
+    Color border,
+    Color textPrimary,
+    Color textMuted,
+    Color innerBg,
+  ) {
+    final bankMap = _filteredBankRevenue;
+    final totalRev = _filteredRevenue > 0 ? _filteredRevenue : 1.0;
+
+    final gcb = bankMap['107113005326']!;
+    final zenith = bankMap['6010309212']!;
+    final ecobank = bankMap['1441002452360']!;
+    final nib = bankMap['1110045585101']!;
+
+    final gcbAmt = gcb['amount'] as double;
+    final zenithAmt = zenith['amount'] as double;
+    final ecobankAmt = ecobank['amount'] as double;
+    final nibAmt = nib['amount'] as double;
+
+    final gcbPct = (gcbAmt / totalRev * 100).clamp(0, 100).toStringAsFixed(1);
+    final zenithPct = (zenithAmt / totalRev * 100).clamp(0, 100).toStringAsFixed(1);
+    final ecobankPct = (ecobankAmt / totalRev * 100).clamp(0, 100).toStringAsFixed(1);
+    final nibPct = (nibAmt / totalRev * 100).clamp(0, 100).toStringAsFixed(1);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isDark ? 20 : 4),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: CubagColors.action.withAlpha(20),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.account_balance_rounded,
+                  color: CubagColors.action,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Revenue by Bank Account',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'How funds settle across CUBAG institutional bank accounts via payment codes.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: CubagColors.action.withAlpha(15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: CubagColors.action.withAlpha(40)),
+                ),
+                child: const Text(
+                  '4 Active Accounts',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: CubagColors.action,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // 4 Bank Cards Grid
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 750;
+              final cards = [
+                _buildBankCard(gcb, gcbPct, isDark, textPrimary, textMuted),
+                _buildBankCard(zenith, zenithPct, isDark, textPrimary, textMuted),
+                _buildBankCard(ecobank, ecobankPct, isDark, textPrimary, textMuted),
+                _buildBankCard(nib, nibPct, isDark, textPrimary, textMuted),
+              ];
+
+              return isWide
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: cards
+                          .map((c) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 5), child: c)))
+                          .toList(),
+                    )
+                  : Column(
+                      children: cards
+                          .map((c) => Padding(padding: const EdgeInsets.only(bottom: 10), child: c))
+                          .toList(),
+                    );
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // Multi-Segmented Proportional Distribution Bar for Banks
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Bank settlement share',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: textMuted,
+                    ),
+                  ),
+                  Text(
+                    'Based on official payment codes',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: textMuted.withAlpha(180),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  height: 12,
+                  child: Row(
+                    children: [
+                      if (gcbAmt > 0)
+                        Expanded(
+                          flex: (gcbAmt * 100).toInt(),
+                          child: Container(color: gcb['color'] as Color),
+                        ),
+                      if (zenithAmt > 0)
+                        Expanded(
+                          flex: (zenithAmt * 100).toInt(),
+                          child: Container(color: zenith['color'] as Color),
+                        ),
+                      if (ecobankAmt > 0)
+                        Expanded(
+                          flex: (ecobankAmt * 100).toInt(),
+                          child: Container(color: ecobank['color'] as Color),
+                        ),
+                      if (nibAmt > 0)
+                        Expanded(
+                          flex: (nibAmt * 100).toInt(),
+                          child: Container(color: nib['color'] as Color),
+                        ),
+                      if (gcbAmt == 0 && zenithAmt == 0 && ecobankAmt == 0 && nibAmt == 0)
+                        Expanded(
+                          child: Container(color: isDark ? const Color(0xFF3D261C) : CubagColors.line),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 12,
+                runSpacing: 6,
+                children: [
+                  _buildLegendItem('GCB Bank ($gcbPct%)', gcb['color'] as Color, textMuted),
+                  _buildLegendItem('Zenith Bank ($zenithPct%)', zenith['color'] as Color, textMuted),
+                  _buildLegendItem('Ecobank ($ecobankPct%)', ecobank['color'] as Color, textMuted),
+                  _buildLegendItem('NIB ($nibPct%)', nib['color'] as Color, textMuted),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBankCard(
+    Map<String, dynamic> bank,
+    String percentage,
+    bool isDark,
+    Color textPrimary,
+    Color textMuted,
+  ) {
+    final amt = bank['amount'] as double;
+    final color = bank['color'] as Color;
+    final codes = (bank['codes'] as List<String>);
+    final count = bank['count'] as int;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? CubagColors.ink : CubagColors.sand.withAlpha(120),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withAlpha(isDark ? 60 : 40)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withAlpha(25),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(bank['icon'] as IconData, color: color, size: 16),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  bank['name'] as String,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color.withAlpha(20),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '$percentage%',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Text(
+                'Acc: ',
+                style: TextStyle(fontSize: 11.5, color: textMuted, fontWeight: FontWeight.w500),
+              ),
+              SelectableText(
+                bank['account'] as String,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.w700,
+                  color: textPrimary,
+                ),
+              ),
+              const SizedBox(width: 4),
+              InkWell(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: bank['account'] as String));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Copied ${bank['name']} account number: ${bank['account']}'),
+                      duration: const Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                child: Icon(Icons.copy_rounded, size: 12, color: textMuted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            bank['purpose'] as String,
+            style: TextStyle(fontSize: 11, color: textMuted),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: codes.map((c) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: color.withAlpha(15),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: color.withAlpha(30)),
+              ),
+              child: Text(
+                c,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
+              ),
+            )).toList(),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'GH₵ ${_formatCurrency(amt)}',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              color: textPrimary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '$count payment${count == 1 ? '' : 's'} settled',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: textMuted,
+            ),
+          ),
         ],
       ),
     );

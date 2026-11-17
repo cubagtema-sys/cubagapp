@@ -36,6 +36,8 @@ class _PaymentsPageState extends State<PaymentsPage>
   String _momoNetwork = '';
   String _momoPhone = '';
   int? _complianceAppId;
+  String? _billRef;
+  int? _billId;
   String? _complianceType;
   List<dynamic> _complianceDocs = [];
   String _complianceStatus = '';
@@ -272,6 +274,7 @@ class _PaymentsPageState extends State<PaymentsPage>
   String? get _feeKey {
     // A specific bill already fixes the price; the server prices it from the bill.
     if (_complianceAppId != null) return null;
+    if (_billRef != null && _billRef!.isNotEmpty) return 'ad_hoc_bill';
     final r = _reason.toLowerCase().trim();
     if (r.isEmpty || _reason == 'Other' || r == 'association payment') return null;
     if (r.contains('cti') || r.contains('course')) {
@@ -404,7 +407,16 @@ class _PaymentsPageState extends State<PaymentsPage>
           final queryMinAmt = state.uri.queryParameters['min_amount'];
           final queryMaxAmt = state.uri.queryParameters['max_amount'];
           final queryAppId = state.uri.queryParameters['app_id'];
+          final queryBillRef = state.uri.queryParameters['bill_ref'];
+          final queryBillId = state.uri.queryParameters['bill_id'];
           _courseId = int.tryParse(state.uri.queryParameters['course_id'] ?? '') ?? _courseId;
+
+          if (queryBillRef != null && queryBillRef.isNotEmpty) {
+            _billRef = queryBillRef;
+          }
+          if (queryBillId != null && queryBillId.isNotEmpty) {
+            _billId = int.tryParse(queryBillId);
+          }
 
           if (queryAppId != null && queryAppId.isNotEmpty) {
             _complianceAppId = int.tryParse(queryAppId) ?? _complianceAppId;
@@ -453,6 +465,9 @@ class _PaymentsPageState extends State<PaymentsPage>
                   _amountCtrl.text = pAmt.toStringAsFixed(2);
                 }
               }
+            } else if (queryBillRef != null && queryBillRef.isNotEmpty) {
+              _reason = queryFee;
+              _isCategoryLocked = true;
             } else {
               _reason = queryFee;
             }
@@ -615,6 +630,13 @@ class _PaymentsPageState extends State<PaymentsPage>
       };
       if (_complianceAppId != null) {
         requestData['meta'] = {'compliance_application_id': _complianceAppId};
+      }
+      if (_billRef != null && _billRef!.isNotEmpty) {
+        requestData['payment_ref'] = _billRef;
+        requestData['fee_key'] = 'ad_hoc_bill';
+        if (_billId != null) {
+          requestData['bill_id'] = _billId;
+        }
       }
       final res = await api.post('/payments', data: requestData);
 

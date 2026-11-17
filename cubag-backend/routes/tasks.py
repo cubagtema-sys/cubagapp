@@ -355,6 +355,48 @@ def _query_renewal_bills(conn, member_id):
     return tasks
 
 
+def _query_adhoc_bills(conn, member_id):
+    """Fetch pending ad-hoc bills (issued by admin) for task synthesis."""
+    tasks = []
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, amount, description, payment_ref, due_date, notes
+                FROM payments
+                WHERE member_id = %s
+                  AND LOWER(status) = 'pending'
+                  AND fee_key = 'ad_hoc_bill'
+                ORDER BY created_at DESC
+            """, (member_id,))
+            for p in cursor.fetchall():
+                pid = p['id']
+                amount = float(p['amount'] or 0.0)
+                title = p.get('description') or 'Official Bill'
+                deadline = str(p.get('due_date') or 'Immediate')
+                ref = p.get('payment_ref') or ''
+                amt_str = f"{amount:.2f}"
+                from urllib.parse import quote
+                tasks.append({
+                    'id': f'sys_adhoc_bill_{pid}',
+                    'title': f'🧾 {title} (GHS {amt_str})',
+                    'description': f'Official bill issued by Secretariat: GH₵ {amt_str}. Due: {deadline}. {p.get("notes") or ""}'.strip(),
+                    'due_date': deadline,
+                    'priority': 'High',
+                    'category': title,
+                    'done': False,
+                    'action_url': f'/payments?fee={quote(title)}&amount={amt_str}&bill_id={pid}&bill_ref={ref}',
+                    'action_label': f'Pay Bill (GHS {amt_str})',
+                    'is_system': True,
+                    'system_type': 'adhoc_bill',
+                    'payment_id': pid,
+                    'amount': amount,
+                    'deadline': deadline,
+                })
+    except Exception as e:
+        print(f"[Tasks] _query_adhoc_bills error: {e}")
+    return tasks
+
+
 def _synthesize_system_tasks(cursor, member_id):
     """Run all priority-task queries concurrently for speed."""
     from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -368,7 +410,7 @@ def _synthesize_system_tasks(cursor, member_id):
             conn2.close()
 
     results = []
-    with ThreadPoolExecutor(max_workers=6) as pool:
+    with ThreadPoolExecutor(max_workers=7) as pool:
         futures = [
             pool.submit(_run, _query_license),
             pool.submit(_run, _query_rejections),
@@ -376,6 +418,7 @@ def _synthesize_system_tasks(cursor, member_id):
             pool.submit(_run, _query_onboarding_docs),
             pool.submit(_run, _query_package_fee),
             pool.submit(_run, _query_renewal_bills),
+            pool.submit(_run, _query_adhoc_bills),
         ]
         for fut in as_completed(futures):
             try:

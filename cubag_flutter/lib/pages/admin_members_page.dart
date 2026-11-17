@@ -15,6 +15,7 @@ import '../components/shimmer_loader.dart';
 import '../utils/app_logger.dart';
 import '../design/cubag_design.dart';
 import '../components/cubag_ui.dart';
+import 'admin_payments_page.dart';
 part 'admin_members/admin_members_widgets.dart';
 
 class StandingTier {
@@ -1296,6 +1297,41 @@ class _AdminMembersPageState extends State<AdminMembersPage> {
                 ],
               ),
             ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Issue Official Bill to Member
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () {
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (ctx) => IssueBillDialog(
+                  initialMember: m,
+                  onSuccess: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Official bill issued to ${m['name']} successfully!'),
+                        backgroundColor: CubagColors.valid,
+                      ),
+                    );
+                    _fetch(refresh: true);
+                  },
+                ),
+              );
+            },
+            icon: const Icon(Icons.receipt_long_rounded, size: 18),
+            label: const Text('Issue official bill to this member'),
+            style: FilledButton.styleFrom(
+              backgroundColor: CubagColors.action,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(0, 48),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
           ),
         ),
         const SizedBox(height: 16),

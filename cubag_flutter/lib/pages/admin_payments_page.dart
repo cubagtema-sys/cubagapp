@@ -207,6 +207,20 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
     );
   }
 
+  void _showIssueBillModal([Map<String, dynamic>? member]) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => IssueBillDialog(
+        initialMember: member,
+        onSuccess: () {
+          _showToast('Official bill issued and dispatched successfully!');
+          _fetch(refresh: true);
+        },
+      ),
+    );
+  }
+
   Future<void> _showReceiptDialog(
     String receiptUrl,
     String memberName,
@@ -505,6 +519,12 @@ class _AdminPaymentsPageState extends State<AdminPaymentsPage> {
                           tooltip: 'Refresh',
                           onPressed: () => _fetch(refresh: true),
                           icon: const Icon(Icons.refresh_rounded, color: CubagColors.inkSoft),
+                        ),
+                        const SizedBox(width: CubagSpace.xs),
+                        OutlinedButton.icon(
+                          onPressed: () => _showIssueBillModal(),
+                          icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                          label: const Text('Issue bill'),
                         ),
                         const SizedBox(width: CubagSpace.xs),
                         FilledButton.icon(
@@ -1534,6 +1554,554 @@ class _RecordCounterPaymentDialogState extends State<_RecordCounterPaymentDialog
       children: [
         StatusChip(isRegPaid ? 'Registration paid' : 'Registration not paid', kind: isRegPaid ? StatusKind.good : StatusKind.pending),
         StatusChip(isRenewalPaid ? 'Renewal paid' : 'Renewal not paid', kind: isRenewalPaid ? StatusKind.good : StatusKind.pending),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ISSUE OFFICIAL AD-HOC MEMBER BILL DIALOG
+// ─────────────────────────────────────────────────────────────────────────────
+class IssueBillDialog extends StatefulWidget {
+  final Map<String, dynamic>? initialMember;
+  final VoidCallback onSuccess;
+
+  const IssueBillDialog({super.key, this.initialMember, required this.onSuccess});
+
+  @override
+  State<IssueBillDialog> createState() => _IssueBillDialogState();
+}
+
+class _BillLineEntry {
+  final TextEditingController labelCtrl;
+  final TextEditingController amountCtrl;
+  String paymentCode;
+  String bankName;
+  String accountNumber;
+
+  _BillLineEntry({
+    String label = '',
+    String amount = '',
+    this.paymentCode = 'ADM',
+    this.bankName = 'GCB',
+    this.accountNumber = '107113005326',
+  })  : labelCtrl = TextEditingController(text: label),
+        amountCtrl = TextEditingController(text: amount);
+
+  void dispose() {
+    labelCtrl.dispose();
+    amountCtrl.dispose();
+  }
+}
+
+class _IssueBillDialogState extends State<IssueBillDialog> {
+  final _searchController = TextEditingController();
+  final _titleController = TextEditingController(text: 'Association Cloth');
+  final _notesController = TextEditingController();
+
+  List<dynamic> _members = [];
+  bool _loadingMembers = false;
+  Map<String, dynamic>? _selectedMember;
+
+  final List<_BillLineEntry> _lineItems = [];
+  DateTime _dueDate = DateTime.now().add(const Duration(days: 14));
+  bool _submitting = false;
+  String? _errorMessage;
+  Timer? _searchDebounce;
+
+  static const List<Map<String, String>> _codeAccounts = [
+    {'code': 'ADM', 'bank': 'GCB', 'account': '107113005326', 'label': 'ADM · GCB (Operations/Admin)'},
+    {'code': 'REG', 'bank': 'GCB', 'account': '107113005326', 'label': 'REG · GCB (Registration/Vetting/Cloth)'},
+    {'code': 'SUB', 'bank': 'Zenith Bank', 'account': '6010309212', 'label': 'SUB · Zenith (Subscription/Levy)'},
+    {'code': 'DST', 'bank': 'Ecobank', 'account': '1441002452360', 'label': 'DST · Ecobank (District Dues)'},
+    {'code': 'CTI', 'bank': 'NIB', 'account': '1110045585101', 'label': 'CTI · NIB (Courses/Training)'},
+    {'code': 'CPD', 'bank': 'NIB', 'account': '1110045585101', 'label': 'CPD · NIB (CPD Refresher)'},
+    {'code': 'OTH', 'bank': 'GCB', 'account': '107113005326', 'label': 'OTH · GCB (Other Services)'},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialMember != null) {
+      _selectedMember = widget.initialMember;
+    } else {
+      _fetchMembers();
+    }
+    _lineItems.add(_BillLineEntry(
+      label: 'Association Cloth',
+      amount: '180.00',
+      paymentCode: 'ADM',
+      bankName: 'GCB',
+      accountNumber: '107113005326',
+    ));
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    _titleController.dispose();
+    _notesController.dispose();
+    for (final it in _lineItems) {
+      it.dispose();
+    }
+    super.dispose();
+  }
+
+  double get _totalAmount => _lineItems.fold(
+        0.0,
+        (sum, it) => sum + (double.tryParse(it.amountCtrl.text.replaceAll(',', '')) ?? 0.0),
+      );
+
+  Future<void> _fetchMembers([String search = '']) async {
+    setState(() => _loadingMembers = true);
+    try {
+      final res = await ApiService().get('/payments/admin/members-lookup?search=${Uri.encodeComponent(search)}');
+      if (mounted && res.statusCode == 200 && res.data is Map) {
+        final d = res.data as Map<String, dynamic>;
+        setState(() {
+          _members = d['members'] as List<dynamic>? ?? [];
+          _loadingMembers = false;
+        });
+      } else {
+        if (mounted) setState(() => _loadingMembers = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingMembers = false);
+    }
+  }
+
+  void _onSearchChanged(String v) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () => _fetchMembers(v.trim()));
+  }
+
+  void _applyPreset(String title, String label, String amount, String code, String bank, String account) {
+    setState(() {
+      _titleController.text = title;
+      for (final it in _lineItems) {
+        it.dispose();
+      }
+      _lineItems.clear();
+      _lineItems.add(_BillLineEntry(
+        label: label,
+        amount: amount,
+        paymentCode: code,
+        bankName: bank,
+        accountNumber: account,
+      ));
+    });
+  }
+
+  Future<void> _pickDueDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dueDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null && mounted) {
+      setState(() => _dueDate = picked);
+    }
+  }
+
+  Future<void> _submit() async {
+    final m = _selectedMember;
+    if (m == null) {
+      setState(() => _errorMessage = 'Please select a member to bill.');
+      return;
+    }
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      setState(() => _errorMessage = 'Please enter a bill title.');
+      return;
+    }
+    if (_lineItems.isEmpty) {
+      setState(() => _errorMessage = 'Add at least one line item to the bill.');
+      return;
+    }
+    final total = _totalAmount;
+    if (total <= 0) {
+      setState(() => _errorMessage = 'Total bill amount must be greater than zero.');
+      return;
+    }
+
+    setState(() {
+      _submitting = true;
+      _errorMessage = null;
+    });
+
+    final itemsPayload = _lineItems.map((it) {
+      final amt = double.tryParse(it.amountCtrl.text.replaceAll(',', '')) ?? 0.0;
+      return {
+        'label': it.labelCtrl.text.trim().isEmpty ? title : it.labelCtrl.text.trim(),
+        'amount': amt,
+        'payment_code': it.paymentCode,
+        'bank_name': it.bankName,
+        'account_number': it.accountNumber,
+      };
+    }).toList();
+
+    try {
+      final dueDateStr = '${_dueDate.year}-${_dueDate.month.toString().padLeft(2, '0')}-${_dueDate.day.toString().padLeft(2, '0')}';
+      final res = await ApiService().post('/payments/admin/issue-bill', data: {
+        'member_id': m['id'],
+        'title': title,
+        'items': itemsPayload,
+        'total_amount': total,
+        'due_date': dueDateStr,
+        'notes': _notesController.text.trim(),
+      });
+
+      if (!mounted) return;
+      if (res.statusCode == 201 || res.statusCode == 200) {
+        Navigator.of(context).pop();
+        widget.onSuccess();
+      } else {
+        setState(() {
+          _submitting = false;
+          _errorMessage = res.data?['message']?.toString() ?? 'Failed to issue bill. Please try again.';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _errorMessage = 'Network error while issuing bill: $e';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final m = _selectedMember;
+    final total = _totalAmount;
+
+    return AdminDialog(
+      title: 'Issue official member bill',
+      subtitle: m == null
+          ? 'Select a member, define bill line items, and set payment deadline.'
+          : 'Bill for ${m['name']} · Licence ${m['license_number'] ?? m['id']}',
+      maxWidth: 680,
+      actions: [
+        TextButton(
+          onPressed: _submitting ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton.icon(
+          onPressed: _submitting ? null : _submit,
+          icon: _submitting
+              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : const Icon(Icons.send_rounded, size: 16),
+          label: Text(_submitting ? 'Issuing…' : 'Issue bill (GH₵ ${total.toStringAsFixed(2)})'),
+        ),
+      ],
+      children: [
+        if (_errorMessage != null)
+          Container(
+            margin: const EdgeInsets.only(bottom: CubagSpace.md),
+            padding: const EdgeInsets.all(CubagSpace.sm),
+            decoration: BoxDecoration(
+              color: CubagColors.lapsedTint,
+              borderRadius: BorderRadius.circular(CubagRadius.card),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline_rounded, color: CubagColors.lapsed, size: 18),
+                const SizedBox(width: CubagSpace.xs),
+                Expanded(child: Text(_errorMessage!, style: CubagType.small.copyWith(color: CubagColors.lapsed))),
+              ],
+            ),
+          ),
+
+        // 1. MEMBER SELECTION
+        Text('1. Member to bill', style: CubagType.headline),
+        const SizedBox(height: CubagSpace.xs),
+        if (m == null) ...[
+          AdminSearchField(
+            hint: 'Search name, company, phone or licence number',
+            controller: _searchController,
+            onChanged: _onSearchChanged,
+          ),
+          const SizedBox(height: CubagSpace.xs),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 220),
+            child: _loadingMembers
+                ? const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
+                : _members.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(CubagSpace.md),
+                        child: Text('No members found.', style: CubagType.small, textAlign: TextAlign.center),
+                      )
+                    : SingleChildScrollView(
+                        child: AdminRowGroup(
+                          dividerIndent: 68,
+                          children: [
+                            for (final raw in _members)
+                              () {
+                                final x = Map<String, dynamic>.from(raw as Map);
+                                final name = x['name']?.toString() ?? 'Member';
+                                return AdminListRow(
+                                  leading: AdminRowMark(initials: adminInitials(name)),
+                                  title: name,
+                                  subtitle: [
+                                    if ((x['company'] ?? '').toString().isNotEmpty) x['company'].toString(),
+                                    if ((x['phone'] ?? '').toString().isNotEmpty) x['phone'].toString(),
+                                  ].join(' · '),
+                                  meta: (x['license_number'] ?? '').toString().isEmpty ? null : 'Licence ${x['license_number']}',
+                                  onTap: () => setState(() => _selectedMember = x),
+                                );
+                              }(),
+                          ],
+                        ),
+                      ),
+          ),
+        ] else ...[
+          AdminRowGroup(
+            children: [
+              AdminListRow(
+                leading: AdminRowMark(initials: adminInitials(m['name']?.toString() ?? '')),
+                title: m['name']?.toString() ?? 'Member',
+                subtitle: [
+                  if (m['company'] != null) m['company'].toString(),
+                  if (m['phone'] != null) m['phone'].toString(),
+                ].join(' · '),
+                meta: m['license_number'] == null ? null : 'Licence ${m['license_number']}',
+                trailing: TextButton(
+                  onPressed: () => setState(() => _selectedMember = null),
+                  child: const Text('Change member'),
+                ),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: CubagSpace.lg),
+
+        // 2. QUICK BILL PRESETS
+        Text('2. Quick presets', style: CubagType.headline),
+        const SizedBox(height: CubagSpace.xs),
+        Wrap(
+          spacing: CubagSpace.xs,
+          runSpacing: CubagSpace.xs,
+          children: [
+            ActionChip(
+              label: const Text('Association Cloth (GH₵ 180)'),
+              avatar: const Icon(Icons.checkroom_rounded, size: 16),
+              onPressed: () => _applyPreset('Association Cloth', 'Association Cloth', '180.00', 'ADM', 'GCB', '107113005326'),
+            ),
+            ActionChip(
+              label: const Text('ID Card Replacement (GH₵ 45)'),
+              avatar: const Icon(Icons.badge_rounded, size: 16),
+              onPressed: () => _applyPreset('ID Card Replacement', 'Staff ID Card Replacement', '45.00', 'ADM', 'GCB', '107113005326'),
+            ),
+            ActionChip(
+              label: const Text('Vetting Fee (GH₵ 750)'),
+              avatar: const Icon(Icons.fact_check_rounded, size: 16),
+              onPressed: () => _applyPreset('Vetting Fee', 'Vetting & Inspection Fee', '750.00', 'REG', 'GCB', '107113005326'),
+            ),
+            ActionChip(
+              label: const Text('District Registration (GH₵ 250)'),
+              avatar: const Icon(Icons.domain_rounded, size: 16),
+              onPressed: () => _applyPreset('District Registration', 'Tema District Registration', '250.00', 'DST', 'Ecobank', '1441002452360'),
+            ),
+            ActionChip(
+              label: const Text('Administrative Fine (GH₵ 500)'),
+              avatar: const Icon(Icons.gavel_rounded, size: 16),
+              onPressed: () => _applyPreset('Administrative Fine', 'Penalty / Non-compliance Fine', '500.00', 'ADM', 'GCB', '107113005326'),
+            ),
+            ActionChip(
+              label: const Text('Subscription Dues (GH₵ 120)'),
+              avatar: const Icon(Icons.card_membership_rounded, size: 16),
+              onPressed: () => _applyPreset('Annual Subscription Dues', 'Annual Subscription Dues', '120.00', 'SUB', 'Zenith Bank', '6010309212'),
+            ),
+          ],
+        ),
+        const SizedBox(height: CubagSpace.lg),
+
+        // 3. BILL TITLE & LINE ITEMS
+        Text('3. Bill details & line items', style: CubagType.headline),
+        const SizedBox(height: CubagSpace.xs),
+        TextField(
+          controller: _titleController,
+          decoration: const InputDecoration(
+            labelText: 'Bill title',
+            hintText: 'e.g. Association Cloth, Inspection Fee, Special Assessment',
+          ),
+        ),
+        const SizedBox(height: CubagSpace.md),
+
+        // Dynamic Line Items List
+        for (int i = 0; i < _lineItems.length; i++) ...[
+          Container(
+            padding: const EdgeInsets.all(CubagSpace.sm),
+            margin: const EdgeInsets.only(bottom: CubagSpace.sm),
+            decoration: BoxDecoration(
+              color: CubagColors.paper,
+              borderRadius: BorderRadius.circular(CubagRadius.card),
+              border: Border.all(color: CubagColors.line),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: TextField(
+                        controller: _lineItems[i].labelCtrl,
+                        decoration: InputDecoration(
+                          labelText: 'Item ${i + 1} description',
+                          hintText: 'e.g. Association Cloth',
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: CubagSpace.xs),
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: _lineItems[i].amountCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Amount (GHS)',
+                          prefixText: 'GH₵ ',
+                          isDense: true,
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ),
+                    if (_lineItems.length > 1) ...[
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline_rounded, color: CubagColors.lapsed, size: 20),
+                        tooltip: 'Remove line item',
+                        onPressed: () {
+                          setState(() {
+                            final removed = _lineItems.removeAt(i);
+                            removed.dispose();
+                          });
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: CubagSpace.xs),
+                DropdownButtonFormField<String>(
+                  initialValue: _lineItems[i].paymentCode,
+                  isDense: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Settlement bank & payment code',
+                    isDense: true,
+                  ),
+                  items: _codeAccounts.map((ca) => DropdownMenuItem(
+                    value: ca['code'],
+                    child: Text(ca['label']!, style: const TextStyle(fontSize: 12.5)),
+                  )).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      final match = _codeAccounts.firstWhere((ca) => ca['code'] == val, orElse: () => _codeAccounts.first);
+                      setState(() {
+                        _lineItems[i].paymentCode = val;
+                        _lineItems[i].bankName = match['bank']!;
+                        _lineItems[i].accountNumber = match['account']!;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () {
+              setState(() {
+                _lineItems.add(_BillLineEntry(
+                  label: '',
+                  amount: '0.00',
+                  paymentCode: 'ADM',
+                  bankName: 'GCB',
+                  accountNumber: '107113005326',
+                ));
+              });
+            },
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: const Text('Add another item'),
+          ),
+        ),
+        const SizedBox(height: CubagSpace.md),
+
+        // TOTAL SUMMARY CARD
+        Container(
+          padding: const EdgeInsets.all(CubagSpace.md),
+          decoration: BoxDecoration(
+            color: CubagColors.action.withAlpha(15),
+            borderRadius: BorderRadius.circular(CubagRadius.card),
+            border: Border.all(color: CubagColors.action.withAlpha(40)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Total bill amount:', style: CubagType.headline.copyWith(color: CubagColors.action)),
+              Text(
+                'GH₵ ${total.toStringAsFixed(2)}',
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: CubagColors.action),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: CubagSpace.lg),
+
+        // 4. DEADLINE & NOTES
+        Text('4. Payment deadline & instructions', style: CubagType.headline),
+        const SizedBox(height: CubagSpace.xs),
+        InkWell(
+          onTap: _pickDueDate,
+          borderRadius: BorderRadius.circular(CubagRadius.card),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: CubagSpace.md, vertical: CubagSpace.sm),
+            decoration: BoxDecoration(
+              border: Border.all(color: CubagColors.line),
+              borderRadius: BorderRadius.circular(CubagRadius.card),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today_rounded, size: 18, color: CubagColors.action),
+                const SizedBox(width: CubagSpace.sm),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Payment deadline', style: CubagType.caption),
+                    Text(
+                      '${_dueDate.day}/${_dueDate.month}/${_dueDate.year}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                TextButton(onPressed: _pickDueDate, child: const Text('Change date')),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: CubagSpace.sm),
+        TextField(
+          controller: _notesController,
+          minLines: 2,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            labelText: 'Notes / remarks for member (optional)',
+            hintText: 'e.g. Please collect your cloth from the Secretariat after payment.',
+          ),
+        ),
+        const SizedBox(height: CubagSpace.xs),
+        Text(
+          'Issuing this bill immediately creates a pending task on the member\'s dashboard, dispatches a push notification and email, and enables them to pay online via MoMo or Card.',
+          style: CubagType.small,
+        ),
       ],
     );
   }
