@@ -263,15 +263,15 @@ def public_initiate_momo():
 
         prompt_sent = False
         if WHITSUNPAY_CLIENT_ID and WHITSUNPAY_API_KEY:
-            clean_desc = course_name or service_type or 'CTI Course'
-            if not clean_desc.lower().startswith('cubag'):
-                clean_desc = f"CUBAG - {clean_desc}"
+            clean_desc = (course_name or service_type or 'CTI Course').strip()
+            if clean_desc.lower().startswith('cubag'):
+                clean_desc = clean_desc[5:].lstrip(' -:')
             code_label = 'CTI' if 'course' in clean_desc.lower() or 'cti' in clean_desc.lower() else 'GST'
             codes_str = f"{code_label} {amount:.2f}"
             available_for_base = 120 - len(codes_str) - 3
             if available_for_base < len(clean_desc):
                 clean_desc = clean_desc[:max(0, available_for_base - 1)].rstrip() + '…'
-            user_prompt_desc = f"{clean_desc} - {codes_str}"
+            user_prompt_desc = f"{clean_desc} - {codes_str}" if clean_desc else codes_str
             if len(user_prompt_desc) > 120:
                 user_prompt_desc = user_prompt_desc[:120]
 
@@ -797,9 +797,11 @@ def create_payment():
 
             if WHITSUNPAY_CLIENT_ID and WHITSUNPAY_API_KEY:
                 from config.payment_codes import narration as _narration
-                base_desc = description.strip() if description else 'Payment'
-                if not base_desc.lower().startswith('cubag'):
-                    base_desc = f"CUBAG - {base_desc}"
+                base_desc = (description or 'Payment').strip()
+                if base_desc.lower().startswith('cubag'):
+                    base_desc = base_desc[5:].lstrip(' -:')
+                if not base_desc:
+                    base_desc = 'Payment'
 
                 # Append payment codes summary so WhitsunPay settlement engine sees codes in description,
                 # while keeping the human-friendly description visible first to the user on USSD/MoMo prompt.
