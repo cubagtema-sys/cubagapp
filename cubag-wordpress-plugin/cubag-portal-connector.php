@@ -77,9 +77,11 @@ class CUBAG_Portal_Connector {
     // ─────────────────────────────────────────────────────────────
     public function render_members($atts) {
         $atts = shortcode_atts([
-            'limit' => 50,
+            'limit' => 0, // 0 = all
             'port'  => '',
             'search' => 'yes',
+            'per_page' => 12, // default 12 members per page
+            'pagination' => 'yes',
         ], $atts);
 
         $data = $this->fetch_api('/members', 'cubag_members_list', 300);
@@ -96,12 +98,15 @@ class CUBAG_Portal_Connector {
             $members = array_slice($members, 0, intval($atts['limit']));
         }
 
+        $per_page = max(1, intval($atts['per_page']));
+        $use_pagination = ($atts['pagination'] === 'yes');
+
         ob_start();
         ?>
-        <div class="cubag-wrap">
+        <div class="cubag-wrap" id="cubag-members-wrapper">
             <?php if ($atts['search'] === 'yes'): ?>
                 <div class="cubag-search-box">
-                    <input type="text" id="cubag-member-filter" placeholder="Search member company, license, or port..." onkeyup="cubagFilterMembers()">
+                    <input type="text" id="cubag-member-filter" placeholder="Search member company, license, or port..." oninput="cubagUpdateDisplay(1)">
                 </div>
             <?php endif; ?>
 
@@ -141,16 +146,106 @@ class CUBAG_Portal_Connector {
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
+
+            <div id="cubag-no-results" style="display:none; padding: 24px; text-align: center; color: #888;">
+                No accredited members found matching your search.
+            </div>
+
+            <?php if ($use_pagination): ?>
+                <div class="cubag-pagination-bar" id="cubag-pagination-controls">
+                    <div class="cubag-pagination-info" id="cubag-pagination-info"></div>
+                    <div class="cubag-pagination-buttons" id="cubag-pagination-buttons"></div>
+                </div>
+            <?php endif; ?>
         </div>
         <script>
-        function cubagFilterMembers() {
-            var val = document.getElementById('cubag-member-filter').value.toLowerCase();
-            var cards = document.querySelectorAll('.cubag-member-card');
-            cards.forEach(function(c) {
-                var search = c.getAttribute('data-search') || '';
-                c.style.display = search.includes(val) ? '' : 'none';
-            });
-        }
+        (function() {
+            var perPage = <?php echo $per_page; ?>;
+            var isPaginationEnabled = <?php echo $use_pagination ? 'true' : 'false'; ?>;
+            var currentPage = 1;
+
+            window.cubagUpdateDisplay = function(targetPage) {
+                if (targetPage) currentPage = targetPage;
+                var filterInput = document.getElementById('cubag-member-filter');
+                var query = filterInput ? filterInput.value.toLowerCase().trim() : '';
+                var allCards = Array.from(document.querySelectorAll('.cubag-member-card'));
+                
+                var matchingCards = allCards.filter(function(card) {
+                    var text = card.getAttribute('data-search') || '';
+                    return !query || text.indexOf(query) !== -1;
+                });
+
+                allCards.forEach(function(c) { c.style.display = 'none'; });
+
+                var noResults = document.getElementById('cubag-no-results');
+                var controls = document.getElementById('cubag-pagination-controls');
+                var info = document.getElementById('cubag-pagination-info');
+                var buttons = document.getElementById('cubag-pagination-buttons');
+
+                if (matchingCards.length === 0) {
+                    if (noResults) noResults.style.display = 'block';
+                    if (controls) controls.style.display = 'none';
+                    return;
+                } else {
+                    if (noResults) noResults.style.display = 'none';
+                }
+
+                if (!isPaginationEnabled || matchingCards.length <= perPage) {
+                    matchingCards.forEach(function(c) { c.style.display = ''; });
+                    if (controls) controls.style.display = 'none';
+                    return;
+                }
+
+                if (controls) controls.style.display = 'flex';
+                var totalPages = Math.ceil(matchingCards.length / perPage);
+                if (currentPage > totalPages) currentPage = totalPages;
+                if (currentPage < 1) currentPage = 1;
+
+                var start = (currentPage - 1) * perPage;
+                var end = Math.min(start + perPage, matchingCards.length);
+
+                for (var i = start; i < end; i++) {
+                    matchingCards[i].style.display = '';
+                }
+
+                if (info) {
+                    info.innerText = 'Showing ' + (start + 1) + '–' + end + ' of ' + matchingCards.length + ' accredited members';
+                }
+
+                if (buttons) {
+                    var html = '';
+                    if (currentPage > 1) {
+                        html += '<button type="button" class="cubag-page-btn" onclick="cubagGoToPage(' + (currentPage - 1) + ')">‹ Prev</button>';
+                    }
+                    for (var p = 1; p <= totalPages; p++) {
+                        if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+                            var activeClass = (p === currentPage) ? ' active' : '';
+                            html += '<button type="button" class="cubag-page-btn' + activeClass + '" onclick="cubagGoToPage(' + p + ')">' + p + '</button>';
+                        } else if (p === currentPage - 3 || p === currentPage + 3) {
+                            html += '<span class="cubag-page-dots">…</span>';
+                        }
+                    }
+                    if (currentPage < totalPages) {
+                        html += '<button type="button" class="cubag-page-btn" onclick="cubagGoToPage(' + (currentPage + 1) + ')">Next ›</button>';
+                    }
+                    buttons.innerHTML = html;
+                }
+            };
+
+            window.cubagGoToPage = function(p) {
+                cubagUpdateDisplay(p);
+                var wrapper = document.getElementById('cubag-members-wrapper');
+                if (wrapper) {
+                    wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() { cubagUpdateDisplay(1); });
+            } else {
+                cubagUpdateDisplay(1);
+            }
+        })();
         </script>
         <?php
         return ob_get_clean();
@@ -489,3 +584,4 @@ class CUBAG_Portal_Connector {
 }
 
 new CUBAG_Portal_Connector();
+

@@ -43,3 +43,4 @@ If you prefer using pure JavaScript (`fetch`), Gutenberg Custom HTML, or page bu
 - **Courses:** `https://cubag-api-server.fly.dev/api/v1/public/courses`
 - **Portal Summary:** `https://cubag-api-server.fly.dev/api/v1/public/portal-summary`
 - **Interactive Swagger Docs:** `https://cubag-api-server.fly.dev/api/v1/public/docs`
+
