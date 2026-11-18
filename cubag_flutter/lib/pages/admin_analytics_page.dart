@@ -1143,8 +1143,11 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
       _error = null;
     });
 
+    bool financialFailed = false;
+    bool membersFailed = false;
+
+    // 1. Dashboard Stats
     try {
-      // Fetch Dashboard Stats
       final dashboardRes = await ApiService().get('/admin/dashboard');
       if (dashboardRes.statusCode == 200 && dashboardRes.data is Map) {
         final dData = dashboardRes.data as Map<String, dynamic>;
@@ -1154,8 +1157,12 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
         _openTickets =
             (kpis['open_tickets'] ?? kpis['tickets_count'] ?? 0) as int;
       }
+    } catch (e, st) {
+      AppLogger.error('admin_analytics_page dashboard', e, st);
+    }
 
-      // Fetch Financial Stats
+    // 2. Financial Stats
+    try {
       final financialRes = await ApiService().get(
         '/payments/admin/all?limit=500',
       );
@@ -1207,13 +1214,20 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
               _monthlyRevenue[monthLabel] =
                   (_monthlyRevenue[monthLabel] ?? 0.0) + amt;
             } catch (e, st) {
-              AppLogger.error('admin_analytics_page', e, st);
+              AppLogger.error('admin_analytics_page monthly parsing', e, st);
             }
           }
         }
+      } else {
+        financialFailed = true;
       }
+    } catch (e, st) {
+      financialFailed = true;
+      AppLogger.error('admin_analytics_page financials', e, st);
+    }
 
-      // Fetch Members Stats
+    // 3. Members Stats
+    try {
       final membersRes = await ApiService().get('/members/admin/all?limit=500');
       if (membersRes.statusCode == 200) {
         List<dynamic> members = [];
@@ -1252,9 +1266,16 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
             }
           }
         }
+      } else {
+        membersFailed = true;
       }
+    } catch (e, st) {
+      membersFailed = true;
+      AppLogger.error('admin_analytics_page members', e, st);
+    }
 
-      // Fetch cargo schedules (for Operations Tab)
+    // 4. Cargo Schedules
+    try {
       final cargoRes = await ApiService().get('/schedules');
       if (cargoRes.statusCode == 200) {
         if (cargoRes.data is List) {
@@ -1266,8 +1287,10 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
           _cargoSchedulesCount = cList.length;
         }
       }
+    } catch (_) {}
 
-      // Fetch announcements (for Operations Tab)
+    // 5. Announcements
+    try {
       final announcementsRes = await ApiService().get('/announcements');
       if (announcementsRes.statusCode == 200) {
         if (announcementsRes.data is List) {
@@ -1279,10 +1302,17 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
           _announcementsCount = aList.length;
         }
       }
-    } catch (e, st) {
-      AppLogger.error('admin_analytics_page _fetchData', e, st);
+    } catch (_) {}
+
+    if (financialFailed || membersFailed) {
       _error =
           'Failed to fetch some analytics data. Visualizing available records.';
+    }
+
+    if (mounted) {
+      setState(() {
+        _loading = false;
+      });
     }
 
     if (mounted) {

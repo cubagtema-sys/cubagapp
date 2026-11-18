@@ -2115,17 +2115,29 @@ def get_all_payments_admin():
                     kpi_params.append(end_date)
             kpi_sql = ("WHERE " + " AND ".join(kpi_where_clauses)) if kpi_where_clauses else ""
 
-            cursor.execute(f"""
-                SELECT 
-                    COALESCE(SUM(CASE WHEN LOWER(status) IN ('paid', 'success', 'completed') THEN amount ELSE 0 END), 0) as total_revenue,
-                    COALESCE(SUM(CASE WHEN LOWER(status) IN ('paid', 'success', 'completed') AND (LOWER(description) LIKE '%renewal%' OR LOWER(description) LIKE '%licen%fee%') THEN amount ELSE 0 END), 0) as renewal_revenue,
-                    COALESCE(SUM(CASE WHEN LOWER(status) IN ('paid', 'success', 'completed') AND (LOWER(description) LIKE '%registration%' OR LOWER(description) LIKE '%entrance%' OR LOWER(description) LIKE '%new member%' OR LOWER(description) LIKE '%onboarding%' OR LOWER(description) LIKE '%dossier%') THEN amount ELSE 0 END), 0) as new_membership_revenue,
-                    COALESCE(SUM(CASE WHEN LOWER(status) IN ('paid', 'success', 'completed') AND (LOWER(description) LIKE '%course%' OR LOWER(description) LIKE '%cti%' OR LOWER(description) LIKE '%training%' OR LOWER(description) LIKE '%enroll%') THEN amount ELSE 0 END), 0) as course_revenue,
-                    COALESCE(SUM(CASE WHEN LOWER(status) = 'pending' THEN amount ELSE 0 END), 0) as pending_revenue,
-                    COALESCE(SUM(CASE WHEN LOWER(status) IN ('failed', 'overdue', 'rejected') THEN amount ELSE 0 END), 0) as failed_revenue
-                FROM payments 
-                {kpi_sql}
-            """, tuple(kpi_params))
+            if kpi_params:
+                cursor.execute(f"""
+                    SELECT 
+                        COALESCE(SUM(CASE WHEN LOWER(status) IN ('paid', 'success', 'completed') THEN amount ELSE 0 END), 0) as total_revenue,
+                        COALESCE(SUM(CASE WHEN LOWER(status) IN ('paid', 'success', 'completed') AND (LOWER(description) LIKE '%%renewal%%' OR LOWER(description) LIKE '%%licen%%fee%%') THEN amount ELSE 0 END), 0) as renewal_revenue,
+                        COALESCE(SUM(CASE WHEN LOWER(status) IN ('paid', 'success', 'completed') AND (LOWER(description) LIKE '%%registration%%' OR LOWER(description) LIKE '%%entrance%%' OR LOWER(description) LIKE '%%new member%%' OR LOWER(description) LIKE '%%onboarding%%' OR LOWER(description) LIKE '%%dossier%%') THEN amount ELSE 0 END), 0) as new_membership_revenue,
+                        COALESCE(SUM(CASE WHEN LOWER(status) IN ('paid', 'success', 'completed') AND (LOWER(description) LIKE '%%course%%' OR LOWER(description) LIKE '%%cti%%' OR LOWER(description) LIKE '%%training%%' OR LOWER(description) LIKE '%%enroll%%') THEN amount ELSE 0 END), 0) as course_revenue,
+                        COALESCE(SUM(CASE WHEN LOWER(status) = 'pending' THEN amount ELSE 0 END), 0) as pending_revenue,
+                        COALESCE(SUM(CASE WHEN LOWER(status) IN ('failed', 'overdue', 'rejected') THEN amount ELSE 0 END), 0) as failed_revenue
+                    FROM payments 
+                    {kpi_sql}
+                """, tuple(kpi_params))
+            else:
+                cursor.execute("""
+                    SELECT 
+                        COALESCE(SUM(CASE WHEN LOWER(status) IN ('paid', 'success', 'completed') THEN amount ELSE 0 END), 0) as total_revenue,
+                        COALESCE(SUM(CASE WHEN LOWER(status) IN ('paid', 'success', 'completed') AND (LOWER(description) LIKE '%renewal%' OR LOWER(description) LIKE '%licen%fee%') THEN amount ELSE 0 END), 0) as renewal_revenue,
+                        COALESCE(SUM(CASE WHEN LOWER(status) IN ('paid', 'success', 'completed') AND (LOWER(description) LIKE '%registration%' OR LOWER(description) LIKE '%entrance%' OR LOWER(description) LIKE '%new member%' OR LOWER(description) LIKE '%onboarding%' OR LOWER(description) LIKE '%dossier%') THEN amount ELSE 0 END), 0) as new_membership_revenue,
+                        COALESCE(SUM(CASE WHEN LOWER(status) IN ('paid', 'success', 'completed') AND (LOWER(description) LIKE '%course%' OR LOWER(description) LIKE '%cti%' OR LOWER(description) LIKE '%training%' OR LOWER(description) LIKE '%enroll%') THEN amount ELSE 0 END), 0) as course_revenue,
+                        COALESCE(SUM(CASE WHEN LOWER(status) = 'pending' THEN amount ELSE 0 END), 0) as pending_revenue,
+                        COALESCE(SUM(CASE WHEN LOWER(status) IN ('failed', 'overdue', 'rejected') THEN amount ELSE 0 END), 0) as failed_revenue
+                    FROM payments 
+                """)
             stats = cursor.fetchone() or {}
 
             tot_rev = float(stats.get('total_revenue') or 0)

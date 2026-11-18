@@ -63,7 +63,6 @@ void main() {
     }
 
     test('matches Single Date precisely', () {
-      final now = DateTime.now();
       final targetDate = DateTime(2026, 11, 15);
       expect(isDateMatching('2026-11-15T14:30:00Z', mode: 'Single Date', singleDate: targetDate), isTrue);
       expect(isDateMatching('2026-11-16T08:00:00Z', mode: 'Single Date', singleDate: targetDate), isFalse);
