@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (let name of names) {
+          caches.delete(name);
+        }
+      });
+    }
+  </script>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="CUBAG Enterprise Mobility Platform">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="CUBAG">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="logo.jpeg"/>
+
+  <title>CUBAG</title>
+  <!-- Preconnect and preload Google Fonts Inter & Outfit to eliminate initial load font flashing -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=block" rel="stylesheet">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400&family=Source+Serif+4:opsz,wght@8..60,600&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      font-family: 'Inter', 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #5C3421;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    flt-glass-pane {
+      user-select: text !important;
+      -webkit-user-select: text !important;
+    }
+    #cubag-splash-loader {
+      position: fixed;
+      inset: 0;
+      background-color: #5C3421;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999999;
+      transition: opacity 0.35s ease;
+    }
+    /* Same layout as lib/pages/splash_page.dart, so the hand-over from this
+       loading screen to the Flutter splash is seamless. */
+    .splash-mark {
+      width: 112px; height: 112px; padding: 5px; border-radius: 50%;
+      background: #FFFFFF; display: flex; align-items: center; justify-content: center;
+    }
+    .splash-mark img { width: 112px; height: 112px; border-radius: 50%; object-fit: cover; }
+    .splash-name {
+      margin: 32px 24px 0; color: #FFFFFF; text-align: center;
+      font-family: 'Source Serif 4', Georgia, serif; font-weight: 600;
+      font-size: 30px; line-height: 36px;
+    }
+    .splash-motto {
+      margin: 6px 24px 0; color: #E8C4AE; text-align: center;
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px; line-height: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div id="cubag-splash-loader" role="img" aria-label="Customs Brokers Association of Ghana. Loading.">
+    <div class="splash-mark"><img src="logo.jpeg" alt=""></div>
+    <div class="splash-name">Customs Brokers<br>Association of Ghana</div>
+    <div class="splash-motto">Honesty and Efficiency</div>
+  </div>
+  <!-- Flutter Web Bootstrap Loader -->
+  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    window.addEventListener('flutter-first-frame', function() {
+      var loader = document.getElementById('cubag-splash-loader');
+      if (loader) {
+        loader.style.opacity = '0';
+        loader.style.pointerEvents = 'none';
+        setTimeout(function() {
+          if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
+        }, 350);
+      }
+    });
+  </script>
+  <script>
+    function loadFlutterFallback() {
+      console.warn('flutter_bootstrap.js not found or failed, initializing Flutter fallback loader...');
+      var script = document.createElement('script');
+      script.src = 'flutter.js';
+      script.onload = function() {
+        if (window._flutter && window._flutter.loader) {
+          if (typeof window._flutter.loader.load === 'function') {
+            window._flutter.loader.load();
+          } else if (typeof window._flutter.loader.loadEntrypoint === 'function') {
+            window._flutter.loader.loadEntrypoint({
+              onEntrypointLoaded: function(engineInitializer) {
+                engineInitializer.initializeEngine().then(function(appRunner) {
+                  appRunner.runApp();
+                });
+              }
+            });
+          }
+        } else {
+          var mainScript = document.createElement('script');
+          mainScript.src = 'main.dart.js';
+          mainScript.type = 'application/javascript';
+          document.body.appendChild(mainScript);
+        }
+      };
+      script.onerror = function() {
+        var mainScript = document.createElement('script');
+        mainScript.src = 'main.dart.js';
+        mainScript.type = 'application/javascript';
+        document.body.appendChild(mainScript);
+      };
+      document.body.appendChild(script);
+    }
+  </script>
+</body>
+</html>

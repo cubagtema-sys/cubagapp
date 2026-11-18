@@ -438,9 +438,12 @@ def get_all_members_admin():
     page = int(request.args.get('page', 1))
     limit = int(request.args.get('limit', 50))
     status_filter = request.args.get('status', 'all').lower()
+    start_date = request.args.get('start_date') or request.args.get('from')
+    end_date = request.args.get('end_date') or request.args.get('to')
+    single_date = request.args.get('date')
     
-    # 20-second per-query cache keyed by page+status+limit
-    cache_key = f'admin_members_{status_filter}_p{page}_l{limit}'
+    # 20-second per-query cache keyed by page+status+limit+dates
+    cache_key = f'admin_members_{status_filter}_p{page}_l{limit}_s{start_date}_e{end_date}_d{single_date}'
     cached = cache.get(cache_key)
     if cached is not None:
         return jsonify(cached), 200
@@ -449,15 +452,29 @@ def get_all_members_admin():
     try:
         offset = (page - 1) * limit
 
-        where_clause = ""
+        where_conditions = []
+        where_params = []
         if status_filter in ('pending', 'pending_review'):
-            where_clause = "WHERE m.status IN ('pending', 'pending_review')"
+            where_conditions.append("m.status IN ('pending', 'pending_review')")
         elif status_filter == 'active':
-            where_clause = "WHERE m.status IN ('active', 'suspended')"
+            where_conditions.append("m.status IN ('active', 'suspended')")
+
+        if single_date:
+            where_conditions.append("m.created_at::date = %s")
+            where_params.append(single_date)
+        else:
+            if start_date:
+                where_conditions.append("m.created_at::date >= %s")
+                where_params.append(start_date)
+            if end_date:
+                where_conditions.append("m.created_at::date <= %s")
+                where_params.append(end_date)
+
+        where_clause = ("WHERE " + " AND ".join(where_conditions)) if where_conditions else ""
 
         with conn.cursor() as cursor:
             count_query = f"SELECT COUNT(*) as total FROM members m {where_clause}"
-            cursor.execute(count_query)
+            cursor.execute(count_query, tuple(where_params))
             total = cursor.fetchone()['total']
 
             # Use a LATERAL join to efficiently fetch the latest renewal payment reference for each member
@@ -482,7 +499,7 @@ def get_all_members_admin():
                 {where_clause}
                 ORDER BY m.created_at DESC
                 LIMIT %s OFFSET %s
-            """, (limit, offset))
+            """, tuple(where_params) + (limit, offset))
             members = cursor.fetchall()
 
             result = []

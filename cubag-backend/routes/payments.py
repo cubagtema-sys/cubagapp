@@ -2005,9 +2005,12 @@ def get_all_payments_admin():
     search = request.args.get('search', '').lower()
     member_id = request.args.get('member_id')
     status = request.args.get('status', 'all').lower()
+    start_date = request.args.get('start_date') or request.args.get('from')
+    end_date = request.args.get('end_date') or request.args.get('to')
+    single_date = request.args.get('date')
 
-    # 20-second cache keyed by page+status+search+member_id
-    cache_key = f'admin_payments_{status}_{search}_m{member_id}_p{page}_l{limit}'
+    # 20-second cache keyed by page+status+search+member_id+dates
+    cache_key = f'admin_payments_{status}_{search}_m{member_id}_p{page}_l{limit}_s{start_date}_e{end_date}_d{single_date}'
     cached = cache.get(cache_key)
     if cached is not None:
         return jsonify(cached), 200
@@ -2035,6 +2038,16 @@ def get_all_payments_admin():
             else:
                 where_clauses.append("LOWER(p.status) = %s")
                 params.append(st_lower)
+        if single_date:
+            where_clauses.append("p.created_at::date = %s")
+            params.append(single_date)
+        else:
+            if start_date:
+                where_clauses.append("p.created_at::date >= %s")
+                params.append(start_date)
+            if end_date:
+                where_clauses.append("p.created_at::date <= %s")
+                params.append(end_date)
 
         where_sql = ""
         if where_clauses:
@@ -2085,7 +2098,24 @@ def get_all_payments_admin():
                     elif key == 'amount' and value is not None:
                         p[key] = float(value)
 
-            cursor.execute("""
+            kpi_where_clauses = []
+            kpi_params = []
+            if member_id:
+                kpi_where_clauses.append("member_id = %s")
+                kpi_params.append(member_id)
+            if single_date:
+                kpi_where_clauses.append("created_at::date = %s")
+                kpi_params.append(single_date)
+            else:
+                if start_date:
+                    kpi_where_clauses.append("created_at::date >= %s")
+                    kpi_params.append(start_date)
+                if end_date:
+                    kpi_where_clauses.append("created_at::date <= %s")
+                    kpi_params.append(end_date)
+            kpi_sql = ("WHERE " + " AND ".join(kpi_where_clauses)) if kpi_where_clauses else ""
+
+            cursor.execute(f"""
                 SELECT 
                     COALESCE(SUM(CASE WHEN LOWER(status) IN ('paid', 'success', 'completed') THEN amount ELSE 0 END), 0) as total_revenue,
                     COALESCE(SUM(CASE WHEN LOWER(status) IN ('paid', 'success', 'completed') AND (LOWER(description) LIKE '%renewal%' OR LOWER(description) LIKE '%licen%fee%') THEN amount ELSE 0 END), 0) as renewal_revenue,
@@ -2094,7 +2124,8 @@ def get_all_payments_admin():
                     COALESCE(SUM(CASE WHEN LOWER(status) = 'pending' THEN amount ELSE 0 END), 0) as pending_revenue,
                     COALESCE(SUM(CASE WHEN LOWER(status) IN ('failed', 'overdue', 'rejected') THEN amount ELSE 0 END), 0) as failed_revenue
                 FROM payments 
-            """)
+                {kpi_sql}
+            """, tuple(kpi_params))
             stats = cursor.fetchone() or {}
 
             tot_rev = float(stats.get('total_revenue') or 0)

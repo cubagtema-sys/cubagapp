@@ -36,6 +36,8 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
 
   // Date Range Filtering
   String _dateFilter = 'All Time';
+  DateTime? _selectedSingleDate;
+  DateTimeRange? _selectedDateRange;
   List<dynamic> _rawMembers = [];
 
   // Financial Stats
@@ -69,26 +71,117 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
   int _announcementsCount = 0;
   int _cargoSchedulesCount = 0;
 
-  bool _isWithinDateRange(String? dateStr) {
-    if (dateStr == null) return false;
-    final date = DateTime.tryParse(dateStr);
-    if (date == null) return false;
+  bool _isDateMatching(
+    String? dateStr, {
+    String? filterMode,
+    DateTime? singleDate,
+    DateTimeRange? customRange,
+  }) {
+    if (dateStr == null || dateStr.trim().isEmpty) return false;
+    final parsed = DateTime.tryParse(dateStr);
+    if (parsed == null) return false;
+    final date = parsed.toLocal();
 
+    final mode = filterMode ?? _dateFilter;
     final now = DateTime.now();
-    switch (_dateFilter) {
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+
+    switch (mode) {
+      case 'Today':
+        return !date.isBefore(todayStart) && !date.isAfter(todayEnd);
+
+      case 'Yesterday':
+        final yStart = todayStart.subtract(const Duration(days: 1));
+        final yEnd = DateTime(yStart.year, yStart.month, yStart.day, 23, 59, 59, 999);
+        return !date.isBefore(yStart) && !date.isAfter(yEnd);
+
       case 'Last 7 Days':
-        final limit = now.subtract(const Duration(days: 7));
-        return date.isAfter(limit);
+        final start7 = todayStart.subtract(const Duration(days: 6));
+        return !date.isBefore(start7) && !date.isAfter(todayEnd);
+
       case 'Last 30 Days':
-        final limit = now.subtract(const Duration(days: 30));
-        return date.isAfter(limit);
+        final start30 = todayStart.subtract(const Duration(days: 29));
+        return !date.isBefore(start30) && !date.isAfter(todayEnd);
+
+      case 'This Month':
+        final monthStart = DateTime(now.year, now.month, 1);
+        final nextMonth = now.month == 12 ? DateTime(now.year + 1, 1, 1) : DateTime(now.year, now.month + 1, 1);
+        final monthEnd = nextMonth.subtract(const Duration(milliseconds: 1));
+        return !date.isBefore(monthStart) && !date.isAfter(monthEnd);
+
       case 'Year to Date':
         final startOfYear = DateTime(now.year, 1, 1);
-        return date.isAfter(startOfYear) || date.isAtSameMomentAs(startOfYear);
+        return !date.isBefore(startOfYear) && !date.isAfter(todayEnd);
+
+      case 'Single Date':
+        final target = singleDate ?? _selectedSingleDate;
+        if (target == null) return true;
+        return date.year == target.year && date.month == target.month && date.day == target.day;
+
+      case 'Custom Range':
+      case 'Date Range':
+        final range = customRange ?? _selectedDateRange;
+        if (range == null) return true;
+        final rStart = DateTime(range.start.year, range.start.month, range.start.day);
+        final rEnd = DateTime(range.end.year, range.end.month, range.end.day, 23, 59, 59, 999);
+        return !date.isBefore(rStart) && !date.isAfter(rEnd);
+
       case 'All Time':
       default:
         return true;
     }
+  }
+
+  bool _isWithinDateRange(String? dateStr) {
+    return _isDateMatching(dateStr);
+  }
+
+  static String _formatDateShort(DateTime d) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${d.day} ${months[d.month - 1]} ${d.year}';
+  }
+
+  String _getDateFilterLabel({
+    String? filterMode,
+    DateTime? singleDate,
+    DateTimeRange? customRange,
+  }) {
+    final mode = filterMode ?? _dateFilter;
+    if (mode == 'Single Date') {
+      final d = singleDate ?? _selectedSingleDate;
+      if (d != null) return _formatDateShort(d);
+      return 'Single Date';
+    }
+    if (mode == 'Custom Range' || mode == 'Date Range') {
+      final r = customRange ?? _selectedDateRange;
+      if (r != null) return '${_formatDateShort(r.start)} – ${_formatDateShort(r.end)}';
+      return 'Date Range';
+    }
+    return mode;
+  }
+
+  String _getDateSuffix({
+    String? filterMode,
+    DateTime? singleDate,
+    DateTimeRange? customRange,
+  }) {
+    final mode = filterMode ?? _dateFilter;
+    if (mode == 'Single Date') {
+      final d = singleDate ?? _selectedSingleDate;
+      if (d != null) {
+        return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+      }
+    }
+    if (mode == 'Custom Range' || mode == 'Date Range') {
+      final r = customRange ?? _selectedDateRange;
+      if (r != null) {
+        final s = '${r.start.year}-${r.start.month.toString().padLeft(2, '0')}-${r.start.day.toString().padLeft(2, '0')}';
+        final e = '${r.end.year}-${r.end.month.toString().padLeft(2, '0')}-${r.end.day.toString().padLeft(2, '0')}';
+        return '${s}_to_$e';
+      }
+    }
+    return mode.replaceAll(' ', '_');
   }
 
   String _classifyTransactionCategory(Map<String, dynamic> tx) {
@@ -161,7 +254,11 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
     return catCounts;
   }
 
-  Map<String, Map<String, dynamic>> get _filteredBankRevenue {
+  Map<String, Map<String, dynamic>> _computeBankRevenue({
+    String? filterMode,
+    DateTime? singleDate,
+    DateTimeRange? customRange,
+  }) {
     final Map<String, Map<String, dynamic>> banks = {
       '107113005326': {
         'name': 'GCB Bank',
@@ -208,7 +305,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
     for (var tx in _transactions) {
       final statusStr = tx['status']?.toString().toLowerCase() ?? '';
       final isPaid = statusStr == 'paid' || statusStr == 'success' || statusStr == 'completed';
-      if (!isPaid || !_isWithinDateRange(tx['date']?.toString() ?? tx['created_at']?.toString())) {
+      if (!isPaid || !_isDateMatching(tx['date']?.toString() ?? tx['created_at']?.toString(), filterMode: filterMode, singleDate: singleDate, customRange: customRange)) {
         continue;
       }
 
@@ -295,6 +392,8 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
 
     return banks;
   }
+
+  Map<String, Map<String, dynamic>> get _filteredBankRevenue => _computeBankRevenue();
 
   // Getters for filtered Financial metrics
   double get _filteredRevenue {
@@ -520,47 +619,396 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
     }
   }
 
-  void _showExportDialog(bool isDark, Color cardBg, Color textPrimary, Color textMuted) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AdminDialog(
-        title: 'Export',
-        subtitle: 'Downloads a CSV file that opens in Excel, for the period chosen at the top of the page.',
-        maxWidth: 480,
-        children: [
-          AdminRowGroup(
-            dividerIndent: 68,
-            children: [
-              AdminListRow(
-                leading: const AdminRowMark(icon: Icons.payments_outlined),
-                title: 'Payments',
-                subtitle: 'Payment records in the period',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _exportFinancialsCSV();
-                },
-              ),
-              AdminListRow(
-                leading: const AdminRowMark(icon: Icons.people_outline_rounded),
-                title: 'Members',
-                subtitle: 'Members who joined in the period',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _exportMembersCSV();
-                },
-              ),
-            ],
+  Widget _buildExportDatasetCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(CubagRadius.control),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: CubagSpace.sm, vertical: CubagSpace.sm),
+        decoration: BoxDecoration(
+          color: selected ? CubagColors.action.withValues(alpha: 0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(CubagRadius.control),
+          border: Border.all(
+            color: selected ? CubagColors.action : CubagColors.line,
+            width: selected ? 1.5 : 1.0,
           ),
-        ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: selected ? CubagColors.action : CubagColors.muted,
+            ),
+            const SizedBox(height: CubagSpace.xs),
+            Text(
+              title,
+              style: CubagType.label.copyWith(
+                fontWeight: selected ? FontWeight.bold : FontWeight.w600,
+                color: selected ? CubagColors.action : null,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: CubagType.caption.copyWith(
+                fontSize: 10,
+                color: CubagColors.muted,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  void _exportFinancialsCSV() {
+  Widget _buildFilterChoiceChip(
+    String label,
+    String current,
+    ValueChanged<String> onSelected,
+  ) {
+    final isSelected = current == label;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) => onSelected(label),
+      labelStyle: TextStyle(
+        fontSize: 12,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        color: isSelected ? Colors.white : null,
+      ),
+      selectedColor: CubagColors.action,
+      showCheckmark: false,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
+  void _showExportDialog(bool isDark, Color cardBg, Color textPrimary, Color textMuted) {
+    String selectedDataset = 'payments'; // 'payments', 'members', 'banks'
+    String selectedFilterMode = _dateFilter == 'All Time' ? 'All Time' : _dateFilter;
+    DateTime? dialogSingleDate = _selectedSingleDate ?? DateTime.now();
+    DateTimeRange? dialogDateRange = _selectedDateRange ?? DateTimeRange(
+      start: DateTime.now().subtract(const Duration(days: 7)),
+      end: DateTime.now(),
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          // Compute live preview counts
+          int matchCount = 0;
+          double matchRevenue = 0.0;
+          if (selectedDataset == 'payments') {
+            for (var tx in _transactions) {
+              final d = tx['date']?.toString() ?? tx['created_at']?.toString();
+              if (_isDateMatching(d, filterMode: selectedFilterMode, singleDate: dialogSingleDate, customRange: dialogDateRange)) {
+                matchCount++;
+                matchRevenue += (double.tryParse(tx['amount']?.toString() ?? '0') ?? 0.0);
+              }
+            }
+          } else if (selectedDataset == 'members') {
+            for (var m in _rawMembers) {
+              final d = m['created_at']?.toString() ?? m['date']?.toString();
+              if (d == null || _isDateMatching(d, filterMode: selectedFilterMode, singleDate: dialogSingleDate, customRange: dialogDateRange)) {
+                matchCount++;
+              }
+            }
+          } else if (selectedDataset == 'banks') {
+            for (var tx in _transactions) {
+              final st = tx['status']?.toString().toLowerCase() ?? '';
+              final isPaid = st == 'paid' || st == 'success' || st == 'completed';
+              final d = tx['date']?.toString() ?? tx['created_at']?.toString();
+              if (isPaid && _isDateMatching(d, filterMode: selectedFilterMode, singleDate: dialogSingleDate, customRange: dialogDateRange)) {
+                matchCount++;
+                matchRevenue += (double.tryParse(tx['amount']?.toString() ?? '0') ?? 0.0);
+              }
+            }
+          }
+
+          final dateLabel = _getDateFilterLabel(
+            filterMode: selectedFilterMode,
+            singleDate: dialogSingleDate,
+            customRange: dialogDateRange,
+          );
+
+          return AdminDialog(
+            title: 'Export analytics & reports',
+            subtitle: 'Export payments, members, or bank settlements with custom date filtering.',
+            maxWidth: 580,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton.icon(
+                icon: const Icon(Icons.download_rounded, size: 18),
+                label: const Text('Download CSV'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  if (selectedDataset == 'payments') {
+                    _exportFinancialsCSV(
+                      filterMode: selectedFilterMode,
+                      singleDate: dialogSingleDate,
+                      customRange: dialogDateRange,
+                    );
+                  } else if (selectedDataset == 'members') {
+                    _exportMembersCSV(
+                      filterMode: selectedFilterMode,
+                      singleDate: dialogSingleDate,
+                      customRange: dialogDateRange,
+                    );
+                  } else {
+                    _exportBankSettlementsCSV(
+                      filterMode: selectedFilterMode,
+                      singleDate: dialogSingleDate,
+                      customRange: dialogDateRange,
+                    );
+                  }
+                },
+              ),
+            ],
+            children: [
+              // 1. Dataset Selection
+              Text('1. SELECT DATASET', style: CubagType.caption.copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.5, color: textMuted)),
+              const SizedBox(height: CubagSpace.xs),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildExportDatasetCard(
+                      title: 'Payments',
+                      subtitle: 'Ledger & refs',
+                      icon: Icons.payments_outlined,
+                      selected: selectedDataset == 'payments',
+                      onTap: () => setModalState(() => selectedDataset = 'payments'),
+                    ),
+                  ),
+                  const SizedBox(width: CubagSpace.xs),
+                  Expanded(
+                    child: _buildExportDatasetCard(
+                      title: 'Members',
+                      subtitle: 'Roster & standing',
+                      icon: Icons.people_outline_rounded,
+                      selected: selectedDataset == 'members',
+                      onTap: () => setModalState(() => selectedDataset = 'members'),
+                    ),
+                  ),
+                  const SizedBox(width: CubagSpace.xs),
+                  Expanded(
+                    child: _buildExportDatasetCard(
+                      title: 'Bank Accounts',
+                      subtitle: 'Settlements',
+                      icon: Icons.account_balance_outlined,
+                      selected: selectedDataset == 'banks',
+                      onTap: () => setModalState(() => selectedDataset = 'banks'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: CubagSpace.md),
+
+              // 2. Date Filter Selection
+              Text('2. DATE SCOPE', style: CubagType.caption.copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.5, color: textMuted)),
+              const SizedBox(height: CubagSpace.xs),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  _buildFilterChoiceChip('All Time', selectedFilterMode, (v) => setModalState(() => selectedFilterMode = v)),
+                  _buildFilterChoiceChip('Today', selectedFilterMode, (v) => setModalState(() => selectedFilterMode = v)),
+                  _buildFilterChoiceChip('Yesterday', selectedFilterMode, (v) => setModalState(() => selectedFilterMode = v)),
+                  _buildFilterChoiceChip('Last 7 Days', selectedFilterMode, (v) => setModalState(() => selectedFilterMode = v)),
+                  _buildFilterChoiceChip('Last 30 Days', selectedFilterMode, (v) => setModalState(() => selectedFilterMode = v)),
+                  _buildFilterChoiceChip('This Month', selectedFilterMode, (v) => setModalState(() => selectedFilterMode = v)),
+                  _buildFilterChoiceChip('Single Date', selectedFilterMode, (v) async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: dialogSingleDate ?? DateTime.now(),
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime.now(),
+                    );
+                    if (picked != null) {
+                      setModalState(() {
+                        dialogSingleDate = picked;
+                        selectedFilterMode = 'Single Date';
+                      });
+                    }
+                  }),
+                  _buildFilterChoiceChip('Date Range', selectedFilterMode, (v) async {
+                    final picked = await showDateRangePicker(
+                      context: context,
+                      initialDateRange: dialogDateRange ?? DateTimeRange(
+                        start: DateTime.now().subtract(const Duration(days: 7)),
+                        end: DateTime.now(),
+                      ),
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime.now(),
+                    );
+                    if (picked != null) {
+                      setModalState(() {
+                        dialogDateRange = picked;
+                        selectedFilterMode = 'Date Range';
+                      });
+                    }
+                  }),
+                ],
+              ),
+              const SizedBox(height: CubagSpace.sm),
+
+              // If Single Date or Date Range is active, show the picker change tile
+              if (selectedFilterMode == 'Single Date')
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: CubagSpace.sm, vertical: CubagSpace.xs),
+                  decoration: BoxDecoration(
+                    color: CubagColors.action.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(CubagRadius.control),
+                    border: Border.all(color: CubagColors.action.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.event_available_rounded, size: 18, color: CubagColors.action),
+                      const SizedBox(width: CubagSpace.xs),
+                      Expanded(
+                        child: Text(
+                          'Selected date: ${dialogSingleDate != null ? _formatDateShort(dialogSingleDate!) : "None"}',
+                          style: CubagType.caption.copyWith(fontWeight: FontWeight.w600, color: CubagColors.action),
+                        ),
+                      ),
+                      TextButton.icon(
+                        icon: const Icon(Icons.edit_calendar_rounded, size: 16),
+                        label: const Text('Change'),
+                        style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: dialogSingleDate ?? DateTime.now(),
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null) {
+                            setModalState(() => dialogSingleDate = picked);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
+              if (selectedFilterMode == 'Date Range')
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: CubagSpace.sm, vertical: CubagSpace.xs),
+                  decoration: BoxDecoration(
+                    color: CubagColors.action.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(CubagRadius.control),
+                    border: Border.all(color: CubagColors.action.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.date_range_rounded, size: 18, color: CubagColors.action),
+                      const SizedBox(width: CubagSpace.xs),
+                      Expanded(
+                        child: Text(
+                          'Range: ${dialogDateRange != null ? "${_formatDateShort(dialogDateRange!.start)} – ${_formatDateShort(dialogDateRange!.end)}" : "None"}',
+                          style: CubagType.caption.copyWith(fontWeight: FontWeight.w600, color: CubagColors.action),
+                        ),
+                      ),
+                      TextButton.icon(
+                        icon: const Icon(Icons.edit_calendar_rounded, size: 16),
+                        label: const Text('Change'),
+                        style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                        onPressed: () async {
+                          final picked = await showDateRangePicker(
+                            context: context,
+                            initialDateRange: dialogDateRange ?? DateTimeRange(
+                              start: DateTime.now().subtract(const Duration(days: 7)),
+                              end: DateTime.now(),
+                            ),
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null) {
+                            setModalState(() => dialogDateRange = picked);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
+              const SizedBox(height: CubagSpace.md),
+
+              // 3. Live Matching Preview Box
+              Container(
+                padding: const EdgeInsets.all(CubagSpace.sm),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF261D18) : CubagColors.sand,
+                  borderRadius: BorderRadius.circular(CubagRadius.control),
+                  border: Border.all(color: CubagColors.line),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      matchCount > 0 ? Icons.check_circle_outline_rounded : Icons.info_outline_rounded,
+                      size: 20,
+                      color: matchCount > 0 ? CubagColors.valid : CubagColors.due,
+                    ),
+                    const SizedBox(width: CubagSpace.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            matchCount > 0
+                                ? (selectedDataset == 'members'
+                                    ? '$matchCount matching members'
+                                    : '$matchCount records found (${_cedis(matchRevenue)})')
+                                : 'No records match this date filter',
+                            style: CubagType.label.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Active Scope: $dateLabel',
+                            style: CubagType.caption.copyWith(color: textMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _exportFinancialsCSV({
+    String? filterMode,
+    DateTime? singleDate,
+    DateTimeRange? customRange,
+  }) {
     final filteredTx = _transactions
         .where(
-          (tx) => _isWithinDateRange(
+          (tx) => _isDateMatching(
             tx['date']?.toString() ?? tx['created_at']?.toString(),
+            filterMode: filterMode,
+            singleDate: singleDate,
+            customRange: customRange,
           ),
         )
         .toList();
@@ -580,14 +1028,24 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
       final desc = '"${(tx['description']?.toString() ?? 'Annual Dues / Service Fee').replaceAll('"', '""')}"';
       buffer.writeln('$id,$date,$name,$company,$type,$amount,$method,$ref,$status,$desc');
     }
-    _exportCSV('CUBAG_Financial_Ledger_${_dateFilter.replaceAll(' ', '_')}', buffer.toString());
+    final suffix = _getDateSuffix(filterMode: filterMode, singleDate: singleDate, customRange: customRange);
+    _exportCSV('CUBAG_Financial_Ledger_$suffix', buffer.toString());
   }
 
-  void _exportMembersCSV() {
+  void _exportMembersCSV({
+    String? filterMode,
+    DateTime? singleDate,
+    DateTimeRange? customRange,
+  }) {
     final filteredMembers = _rawMembers.where((m) {
       final dateStr = m['created_at']?.toString() ?? m['date']?.toString();
       if (dateStr == null) return true;
-      return _isWithinDateRange(dateStr);
+      return _isDateMatching(
+        dateStr,
+        filterMode: filterMode,
+        singleDate: singleDate,
+        customRange: customRange,
+      );
     }).toList();
     final buffer = StringBuffer();
     buffer.writeln('Member ID,Full Name,Company,Email,Phone,Member Category,District(s),License Number,TIN,Status,Compliance Score,Star Rating,Registration Date');
@@ -608,7 +1066,62 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
       final date = m['created_at']?.toString() ?? m['date']?.toString() ?? '';
       buffer.writeln('$id,$name,$company,$email,$phone,$type,$port,$lic,$tin,$status,$score,$rating,$date');
     }
-    _exportCSV('CUBAG_Members_Roster_${_dateFilter.replaceAll(' ', '_')}', buffer.toString());
+    final suffix = _getDateSuffix(filterMode: filterMode, singleDate: singleDate, customRange: customRange);
+    _exportCSV('CUBAG_Members_Roster_$suffix', buffer.toString());
+  }
+
+  void _exportBankSettlementsCSV({
+    String? filterMode,
+    DateTime? singleDate,
+    DateTimeRange? customRange,
+  }) {
+    final banks = _computeBankRevenue(
+      filterMode: filterMode,
+      singleDate: singleDate,
+      customRange: customRange,
+    );
+
+    final buffer = StringBuffer();
+    buffer.writeln('Bank Settlement Summary');
+    buffer.writeln('Bank Name,Account Number,Allocated Purpose,Total Allocated (GHS),Transaction Count');
+    for (var entry in banks.entries) {
+      final b = entry.value;
+      final name = '"${b['name']}"';
+      final acc = '"${b['account']}"';
+      final purpose = '"${b['purpose']}"';
+      final amt = (b['amount'] as double? ?? 0.0).toStringAsFixed(2);
+      final count = b['count'] ?? 0;
+      buffer.writeln('$name,$acc,$purpose,$amt,$count');
+    }
+    buffer.writeln('');
+    buffer.writeln('Transaction Breakdown');
+    buffer.writeln('Transaction ID,Date,Member Name,Reference,Total Amount (GHS),Payment Channel,Allocated Bank,Description');
+
+    for (var tx in _transactions) {
+      final statusStr = tx['status']?.toString().toLowerCase() ?? '';
+      final isPaid = statusStr == 'paid' || statusStr == 'success' || statusStr == 'completed';
+      if (!isPaid || !_isDateMatching(tx['date']?.toString() ?? tx['created_at']?.toString(), filterMode: filterMode, singleDate: singleDate, customRange: customRange)) {
+        continue;
+      }
+      final id = tx['id']?.toString() ?? '';
+      final date = tx['date']?.toString() ?? tx['created_at']?.toString() ?? '';
+      final name = '"${(tx['member_name']?.toString() ?? '').replaceAll('"', '""')}"';
+      final ref = '"${(tx['reference']?.toString() ?? tx['payment_ref']?.toString() ?? '').replaceAll('"', '""')}"';
+      final amt = tx['amount']?.toString() ?? '0.00';
+      final method = '"${(tx['payment_method']?.toString() ?? tx['channel']?.toString() ?? 'Mobile Money').replaceAll('"', '""')}"';
+      final cat = _classifyTransactionCategory(tx is Map<String, dynamic> ? tx : Map<String, dynamic>.from(tx));
+      String allocatedBank = 'GCB Bank (107113005326)';
+      if (cat == 'CTI Courses') {
+        allocatedBank = 'NIB Bank (1110045585101)';
+      } else if (cat == 'Annual Renewal' || cat == 'New Membership') {
+        allocatedBank = 'Multi-Split (GCB / Ecobank / Zenith)';
+      }
+      final desc = '"${(tx['description']?.toString() ?? '').replaceAll('"', '""')}"';
+      buffer.writeln('$id,$date,$name,$ref,$amt,$method,"$allocatedBank",$desc');
+    }
+
+    final suffix = _getDateSuffix(filterMode: filterMode, singleDate: singleDate, customRange: customRange);
+    _exportCSV('CUBAG_Bank_Settlements_$suffix', buffer.toString());
   }
 
   @override
@@ -813,16 +1326,72 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage>
                       actions: [
                         CustomDropdown<String>(
                           value: _dateFilter,
-                          width: 160,
+                          width: 175,
                           dense: true,
-                          items: const [
-                            DropdownItem(value: 'All Time', label: 'All time'),
-                            DropdownItem(value: 'Last 7 Days', label: 'Last 7 days'),
-                            DropdownItem(value: 'Last 30 Days', label: 'Last 30 days'),
-                            DropdownItem(value: 'Year to Date', label: 'This year'),
+                          items: [
+                            const DropdownItem(value: 'All Time', label: 'All time'),
+                            const DropdownItem(value: 'Today', label: 'Today'),
+                            const DropdownItem(value: 'Yesterday', label: 'Yesterday'),
+                            const DropdownItem(value: 'Last 7 Days', label: 'Last 7 days'),
+                            const DropdownItem(value: 'Last 30 Days', label: 'Last 30 days'),
+                            const DropdownItem(value: 'This Month', label: 'This month'),
+                            const DropdownItem(value: 'Year to Date', label: 'This year'),
+                            DropdownItem(
+                              value: 'Single Date',
+                              label: _selectedSingleDate != null && _dateFilter == 'Single Date'
+                                  ? 'Single: ${_selectedSingleDate!.day}/${_selectedSingleDate!.month}'
+                                  : 'Single date...',
+                            ),
+                            DropdownItem(
+                              value: 'Custom Range',
+                              label: _selectedDateRange != null && _dateFilter == 'Custom Range'
+                                  ? 'Range: ${_selectedDateRange!.start.day}/${_selectedDateRange!.start.month}–${_selectedDateRange!.end.day}/${_selectedDateRange!.end.month}'
+                                  : 'Date range...',
+                            ),
                           ],
-                          onChanged: (v) => setState(() => _dateFilter = v),
+                          onChanged: (v) async {
+                            if (v == 'Single Date') {
+                              final now = DateTime.now();
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: _selectedSingleDate ?? now,
+                                firstDate: DateTime(2020),
+                                lastDate: now,
+                              );
+                              if (picked != null) {
+                                setState(() {
+                                  _selectedSingleDate = picked;
+                                  _dateFilter = 'Single Date';
+                                });
+                              }
+                            } else if (v == 'Custom Range') {
+                              final now = DateTime.now();
+                              final picked = await showDateRangePicker(
+                                context: context,
+                                initialDateRange: _selectedDateRange ?? DateTimeRange(
+                                  start: now.subtract(const Duration(days: 7)),
+                                  end: now,
+                                ),
+                                firstDate: DateTime(2020),
+                                lastDate: now,
+                              );
+                              if (picked != null) {
+                                setState(() {
+                                  _selectedDateRange = picked;
+                                  _dateFilter = 'Custom Range';
+                                });
+                              }
+                            } else {
+                              setState(() => _dateFilter = v);
+                            }
+                          },
                         ),
+                        if (_dateFilter == 'Single Date' || _dateFilter == 'Custom Range')
+                          IconButton(
+                            tooltip: 'Reset date filter to All Time',
+                            icon: const Icon(Icons.close_rounded, size: 18),
+                            onPressed: () => setState(() => _dateFilter = 'All Time'),
+                          ),
                         OutlinedButton.icon(
                           onPressed: () => _showExportDialog(isDark, cardBg, textPrimary, textMuted),
                           icon: const Icon(Icons.download_rounded, size: 18),
