@@ -366,6 +366,7 @@ def init_db():
                 ALTER TABLE payments ADD COLUMN IF NOT EXISTS is_installment BOOLEAN DEFAULT FALSE;
                 ALTER TABLE payments ADD COLUMN IF NOT EXISTS installment_number INT DEFAULT 1;
                 ALTER TABLE payments ADD COLUMN IF NOT EXISTS application_id INT;
+                ALTER TABLE payments ADD COLUMN IF NOT EXISTS bill_ref VARCHAR(255);
             """)
 
             # Surveys

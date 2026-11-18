@@ -485,11 +485,64 @@ def create_payment():
             if not member:
                 return jsonify({'message': 'Member not found'}), 404
 
+            # ── Ad-Hoc Association Bill Resolution ────────────────────────────
+            ad_hoc_bill = None
+            bill_id = data.get('bill_id')
+            raw_payment_ref = str(data.get('payment_ref') or '')
+            bill_ref = raw_payment_ref if raw_payment_ref.startswith('BILL-') else None
+
+            if bill_id:
+                cursor.execute("""
+                    SELECT id, member_id, amount, description, status, payment_ref,
+                           payment_codes, settlement_distribution, fee_key
+                    FROM payments
+                    WHERE id = %s AND member_id = %s
+                """, (bill_id, member_id))
+                ad_hoc_bill = cursor.fetchone()
+            elif bill_ref:
+                cursor.execute("""
+                    SELECT id, member_id, amount, description, status, payment_ref,
+                           payment_codes, settlement_distribution, fee_key
+                    FROM payments
+                    WHERE payment_ref = %s AND member_id = %s
+                """, (bill_ref, member_id))
+                ad_hoc_bill = cursor.fetchone()
+            elif fee_key == 'ad_hoc_bill':
+                cursor.execute("""
+                    SELECT id, member_id, amount, description, status, payment_ref,
+                           payment_codes, settlement_distribution, fee_key
+                    FROM payments
+                    WHERE member_id = %s AND fee_key = 'ad_hoc_bill' AND LOWER(status) = 'pending'
+                    ORDER BY id DESC LIMIT 1
+                """, (member_id,))
+                ad_hoc_bill = cursor.fetchone()
+
+            fee_plan = None
+            if ad_hoc_bill:
+                if str(ad_hoc_bill.get('status') or '').lower() in ('completed', 'successful', 'paid', 'success'):
+                    return jsonify({
+                        'message': f'Payment for "{ad_hoc_bill.get("description")}" has already been completed and confirmed. Duplicate payment is not required.',
+                        'payment_id': ad_hoc_bill['id'],
+                        'error_code': 'PAYMENT_ALREADY_COMPLETED'
+                    }), 200
+                expected_bill_amount = float(ad_hoc_bill['amount'])
+                description = ad_hoc_bill.get('description') or description
+                amount = expected_bill_amount
+                fee_plan = {
+                    'fee_key': 'ad_hoc_bill',
+                    'kind': 'ad_hoc_bill',
+                    'description': description,
+                    'amount': amount,
+                    'comp_app_id': None,
+                    'course_id': None,
+                    'is_installment': False,
+                    'bill_id': ad_hoc_bill['id']
+                }
+
             # SEC-20: pay by fee key. The server prices the fee and writes the
             # official description; the client's amount only matters for
             # installments, bounded by what is still owed.
-            fee_plan = None
-            if fee_key:
+            if fee_key and not fee_plan:
                 from config.payment_validation import price_fee_key_payment
                 fee_plan, plan_err = price_fee_key_payment(
                     cursor, member_id, fee_key, amount, bool(data.get('is_installment', False)))
@@ -650,7 +703,7 @@ def create_payment():
                     if isinstance(created_at_dt, str):
                         created_at_dt = datetime.fromisoformat(created_at_dt)
                     sec_elapsed = (datetime.now() - created_at_dt).total_seconds()
-                    if sec_elapsed < 15 and existing_pending.get('payment_ref'):
+                    if sec_elapsed < 15 and str(existing_pending.get('payment_ref') or '').startswith('CUBAG-'):
                         logger.info("[Payments] Debounced duplicate MoMo request for member %s (elapsed: %.1fs)", member_id, sec_elapsed)
                         return jsonify({
                             'message': 'MoMo payment prompt already sent. Please check your phone.',
@@ -662,7 +715,14 @@ def create_payment():
                 except Exception as ex:
                     logger.warning("[Payments] Time check error: %s", ex)
 
-            if existing_pending:
+            if ad_hoc_bill:
+                payment_id = ad_hoc_bill['id']
+                cursor.execute("""
+                    UPDATE payments SET amount = %s, application_id = %s, is_installment = %s, installment_number = %s,
+                           fee_key = %s, payment_method = %s, created_at = NOW()
+                    WHERE id = %s
+                """, (amount, comp_app_id, is_installment, installment_number, fee_key or 'ad_hoc_bill', method, payment_id))
+            elif existing_pending:
                 payment_id = existing_pending['id']
                 cursor.execute("""
                     UPDATE payments SET amount = %s, payment_ref = %s, application_id = %s, is_installment = %s, installment_number = %s,
@@ -746,7 +806,14 @@ def create_payment():
 
             # Fetch or generate settlement distribution for WhitsunPay multi-account routing
             settlement_dist = data.get('settlement_distribution') or []
-            if not settlement_dist and any(k in (description or '').lower() for k in ('renewal', 'dues', 'annual', 'bill')):
+            if not settlement_dist and ad_hoc_bill and ad_hoc_bill.get('settlement_distribution'):
+                settlement_dist = ad_hoc_bill['settlement_distribution']
+                if isinstance(settlement_dist, str):
+                    try:
+                        settlement_dist = json.loads(settlement_dist)
+                    except Exception:
+                        pass
+            elif not settlement_dist and any(k in (description or '').lower() for k in ('renewal', 'dues', 'annual', 'bill')):
                 try:
                     from routes.auth import get_member_renewal_breakdown
                     with conn.cursor() as cur:
@@ -760,24 +827,34 @@ def create_payment():
 
             # Payment codes: which CUBAG account each part settles into (WhitsunPay routes by code).
             payment_codes = []
-            try:
-                from config.payment_codes import codes_for_new_payment
-                from config.payment_validation import payment_kind
-                _kind = (fee_plan or {}).get('kind') or payment_kind(fee_key, description)
-                with conn.cursor() as cur:
-                    payment_codes = codes_for_new_payment(cur, member_id, amount, description, _kind, comp_app_id)
-            except Exception as ex_codes:
-                logger.warning(f"Could not work out payment codes: {ex_codes}")
+            if ad_hoc_bill and ad_hoc_bill.get('payment_codes'):
+                payment_codes = ad_hoc_bill['payment_codes']
+                if isinstance(payment_codes, str):
+                    try:
+                        payment_codes = json.loads(payment_codes)
+                    except Exception:
+                        pass
+            else:
+                try:
+                    from config.payment_codes import codes_for_new_payment
+                    from config.payment_validation import payment_kind
+                    _kind = (fee_plan or {}).get('kind') or payment_kind(fee_key, description)
+                    with conn.cursor() as cur:
+                        payment_codes = codes_for_new_payment(cur, member_id, amount, description, _kind, comp_app_id)
+                except Exception as ex_codes:
+                    logger.warning(f"Could not work out payment codes: {ex_codes}")
 
             # Store payment reference and settlement distribution in DB
             with conn.cursor() as cursor:
                 cursor.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS payment_codes JSONB")
+                cursor.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS bill_ref VARCHAR(255)")
                 if payment_codes:
-                    cursor.execute("UPDATE payments SET payment_codes = %s WHERE id = %s", (json.dumps(payment_codes), payment_id))
+                    cursor.execute("UPDATE payments SET payment_codes = %s WHERE id = %s", (json.dumps(payment_codes) if not isinstance(payment_codes, str) else payment_codes, payment_id))
                 cursor.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS settlement_distribution JSONB")
+                orig_bill_ref = (ad_hoc_bill.get('payment_ref') if ad_hoc_bill else None) or bill_ref
                 cursor.execute(
-                    "UPDATE payments SET payment_ref = %s, settlement_distribution = %s WHERE id = %s",
-                    (tx_ref, json.dumps(settlement_dist) if settlement_dist else None, payment_id)
+                    "UPDATE payments SET payment_ref = %s, bill_ref = COALESCE(bill_ref, %s), settlement_distribution = %s WHERE id = %s",
+                    (tx_ref, orig_bill_ref, json.dumps(settlement_dist) if (settlement_dist and not isinstance(settlement_dist, str)) else (settlement_dist or None), payment_id)
                 )
                 desc_lower = description.lower()
                 if 'renewal' in desc_lower or 'license' in desc_lower:
@@ -946,13 +1023,16 @@ def create_payment():
         account_name = data.get('account_name') or 'Customs Brokers Association of Ghana (CUBAG)'
         account_number = data.get('account_number') or ''
         notes = data.get('notes') or ''
-        custom_ref = data.get('payment_ref') or f"BNK-{payment_id}-{uuid.uuid4().hex[:6].upper()}"
+        orig_bill_ref = (ad_hoc_bill.get('payment_ref') if ad_hoc_bill else None) or bill_ref
+        custom_ref = f"BNK-{payment_id}-{uuid.uuid4().hex[:6].upper()}" if not data.get('payment_ref') or str(data.get('payment_ref')).startswith('BILL-') else data.get('payment_ref')
 
         with conn.cursor() as cursor:
+            cursor.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS bill_ref VARCHAR(255)")
             cursor.execute("""
                 UPDATE payments
                 SET payment_method = 'bank',
                     payment_ref = %s,
+                    bill_ref = COALESCE(bill_ref, %s),
                     receipt_url = %s,
                     bank_name = %s,
                     account_name = %s,
@@ -964,7 +1044,7 @@ def create_payment():
                     status = 'pending',
                     created_at = NOW()
                 WHERE id = %s
-            """, (custom_ref, receipt_url or None, bank_name, account_name, account_number, notes or None, comp_app_id, is_installment, installment_number, payment_id))
+            """, (custom_ref, orig_bill_ref, receipt_url or None, bank_name, account_name, account_number, notes or None, comp_app_id, is_installment, installment_number, payment_id))
 
             desc_lower = description.lower() if description else ''
             is_renewal = any(k in desc_lower for k in ('renewal', 'annual dues', 'license', 'bill', 'dues'))
@@ -1009,7 +1089,7 @@ def create_payment():
         try:
             from utils import send_push_to_all
             send_push_to_all(
-                title="New Bank Payment Submitted 🏦",
+                title="New Bank Payment Submitted",
                 body=f"{member.get('name', 'Member')} uploaded a bank deposit receipt for {description} (GH₵ {amount:.2f}). Awaiting admin verification.",
                 data={'screen': 'admin_payments', 'payment_id': str(payment_id)}
             )
@@ -1019,7 +1099,7 @@ def create_payment():
         try:
             create_notification(
                 member_id=member_id,
-                title='Deposit Slip Submitted 📄',
+                title='Deposit Slip Submitted',
                 body=f'Bank deposit slip for {description} (GHS {float(amount):,.2f}) submitted for Secretariat verification.',
                 category='Payment',
                 notification_type='payment',
@@ -2614,18 +2694,19 @@ def admin_issue_bill():
             catalogue = load_catalogue(cursor)
             codes_distribution = code_split(items, total=total_amount, catalogue=catalogue)
 
+            cursor.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS bill_ref VARCHAR(255)")
             cursor.execute("""
                 INSERT INTO payments (
-                    member_id, amount, description, status, payment_ref,
+                    member_id, amount, description, status, payment_ref, bill_ref,
                     due_date, notes, fee_key, payment_codes, settlement_distribution,
                     created_at
                 ) VALUES (
-                    %s, %s, %s, 'pending', %s,
+                    %s, %s, %s, 'pending', %s, %s,
                     %s, %s, 'ad_hoc_bill', %s, %s,
                     NOW()
                 ) RETURNING id
             """, (
-                member_id, total_amount, title, payment_ref,
+                member_id, total_amount, title, payment_ref, payment_ref,
                 due_date, notes,
                 json.dumps(codes_distribution), json.dumps(items)
             ))

@@ -449,6 +449,8 @@ def fee_kind(fee_key):
     key = (fee_key or '').strip()
     if key in MEMBERSHIP_FEE_KINDS:
         return key
+    if key == 'ad_hoc_bill':
+        return 'ad_hoc_bill'
     if key.startswith('course:'):
         return 'course'
     return 'fee' if key else None
@@ -467,6 +469,21 @@ def resolve_fee_key(cursor, member_id, fee_key):
         amount, desc = _member_package_fee(cursor, member_id), 'New Membership Dues'
     elif kind == 'renewal':
         amount, desc = _renewal_expected_amount(cursor, member_id), 'Annual Renewal Dues'
+    elif kind == 'ad_hoc_bill':
+        cursor.execute(
+            """
+            SELECT id, amount, description FROM payments
+            WHERE member_id = %s AND fee_key = 'ad_hoc_bill' AND LOWER(status) = 'pending'
+            ORDER BY id DESC LIMIT 1
+            """,
+            (member_id,)
+        )
+        row = cursor.fetchone()
+        if not row or row.get('amount') is None:
+            return None, 'No pending association bill was found. Please contact the Secretariat.'
+        return {'key': key, 'kind': kind, 'amount': _to_float(row['amount']),
+                'description': row.get('description') or 'Official Association Bill',
+                'bill_id': row['id']}, None
     elif kind == 'course':
         cid = key.split(':', 1)[1]
         if not cid.isdigit():
@@ -516,7 +533,8 @@ def price_fee_key_payment(cursor, member_id, fee_key, client_amount, is_installm
     if err:
         return None, err
     plan = {'fee_key': fee['key'], 'kind': fee['kind'], 'description': fee['description'],
-            'comp_app_id': None, 'course_id': fee.get('course_id'), 'is_installment': False}
+            'comp_app_id': None, 'course_id': fee.get('course_id'), 'bill_id': fee.get('bill_id'),
+            'is_installment': False}
 
     if is_installment:
         return None, INSTALLMENT_NEEDS_BILL
@@ -529,7 +547,8 @@ def payment_kind(fee_key, description):
     'course' or 'fee' (nothing). Uses the fee key when the payment has one;
     otherwise classifies the description (older app versions, counter payments)."""
     if fee_key:
-        return fee_kind(fee_key)
+        k = fee_kind(fee_key)
+        return 'fee' if k == 'ad_hoc_bill' else k
     d = (description or '').lower()
     if _is_renewal_description(d):
         return 'renewal'

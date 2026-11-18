@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
-import 'package:dio/dio.dart' show Response, FormData, MultipartFile;
+import 'package:dio/dio.dart' show Response, FormData, MultipartFile, DioException;
 import '../components/app_layout.dart';
 import '../components/custom_dropdown.dart';
 import '../components/cubag_ui.dart';
@@ -899,7 +899,16 @@ class _PaymentsPageState extends State<PaymentsPage>
       }
     } catch (e) {
       String msg = 'Network error. Please try again.';
-      if (e is Exception && e.toString().contains('400')) {
+      if (e is DioException) {
+        if (e.response?.data is Map) {
+          final serverMsg = e.response!.data['message'] ?? e.response!.data['error'];
+          if (serverMsg != null && serverMsg.toString().isNotEmpty) {
+            msg = serverMsg.toString();
+          }
+        } else if (e.response?.statusCode == 400) {
+          msg = 'Invalid payment parameters. Please check your amount and phone number.';
+        }
+      } else if (e is Exception && e.toString().contains('400')) {
         msg =
             'Invalid payment parameters. Please check your amount and phone number.';
       }

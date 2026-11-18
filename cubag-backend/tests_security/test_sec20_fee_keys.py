@@ -155,3 +155,37 @@ def test_unmatched_course_description_enrols_nobody(client, db):
           [{'id': 1, 'title': 'First Course', 'start_date': None}])
     _complete(db, 'Training materials')
     assert not db.executed(r'INSERT INTO cti_course_enrollments')
+
+
+def test_ad_hoc_bill_pricing_from_pending_bill(cur, db):
+    db.on(r"WHERE member_id = %s AND fee_key = 'ad_hoc_bill'",
+          [{'id': 77, 'amount': 180.0, 'description': 'Association Cloth'}])
+    plan, err = price(cur, MEMBER, 'ad_hoc_bill', 10, False)
+    assert err is None
+    assert plan['amount'] == 180.0
+    assert plan['description'] == 'Association Cloth'
+    assert plan['fee_key'] == 'ad_hoc_bill'
+    assert plan['bill_id'] == 77
+
+
+def test_pay_ad_hoc_bill_via_route(client, auth, db):
+    db.on(r'SELECT email, name FROM members', [{'email': 'm@cubag.org', 'name': 'Member'}])
+    db.on(r'SELECT id, member_id, amount, description, status',
+          [{'id': 77, 'member_id': MEMBER, 'amount': 180.0, 'description': 'Association Cloth',
+            'status': 'pending', 'payment_ref': 'BILL-10-261118-ABC123', 'payment_codes': None, 'settlement_distribution': None}])
+    db.on(r'UPDATE payments SET', [])
+    res = client.post('/api/v1/payments/', headers=auth(MEMBER), json={
+        'amount': 180.0,
+        'description': 'Association Cloth',
+        'fee_key': 'ad_hoc_bill',
+        'bill_id': 77,
+        'payment_ref': 'BILL-10-261118-ABC123',
+        'method': 'momo',
+        'network': 'MTN',
+        'phone': '0550402859'
+    })
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data['status'] == 'pending'
+    assert data['payment_id'] == 77
+    assert data['whitsun_ref'].startswith('CUBAG-77-')
