@@ -63,7 +63,13 @@ def get_notifications():
                     })
                     existing_titles.add(t_lower)
 
+            import re
+            emoji_re = re.compile(r'[\U00010000-\U0010ffff\u2600-\u27BF]')
             for item in direct_notes:
+                if item.get('title'):
+                    item['title'] = emoji_re.sub('', str(item['title'])).strip()
+                if item.get('body'):
+                    item['body'] = emoji_re.sub('', str(item['body'])).strip()
                 if hasattr(item.get('created_at'), 'isoformat'):
                     item['created_at'] = item['created_at'].isoformat()
                 if item.get('read_at') is not None and hasattr(item['read_at'], 'isoformat'):

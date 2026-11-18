@@ -920,7 +920,7 @@ def create_payment():
             try:
                 create_notification(
                     member_id=member_id,
-                    title='Payment Prompt Sent 💳',
+                    title='Payment Prompt Sent',
                     body=f'Payment of GHS {float(amount):,.2f} for {description} initiated (Ref: {tx_ref}). Please check your phone and enter your PIN to approve.',
                     category='Payment',
                     notification_type='payment',
@@ -2632,28 +2632,14 @@ def admin_issue_bill():
             payment_row = cursor.fetchone()
             payment_id = payment_row['id']
 
-            # Insert task for the member
-            task_title = f"🧾 {title} (GH₵ {total_amount:,.2f})"
-            task_desc = f"Official bill issued by Secretariat: GH₵ {total_amount:,.2f}. Due by {due_date.isoformat()}."
-            if notes:
-                task_desc += f" Note: {notes}"
+            # Action URL to settle this bill directly on Pay Dues page
             action_url = f"/payments?fee={quote(title)}&amount={total_amount:.2f}&bill_ref={payment_ref}&bill_id={payment_id}"
 
-            cursor.execute("""
-                INSERT INTO tasks (
-                    member_id, title, description, due_date, priority, done,
-                    created_at
-                ) VALUES (
-                    %s, %s, %s, %s, 'High', false,
-                    NOW()
-                )
-            """, (member_id, task_title, task_desc, due_date))
-
-            # Insert in-app notification
+            # In-app notification (clean title without emojis/icons)
             cursor.execute("""
                 INSERT INTO notifications (member_id, title, body, category, notification_type, created_at)
                 VALUES (%s, %s, %s, 'payment', 'bill_issued', NOW())
-            """, (member_id, f"🧾 New Bill Issued: {title}", f"An official bill of GH₵ {total_amount:,.2f} has been issued. Due: {due_date.isoformat()}."))
+            """, (member_id, f"New Bill Issued: {title}", f"An official bill of GH₵ {total_amount:,.2f} has been issued. Due: {due_date.isoformat()}."))
 
             conn.commit()
 
@@ -2674,14 +2660,14 @@ def admin_issue_bill():
                 }
             )
 
-            # Push notification
+            # Push notification (clean title without emojis/icons)
             fcm = member.get('fcm_token')
             if fcm:
                 try:
                     from utils import send_push_notification
                     send_push_notification(
                         fcm,
-                        title=f"New Bill Issued: {title} 💳",
+                        title=f"New Bill Issued: {title}",
                         body=f"An official bill of GH₵ {total_amount:,.2f} has been issued by CUBAG Secretariat. Due: {due_date.isoformat()}.",
                         data={'screen': 'payments', 'type': 'bill', 'route': action_url}
                     )

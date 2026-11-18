@@ -288,6 +288,17 @@ def init_db():
                 )
             """)
 
+            # Purge duplicate static tasks accidentally created for ad-hoc bills
+            try:
+                cursor.execute("""
+                    DELETE FROM tasks WHERE title LIKE '🧾%' OR description LIKE 'Official bill issued by Secretariat%';
+                """)
+                cursor.execute("""
+                    UPDATE notifications SET title = REGEXP_REPLACE(title, '^[🧾💳\\s]+|[🧾💳\\s]+$', '', 'g') WHERE title ~ '[🧾💳]';
+                """)
+            except Exception as task_purge_err:
+                logger.debug("Task/notification purge skipped: %s", task_purge_err)
+
             # Events
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS events (

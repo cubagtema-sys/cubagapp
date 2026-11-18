@@ -51,11 +51,15 @@ class NotificationService extends ChangeNotifier {
           final Map<String, dynamic> item = (a is Map)
               ? Map<String, dynamic>.from(a)
               : {};
+          final rawTitle = item['title']?.toString() ?? '';
+          final rawMsg = item['body']?.toString() ?? item['content']?.toString() ?? '';
+          final cleanTitle = rawTitle.replaceAll(RegExp(r'[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]', unicode: true), '').trim();
+          final cleanMsg = rawMsg.replaceAll(RegExp(r'[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]', unicode: true), '').trim();
           return {
             'id': item['id'],
             'type': item['category']?.toString().toLowerCase() ?? 'announcement',
-            'title': item['title']?.toString() ?? '',
-            'message': item['body']?.toString() ?? item['content']?.toString() ?? '',
+            'title': cleanTitle,
+            'message': cleanMsg,
             'created_at': item['created_at']?.toString() ?? '',
             'read': item['read_at'] != null || item['is_read'] == true || item['read'] == true,
           };

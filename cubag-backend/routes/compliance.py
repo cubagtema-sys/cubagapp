@@ -2241,7 +2241,7 @@ def admin_set_application_bill(app_id):
             if fcm_token:
                 send_push_notification(
                     fcm_token,
-                    title='New Renewal Bill Issued 💳',
+                    title='New Renewal Bill Issued',
                     body=f'An official renewal bill of GHS {total_amount:,.2f} has been issued. Payment deadline: {payment_deadline}.',
                     data={'screen': 'compliance', 'type': 'payment', 'route': '/payments?fee=Annual%20Renewal%20Dues'}
                 )

@@ -284,7 +284,7 @@ def _query_package_fee(conn, member_id):
 
                 tasks.append({
                     'id': 'sys_membership_package_fee',
-                    'title': f'💳 Settle Membership Entrance Package ({cat_title} - GHS {pkg_amount_str})',
+                    'title': f'Settle Membership Entrance Package ({cat_title} - GHS {pkg_amount_str})',
                     'description': f'Your upfront registration fee is processed. Please settle your Membership Entrance Package fee of GHS {pkg_amount_str} ({cat_title}) to activate full Good Standing privileges.',
                     'due_date': 'Pending Activation',
                     'priority': 'Urgent',
@@ -335,7 +335,7 @@ def _query_renewal_bills(conn, member_id):
                 amt_str = f"{amount:.2f}"
                 tasks.append({
                     'id': f'sys_renewal_bill_{app_id}',
-                    'title': f'🧾 Annual Renewal Bill Ready (GHS {amt_str})',
+                    'title': f'Annual Renewal Bill Ready (GHS {amt_str})',
                     'description': f'Your compliance documents have been vetted and approved. An official annual renewal bill of GHS {amt_str} has been issued by the secretariat. Deadline: {deadline}.',
                     'due_date': deadline,
                     'priority': 'Urgent',
@@ -378,7 +378,7 @@ def _query_adhoc_bills(conn, member_id):
                 from urllib.parse import quote
                 tasks.append({
                     'id': f'sys_adhoc_bill_{pid}',
-                    'title': f'🧾 {title} (GHS {amt_str})',
+                    'title': f'{title} (GHS {amt_str})',
                     'description': f'Official bill issued by Secretariat: GH₵ {amt_str}. Due: {deadline}. {p.get("notes") or ""}'.strip(),
                     'due_date': deadline,
                     'priority': 'High',
@@ -460,16 +460,22 @@ def get_tasks():
             """, (member_id, member_id))
             data = cursor.fetchall()
 
-            # Stringify dates
+            # Stringify dates and filter out any accidental static tasks for bills
+            clean_data = []
             for item in data:
+                t_title = str(item.get('title') or '')
+                t_desc = str(item.get('description') or '')
+                if t_title.startswith('🧾') or 'Official bill issued by Secretariat' in t_desc:
+                    continue
                 if hasattr(item.get('due_date'), 'isoformat'):
                     item['due_date'] = item['due_date'].isoformat()
                 if hasattr(item.get('created_at'), 'isoformat'):
                     item['created_at'] = item['created_at'].isoformat()
                 if hasattr(item.get('submitted_at'), 'isoformat'):
                     item['submitted_at'] = item['submitted_at'].isoformat()
+                clean_data.append(item)
 
-            all_tasks = system_tasks + list(data)
+            all_tasks = system_tasks + clean_data
 
         return jsonify({'items': all_tasks, 'total': len(all_tasks)}), 200
     finally:
