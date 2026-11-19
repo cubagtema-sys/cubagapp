@@ -104,7 +104,13 @@ class _PaymentsPageState extends State<PaymentsPage>
             _nationalBreakdown.fold<double>(
                 0.0, (sum, it) => sum + (double.tryParse(it['amount']?.toString() ?? '0') ?? 0.0));
         _renewalFeeAmount = total;
-        _amountCtrl.text = total.toStringAsFixed(2);
+        _renewalBalanceDue = _isPartiallyPaid && _renewalAmountPaid > 0
+            ? (total - _renewalAmountPaid).clamp(0.0, double.infinity)
+            : total;
+        _amountCtrl.text = (_isInstallmentMode && _minInstallmentAmount > 0
+                ? _minInstallmentAmount.clamp(1.0, _renewalBalanceDue)
+                : _renewalBalanceDue)
+            .toStringAsFixed(2);
       } else if (scope == 'district') {
         _complianceType = 'renewal_district';
         _renewalFeeBreakdown = List<Map<String, dynamic>>.from(_districtBreakdown);
@@ -112,7 +118,13 @@ class _PaymentsPageState extends State<PaymentsPage>
             _districtBreakdown.fold<double>(
                 0.0, (sum, it) => sum + (double.tryParse(it['amount']?.toString() ?? '0') ?? 0.0));
         _renewalFeeAmount = total;
-        _amountCtrl.text = total.toStringAsFixed(2);
+        _renewalBalanceDue = _isPartiallyPaid && _renewalAmountPaid > 0
+            ? (total - _renewalAmountPaid).clamp(0.0, double.infinity)
+            : total;
+        _amountCtrl.text = (_isInstallmentMode && _minInstallmentAmount > 0
+                ? _minInstallmentAmount.clamp(1.0, _renewalBalanceDue)
+                : _renewalBalanceDue)
+            .toStringAsFixed(2);
       } else {
         _complianceType = 'renewal';
         _renewalFeeBreakdown = [
@@ -122,7 +134,16 @@ class _PaymentsPageState extends State<PaymentsPage>
         final total = _combinedRenewalTotal ??
             ((_nationalRenewalTotal ?? 0.0) + (_districtRenewalTotal ?? 0.0));
         _renewalFeeAmount = total > 0 ? total : 1383.0;
-        _amountCtrl.text = (_renewalFeeAmount ?? 1383.0).toStringAsFixed(2);
+        final baseDue = double.tryParse(_memberInfo['renewal_balance_due']?.toString() ?? '');
+        _renewalBalanceDue = baseDue != null && baseDue > 0
+            ? baseDue
+            : (_isPartiallyPaid && _renewalAmountPaid > 0
+                ? ((_renewalFeeAmount ?? 1383.0) - _renewalAmountPaid).clamp(0.0, double.infinity)
+                : (_renewalFeeAmount ?? 1383.0));
+        _amountCtrl.text = (_isInstallmentMode && _minInstallmentAmount > 0
+                ? _minInstallmentAmount.clamp(1.0, _renewalBalanceDue)
+                : _renewalBalanceDue)
+            .toStringAsFixed(2);
       }
     });
   }
@@ -316,6 +337,21 @@ class _PaymentsPageState extends State<PaymentsPage>
   double _getCurrentBillTotal() {
     final r = _reason.toLowerCase();
     if (r.contains('renewal') || r.contains('annual dues')) {
+      if (_renewalScope == 'national') {
+        final natTot = _nationalRenewalTotal ??
+            _nationalBreakdown.fold<double>(
+                0.0, (sum, it) => sum + (double.tryParse(it['amount']?.toString() ?? '0') ?? 0.0));
+        return _isPartiallyPaid && _renewalAmountPaid > 0
+            ? (natTot - _renewalAmountPaid).clamp(0.0, double.infinity)
+            : (natTot > 0 ? natTot : (_renewalFeeAmount ?? 0.0));
+      } else if (_renewalScope == 'district') {
+        final distTot = _districtRenewalTotal ??
+            _districtBreakdown.fold<double>(
+                0.0, (sum, it) => sum + (double.tryParse(it['amount']?.toString() ?? '0') ?? 0.0));
+        return _isPartiallyPaid && _renewalAmountPaid > 0
+            ? (distTot - _renewalAmountPaid).clamp(0.0, double.infinity)
+            : (distTot > 0 ? distTot : (_renewalFeeAmount ?? 0.0));
+      }
       return _renewalBalanceDue > 0 ? _renewalBalanceDue : (_renewalFeeAmount ?? 0.0);
     }
     if (r.contains('registration') || r.contains('application')) {
