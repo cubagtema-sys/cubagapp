@@ -1696,10 +1696,10 @@ def upload_photo():
     if ext not in ('jpg', 'jpeg', 'png', 'webp'):
         return jsonify({'message': 'Only JPG, PNG, or WebP allowed'}), 400
 
-    # Size check (max 5MB)
+    # Size check (max 10MB)
     file.seek(0, 2)
-    if file.tell() > 5 * 1024 * 1024:
-        return jsonify({'message': 'Photo too large. Max 5MB.'}), 413
+    if file.tell() > 10 * 1024 * 1024:
+        return jsonify({'message': 'Photo too large. Max 10MB.'}), 413
     file.seek(0)
 
     safe_name = f"profile_{member_id}_{uuid.uuid4().hex[:8]}.{ext}"

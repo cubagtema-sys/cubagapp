@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:image/image.dart' as img;
 import 'package:qr_flutter/qr_flutter.dart';
 import '../components/app_layout.dart';
 import '../components/cubag_ui.dart';
@@ -147,21 +148,48 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final api = ApiService();
-      late MultipartFile mpFile;
+      Uint8List rawBytes;
       if (file.bytes != null) {
-        final exactBytes = Uint8List.fromList(file.bytes!);
-        mpFile = MultipartFile.fromBytes(exactBytes, filename: file.name);
-      } else if (file.path != null && file.path!.isNotEmpty) {
-        mpFile = await MultipartFile.fromFile(file.path!, filename: file.name);
+        rawBytes = Uint8List.fromList(file.bytes!);
       } else {
-        final bytes = await file.xFile.readAsBytes();
-        mpFile = MultipartFile.fromBytes(Uint8List.fromList(bytes), filename: file.name);
+        rawBytes = await file.xFile.readAsBytes();
       }
 
+      // Automatically optimize/compress avatar image if large (max dimension 1200, JPG 85%)
+      // Prevents large multi-megabyte camera photos from causing timeouts or payload rejections
+      Uint8List uploadBytes = rawBytes;
+      String uploadFilename = file.name;
+      try {
+        final decoded = img.decodeImage(rawBytes);
+        if (decoded != null) {
+          img.Image resized = decoded;
+          if (decoded.width > 1200 || decoded.height > 1200) {
+            resized = img.copyResize(
+              decoded,
+              width: decoded.width >= decoded.height ? 1200 : null,
+              height: decoded.height > decoded.width ? 1200 : null,
+            );
+          }
+          final compressed = img.encodeJpg(resized, quality: 85);
+          uploadBytes = Uint8List.fromList(compressed);
+          final dotIdx = file.name.lastIndexOf('.');
+          final baseName = dotIdx != -1 ? file.name.substring(0, dotIdx) : file.name;
+          uploadFilename = '$baseName.jpg';
+        }
+      } catch (_) {
+        uploadBytes = rawBytes;
+      }
+
+      final mpFile = MultipartFile.fromBytes(uploadBytes, filename: uploadFilename);
       final formData = FormData.fromMap({
         'photo': mpFile,
       });
-      final res = await api.upload('/auth/upload-photo', formData);
+      final res = await api.upload(
+        '/auth/upload-photo',
+        formData,
+        sendTimeout: const Duration(seconds: 120),
+        receiveTimeout: const Duration(seconds: 120),
+      );
 
       if (res.statusCode == 200 && (res.data['photo_url'] != null || res.data['profile_photo'] != null)) {
         final rawUrl = (res.data['photo_url'] ?? res.data['profile_photo']).toString();

@@ -179,13 +179,9 @@ class ApiService {
     _dio = Dio(
       BaseOptions(
         baseUrl: _normalizedBase,
-        connectTimeout: const Duration(
-          seconds: 15,
-        ), // Allow time for emulator virtual network setup
-        receiveTimeout: const Duration(
-          seconds: 30,
-        ), // Allow time for slow DB queries / password hashing
-        sendTimeout: const Duration(seconds: 15),
+        connectTimeout: const Duration(seconds: 20),
+        receiveTimeout: const Duration(seconds: 45),
+        sendTimeout: const Duration(seconds: 60),
         headers: {'Content-Type': 'application/json'},
       ),
     );
@@ -367,12 +363,21 @@ class ApiService {
 
   Future<Response<dynamic>> delete(String path) => _dio.delete(_path(path));
 
-  Future<Response<dynamic>> upload(String path, FormData data) => _dio.post(
+  Future<Response<dynamic>> upload(
+    String path,
+    FormData data, {
+    ProgressCallback? onSendProgress,
+    Duration sendTimeout = const Duration(seconds: 120),
+    Duration receiveTimeout = const Duration(seconds: 120),
+  }) => _dio.post(
     _path(path),
     data: data,
+    onSendProgress: onSendProgress,
     options: Options(
       contentType: 'multipart/form-data',
       validateStatus: (status) => status != null && status < 500,
+      sendTimeout: sendTimeout,
+      receiveTimeout: receiveTimeout,
     ),
   );
 
