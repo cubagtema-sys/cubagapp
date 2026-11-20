@@ -1240,11 +1240,11 @@ def get_me():
                 result['company_scale'] = result.get('member_scale') or 'sme'
                 result['fee_category'] = result.get('fee_category') or 'cf_only'
 
-                # Check if there is a custom profile-specific bill issued by Admin in Compliance Centre or saved on member profile
+                # Check if there is an active custom bill issued by Admin in Compliance Centre or saved on member profile
                 cursor.execute("""
                     SELECT id, type, status, payment_amount, payment_deadline, fee_breakdown, bill_title, admin_note, created_at
                     FROM compliance_applications
-                    WHERE member_id = %s AND type = 'renewal'
+                    WHERE member_id = %s AND type = 'renewal' AND status NOT IN ('approved', 'payment_confirmed', 'completed', 'rejected')
                     ORDER BY (fee_breakdown IS NOT NULL AND fee_breakdown != '[]' AND fee_breakdown != 'null') DESC, updated_at DESC LIMIT 1
                 """, (member_id,))
                 latest_comp_app = cursor.fetchone()
@@ -1252,7 +1252,7 @@ def get_me():
                     cursor.execute("""
                         SELECT id, type, status, payment_amount, payment_deadline, fee_breakdown, bill_title, admin_note, created_at
                         FROM compliance_applications
-                        WHERE member_id = %s
+                        WHERE member_id = %s AND status NOT IN ('approved', 'payment_confirmed', 'completed', 'rejected')
                         ORDER BY updated_at DESC LIMIT 1
                     """, (member_id,))
                     latest_comp_app = cursor.fetchone()
@@ -1342,11 +1342,12 @@ def get_me():
                     result['renewal_fee_breakdown'] = base_renewal_info['renewal_fee_breakdown']
 
                 # Calculate installment financials and retrieve any linked payments
-                app_target_id = latest_comp_app['id'] if latest_comp_app else 0
+                is_renewal_app = bool(latest_comp_app and str(latest_comp_app.get('type', '')).startswith('renewal'))
+                app_target_id = latest_comp_app['id'] if is_renewal_app else 0
                 # Only this renewal cycle counts towards "paid so far". Unlinked
                 # renewal payments used to be summed across every year, so past
                 # renewals made a new bill look fully paid (balance GH₵ 0).
-                cycle_start = renewal_cycle_start(latest_comp_app, result.get('license_expiry_date'))
+                cycle_start = renewal_cycle_start(latest_comp_app if is_renewal_app else None, result.get('license_expiry_date'))
                 cursor.execute("""
                     SELECT id, amount, status, payment_method, receipt_url, description, is_installment, installment_number, created_at, paid_at
                     FROM payments
@@ -1366,7 +1367,7 @@ def get_me():
                         inst['paid_at'] = inst['paid_at'].isoformat()
 
                 confirmed_paid = sum(float(p['amount']) for p in renewal_installments if str(p.get('status', '')).lower() in ('paid', 'completed', 'success', 'successful'))
-                comp_amt_paid = float(latest_comp_app.get('amount_paid') or 0.0) if latest_comp_app else 0.0
+                comp_amt_paid = float(latest_comp_app.get('amount_paid') or 0.0) if is_renewal_app else 0.0
                 actual_paid = confirmed_paid if confirmed_paid > 0 else comp_amt_paid
                 total_billed = float(result.get('renewal_fee_amount') or 0.0)
                 bal_due = max(0.0, total_billed - actual_paid)

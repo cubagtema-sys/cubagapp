@@ -134,12 +134,9 @@ class _PaymentsPageState extends State<PaymentsPage>
         final total = _combinedRenewalTotal ??
             ((_nationalRenewalTotal ?? 0.0) + (_districtRenewalTotal ?? 0.0));
         _renewalFeeAmount = total > 0 ? total : 1383.0;
-        final baseDue = double.tryParse(_memberInfo['renewal_balance_due']?.toString() ?? '');
-        _renewalBalanceDue = baseDue != null && baseDue > 0
-            ? baseDue
-            : (_isPartiallyPaid && _renewalAmountPaid > 0
-                ? ((_renewalFeeAmount ?? 1383.0) - _renewalAmountPaid).clamp(0.0, double.infinity)
-                : (_renewalFeeAmount ?? 1383.0));
+        _renewalBalanceDue = _isPartiallyPaid && _renewalAmountPaid > 0
+            ? (total - _renewalAmountPaid).clamp(0.0, double.infinity)
+            : total;
         _amountCtrl.text = (_isInstallmentMode && _minInstallmentAmount > 0
                 ? _minInstallmentAmount.clamp(1.0, _renewalBalanceDue)
                 : _renewalBalanceDue)
@@ -221,10 +218,12 @@ class _PaymentsPageState extends State<PaymentsPage>
     }
 
     final rawRenewalAmt = _memberInfo['renewal_fee_amount'];
-    if (rawRenewalAmt != null) {
+    if (_complianceAppId != null && rawRenewalAmt != null) {
       _renewalFeeAmount = double.tryParse(rawRenewalAmt.toString());
-    } else if (_combinedRenewalTotal != null) {
+    } else if (_combinedRenewalTotal != null && _combinedRenewalTotal! > 0) {
       _renewalFeeAmount = _combinedRenewalTotal;
+    } else if (rawRenewalAmt != null) {
+      _renewalFeeAmount = double.tryParse(rawRenewalAmt.toString());
     }
 
     _renewalAmountPaid = double.tryParse(_memberInfo['renewal_amount_paid']?.toString() ?? '0') ?? 0.0;
@@ -351,8 +350,14 @@ class _PaymentsPageState extends State<PaymentsPage>
         return _isPartiallyPaid && _renewalAmountPaid > 0
             ? (distTot - _renewalAmountPaid).clamp(0.0, double.infinity)
             : (distTot > 0 ? distTot : (_renewalFeeAmount ?? 0.0));
+      } else {
+        final combTot = _combinedRenewalTotal ??
+            ((_nationalRenewalTotal ?? 0.0) + (_districtRenewalTotal ?? 0.0));
+        if (_isPartiallyPaid && _renewalAmountPaid > 0) {
+          return (combTot - _renewalAmountPaid).clamp(0.0, double.infinity);
+        }
+        return combTot > 0 ? combTot : (_renewalBalanceDue > 0 ? _renewalBalanceDue : (_renewalFeeAmount ?? 0.0));
       }
-      return _renewalBalanceDue > 0 ? _renewalBalanceDue : (_renewalFeeAmount ?? 0.0);
     }
     if (r.contains('registration') || r.contains('application')) {
       return double.tryParse(_upfrontRegFeeStr) ?? 600.0;
@@ -531,10 +536,15 @@ class _PaymentsPageState extends State<PaymentsPage>
               _amountCtrl.text = _packageFeeStr;
             } else if (queryAmt != null && queryAmt.isNotEmpty) {
               _amountCtrl.text = double.tryParse(queryAmt)?.toStringAsFixed(2) ?? queryAmt;
-            } else if (_renewalFeeAmount != null && _renewalFeeAmount! > 0) {
-              _amountCtrl.text = _renewalFeeAmount!.toStringAsFixed(2);
             } else {
-              _amountCtrl.clear();
+              final due = _getCurrentBillTotal();
+              if (due > 0) {
+                _amountCtrl.text = due.toStringAsFixed(2);
+              } else if (_renewalFeeAmount != null && _renewalFeeAmount! > 0) {
+                _amountCtrl.text = _renewalFeeAmount!.toStringAsFixed(2);
+              } else {
+                _amountCtrl.clear();
+              }
             }
           } else if (_reason.toLowerCase().contains('cti') || _reason.toLowerCase().contains('course')) {
             // Keep pre-filled course fee from query parameter
