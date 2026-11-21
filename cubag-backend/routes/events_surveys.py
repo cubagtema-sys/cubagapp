@@ -259,7 +259,7 @@ def get_all_events_admin():
 @sub_admin_required('events')
 def check_in_member(event_id):
     admin_id = get_jwt_identity()
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     member_id = data.get('member_id')
     if not member_id:
         return jsonify({'message': 'Member ID is required'}), 400
@@ -279,7 +279,7 @@ def check_in_member(event_id):
                 cursor.execute("SELECT name, company, profile_photo, license_number FROM members WHERE id = %s", (member_id,))
                 member = cursor.fetchone()
                 return jsonify({
-                    'message': 'Error: This QR code has already been scanned for this event!',
+                    'message': 'Member is already checked in for this event',
                     'member': member
                 }), 400
 
@@ -310,6 +310,40 @@ def check_in_member(event_id):
     finally:
         conn.close()
 
+
+@events_bp.route('/<int:event_id>/uncheck-in', methods=['POST', 'DELETE'])
+@events_bp.route('/<int:event_id>/check-in', methods=['DELETE'])
+@sub_admin_required('events')
+def uncheck_in_member(event_id):
+    admin_id = get_jwt_identity()
+    data = request.get_json(silent=True) or {}
+    member_id = data.get('member_id')
+    if not member_id:
+        return jsonify({'message': 'Member ID is required'}), 400
+    
+    conn = get_db()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT title FROM events WHERE id = %s", (event_id,))
+            event = cursor.fetchone()
+            if not event:
+                return jsonify({'message': 'Event not found'}), 404
+
+            cursor.execute("DELETE FROM event_attendance WHERE event_id = %s AND member_id = %s", (event_id, member_id))
+            conn.commit()
+            
+            log_admin_action(admin_id, 'Removed check-in', 'event', event_id, event['title'] if event else '', f"Member ID: {member_id}")
+            
+        return jsonify({
+            'message': f'Check-in removed for member #{member_id}',
+            'member_id': member_id
+        }), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'message': str(e)}), 500
+    finally:
+        conn.close()
+
 @events_bp.route('/<int:event_id>/attendees', methods=['GET'])
 @sub_admin_required('events')
 def get_attendees(event_id):
@@ -318,7 +352,7 @@ def get_attendees(event_id):
         with conn.cursor() as cursor:
             # We want all members to know who attended and who didn't.
             cursor.execute("""
-                SELECT m.id, m.name, m.email, m.company, m.member_type, ea.checked_in_at
+                SELECT m.id, m.name, m.email, m.company, m.member_type, m.phone, m.profile_photo, m.membership_number, ea.checked_in_at
                 FROM members m
                 LEFT JOIN event_attendance ea ON m.id = ea.member_id AND ea.event_id = %s
                 ORDER BY ea.checked_in_at DESC NULLS LAST, m.name ASC
