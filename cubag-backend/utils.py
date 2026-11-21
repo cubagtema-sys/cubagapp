@@ -592,18 +592,25 @@ def eval_good_standing(member_dict, cursor):
         """, (member_id,))
         paid_rows = cursor.fetchall()
 
+        def _desc(row):
+            if isinstance(row, dict):
+                return str(row.get('description') or '').lower()
+            if hasattr(row, '__getitem__') and len(row) > 1:
+                return str(row[1] or '').lower()
+            return ''
+
         has_package_paid = any(
-            any(k in (r.get('description') or '').lower() for k in ('package', 'entrance', 'clearing & forwarding only', 'consolidation'))
+            any(k in _desc(r) for k in ('package', 'entrance', 'clearing & forwarding only', 'consolidation'))
             for r in paid_rows
         ) or member_dict.get('package_fee_paid') is True
         
         has_renewal_paid = any(
-            any(k in (r.get('description') or '').lower() for k in ('renewal', 'dues'))
+            any(k in _desc(r) for k in ('renewal', 'dues'))
             for r in paid_rows
         )
         
         has_reg_only = any(
-            'registration' in (r.get('description') or '').lower() or 'application' in (r.get('description') or '').lower()
+            'registration' in _desc(r) or 'application' in _desc(r)
             for r in paid_rows
         ) and not has_package_paid
 

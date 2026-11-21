@@ -54,14 +54,16 @@ def get_dashboard_stats():
             recent_members = []
 
             # ── Membership KPIs ──────────────────────────────────────────
+            total_staff = 0
             if has_p('members'):
                 try:
                     cursor.execute("""
                         SELECT
-                            COUNT(id) as total,
-                            COUNT(id) FILTER (WHERE LOWER(status) = 'active') as active,
-                            COUNT(id) FILTER (WHERE LOWER(status) IN ('pending', 'pending_review')) as pending,
-                            COUNT(id) FILTER (WHERE LOWER(status) = 'suspended') as suspended
+                            COUNT(id) FILTER (WHERE LOWER(COALESCE(role, 'member')) NOT IN ('admin', 'super_admin', 'sub_admin', 'staff', 'system')) as total,
+                            COUNT(id) FILTER (WHERE LOWER(status) = 'active' AND LOWER(COALESCE(role, 'member')) NOT IN ('admin', 'super_admin', 'sub_admin', 'staff', 'system')) as active,
+                            COUNT(id) FILTER (WHERE LOWER(status) IN ('pending', 'pending_review') AND LOWER(COALESCE(role, 'member')) NOT IN ('admin', 'super_admin', 'sub_admin', 'staff', 'system')) as pending,
+                            COUNT(id) FILTER (WHERE LOWER(status) = 'suspended' AND LOWER(COALESCE(role, 'member')) NOT IN ('admin', 'super_admin', 'sub_admin', 'staff', 'system')) as suspended,
+                            COUNT(id) FILTER (WHERE LOWER(COALESCE(role, 'member')) IN ('admin', 'super_admin', 'sub_admin', 'staff', 'system')) as staff
                         FROM members
                     """)
                     row = cursor.fetchone()
@@ -69,11 +71,13 @@ def get_dashboard_stats():
                     active_members = int(row['active'] or 0)
                     pending_members = int(row['pending'] or 0)
                     suspended_members = int(row['suspended'] or 0)
+                    total_staff = int(row['staff'] or 0)
 
-                    # Member breakdown by status
+                    # Member breakdown by status (customs broker members only)
                     cursor.execute("""
                         SELECT LOWER(TRIM(COALESCE(status, 'inactive'))) AS status, COUNT(id) as count
                         FROM members
+                        WHERE LOWER(COALESCE(role, 'member')) NOT IN ('admin', 'super_admin', 'sub_admin', 'staff', 'system')
                         GROUP BY LOWER(TRIM(COALESCE(status, 'inactive')))
                     """)
                     status_rows = cursor.fetchall()
@@ -82,10 +86,11 @@ def get_dashboard_stats():
                         status_key = str(r['status'] or 'inactive').strip().lower()
                         status_counts[status_key] = status_counts.get(status_key, 0) + int(r['count'])
 
-                    # Member breakdown by type
+                    # Member breakdown by type (customs broker members only)
                     cursor.execute("""
                         SELECT TRIM(COALESCE(member_type, 'Unknown')) AS member_type, COUNT(id) as count
                         FROM members
+                        WHERE LOWER(COALESCE(role, 'member')) NOT IN ('admin', 'super_admin', 'sub_admin', 'staff', 'system')
                         GROUP BY TRIM(COALESCE(member_type, 'Unknown'))
                     """)
                     type_rows = cursor.fetchall()
@@ -213,6 +218,7 @@ def get_dashboard_stats():
                     cursor.execute("""
                         SELECT id, name, company, member_type, status, created_at
                         FROM members
+                        WHERE LOWER(COALESCE(role, 'member')) NOT IN ('admin', 'super_admin', 'sub_admin', 'staff', 'system')
                         ORDER BY created_at DESC LIMIT 5
                     """)
                     recent_members = cursor.fetchall()
@@ -231,6 +237,7 @@ def get_dashboard_stats():
                 'active_members':   active_members,
                 'pending_members':  pending_members,
                 'suspended_members': suspended_members,
+                'total_staff':      total_staff,
                 'applications':     applications_count,
                 'pending_documents': documents_count,
                 'revenue':          revenue,
